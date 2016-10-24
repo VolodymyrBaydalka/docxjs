@@ -1,0 +1,38 @@
+<html>
+	<head>
+		<script src="node_modules/jszip/dist/jszip.min.js"></script>
+		<script src="docx.js"></script>
+		<script >
+			function loadDocx()
+			{
+				var reader = new FileReader();
+
+				reader.onload = function(ev) {
+					docx.renderAsync(ev.target.result, document.getElementById("doc"))
+						.then((x) => console.log(x));
+				};
+
+				reader.readAsArrayBuffer(document.getElementById("files").files[0]);
+			}
+		</script>
+		<style type="text/css">
+		.wrapper {
+			background: gray;
+			padding: 30px;
+		}
+
+		#doc {
+			background: white;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+		}
+		</style>
+	</head>
+	<body>
+		<input id="files" type="file" id="files"/>
+		<button onclick="javascript:loadDocx()">load</button>
+		<div class="wrapper">
+			<div id="doc">
+			</div>
+		</div>
+	</body>
+</html>

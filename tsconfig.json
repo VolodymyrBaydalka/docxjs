@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "module": "none",
+		"target": "es5",
+        "sourceMap": true,
+        "outFile": "docx.js"
+    }
+}
