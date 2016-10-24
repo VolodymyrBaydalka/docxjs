@@ -14,7 +14,7 @@ module docx {
     export interface IDomElement {
         domType: DomType;
         children?: IDomElement[];
-        style?: { [name: string]: any };
+        style?: IDomStyleValues;
     }
 
     export interface IDomRun extends IDomElement {
@@ -23,6 +23,16 @@ module docx {
     }
 
     export interface IDomDocument extends IDomElement {
-        styles: { [id: string]: any };
+    }
+
+    export interface IDomStyle {
+        id: string;
+        target: string;
+        basedOn?: string;
+        isDefault?: boolean;
+    }
+
+    export interface IDomStyleValues {
+        [name: string]: string;
     }
 }

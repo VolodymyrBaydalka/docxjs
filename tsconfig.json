@@ -1,8 +1,15 @@
 {
-    "compilerOptions": {
-        "module": "none",
-		"target": "es5",
-        "sourceMap": true,
-        "outFile": "docx.js"
-    }
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": true,
+    "target": "es5",
+    "outFile": "docx.js"
+  },
+  "exclude": [
+    "node_modules",
+    "wwwroot"
+  ],
+  "compileOnSave": true
 }

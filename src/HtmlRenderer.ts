@@ -1,19 +1,36 @@
 module docx {
     export class HtmlRenderer {
-        constructor(public docxDocument: IDomDocument, public htmlDocument: HTMLDocument) {
-
+        constructor(public htmlDocument: HTMLDocument) {
         }
 
-        renderBody(into?: HTMLElement): HTMLElement {
-            var bodyElement = document.createElement("section");
-            this.renderChildren(this.docxDocument, bodyElement);
+        renderDocument(document: IDomDocument): HTMLElement {
+            var bodyElement = this.htmlDocument.createElement("section");
+            this.renderChildren(document, bodyElement);
 
-            this.renderStyleValues(this.docxDocument, bodyElement.style);
-
-            if(into)
-                into.appendChild(bodyElement);
+            this.renderStyleValues(document, bodyElement);
 
             return bodyElement;
+        }
+
+        renderStyles(styles: IDomStyle[]): HTMLElement {
+            var styleElement = document.createElement("style");
+            var styleText = "";
+
+            styleElement.type = "text/css";
+
+            for (let style of styles) {
+
+                if (style.isDefault)
+                    styleText += style.target + ", ";
+
+                styleText += style.target + "." + style.id + "{\r\n";
+
+                styleText += "}\r\n";
+            }
+
+            styleElement.innerHTML = styleText;
+
+            return styleElement;
         }
 
         renderElement(elem): HTMLElement {
@@ -53,7 +70,7 @@ module docx {
             var result = this.htmlDocument.createElement("p");
 
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem.style, result.style);
+            this.renderStyleValues(elem, result);
 
             return result;
         }
@@ -65,7 +82,7 @@ module docx {
 
             var result = this.htmlDocument.createElement("span");
 
-            this.renderStyleValues(elem.style, result.style);
+            this.renderStyleValues(elem, result);
 
             result.textContent = elem.text;
 
@@ -76,7 +93,7 @@ module docx {
             var result = this.htmlDocument.createElement("table");
 
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem.style, result.style);
+            this.renderStyleValues(elem, result);
 
             return result;
         }
@@ -85,7 +102,7 @@ module docx {
             var result = this.htmlDocument.createElement("tr");
 
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem.style, result.style);
+            this.renderStyleValues(elem, result);
 
             return result;
         }
@@ -94,18 +111,18 @@ module docx {
             var result = this.htmlDocument.createElement("td");
 
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem.style, result.style);
+            this.renderStyleValues(elem, result);
 
             return result;
         }
 
-        renderStyleValues(input: { [name: string]: any }, ouput: CSSStyleDeclaration) {
-            if (input == null)
+        renderStyleValues(input: IDomElement, ouput: HTMLElement) {
+            if (input.style == null)
                 return;
 
-            for (var key in input) {
-                if (input.hasOwnProperty(key)) {
-                    ouput[key] = input[key];
+            for (var key in input.style) {
+                if (input.style.hasOwnProperty(key)) {
+                    ouput.style[key] = input.style[key];
                 }
             }
         }

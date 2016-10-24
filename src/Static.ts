@@ -3,19 +3,33 @@ declare class JSZip {
 }
 
 module docx {
-    export function parseAsync(data) {
-        var parser = new DocumentParser();
+    export function renderAsync(data, bodyContainer: HTMLElement, styleContainer: HTMLElement = null): PromiseLike<any> {
 
-        return JSZip.loadAsync(data).then(zip => parser.parseAsync(zip));
+        var parser = new docx.DocumentParser();
+        var renderer = new docx.HtmlRenderer(window.document);
+        var _zip = null;
+        var _doc = null;
+
+        return JSZip.loadAsync(data)
+            .then(zip => { _zip = zip; return parser.parseDocumentAsync(_zip); })
+            .then(doc => { _doc = doc; return parser.parseStylesAsync(_zip); })
+            .then(styles => {
+
+                styleContainer = styleContainer || bodyContainer;
+
+                clearElement(styleContainer);
+                clearElement(bodyContainer);
+
+                styleContainer.appendChild(renderer.renderStyles(styles));
+                bodyContainer.appendChild(renderer.renderDocument(_doc));
+
+                return { document: _doc, styles: styles };
+            });
     }
 
-    export function renderAsync(data, bodyContainer: HTMLElement, styleContainer?: HTMLElement, document?: HTMLDocument) {
-        return parseAsync(data).then(x => {
-            var renderer = new HtmlRenderer(x, document || window.document);
-
-            renderer.renderBody(bodyContainer);
-
-            return x;
-        });
+    function clearElement(elem: HTMLElement) {
+        while (elem.firstChild) {
+            elem.removeChild(elem.firstChild);
+        }
     }
 }
