@@ -265,6 +265,10 @@ namespace docx {
                         output["text-decoration"] = "underline";
                         break;
 
+                    case "ind":
+                        output["text-indent"] = xml.sizeAttr(c, "val");
+                        break;
+
                     case "tblBorders":
                     case "tcBorders":
                         this.parseBorderProperties(c, output);
