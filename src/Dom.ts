@@ -15,11 +15,17 @@ module docx {
         domType: DomType;
         children?: IDomElement[];
         style?: IDomStyleValues;
+        className?: string;
     }
 
     export interface IDomRun extends IDomElement {
         isBreak?: boolean;
         text?: string;
+    }
+
+    export interface IDomTableCell extends IDomElement {
+        span?: number;
+        vAlign?: string;
     }
 
     export interface IDomDocument extends IDomElement {
@@ -30,6 +36,12 @@ module docx {
         target: string;
         basedOn?: string;
         isDefault?: boolean;
+        styles: IDomSubStyle[];
+    }
+
+    export interface IDomSubStyle {
+        target: string;
+        values: IDomStyleValues;
     }
 
     export interface IDomStyleValues {

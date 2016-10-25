@@ -3,8 +3,58 @@ module docx {
         constructor(public htmlDocument: HTMLDocument) {
         }
 
+        processStyles(styles: IDomStyle[]) {
+        }
+
+        processElement(element: IDomDocument) {
+            if (element.children) {
+                for (var e of element.children) {
+
+                    if (e.domType == DomType.Table) {
+                        this.processTable(e);
+                    }
+                    else {
+                        this.processElement(e);
+                    }
+                }
+            }
+        }
+
+        processTable(table: IDomDocument) {
+            for (var r of table.children) {
+                for (var c of r.children) {
+
+                    c.style = this.copyStyleProperty(table.style, c.style, "border-left");
+                    c.style = this.copyStyleProperty(table.style, c.style, "border-right");
+                    c.style = this.copyStyleProperty(table.style, c.style, "border-top");
+                    c.style = this.copyStyleProperty(table.style, c.style, "border-bottom");
+
+                    this.processElement(c);
+                }
+            }
+
+            delete table.style["border-left"];
+            delete table.style["border-right"];
+            delete table.style["border-top"];
+            delete table.style["border-bottom"];
+        }
+
+        copyStyleProperty(input: IDomStyleValues, output: IDomStyleValues, attr: string): IDomStyleValues {
+            if (input && input[attr] != null && (output == null || output[attr] == null)) {
+
+                if (output == null)
+                    output = {};
+
+                output[attr] = input[attr];
+            }
+
+            return output;;
+        }
+
         renderDocument(document: IDomDocument): HTMLElement {
             var bodyElement = this.htmlDocument.createElement("section");
+
+            this.processElement(document);
             this.renderChildren(document, bodyElement);
 
             this.renderStyleValues(document, bodyElement);
@@ -18,14 +68,25 @@ module docx {
 
             styleElement.type = "text/css";
 
+            this.processStyles(styles);
+
             for (let style of styles) {
 
-                if (style.isDefault)
-                    styleText += style.target + ", ";
+                for (var subStyle of style.styles) {
+                    if (style.isDefault)
+                        styleText += style.target + ", ";
 
-                styleText += style.target + "." + style.id + "{\r\n";
+                    if (style.target == subStyle.target)
+                        styleText += style.target + "." + style.id + "{\r\n";
+                    else 
+                        styleText += style.target + "." + style.id + " " + subStyle.target + "{\r\n";
 
-                styleText += "}\r\n";
+                    for (var key in subStyle.values) {
+                        styleText += key + ": " + subStyle.values[key] + ";\r\n";
+                    }
+
+                    styleText += "}\r\n";
+                }
             }
 
             styleElement.innerHTML = styleText;
@@ -69,6 +130,7 @@ module docx {
         renderParagraph(elem) {
             var result = this.htmlDocument.createElement("p");
 
+            this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem, result);
 
@@ -92,6 +154,7 @@ module docx {
         renderTable(elem) {
             var result = this.htmlDocument.createElement("table");
 
+            this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem, result);
 
@@ -107,11 +170,14 @@ module docx {
             return result;
         }
 
-        renderTableCell(elem) {
+        renderTableCell(elem: IDomTableCell) {
             var result = this.htmlDocument.createElement("td");
 
             this.renderChildren(elem, result);
             this.renderStyleValues(elem, result);
+
+            if (elem.span) result.colSpan = elem.span;
+            if (elem.vAlign) result.vAlign = elem.vAlign;
 
             return result;
         }
@@ -125,6 +191,11 @@ module docx {
                     ouput.style[key] = input.style[key];
                 }
             }
+        }
+
+        renderClass(input: IDomElement, ouput: HTMLElement) {
+            if (input.className)
+                ouput.className = input.className;
         }
     }
 }
