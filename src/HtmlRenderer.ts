@@ -1,14 +1,29 @@
 namespace docx {
     export class HtmlRenderer {
+
+        private digitTest = /^[0-9]/.test;
+
         constructor(public htmlDocument: HTMLDocument) {
         }
 
+        processClassName(className){
+            if(!className)
+                return null;
+                
+            return "docx_" + className;            
+        }
+
         processStyles(styles: IDomStyle[]) {
+            for(let style of styles){
+                style.id = this.processClassName(style.id);
+                style.basedOn = this.processClassName(style.basedOn);
+            }
         }
 
         processElement(element: IDomDocument) {
             if (element.children) {
                 for (var e of element.children) {
+                    e.className = this.processClassName(e.className);
 
                     if (e.domType == DomType.Table) {
                         this.processTable(e);
@@ -20,23 +35,23 @@ namespace docx {
             }
         }
 
-        processTable(table: IDomDocument) {
+        processTable(table: IDomTable) {
             for (var r of table.children) {
                 for (var c of r.children) {
 
-                    c.style = this.copyStyleProperty(table.style, c.style, "border-left");
-                    c.style = this.copyStyleProperty(table.style, c.style, "border-right");
-                    c.style = this.copyStyleProperty(table.style, c.style, "border-top");
-                    c.style = this.copyStyleProperty(table.style, c.style, "border-bottom");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-left");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-right");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-top");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-bottom");
+
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-left");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-right");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-top");
+                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-bottom");
 
                     this.processElement(c);
                 }
             }
-
-            delete table.style["border-left"];
-            delete table.style["border-right"];
-            delete table.style["border-top"];
-            delete table.style["border-bottom"];
         }
 
         copyStyleProperty(input: IDomStyleValues, output: IDomStyleValues, attr: string): IDomStyleValues {
@@ -139,8 +154,8 @@ namespace docx {
 
         renderRun(elem: IDomRun) {
 
-            if (elem.isBreak)
-                return this.htmlDocument.createElement("br");
+            if (elem.break)
+                return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
 
             var result = this.htmlDocument.createElement("span");
 

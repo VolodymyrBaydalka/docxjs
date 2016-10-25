@@ -15,6 +15,12 @@ namespace docx {
                 .then((xml) => this.parseStylesFile(xml));
         }
 
+        parseNumberingAsync(zip){
+            var file = zip.files["word/numbering.xml"];
+            return file ? file.async("string")
+                .then((xml) => this.parseNumberingFile(xml)) : null;
+        }
+
         parseDocumentFile(xmlString) {
             var result: IDomDocument = {
                 domType: DomType.Document,
@@ -78,24 +84,34 @@ namespace docx {
                     case "pPr":
                         result.styles.push({
                             target: "p",
-                            values: this.parseDefaultProperties(n, {}, null)
+                            values: this.parseDefaultProperties(n, {})
                         });
                         break;
 
                     case "rPr":
                         result.styles.push({
                             target: "span",
-                            values: this.parseDefaultProperties(n, {}, null)
+                            values: this.parseDefaultProperties(n, {})
                         });
                         break;
 
                     case "tblPr":
                         result.styles.push({
                             target: "td", //TODO: maybe move to processor
-                            values: this.parseDefaultProperties(n, {}, null)
+                            values: this.parseDefaultProperties(n, {})
                         });
                         break;
                 }
+            });
+
+            return result;
+        }
+
+        parseNumberingFile(xmlString: string): IDomStyle[] {
+            var result = [];
+            var xnums = xml.parse(xmlString, this.skipDeclaration);
+
+            xml.foreach(xnums, n => {
             });
 
             return result;
@@ -132,11 +148,34 @@ namespace docx {
             return result;
         }
 
-        parseParagraphProperties(node: Node, paragraph: IDomElement) {
-            paragraph.style = this.parseDefaultProperties(node, {}, c => {
+        parseParagraphProperties(node: Node, paragraph: IDomParagraph) {
+            paragraph.style = this.parseDefaultProperties(node, {}, null, c => {
                 switch (c.localName) {
                     case "pStyle":
                         paragraph.className = xml.stringAttr(c, "val");
+                        break;
+                    
+                    case "numPr":
+
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                return true;
+            });
+        }
+
+        parseNumbering(node: Node, paragraph: IDomParagraph){
+             xml.foreach(node, c => {
+                switch (c.localName) {
+                    case "numId":
+                        paragraph.numberingId = xml.stringAttr(c, "val");
+                        break;
+
+                    case "ilvl":
+                        paragraph.numberingLevel = xml.stringAttr(c, "val");
                         break;
                 }
             });
@@ -152,7 +191,7 @@ namespace docx {
                         break;
 
                     case "br":
-                        result.isBreak = true;
+                        result.break = xml.stringAttr(c, "type") || "textWrapping";
                         break;
 
                     case "rPr":
@@ -164,8 +203,8 @@ namespace docx {
             return result;
         }
 
-        parseTable(node: Node): IDomElement {
-            var result: IDomElement = { domType: DomType.Table, children: [] };
+        parseTable(node: Node): IDomTable {
+            var result: IDomTable = { domType: DomType.Table, children: [] };
 
             xml.foreach(node, c => {
                 switch (c.localName) {
@@ -182,13 +221,21 @@ namespace docx {
             return result;
         }
 
-        parseTableProperties(node: Node, table: IDomElement) {
-            table.style = this.parseDefaultProperties(node, {}, c => {
+        parseTableProperties(node: Node, table: IDomTable) {
+            table.style = {};
+            table.cellStyle = {};
+
+            this.parseDefaultProperties(node, table.style, table.cellStyle, c => {
                 switch (c.localName) {
                     case "tblStyle":
                         table.className = xml.stringAttr(c, "val");
                         break;
+
+                    default:
+                        return false;
                 }
+
+                return true;
             });
         }
 
@@ -229,7 +276,7 @@ namespace docx {
         }
 
         parseTableCellProperties(node: Node, cell: IDomTableCell) {
-            cell.style = this.parseDefaultProperties(node, {}, c => {
+            cell.style = this.parseDefaultProperties(node, {}, null, c => {
                 switch (c.localName) {
                     case "gridSpan":
                         cell.span = xml.intAttr(c, "val", null);
@@ -238,73 +285,118 @@ namespace docx {
                     case "vAlign":
                         cell.vAlign = xml.stringAttr(c, "val");
                         break;
+
+                    default:
+                        return false;
                 }
+
+                return true;
             });
         }
 
-        parseDefaultProperties(node: Node, output: IDomStyleValues, handler: (prop: Node) => void): IDomStyleValues {
+        parseDefaultProperties(node: Node, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Node) => void = null): IDomStyleValues {
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "jc":
-                        output["text-align"] = xml.stringAttr(c, "val");
+                        style["text-align"] = values.valueOfJc(c);
                         break;
 
                     case "color":
-                        output["color"] = xml.stringAttr(c, "val");
+                        style["color"] = xml.stringAttr(c, "val");
+                        break;
+                    
+                    case "sz":
+                        style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
+                        break;
+
+                    case "shd":
+                        style["background-color"] = xml.stringAttr(c, "fill");
+                        break;
+
+                    case "highlight":
+                        style["background-color"] = xml.stringAttr(c, "val");
+                        break;
+
+                    case "strike":
+                        style["text-decoration"] = values.valueOfStrike(c);
                         break;
 
                     case "b":
-                        output["font-weight"] = values.valueOfBold(c);
+                        style["font-weight"] = values.valueOfBold(c);
                         break;
 
                     case "i":
-                        output["font-style"] = "italic";
+                        style["font-style"] = "italic";
                         break;
 
                     case "u":
-                        output["text-decoration"] = "underline";
+                        style["text-decoration"] = "underline";
                         break;
 
                     case "ind":
-                        output["text-indent"] = xml.sizeAttr(c, "val");
+                        style["text-indent"] = xml.sizeAttr(c, "left");
                         break;
 
                     case "tblBorders":
+                        this.parseBorderProperties(c, childStyle || style);
+                        break;
+
                     case "tcBorders":
-                        this.parseBorderProperties(c, output);
+                        this.parseBorderProperties(c, style);
                         break;
 
                     case "tblCellMar":
-                        this.parseMarginProperties(c, output);
+                        this.parseMarginProperties(c, childStyle || style);
+                        break;
+
+                    case "tblLayout":
+                        style["table-layout"] = values.valueOfTblLayout(c);
+                        break;
+
+                    case "spacing":
+                        this.parseSpacing(c, style);
+                        break;
+
+                    case "lang":
                         break;
 
                     default:
-                        if (handler != null)
-                            handler(c);
+                        if (handler == null || !handler(c))
+                            console.log(c.localName);
                         break;
                 }
             });
 
-            return output;
+            return style;
+        }
+
+        parseSpacing(node: Node, style: IDomStyleValues) {
+            var before = xml.sizeAttr(node, "before");
+            var after = xml.sizeAttr(node, "after");
+            var line = xml.sizeAttr(node, "line");
+
+            if(before) style["magrin-top"] = before;
+            if(after) style["magrin-bottom"] = after;
+            if(line) style["line-height"] = line;
         }
 
         parseMarginProperties(node: Node, output: IDomStyleValues) {
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "left":
-                        output["margin-left"] = values.valueOfMargin(c);
+                        output["padding-left"] = values.valueOfMargin(c);
                         break;
 
                     case "right":
-                        output["margin-right"] = values.valueOfMargin(c);
+                        output["padding-right"] = values.valueOfMargin(c);
                         break;
 
                     case "top":
-                        output["margin-top"] = values.valueOfMargin(c);
+                        output["padding-top"] = values.valueOfMargin(c);
                         break;
 
                     case "bottom":
-                        output["margin-bottom"] = values.valueOfMargin(c);
+                        output["padding-bottom"] = values.valueOfMargin(c);
                         break;
                 }
             });
@@ -409,6 +501,10 @@ namespace docx {
             return xml.boolAttr(c, "val", true) ? "bold" : "normal"
         }
 
+        static valueOfStrike(c: Node) {
+            return xml.boolAttr(c, "val", true) ? "line-through" : "none"
+        }
+
         static valueOfMargin(c: Node) {
             return xml.sizeAttr(c, "w");
         }
@@ -423,6 +519,26 @@ namespace docx {
             var size = xml.sizeAttr(c, "sz");
 
             return `${size} solid ${color == "auto" ? "black" : color}`;
+        }
+
+        static valueOfTblLayout(c: Node) {
+            var type = xml.stringAttr(c, "val");
+            return type == "fixed" ? "fixed" : "auto";
+        }
+
+        static valueOfJc(c: Node) {
+            var type = xml.stringAttr(c, "val");
+
+            switch(type){
+                case "start": 
+                case "left": return "left";
+                case "center": return "center";
+                case "end": 
+                case "right": return "right";
+                case "both": return "justify";
+            }
+
+            return type;
         }
     }
 }

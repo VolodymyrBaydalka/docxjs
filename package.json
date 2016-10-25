@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc | uglifyjs docx.js --mangle -o docx.min.js",
-    "tsc": "tsc",
+    "tsc": "/node_modules/.bin/tsc",
     "tsc:w": "tsc -w"
   }
 }

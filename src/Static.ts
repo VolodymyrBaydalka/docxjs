@@ -2,28 +2,39 @@ declare class JSZip {
     static loadAsync(data): PromiseLike<any>;
 }
 
+declare class Promise {
+    static all(ps);
+}
+
 namespace docx {
     export function renderAsync(data, bodyContainer: HTMLElement, styleContainer: HTMLElement = null): PromiseLike<any> {
 
         var parser = new docx.DocumentParser();
         var renderer = new docx.HtmlRenderer(window.document);
-        var _zip = null;
-        var _doc = null;
 
         return JSZip.loadAsync(data)
-            .then(zip => { _zip = zip; return parser.parseDocumentAsync(_zip); })
-            .then(doc => { _doc = doc; return parser.parseStylesAsync(_zip); })
-            .then(styles => {
+            .then(zip => {
+                var files = [parser.parseDocumentAsync(zip), parser.parseStylesAsync(zip)];
+                var num = parser.parseNumberingAsync(zip);
 
+                if(num) files.push(num);
+
+                return Promise.all(files);
+            })
+            .then(parts => {
                 styleContainer = styleContainer || bodyContainer;
 
                 clearElement(styleContainer);
                 clearElement(bodyContainer);
 
-                styleContainer.appendChild(renderer.renderStyles(styles));
-                bodyContainer.appendChild(renderer.renderDocument(_doc));
+                styleContainer.appendChild(renderer.renderStyles(parts[1]));
+                
+                if(parts[2])
+                    styleContainer.appendChild(renderer.renderStyles(parts[2]));
 
-                return { document: _doc, styles: styles };
+                bodyContainer.appendChild(renderer.renderDocument(parts[0]));
+
+                return { document: parts[0], styles: parts[1], numbering: parts[2] };
             });
     }
 

@@ -18,9 +18,18 @@ namespace docx {
         className?: string;
     }
 
+    export interface IDomParagraph extends IDomElement {
+        numberingId?: string;
+        numberingLevel?: string;
+    }
+
     export interface IDomRun extends IDomElement {
-        isBreak?: boolean;
+        break?: string;
         text?: string;
+    }
+
+    export interface IDomTable extends IDomElement {
+        cellStyle?: IDomStyleValues;
     }
 
     export interface IDomTableCell extends IDomElement {
