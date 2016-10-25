@@ -4,3 +4,4 @@ bin
 obj
 docx.js
 docx.js.map
+*.user

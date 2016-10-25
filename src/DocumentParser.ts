@@ -1,5 +1,5 @@
 
-module docx {
+namespace docx {
     export class DocumentParser {
         public skipDeclaration: boolean = true;
 
@@ -85,6 +85,13 @@ module docx {
                     case "rPr":
                         result.styles.push({
                             target: "span",
+                            values: this.parseDefaultProperties(n, {}, null)
+                        });
+                        break;
+
+                    case "tblPr":
+                        result.styles.push({
+                            target: "td", //TODO: maybe move to processor
                             values: this.parseDefaultProperties(n, {}, null)
                         });
                         break;
@@ -378,7 +385,7 @@ module docx {
         static sizeAttr(node: Node, attrName: string, type: SizeType = SizeType.Dxa) {
             var val = xml.stringAttr(node, attrName);
 
-            if (val.indexOf("pt") > -1)
+            if (val == null || val.indexOf("pt") > -1)
                 return val;
 
             var intVal = parseInt(val);
@@ -403,9 +410,13 @@ module docx {
         }
 
         static valueOfBorder(c: Node) {
+            var type = xml.stringAttr(c, "val");
+
+            if (type == "nil")
+                return "none";
+
             var color = xml.stringAttr(c, "color");
             var size = xml.sizeAttr(c, "sz");
-            var type = xml.sizeAttr(c, "val");
 
             return `${size} solid ${color == "auto" ? "black" : color}`;
         }

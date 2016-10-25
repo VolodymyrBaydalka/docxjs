@@ -1,5 +1,5 @@
 
-module docx {
+namespace docx {
 
     export enum DomType {
         Document,

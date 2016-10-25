@@ -28,12 +28,14 @@
     <TypeScriptCompile Include="src\Static.ts" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".gitignore" />
     <Content Include="demo.html" />
     <Content Include="package.json" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="web.config" />
     <Content Include="tsconfig.json" />
+    <Content Include="LICENSE" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>

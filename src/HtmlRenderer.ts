@@ -1,4 +1,4 @@
-module docx {
+namespace docx {
     export class HtmlRenderer {
         constructor(public htmlDocument: HTMLDocument) {
         }

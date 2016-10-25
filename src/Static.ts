@@ -2,7 +2,7 @@ declare class JSZip {
     static loadAsync(data): PromiseLike<any>;
 }
 
-module docx {
+namespace docx {
     export function renderAsync(data, bodyContainer: HTMLElement, styleContainer: HTMLElement = null): PromiseLike<any> {
 
         var parser = new docx.DocumentParser();
