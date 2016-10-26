@@ -57,6 +57,12 @@ namespace docx {
         values: IDomStyleValues;
     }
 
+    export interface IDomNumbering {
+	    id: string;
+        level: string;
+        style:IDomStyleValues; 
+    }
+
     export interface IDomStyleValues {
         [name: string]: string;
     }

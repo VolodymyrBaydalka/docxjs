@@ -1,6 +1,8 @@
 namespace docx {
     export class HtmlRenderer {
 
+        className: string = "docx";        
+
         private digitTest = /^[0-9]/.test;
 
         constructor(public htmlDocument: HTMLDocument) {
@@ -10,7 +12,7 @@ namespace docx {
             if(!className)
                 return null;
                 
-            return "docx_" + className;            
+            return `${this.className}_${className}`;            
         }
 
         processStyles(styles: IDomStyle[]) {
@@ -83,7 +85,7 @@ namespace docx {
         renderDocument(document: IDomDocument): HTMLElement {
             var bodyElement = this.htmlDocument.createElement("section");
 
-            bodyElement.className = "docx";
+            bodyElement.className = this.className;
 
             this.processElement(document);
             this.renderChildren(document, bodyElement);
@@ -96,7 +98,7 @@ namespace docx {
         renderWrapper(){
             var wrapper = document.createElement("div");
 
-            wrapper.className = "docx-wrapper"
+            wrapper.className = `${this.className}-wrapper`
 
             return wrapper;
         }
@@ -105,14 +107,33 @@ namespace docx {
             var styleElement = document.createElement("style");
 
             styleElement.type = "text/css";
-            styleElement.innerHTML = ".docx-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; }\r\n" 
-                + ".docx-wrapper section.docx {background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }\r\n"
-                + ".docx { color: black; }\r\n"
-                + "section.docx { box-sizing: border-box; }\r\n"
-                + ".docx table { border-collapse: collapse; }\r\n"
-                + ".docx table td, .docx table th { vertical-align: top; }\r\n"
-                + ".docx p { margin: 0pt; }";
+            styleElement.innerHTML = `.${this.className}-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } 
+                .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+                .${this.className} { color: black; }
+                section.${this.className} { box-sizing: border-box; }
+                .${this.className} table { border-collapse: collapse; }
+                .${this.className} table td, .${this.className} table th { vertical-align: top; }
+                .${this.className} p { margin: 0pt; }`;
 
+            return styleElement;
+        }
+
+	    renderNumbering(styles: IDomNumbering[]) {
+            var styleText = "";
+
+            for(var num of styles){
+                styleText += `.${this.className}-num-${num.id}-${num.level} {\r\n display:list-item; \r\n`
+
+                for (var key in num.style) {
+                    styleText += `${key}: ${num.style[key]};\r\n`;
+                }
+
+                styleText += "} \r\n";
+            }
+            
+            var styleElement = document.createElement("style");
+            styleElement.type = "text/css";
+            styleElement.innerHTML = styleText;
             return styleElement;
         }
 
@@ -187,11 +208,14 @@ namespace docx {
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 
+            if(elem.numberingId && elem.numberingLevel) {
+                result.className = `${result.className} ${this.className}-num-${elem.numberingId}-${elem.numberingLevel}`;
+            }
+
             return result;
         }
 
         renderRun(elem: IDomRun) {
-
             if (elem.break)
                 return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
 

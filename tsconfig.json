@@ -1,12 +1,19 @@
 {
   "compilerOptions": {
+    "declaration": false,
     "noImplicitAny": false,
     "noEmitOnError": true,
     "pretty": true,
-    "removeComments": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
     "sourceMap": true,
     "target": "es5",
-    "outFile": "docx.js"
+    "outFile": "docx.js",
+    "lib": [
+      "es5",
+      "dom",
+      "es2015.promise"
+    ]
   },
   "exclude": [
     "node_modules",

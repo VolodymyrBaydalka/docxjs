@@ -118,11 +118,64 @@ namespace docx {
             return result;
         }
 
-        parseNumberingFile(xmlString: string): IDomStyle[] {
+        parseNumberingFile(xmlString: string): IDomNumbering[] {
             var result = [];
             var xnums = xml.parse(xmlString, this.skipDeclaration);
+            
+            var mapping = {};
 
             xml.foreach(xnums, n => {
+                switch(n.localName){
+                    case "abstractNum":
+                        this.parseAbstractNumbering(n)
+                            .forEach(x => result.push(x));
+                        break;
+
+                    case "num":
+                        var numId = xml.stringAttr(n, "numId");
+                        var abstractNumId = xml.nodeStringAttr(n, "abstractNumId", "val");
+                        mapping[abstractNumId] = numId;
+                        break;
+                }
+            });
+
+            result.forEach(x => x.id = mapping[x.id]);
+
+            return result;
+        }
+
+        parseAbstractNumbering(node: Node): IDomNumbering[] {
+            var result = [];
+            var id = xml.stringAttr(node, "abstractNumId"); 
+
+            xml.foreach(node, n => {
+                switch (n.localName) {
+                    case "lvl":
+                        result.push({
+                            id: id,
+                            level:  xml.stringAttr(n, "ilvl"),
+                            style: this.parseNumberingLevel(n)
+                        });
+                        break;
+                }
+            });
+
+            return result;
+        }
+
+	    parseNumberingLevel(node: Node): IDomStyleValues {
+            var result = <IDomStyleValues>{}; 
+
+            xml.foreach(node, n => {
+                switch (n.localName) {
+                    case "pPr":
+                        this.parseDefaultProperties(n, result);
+                        break;
+
+                    case "numFmt":
+                        result["list-style-type"] = "disc";
+                        break;
+                }
             });
 
             return result;
@@ -539,6 +592,11 @@ namespace docx {
             for (var i = 0; i < node.childNodes.length; i++)
                 if (node.childNodes[i].localName == tagName)
                     return node.childNodes[i];
+        }
+
+        static nodeStringAttr(node: Node, nodeName, attrName: string) {
+            var n = xml.byTagName(node, nodeName)
+            return n ? xml.stringAttr(n, attrName) : null;
         }
 
         static stringAttr(node: Node, attrName: string) {

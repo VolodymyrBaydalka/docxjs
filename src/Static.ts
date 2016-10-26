@@ -2,10 +2,6 @@ declare class JSZip {
     static loadAsync(data): PromiseLike<any>;
 }
 
-declare class Promise {
-    static all(ps);
-}
-
 namespace docx {
 
     export interface Options {
@@ -46,7 +42,7 @@ namespace docx {
                 styleContainer.appendChild(renderer.renderStyles(parts[1]));
 
                 if (parts[2])
-                    styleContainer.appendChild(renderer.renderStyles(parts[2]));
+                    styleContainer.appendChild(renderer.renderNumbering(parts[2]));
 
                 var documentElement = renderer.renderDocument(parts[0]);
 
