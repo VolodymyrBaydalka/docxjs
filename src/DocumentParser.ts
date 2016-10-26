@@ -218,7 +218,7 @@ namespace docx {
                         break;
 
                     case "tab":
-                        result.text = "\u00A0\u00A0\u00A0\u00A0";  // TODO
+                        //result.text = "\u00A0\u00A0\u00A0\u00A0";  // TODO
                         break;
 
                     case "rPr":
@@ -645,10 +645,11 @@ namespace docx {
         }
 
         static valueOfInd(c: Node) {
+            var firstLine = xml.sizeAttr(c, "firstLine"); 
             var left = xml.sizeAttr(c, "left");
             var start = xml.sizeAttr(c, "start");
 
-            return left || start;
+            return firstLine || left || start;
         }
 
         static valueOfFonts(c: Node){
