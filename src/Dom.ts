@@ -29,15 +29,19 @@ namespace docx {
     }
 
     export interface IDomTable extends IDomElement {
+        columns?: IDomTableColumn[];
         cellStyle?: IDomStyleValues;
     }
 
     export interface IDomTableCell extends IDomElement {
         span?: number;
-        vAlign?: string;
     }
 
     export interface IDomDocument extends IDomElement {
+    }
+
+    export interface IDomTableColumn {
+        width?: string;
     }
 
     export interface IDomStyle {

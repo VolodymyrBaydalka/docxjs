@@ -1,7 +1,13 @@
 
 namespace docx {
     export class DocumentParser {
-        public skipDeclaration: boolean = true;
+        // removes XML declaration 
+        skipDeclaration: boolean = true;
+        
+         // ignores page and table sizes
+        ignoreWidth: boolean = false;
+        ignoreHeight: boolean = true; 
+        debug: boolean = false;
 
         parseDocumentAsync(zip) {
             return zip.files["word/document.xml"]
@@ -71,6 +77,7 @@ namespace docx {
             var result = {
                 id: xml.stringAttr(node, "styleId"),
                 target: null,
+                basedOn: null,
                 styles: []
             };
 
@@ -81,6 +88,10 @@ namespace docx {
 
             xml.foreach(node, n => {
                 switch (n.localName) {
+                    case "basedOn":
+                        result.basedOn = xml.stringAttr(n, "val");
+                        break;
+                    
                     case "pPr":
                         result.styles.push({
                             target: "p",
@@ -126,6 +137,14 @@ namespace docx {
                         elem.style["padding-top"] = xml.sizeAttr(n, "top");
                         elem.style["padding-bottom"] = xml.sizeAttr(n, "bottom");
                         break;
+
+	                case "pgSz":
+                        if(!this.ignoreWidth)
+                            elem.style["width"] = xml.sizeAttr(n, "w");
+
+                        if(!this.ignoreHeight)
+                            elem.style["height"] = xml.sizeAttr(n, "h");
+                        break;
                 }
             });
         }
@@ -156,7 +175,11 @@ namespace docx {
                         break;
                     
                     case "numPr":
+                        this.parseNumbering(c, paragraph);
+                        break;
 
+                    case "rPr":
+                        //TODO ignore
                         break;
 
                     default:
@@ -194,6 +217,10 @@ namespace docx {
                         result.break = xml.stringAttr(c, "type") || "textWrapping";
                         break;
 
+                    case "tab":
+                        result.text = "\u00A0\u00A0\u00A0\u00A0";  // TODO
+                        break;
+
                     case "rPr":
                         result.style = this.parseDefaultProperties(c, {}, null);
                         break;
@@ -212,8 +239,26 @@ namespace docx {
                         result.children.push(this.parseTableRow(c));
                         break;
 
+	                case "tblGrid":
+                        result.columns = this.parseTableColumns(c);
+                        break;
+
                     case "tblPr":
                         this.parseTableProperties(c, result);
+                        break;
+                }
+            });
+
+            return result;
+        }
+        
+        parseTableColumns(node: Node): IDomTableColumn[] {
+            var result = [];
+            
+            xml.foreach(node, n => {
+                switch (n.localName) {
+                    case "gridCol":
+                        result.push({ width: xml.sizeAttr(n, "w") });
                         break;
                 }
             });
@@ -282,10 +327,6 @@ namespace docx {
                         cell.span = xml.intAttr(c, "val", null);
                         break;
 
-                    case "vAlign":
-                        cell.vAlign = xml.stringAttr(c, "val");
-                        break;
-
                     default:
                         return false;
                 }
@@ -295,6 +336,8 @@ namespace docx {
         }
 
         parseDefaultProperties(node: Node, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Node) => void = null): IDomStyleValues {
+            style = style || {};
+
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "jc":
@@ -317,6 +360,14 @@ namespace docx {
                         style["background-color"] = xml.stringAttr(c, "val");
                         break;
 
+	                case "tcW": 
+                        if(this.ignoreWidth)
+                        break;
+
+	                case "tblW":
+                        style["width"] = xml.sizeAttr(c, "w");
+                        break;
+
                     case "strike":
                         style["text-decoration"] = values.valueOfStrike(c);
                         break;
@@ -334,7 +385,11 @@ namespace docx {
                         break;
 
                     case "ind":
-                        style["text-indent"] = xml.sizeAttr(c, "left");
+                        style["text-indent"] = values.valueOfInd(c);
+                        break;
+
+                    case "rFonts":
+                        style["font-family"] = values.valueOfFonts(c);
                         break;
 
                     case "tblBorders":
@@ -353,16 +408,25 @@ namespace docx {
                         style["table-layout"] = values.valueOfTblLayout(c);
                         break;
 
+                    case "vAlign":
+                        style["vertical-align"] = xml.stringAttr(c, "val");
+                        break;
+
                     case "spacing":
                         this.parseSpacing(c, style);
                         break;
 
+                    case "tabs":
+                        this.parseTabs(c, style);
+                        break;
+
                     case "lang":
+                        //TODO ignore
                         break;
 
                     default:
-                        if (handler == null || !handler(c))
-                            console.log(c.localName);
+                        if (handler != null)
+                            !handler(c) && this.debug && console.log(c.localName);
                         break;
                 }
             });
@@ -376,8 +440,33 @@ namespace docx {
             var line = xml.sizeAttr(node, "line");
 
             if(before) style["magrin-top"] = before;
-            if(after) style["magrin-bottom"] = after;
-            if(line) style["line-height"] = line;
+            if(after) style["margin-bottom"] = after;
+            if(line){ 
+                style["line-height"] = line;
+                style["min-height"] = line;
+            }
+        }
+
+	    parseTabs(node: Node, style: IDomStyleValues) {
+            xml.foreach(node, n => {
+                switch(n.localName){
+                    case "tab":{
+                        var type = xml.stringAttr(n, "val");
+                        var pos = xml.sizeAttr(n, "pos");
+
+                        switch(type) {
+                            case "left":
+                                style["magrin-left"] = values.addSize(style["magrin-left"], pos);
+                                break;
+
+                            case "right":
+                                style["magrin-right"] = values.addSize(style["magrin-right"], pos);
+                                break;
+                        }
+                    }
+                        break;                    
+                }
+            });
         }
 
         parseMarginProperties(node: Node, output: IDomStyleValues) {
@@ -405,10 +494,12 @@ namespace docx {
         parseBorderProperties(node: Node, output: IDomStyleValues) {
             xml.foreach(node, c => {
                 switch (c.localName) {
+                    case "start":
                     case "left":
                         output["border-left"] = values.valueOfBorder(c);
                         break;
 
+                    case "end":
                     case "right":
                         output["border-right"] = values.valueOfBorder(c);
                         break;
@@ -459,6 +550,18 @@ namespace docx {
             }
 
             return null;
+        }
+
+        static colorAttr(node: Node, attrName: string, defValue: string = null) {
+            var v = xml.stringAttr(node, attrName);
+
+            switch (v)
+            {
+                case "yellow":
+                     return v;
+            }
+
+            return v ? `#${v}` : defValue;
         }
 
         static boolAttr(node: Node, attrName: string, defValue: boolean = false) {
@@ -539,6 +642,25 @@ namespace docx {
             }
 
             return type;
+        }
+
+        static valueOfInd(c: Node) {
+            var left = xml.sizeAttr(c, "left");
+            var start = xml.sizeAttr(c, "start");
+
+            return left || start;
+        }
+
+        static valueOfFonts(c: Node){
+            var ascii = xml.stringAttr(c, "ascii");
+            return ascii;
+        }
+
+        static addSize(a: string, b: string): string {
+            if(a == null) return b;
+            if(b == null) return a;
+
+            return `calc(${a} + ${b})`; //TODO
         }
     }
 }

@@ -14,9 +14,26 @@ namespace docx {
         }
 
         processStyles(styles: IDomStyle[]) {
+            var stylesMap = {};
+
             for(let style of styles){
                 style.id = this.processClassName(style.id);
                 style.basedOn = this.processClassName(style.basedOn);
+
+                stylesMap[style.id] = style;
+            }
+
+            for(let style of styles){
+                if(style.basedOn){
+                    var baseStyle = stylesMap[style.basedOn];
+
+                    for(let styleValues of style.styles){
+                        var baseValues = baseStyle.styles.filter(x => x.target == styleValues.target);
+
+                        if(baseValues && baseValues.length > 0)
+                             this.copyStyleProperties(baseValues[0].values, styleValues.values);
+                    }
+                }
             }
         }
 
@@ -38,43 +55,65 @@ namespace docx {
         processTable(table: IDomTable) {
             for (var r of table.children) {
                 for (var c of r.children) {
-
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-left");
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-right");
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-top");
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "border-bottom");
-
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-left");
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-right");
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-top");
-                    c.style = this.copyStyleProperty(table.cellStyle, c.style, "padding-bottom");
+                    c.style = this.copyStyleProperties(table.cellStyle, c.style, [
+                        "border-left", "border-right", "border-top", "border-bottom",
+                        "padding-left", "padding-right", "padding-top", "padding-bottom"
+                    ]);
 
                     this.processElement(c);
                 }
             }
         }
 
-        copyStyleProperty(input: IDomStyleValues, output: IDomStyleValues, attr: string): IDomStyleValues {
-            if (input && input[attr] != null && (output == null || output[attr] == null)) {
+	    copyStyleProperties(input: IDomStyleValues, output: IDomStyleValues, attrs: string[] = null): IDomStyleValues {
+            if(!input)
+                return output;
 
-                if (output == null)
-                    output = {};
+            if(output == null) output = {};
+            if(attrs == null) attrs = Object.getOwnPropertyNames(input);
 
-                output[attr] = input[attr];
+            for (var key of attrs) {
+                if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
+                    output[key] = input[key];
             }
 
-            return output;;
+            return output;
         }
 
         renderDocument(document: IDomDocument): HTMLElement {
             var bodyElement = this.htmlDocument.createElement("section");
 
+            bodyElement.className = "docx";
+
             this.processElement(document);
             this.renderChildren(document, bodyElement);
 
-            this.renderStyleValues(document, bodyElement);
+            this.renderStyleValues(document.style, bodyElement);
 
             return bodyElement;
+        }
+
+        renderWrapper(){
+            var wrapper = document.createElement("div");
+
+            wrapper.className = "docx-wrapper"
+
+            return wrapper;
+        }
+
+        renderDefaultStyle(){
+            var styleElement = document.createElement("style");
+
+            styleElement.type = "text/css";
+            styleElement.innerHTML = ".docx-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; }\r\n" 
+                + ".docx-wrapper section.docx {background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }\r\n"
+                + ".docx { color: black; }\r\n"
+                + "section.docx { box-sizing: border-box; }\r\n"
+                + ".docx table { border-collapse: collapse; }\r\n"
+                + ".docx table td, .docx table th { vertical-align: top; }\r\n"
+                + ".docx p { margin: 0pt; }";
+
+            return styleElement;
         }
 
         renderStyles(styles: IDomStyle[]): HTMLElement {
@@ -86,7 +125,6 @@ namespace docx {
             this.processStyles(styles);
 
             for (let style of styles) {
-
                 for (var subStyle of style.styles) {
                     if (style.isDefault)
                         styleText += style.target + ", ";
@@ -142,12 +180,12 @@ namespace docx {
             return result;
         }
 
-        renderParagraph(elem) {
+        renderParagraph(elem: IDomParagraph) {
             var result = this.htmlDocument.createElement("p");
 
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem, result);
+            this.renderStyleValues(elem.style, result);
 
             return result;
         }
@@ -159,19 +197,37 @@ namespace docx {
 
             var result = this.htmlDocument.createElement("span");
 
-            this.renderStyleValues(elem, result);
+            this.renderStyleValues(elem.style, result);
 
             result.textContent = elem.text;
 
             return result;
         }
 
-        renderTable(elem) {
+        renderTable(elem: IDomTable) {
             var result = this.htmlDocument.createElement("table");
 
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem, result);
+            this.renderStyleValues(elem.style, result);
+
+            if(elem.columns)
+                result.appendChild(this.renderTableColumns(elem.columns));
+
+            return result;
+        }
+
+        renderTableColumns(columns: IDomTableColumn[]) {
+            var result = this.htmlDocument.createElement("colGroup");
+
+            for(let col of columns) {
+                var colElem = this.htmlDocument.createElement("col");
+
+                if(col.width)
+                    colElem.width = col.width;
+                
+                result.appendChild(colElem);
+            }
 
             return result;
         }
@@ -180,7 +236,7 @@ namespace docx {
             var result = this.htmlDocument.createElement("tr");
 
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem, result);
+            this.renderStyleValues(elem.style, result);
 
             return result;
         }
@@ -189,21 +245,20 @@ namespace docx {
             var result = this.htmlDocument.createElement("td");
 
             this.renderChildren(elem, result);
-            this.renderStyleValues(elem, result);
+            this.renderStyleValues(elem.style, result);
 
             if (elem.span) result.colSpan = elem.span;
-            if (elem.vAlign) result.vAlign = elem.vAlign;
 
             return result;
         }
 
-        renderStyleValues(input: IDomElement, ouput: HTMLElement) {
-            if (input.style == null)
+        renderStyleValues(style: IDomStyleValues, ouput: HTMLElement) {
+            if (style == null)
                 return;
 
-            for (var key in input.style) {
-                if (input.style.hasOwnProperty(key)) {
-                    ouput.style[key] = input.style[key];
+            for (var key in style) {
+                if (style.hasOwnProperty(key)) {
+                    ouput.style[key] = style[key];
                 }
             }
         }
