@@ -171,14 +171,50 @@ namespace docx {
                     case "pPr":
                         this.parseDefaultProperties(n, result);
                         break;
+                    
+                    case "lvlText":
+                        break;
 
                     case "numFmt":
-                        result["list-style-type"] = "disc";
+                        this.parseNumberingFormating(n, result);
                         break;
                 }
             });
 
             return result;
+        }
+
+        parseNumberingFormating(node: Node, style: IDomStyleValues) {
+            switch(xml.stringAttr(node, "val")) 
+            {
+                case "bullet":
+                    style["list-style-type"] = "disc";
+                    break;
+
+                case "decimal":
+                    style["list-style-type"] = "decimal";
+                    break;
+
+                case "lowerLetter":
+                    style["list-style-type"] = "lower-alpha";
+                    break;
+
+                case "upperLetter":
+                    style["list-style-type"] = "upper-alpha";
+                    break;
+
+                case "lowerRoman":
+                    style["list-style-type"] = "lower-roman";
+                    break;
+
+                case "upperRoman":
+                    style["list-style-type"] = "upper-roman";
+                    break;
+
+                case "none":
+                    style["list-style-type"] = "none";
+                    break;
+            }
         }
 
         parseSectionProperties(node: Node, elem: IDomElement) {
@@ -438,7 +474,7 @@ namespace docx {
                         break;
 
                     case "ind":
-                        style["text-indent"] = values.valueOfInd(c);
+                        this.parseIndentation(c, style);
                         break;
 
                     case "rFonts":
@@ -485,6 +521,18 @@ namespace docx {
             });
 
             return style;
+        }
+
+        parseIndentation(node: Node, style: IDomStyleValues){
+            var firstLine = xml.sizeAttr(node, "firstLine"); 
+            var left = xml.sizeAttr(node, "left");
+            var start = xml.sizeAttr(node, "start");
+            var right = xml.sizeAttr(node, "right");
+            var end = xml.sizeAttr(node, "end");
+
+            if(firstLine) style["text-indent"] = firstLine;
+            if(left || start) style["margin-left"] = left || start;
+            if(right || end) style["margin-right"] = right || end;
         }
 
         parseSpacing(node: Node, style: IDomStyleValues) {
@@ -700,14 +748,6 @@ namespace docx {
             }
 
             return type;
-        }
-
-        static valueOfInd(c: Node) {
-            var firstLine = xml.sizeAttr(c, "firstLine"); 
-            var left = xml.sizeAttr(c, "left");
-            var start = xml.sizeAttr(c, "start");
-
-            return firstLine || left || start;
         }
 
         static valueOfFonts(c: Node){

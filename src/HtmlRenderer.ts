@@ -122,7 +122,7 @@ namespace docx {
             var styleText = "";
 
             for(var num of styles){
-                styleText += `.${this.className}-num-${num.id}-${num.level} {\r\n display:list-item; \r\n`
+                styleText += `p.${this.className}-num-${num.id}-${num.level} {\r\n display:list-item; list-style-position:inside; \r\n`
 
                 for (var key in num.style) {
                     styleText += `${key}: ${num.style[key]};\r\n`;
