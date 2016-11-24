@@ -247,6 +247,14 @@ namespace docx {
                         result.children.push(this.parseRun(c));
                         break;
 
+                    case "hyperlink":
+                        result.children.push(this.parseHyperlink(c));
+                        break;
+
+                    case "bookmarkStart":
+                        result.children.push(this.parseBookmark(c));
+                        break;
+
                     case "pPr":
                         this.parseParagraphProperties(c, result);
                         break;
@@ -257,7 +265,7 @@ namespace docx {
         }
 
         parseParagraphProperties(node: Node, paragraph: IDomParagraph) {
-            paragraph.style = this.parseDefaultProperties(node, {}, null, c => {
+            this.parseDefaultProperties(node, paragraph.style = {}, null, c => {
                 switch (c.localName) {
                     case "pStyle":
                         paragraph.className = xml.stringAttr(c, "val");
@@ -265,6 +273,10 @@ namespace docx {
                     
                     case "numPr":
                         this.parseNumbering(c, paragraph);
+                        break;
+
+                    case "framePr":
+                        this.parseFrame(c, paragraph);
                         break;
 
                     case "rPr":
@@ -293,7 +305,40 @@ namespace docx {
             });
         }
 
-        parseRun(node: Node): IDomElement {
+        parseFrame(node: Node, paragraph: IDomParagraph){
+            var dropCap = xml.stringAttr(node, "dropCap");
+
+            if(dropCap == "drop")
+                paragraph.style["float"] = "left";
+        }
+
+        parseBookmark(node: Node): IDomElement {
+            var result: IDomRun = { domType: DomType.Run };
+
+            result.id = xml.stringAttr(node, "name");
+
+            return result;
+        }
+
+        parseHyperlink(node: Node): IDomRun {
+            var result: IDomHyperlink = { domType: DomType.Hyperlink, children: [] };
+            var anchor = xml.stringAttr(node, "anchor");
+
+            if(anchor)
+                result.href = "#" + anchor;   
+
+            xml.foreach(node, c => {
+                switch (c.localName) {
+                    case "r":
+                        result.children.push(this.parseRun(c));
+                        break;
+                }
+            });     
+            
+            return result;
+        }
+
+        parseRun(node: Node): IDomRun {
             var result: IDomRun = { domType: DomType.Run };
 
             xml.foreach(node, c => {
@@ -485,6 +530,10 @@ namespace docx {
                         this.parseBorderProperties(c, childStyle || style);
                         break;
 
+                    case "pBdr":
+                        this.parseBorderProperties(c, style);
+                        break;
+
                     case "tcBorders":
                         this.parseBorderProperties(c, style);
                         break;
@@ -540,7 +589,7 @@ namespace docx {
             var after = xml.sizeAttr(node, "after");
             var line = xml.sizeAttr(node, "line");
 
-            if(before) style["magrin-top"] = before;
+            if(before) style["margin-top"] = before;
             if(after) style["margin-bottom"] = after;
             if(line){ 
                 style["line-height"] = line;
@@ -665,6 +714,9 @@ namespace docx {
             {
                 case "yellow":
                      return v;
+
+                case "auto":
+                     return "black"
             }
 
             return v ? `#${v}` : defValue;
@@ -724,7 +776,7 @@ namespace docx {
             if (type == "nil")
                 return "none";
 
-            var color = xml.stringAttr(c, "color");
+            var color = xml.colorAttr(c, "color");
             var size = xml.sizeAttr(c, "sz");
 
             return `${size} solid ${color == "auto" ? "black" : color}`;

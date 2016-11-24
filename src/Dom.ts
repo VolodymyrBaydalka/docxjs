@@ -8,7 +8,8 @@ namespace docx {
         Break,
         Table,
         Row,
-        Cell
+        Cell,
+        Hyperlink
     }
 
     export interface IDomElement {
@@ -23,9 +24,15 @@ namespace docx {
         numberingLevel?: string;
     }
 
+    export interface IDomHyperlink extends IDomElement {
+        href?: string;
+    }
+
     export interface IDomRun extends IDomElement {
+        id?: string; 
         break?: string;
         text?: string;
+        href?: string;
     }
 
     export interface IDomTable extends IDomElement {

@@ -184,6 +184,9 @@ namespace docx {
 
                 case DomType.Cell:
                     return this.renderTableCell(elem);
+
+                case DomType.Hyperlink:
+                    return this.renderHyperlink(elem);
             }
 
             return null;
@@ -215,6 +218,18 @@ namespace docx {
             return result;
         }
 
+        renderHyperlink(elem: IDomHyperlink) {
+            var result = this.htmlDocument.createElement("a");
+
+            this.renderChildren(elem, result);
+            this.renderStyleValues(elem.style, result);
+
+            if(elem.href) 
+                result.href = elem.href
+
+            return result;
+        }
+
         renderRun(elem: IDomRun) {
             if (elem.break)
                 return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
@@ -224,6 +239,20 @@ namespace docx {
             this.renderStyleValues(elem.style, result);
 
             result.textContent = elem.text;
+
+            if(elem.id) {
+                result.id = elem.id;
+            }
+
+            if(elem.href)
+            {
+                var link = this.htmlDocument.createElement("a");
+                
+                link.href = elem.href;
+                link.appendChild(result);
+
+                return link;
+            }
 
             return result;
         }

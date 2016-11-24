@@ -2,14 +2,7 @@ node_modules
 .vs
 bin
 obj
-docx.js
 docx.js.map
-*.user
-*.sln
-*.proj
-*.webconfig
-/*.sln
 /*.json
 /*.config
-/*.csproj
 *.log
