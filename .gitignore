@@ -12,3 +12,4 @@ docx.js.map
 /*.json
 /*.config
 /*.csproj
+*.log

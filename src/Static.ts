@@ -1,7 +1,3 @@
-declare class JSZip {
-    static loadAsync(data): PromiseLike<any>;
-}
-
 namespace docx {
 
     export interface Options {
@@ -22,7 +18,7 @@ namespace docx {
             parser.debug = options.debug || parser.debug;
         }
 
-        return JSZip.loadAsync(data)
+        return new JSZip().loadAsync(data)
             .then(zip => {
                 var files = [parser.parseDocumentAsync(zip), parser.parseStylesAsync(zip)];
                 var num = parser.parseNumberingAsync(zip);
