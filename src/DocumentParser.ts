@@ -530,6 +530,11 @@ namespace docx {
                         this.parseBorderProperties(c, childStyle || style);
                         break;
 
+                    case "tblCellSpacing":
+                        style["border-spacing"] = values.valueOfMargin(c);
+                        style["border-collapse"] = "separate";
+                        break;
+
                     case "pBdr":
                         this.parseBorderProperties(c, style);
                         break;
@@ -748,9 +753,9 @@ namespace docx {
             var intVal = parseInt(val);
 
             switch (type) {
-                case SizeType.Dxa: return (0.05 * intVal) + "pt";
-                case SizeType.FontSize: return (0.5 * intVal) + "pt";
-                case SizeType.Percent: return (0.01 * intVal) + "%";
+                case SizeType.Dxa: return (0.05 * intVal).toFixed(2) + "pt";
+                case SizeType.FontSize: return (0.5 * intVal).toFixed(2) + "pt";
+                case SizeType.Percent: return (0.01 * intVal).toFixed(2) + "%";
             }
 
             return val;
