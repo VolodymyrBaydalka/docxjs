@@ -27,6 +27,22 @@ namespace docx {
                 .then((xml) => this.parseNumberingFile(xml)) : null;
         }
 
+        parseDocumentRelationsAsync(zip){
+            var file = zip.files["word/_rels/document.xml.rels"]
+            return file ? file.async("string")
+                .then((xml) => this.parseDocumentRelationsFile(xml)) : null;
+        }
+
+        parseDocumentRelationsFile(xmlString) {
+            var xrels = xml.parse(xmlString, this.skipDeclaration);
+
+            return xml.nodes(xrels).map(c => <IDomRelationship>{
+                id: xml.stringAttr(c, "Id"),
+                type: values.valueOfRelType(c),
+                target: xml.stringAttr(c, "Target"),
+            });
+        }
+
         parseDocumentFile(xmlString) {
             var result: IDomDocument = {
                 domType: DomType.Document,
@@ -67,6 +83,46 @@ namespace docx {
                     case "style":
                         result.push(this.parseStyle(n));
                         break;
+
+                    case "docDefaults":
+                        result.push(this.parseDefaultStyles(n));
+                        break;
+                }
+            });
+
+            return result;
+        }
+
+        parseDefaultStyles(node: Node): IDomStyle {
+            var result = {
+                id: null,
+                name: null,
+                target: null,
+                basedOn: null,
+                styles: []
+            };
+
+            xml.foreach(node, c => {
+                switch(c.localName) {
+                    case "rPrDefault": 
+                        var rPr = xml.byTagName(c, "rPr");
+                        
+                        if(rPr)
+                            result.styles.push({
+                                target: "span",
+                                values: this.parseDefaultProperties(rPr, {})
+                            });
+                        break;
+
+                    case "pPrDefault": 
+                        var pPr = xml.byTagName(c, "pPr");
+
+                        if(pPr)
+                            result.styles.push({
+                                target: "p",
+                                values: this.parseDefaultProperties(pPr, {})
+                            });
+                        break;
                 }
             });
 
@@ -74,8 +130,9 @@ namespace docx {
         }
 
         parseStyle(node: Node): IDomStyle {
-            var result = {
+            var result = <IDomStyle>{
                 id: xml.stringAttr(node, "styleId"),
+                isDefault: xml.boolAttr(node, "default"),
                 name: null,
                 target: null,
                 basedOn: null,
@@ -146,13 +203,14 @@ namespace docx {
             var selector = "";
 
             switch(type){
-                case "firstRow": selector = "td.first-row"; break;
-                case "lastRow": selector = "td.last-row"; break;
-                case "firstCol": selector = "td.first-row"; break;
-                case "band1Vert": selector = "td.odd-row"; break;
-                case "band2Vert": selector = "td.even-row"; break;
-                case "band1Horz": selector = "td.odd-cell"; break;
-                case "band2Horz": selector = "tr.even-cell"; break;
+                case "firstRow": selector = "tr.first-row"; break;
+                case "lastRow": selector = "tr.last-row"; break;
+                case "firstCol": selector = "td.first-col"; break;
+                case "lastCol": selector = "td.first-col"; break;
+                case "band1Vert": selector = "td.odd-col"; break;
+                case "band2Vert": selector = "td.even-col"; break;
+                case "band1Horz": selector = "tr.odd-row"; break;
+                case "band2Horz": selector = "tr.even-row"; break;
                 default: return [];
             }
 
@@ -485,18 +543,37 @@ namespace docx {
             });
         }
 
-        parseTableRow(node: Node): IDomElement {
-            var result: IDomElement = { domType: DomType.Row, children: [] };
+        parseTableRow(node: Node): IDomTableRow {
+            var result: IDomTableRow = { domType: DomType.Row, children: [] };
 
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "tc":
                         result.children.push(this.parseTableCell(c));
                         break;
+
+                    case "trPr":
+                        this.parseTableRowProperties(c, result);
+                        break;
                 }
             });
 
             return result;
+        }
+
+        parseTableRowProperties(node: Node, row: IDomTableRow) {
+            row.style = this.parseDefaultProperties(node, {}, null, c => {
+                switch (c.localName) {
+                    case "cnfStyle":
+                        row.className = values.classNameOfCnfStyle(c);
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                return true;
+            });
         }
 
         parseTableCell(node: Node): IDomElement {
@@ -756,9 +833,16 @@ namespace docx {
             return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
         }
 
+        static nodes(node: Node) {
+            var result = [];
+            for (var i = 0; i < node.childNodes.length; i++)
+                result.push(node.childNodes[i]);
+            return result;
+        }
+
         static foreach(node: Node, cb: (n: Node) => void) {
             for (var i = 0; i < node.childNodes.length; i++)
-                cb(node.childNodes.item(i));
+                cb(node.childNodes[i]);
         }
 
         static byTagName(node: Node, tagName: string) {
@@ -846,6 +930,27 @@ namespace docx {
             return xml.sizeAttr(c, "w");
         }
 
+        static valueOfRelType(c: Node) {
+            switch(xml.sizeAttr(c, "Type")) {
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings": 
+                    return DomRelationshipType.Settings;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme":
+                    return DomRelationshipType.Theme;
+                case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects": 
+                    return DomRelationshipType.StylesWithEffects;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles":
+                    return DomRelationshipType.Styles;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable": 
+                    return DomRelationshipType.FontTable;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image": 
+                    return DomRelationshipType.Image;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings": 
+                    return DomRelationshipType.WebSettings;
+            }
+
+            return DomRelationshipType.Unknown;
+        }
+
         static valueOfBorder(c: Node) {
             var type = xml.stringAttr(c, "val");
 
@@ -872,10 +977,10 @@ namespace docx {
             if(val[1] == "1") className += " last-row";
             if(val[2] == "1") className += " first-col";
             if(val[3] == "1") className += " last-col";
-            if(val[4] == "1") className += " odd-row";
-            if(val[5] == "1") className += " even-row";
-            if(val[6] == "1") className += " odd-col";
-            if(val[7] == "1") className += " even-col";
+            if(val[4] == "1") className += " odd-col";
+            if(val[5] == "1") className += " even-col";
+            if(val[6] == "1") className += " odd-row";
+            if(val[7] == "1") className += " even-row";
             if(val[8] == "1") className += " ne-cell";
             if(val[9] == "1") className += " nw-cell";
             if(val[10] == "1") className += " se-cell";

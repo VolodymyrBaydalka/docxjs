@@ -25,6 +25,20 @@ var docx;
             return file ? file.async("string")
                 .then(function (xml) { return _this.parseNumberingFile(xml); }) : null;
         };
+        DocumentParser.prototype.parseDocumentRelationsAsync = function (zip) {
+            var _this = this;
+            var file = zip.files["word/_rels/document.xml.rels"];
+            return file ? file.async("string")
+                .then(function (xml) { return _this.parseDocumentRelationsFile(xml); }) : null;
+        };
+        DocumentParser.prototype.parseDocumentRelationsFile = function (xmlString) {
+            var xrels = xml.parse(xmlString, this.skipDeclaration);
+            return xml.nodes(xrels).map(function (c) { return {
+                id: xml.stringAttr(c, "Id"),
+                type: values.valueOfRelType(c),
+                target: xml.stringAttr(c, "Target"),
+            }; });
+        };
         DocumentParser.prototype.parseDocumentFile = function (xmlString) {
             var result = {
                 domType: docx.DomType.Document,
@@ -57,6 +71,40 @@ var docx;
                     case "style":
                         result.push(_this.parseStyle(n));
                         break;
+                    case "docDefaults":
+                        result.push(_this.parseDefaultStyles(n));
+                        break;
+                }
+            });
+            return result;
+        };
+        DocumentParser.prototype.parseDefaultStyles = function (node) {
+            var _this = this;
+            var result = {
+                id: null,
+                name: null,
+                target: null,
+                basedOn: null,
+                styles: []
+            };
+            xml.foreach(node, function (c) {
+                switch (c.localName) {
+                    case "rPrDefault":
+                        var rPr = xml.byTagName(c, "rPr");
+                        if (rPr)
+                            result.styles.push({
+                                target: "span",
+                                values: _this.parseDefaultProperties(rPr, {})
+                            });
+                        break;
+                    case "pPrDefault":
+                        var pPr = xml.byTagName(c, "pPr");
+                        if (pPr)
+                            result.styles.push({
+                                target: "p",
+                                values: _this.parseDefaultProperties(pPr, {})
+                            });
+                        break;
                 }
             });
             return result;
@@ -65,6 +113,7 @@ var docx;
             var _this = this;
             var result = {
                 id: xml.stringAttr(node, "styleId"),
+                isDefault: xml.boolAttr(node, "default"),
                 name: null,
                 target: null,
                 basedOn: null,
@@ -129,25 +178,28 @@ var docx;
             var selector = "";
             switch (type) {
                 case "firstRow":
-                    selector = "td.first-row";
+                    selector = "tr.first-row";
                     break;
                 case "lastRow":
-                    selector = "td.last-row";
+                    selector = "tr.last-row";
                     break;
                 case "firstCol":
-                    selector = "td.first-row";
+                    selector = "td.first-col";
+                    break;
+                case "lastCol":
+                    selector = "td.first-col";
                     break;
                 case "band1Vert":
-                    selector = "td.odd-row";
+                    selector = "td.odd-col";
                     break;
                 case "band2Vert":
-                    selector = "td.even-row";
+                    selector = "td.even-col";
                     break;
                 case "band1Horz":
-                    selector = "td.odd-cell";
+                    selector = "tr.odd-row";
                     break;
                 case "band2Horz":
-                    selector = "tr.even-cell";
+                    selector = "tr.even-row";
                     break;
                 default: return [];
             }
@@ -425,9 +477,24 @@ var docx;
                     case "tc":
                         result.children.push(_this.parseTableCell(c));
                         break;
+                    case "trPr":
+                        _this.parseTableRowProperties(c, result);
+                        break;
                 }
             });
             return result;
+        };
+        DocumentParser.prototype.parseTableRowProperties = function (node, row) {
+            row.style = this.parseDefaultProperties(node, {}, null, function (c) {
+                switch (c.localName) {
+                    case "cnfStyle":
+                        row.className = values.classNameOfCnfStyle(c);
+                        break;
+                    default:
+                        return false;
+                }
+                return true;
+            });
         };
         DocumentParser.prototype.parseTableCell = function (node) {
             var _this = this;
@@ -649,9 +716,15 @@ var docx;
                 xmlString = xmlString.replace(/<[?].*[?]>/, "");
             return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
         };
+        xml.nodes = function (node) {
+            var result = [];
+            for (var i = 0; i < node.childNodes.length; i++)
+                result.push(node.childNodes[i]);
+            return result;
+        };
         xml.foreach = function (node, cb) {
             for (var i = 0; i < node.childNodes.length; i++)
-                cb(node.childNodes.item(i));
+                cb(node.childNodes[i]);
         };
         xml.byTagName = function (node, tagName) {
             for (var i = 0; i < node.childNodes.length; i++)
@@ -722,6 +795,25 @@ var docx;
         values.valueOfMargin = function (c) {
             return xml.sizeAttr(c, "w");
         };
+        values.valueOfRelType = function (c) {
+            switch (xml.sizeAttr(c, "Type")) {
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings":
+                    return docx.DomRelationshipType.Settings;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme":
+                    return docx.DomRelationshipType.Theme;
+                case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
+                    return docx.DomRelationshipType.StylesWithEffects;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles":
+                    return docx.DomRelationshipType.Styles;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable":
+                    return docx.DomRelationshipType.FontTable;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image":
+                    return docx.DomRelationshipType.Image;
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings":
+                    return docx.DomRelationshipType.WebSettings;
+            }
+            return docx.DomRelationshipType.Unknown;
+        };
         values.valueOfBorder = function (c) {
             var type = xml.stringAttr(c, "val");
             if (type == "nil")
@@ -746,13 +838,13 @@ var docx;
             if (val[3] == "1")
                 className += " last-col";
             if (val[4] == "1")
-                className += " odd-row";
-            if (val[5] == "1")
-                className += " even-row";
-            if (val[6] == "1")
                 className += " odd-col";
-            if (val[7] == "1")
+            if (val[5] == "1")
                 className += " even-col";
+            if (val[6] == "1")
+                className += " odd-row";
+            if (val[7] == "1")
+                className += " even-row";
             if (val[8] == "1")
                 className += " ne-cell";
             if (val[9] == "1")
@@ -802,6 +894,17 @@ var docx;
         DomType[DomType["Hyperlink"] = 7] = "Hyperlink";
     })(docx.DomType || (docx.DomType = {}));
     var DomType = docx.DomType;
+    (function (DomRelationshipType) {
+        DomRelationshipType[DomRelationshipType["Settings"] = 0] = "Settings";
+        DomRelationshipType[DomRelationshipType["Theme"] = 1] = "Theme";
+        DomRelationshipType[DomRelationshipType["StylesWithEffects"] = 2] = "StylesWithEffects";
+        DomRelationshipType[DomRelationshipType["Styles"] = 3] = "Styles";
+        DomRelationshipType[DomRelationshipType["FontTable"] = 4] = "FontTable";
+        DomRelationshipType[DomRelationshipType["Image"] = 5] = "Image";
+        DomRelationshipType[DomRelationshipType["WebSettings"] = 6] = "WebSettings";
+        DomRelationshipType[DomRelationshipType["Unknown"] = 7] = "Unknown";
+    })(docx.DomRelationshipType || (docx.DomRelationshipType = {}));
+    var DomRelationshipType = docx.DomRelationshipType;
 })(docx || (docx = {}));
 var docx;
 (function (docx) {
@@ -813,7 +916,7 @@ var docx;
         }
         HtmlRenderer.prototype.processClassName = function (className) {
             if (!className)
-                return null;
+                return this.className;
             return this.className + "_" + className;
         };
         HtmlRenderer.prototype.processStyles = function (styles) {
@@ -931,8 +1034,10 @@ var docx;
                         styleText += style.target + ", ";
                     if (style.target == subStyle.target)
                         styleText += style.target + "." + style.id + "{\r\n";
-                    else
+                    else if (style.target)
                         styleText += style.target + "." + style.id + " " + subStyle.target + "{\r\n";
+                    else
+                        styleText += "." + style.id + " " + subStyle.target + "{\r\n";
                     for (var key in subStyle.values) {
                         styleText += key + ": " + subStyle.values[key] + ";\r\n";
                     }
@@ -1025,6 +1130,7 @@ var docx;
         };
         HtmlRenderer.prototype.renderTableRow = function (elem) {
             var result = this.htmlDocument.createElement("tr");
+            this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
             return result;
@@ -1072,8 +1178,9 @@ var docx;
             .then(function (zip) {
             var files = [parser.parseDocumentAsync(zip), parser.parseStylesAsync(zip)];
             var num = parser.parseNumberingAsync(zip);
-            if (num)
-                files.push(num);
+            var rels = parser.parseDocumentRelationsAsync(zip);
+            files.push(num || Promise.resolve());
+            files.push(rels || Promise.resolve());
             return Promise.all(files);
         })
             .then(function (parts) {
@@ -1094,7 +1201,7 @@ var docx;
             else {
                 bodyContainer.appendChild(documentElement);
             }
-            return { document: parts[0], styles: parts[1], numbering: parts[2] };
+            return { document: parts[0], styles: parts[1], numbering: parts[2], rels: parts[3] };
         });
     }
     docx.renderAsync = renderAsync;

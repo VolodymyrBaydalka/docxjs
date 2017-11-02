@@ -10,7 +10,7 @@ namespace docx {
 
         processClassName(className){
             if(!className)
-                return null;
+                return this.className;
                 
             return `${this.className}_${className}`;            
         }
@@ -152,8 +152,10 @@ namespace docx {
 
                     if (style.target == subStyle.target)
                         styleText += style.target + "." + style.id + "{\r\n";
-                    else 
+                    else if(style.target)
                         styleText += style.target + "." + style.id + " " + subStyle.target + "{\r\n";
+                    else
+                        styleText += "." + style.id + " " + subStyle.target + "{\r\n";
 
                     for (var key in subStyle.values) {
                         styleText += key + ": " + subStyle.values[key] + ";\r\n";
@@ -258,7 +260,7 @@ namespace docx {
         }
 
         renderTable(elem: IDomTable) {
-            var result = this.htmlDocument.createElement("table");
+            let result = this.htmlDocument.createElement("table");
 
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
@@ -271,10 +273,10 @@ namespace docx {
         }
 
         renderTableColumns(columns: IDomTableColumn[]) {
-            var result = this.htmlDocument.createElement("colGroup");
+            let result = this.htmlDocument.createElement("colGroup");
 
             for(let col of columns) {
-                var colElem = this.htmlDocument.createElement("col");
+                let colElem = this.htmlDocument.createElement("col");
 
                 if(col.width)
                     colElem.width = col.width;
@@ -286,8 +288,9 @@ namespace docx {
         }
 
         renderTableRow(elem) {
-            var result = this.htmlDocument.createElement("tr");
+            let result = this.htmlDocument.createElement("tr");
 
+            this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 
@@ -295,7 +298,7 @@ namespace docx {
         }
 
         renderTableCell(elem: IDomTableCell) {
-            var result = this.htmlDocument.createElement("td");
+            let result = this.htmlDocument.createElement("td");
 
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
@@ -310,7 +313,7 @@ namespace docx {
             if (style == null)
                 return;
 
-            for (var key in style) {
+            for (let key in style) {
                 if (style.hasOwnProperty(key)) {
                     ouput.style[key] = style[key];
                 }

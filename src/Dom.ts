@@ -12,6 +12,23 @@ namespace docx {
         Hyperlink
     }
 
+    export enum DomRelationshipType {
+        Settings,
+        Theme,
+        StylesWithEffects,
+        Styles,
+        FontTable,
+        Image,
+        WebSettings,
+        Unknown
+    }
+
+    export interface IDomRelationship {
+        id: string;
+        type: DomRelationshipType;
+        target: string;
+    }
+
     export interface IDomElement {
         domType: DomType;
         children?: IDomElement[];
@@ -38,6 +55,9 @@ namespace docx {
     export interface IDomTable extends IDomElement {
         columns?: IDomTableColumn[];
         cellStyle?: IDomStyleValues;
+    }
+
+    export interface IDomTableRow extends IDomElement {
     }
 
     export interface IDomTableCell extends IDomElement {
@@ -73,5 +93,9 @@ namespace docx {
 
     export interface IDomStyleValues {
         [name: string]: string;
+    }
+
+    export interface IDomDrawing {
+
     }
 }

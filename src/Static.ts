@@ -25,8 +25,10 @@ namespace docx {
             .then(zip => {
                 var files = [parser.parseDocumentAsync(zip), parser.parseStylesAsync(zip)];
                 var num = parser.parseNumberingAsync(zip);
+                var rels = parser.parseDocumentRelationsAsync(zip);
 
-                if (num) files.push(num);
+                files.push(num || Promise.resolve());
+                files.push(rels || Promise.resolve());
 
                 return Promise.all(files);
             })
@@ -54,7 +56,7 @@ namespace docx {
                     bodyContainer.appendChild(documentElement);
                 }
 
-                return { document: parts[0], styles: parts[1], numbering: parts[2] };
+                return { document: parts[0], styles: parts[1], numbering: parts[2], rels: parts[3] };
             });
     }
 
