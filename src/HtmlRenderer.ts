@@ -297,6 +297,7 @@ namespace docx {
         renderTableCell(elem: IDomTableCell) {
             var result = this.htmlDocument.createElement("td");
 
+            this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 

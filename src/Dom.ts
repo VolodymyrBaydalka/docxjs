@@ -53,6 +53,7 @@ namespace docx {
 
     export interface IDomStyle {
         id: string;
+        name?: string;
         target: string;
         basedOn?: string;
         isDefault?: boolean;

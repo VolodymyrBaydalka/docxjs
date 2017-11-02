@@ -65,6 +65,7 @@ var docx;
             var _this = this;
             var result = {
                 id: xml.stringAttr(node, "styleId"),
+                name: null,
                 target: null,
                 basedOn: null,
                 styles: []
@@ -82,6 +83,9 @@ var docx;
                     case "basedOn":
                         result.basedOn = xml.stringAttr(n, "val");
                         break;
+                    case "name":
+                        result.name = xml.stringAttr(n, "val");
+                        break;
                     case "pPr":
                         result.styles.push({
                             target: "p",
@@ -95,8 +99,76 @@ var docx;
                         });
                         break;
                     case "tblPr":
+                    case "tcPr":
                         result.styles.push({
                             target: "td",
+                            values: _this.parseDefaultProperties(n, {})
+                        });
+                        break;
+                    case "tblStylePr":
+                        for (var _i = 0, _a = _this.parseTableStyle(n); _i < _a.length; _i++) {
+                            var s = _a[_i];
+                            result.styles.push(s);
+                        }
+                        break;
+                    case "rsid":
+                    case "qFormat":
+                    case "semiHidden":
+                    case "uiPriority":
+                        break;
+                    default:
+                        _this.debug && console.warn("DOCX: Unknown style element: " + n.localName);
+                }
+            });
+            return result;
+        };
+        DocumentParser.prototype.parseTableStyle = function (node) {
+            var _this = this;
+            var result = [];
+            var type = xml.stringAttr(node, "type");
+            var selector = "";
+            switch (type) {
+                case "firstRow":
+                    selector = "td.first-row";
+                    break;
+                case "lastRow":
+                    selector = "td.last-row";
+                    break;
+                case "firstCol":
+                    selector = "td.first-row";
+                    break;
+                case "band1Vert":
+                    selector = "td.odd-row";
+                    break;
+                case "band2Vert":
+                    selector = "td.even-row";
+                    break;
+                case "band1Horz":
+                    selector = "td.odd-cell";
+                    break;
+                case "band2Horz":
+                    selector = "tr.even-cell";
+                    break;
+                default: return [];
+            }
+            xml.foreach(node, function (n) {
+                switch (n.localName) {
+                    case "pPr":
+                        result.push({
+                            target: selector + " p",
+                            values: _this.parseDefaultProperties(n, {})
+                        });
+                        break;
+                    case "rPr":
+                        result.push({
+                            target: selector + " span",
+                            values: _this.parseDefaultProperties(n, {})
+                        });
+                        break;
+                    case "tblPr":
+                    case "tcPr":
+                        result.push({
+                            target: selector,
                             values: _this.parseDefaultProperties(n, {})
                         });
                         break;
@@ -381,6 +453,9 @@ var docx;
                     case "gridSpan":
                         cell.span = xml.intAttr(c, "val", null);
                         break;
+                    case "cnfStyle":
+                        cell.className = values.classNameOfCnfStyle(c);
+                        break;
                     default:
                         return false;
                 }
@@ -405,10 +480,10 @@ var docx;
                         style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
                         break;
                     case "shd":
-                        style["background-color"] = xml.stringAttr(c, "fill");
+                        style["background-color"] = xml.colorAttr(c, "fill");
                         break;
                     case "highlight":
-                        style["background-color"] = xml.stringAttr(c, "val");
+                        style["background-color"] = xml.colorAttr(c, "val");
                         break;
                     case "tcW":
                         if (_this.ignoreWidth)
@@ -465,8 +540,8 @@ var docx;
                     case "lang":
                         break;
                     default:
-                        if (handler != null)
-                            !handler(c) && _this.debug && console.log(c.localName);
+                        if (handler != null && !handler(c))
+                            _this.debug && console.warn("DOCX: Unknown document element: " + c.localName);
                         break;
                 }
             });
@@ -658,6 +733,35 @@ var docx;
         values.valueOfTblLayout = function (c) {
             var type = xml.stringAttr(c, "val");
             return type == "fixed" ? "fixed" : "auto";
+        };
+        values.classNameOfCnfStyle = function (c) {
+            var className = "";
+            var val = xml.stringAttr(c, "val");
+            if (val[0] == "1")
+                className += " first-row";
+            if (val[1] == "1")
+                className += " last-row";
+            if (val[2] == "1")
+                className += " first-col";
+            if (val[3] == "1")
+                className += " last-col";
+            if (val[4] == "1")
+                className += " odd-row";
+            if (val[5] == "1")
+                className += " even-row";
+            if (val[6] == "1")
+                className += " odd-col";
+            if (val[7] == "1")
+                className += " even-col";
+            if (val[8] == "1")
+                className += " ne-cell";
+            if (val[9] == "1")
+                className += " nw-cell";
+            if (val[10] == "1")
+                className += " se-cell";
+            if (val[11] == "1")
+                className += " sw-cell";
+            return className.trim();
         };
         values.valueOfJc = function (c) {
             var type = xml.stringAttr(c, "val");
@@ -927,6 +1031,7 @@ var docx;
         };
         HtmlRenderer.prototype.renderTableCell = function (elem) {
             var result = this.htmlDocument.createElement("td");
+            this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
             if (elem.span)
@@ -961,6 +1066,7 @@ var docx;
             parser.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
             parser.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
             parser.debug = options.debug || parser.debug;
+            renderer.className = options.className || "docx";
         }
         return new JSZip().loadAsync(data)
             .then(function (zip) {

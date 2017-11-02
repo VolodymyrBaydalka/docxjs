@@ -76,6 +76,7 @@ namespace docx {
         parseStyle(node: Node): IDomStyle {
             var result = {
                 id: xml.stringAttr(node, "styleId"),
+                name: null,
                 target: null,
                 basedOn: null,
                 styles: []
@@ -91,7 +92,11 @@ namespace docx {
                     case "basedOn":
                         result.basedOn = xml.stringAttr(n, "val");
                         break;
-                    
+
+                    case "name":
+                        result.name = xml.stringAttr(n, "val");
+                        break;
+
                     case "pPr":
                         result.styles.push({
                             target: "p",
@@ -107,8 +112,70 @@ namespace docx {
                         break;
 
                     case "tblPr":
+                    case "tcPr":
                         result.styles.push({
                             target: "td", //TODO: maybe move to processor
+                            values: this.parseDefaultProperties(n, {})
+                        });
+                        break;
+
+                    case "tblStylePr":
+                        for(let s of this.parseTableStyle(n))
+                            result.styles.push(s);
+                        break;
+
+                    case "rsid":
+                    case "qFormat":
+                    case "semiHidden":
+                    case "uiPriority":
+                        //TODO: ignore
+                        break;
+    
+                    default:
+                    this.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
+                }
+            });
+
+            return result;
+        }
+
+        parseTableStyle(node: Node): IDomSubStyle[] {
+            var result = [];
+
+            var type = xml.stringAttr(node, "type");
+            var selector = "";
+
+            switch(type){
+                case "firstRow": selector = "td.first-row"; break;
+                case "lastRow": selector = "td.last-row"; break;
+                case "firstCol": selector = "td.first-row"; break;
+                case "band1Vert": selector = "td.odd-row"; break;
+                case "band2Vert": selector = "td.even-row"; break;
+                case "band1Horz": selector = "td.odd-cell"; break;
+                case "band2Horz": selector = "tr.even-cell"; break;
+                default: return [];
+            }
+
+            xml.foreach(node, n => {
+                switch (n.localName) {
+                    case "pPr":
+                        result.push({
+                            target: selector + " p",
+                            values: this.parseDefaultProperties(n, {})
+                        });
+                        break;
+
+                    case "rPr":
+                        result.push({
+                            target: selector + " span",
+                            values: this.parseDefaultProperties(n, {})
+                        });
+                        break;
+
+                    case "tblPr":
+                    case "tcPr":
+                        result.push({
+                            target: selector, //TODO: maybe move to processor
                             values: this.parseDefaultProperties(n, {})
                         });
                         break;
@@ -461,6 +528,10 @@ namespace docx {
                         cell.span = xml.intAttr(c, "val", null);
                         break;
 
+                    case "cnfStyle":
+                        cell.className = values.classNameOfCnfStyle(c);
+                        break;
+
                     default:
                         return false;
                 }
@@ -487,11 +558,11 @@ namespace docx {
                         break;
 
                     case "shd":
-                        style["background-color"] = xml.stringAttr(c, "fill");
+                        style["background-color"] = xml.colorAttr(c, "fill");
                         break;
 
                     case "highlight":
-                        style["background-color"] = xml.stringAttr(c, "val");
+                        style["background-color"] = xml.colorAttr(c, "val");
                         break;
 
 	                case "tcW": 
@@ -568,8 +639,8 @@ namespace docx {
                         break;
 
                     default:
-                        if (handler != null)
-                            !handler(c) && this.debug && console.log(c.localName);
+                        if (handler != null && !handler(c))
+                            this.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
                         break;
                 }
             });
@@ -714,7 +785,7 @@ namespace docx {
 
         static colorAttr(node: Node, attrName: string, defValue: string = null) {
             var v = xml.stringAttr(node, attrName);
-
+            
             switch (v)
             {
                 case "yellow":
@@ -790,6 +861,27 @@ namespace docx {
         static valueOfTblLayout(c: Node) {
             var type = xml.stringAttr(c, "val");
             return type == "fixed" ? "fixed" : "auto";
+        }
+
+        static classNameOfCnfStyle(c: Node){
+            let className = "";
+            let val = xml.stringAttr(c, "val");
+            //FirstRow, LastRow, FirstColumn, LastColumn, Band1Vertical, Band2Vertical, Band1Horizontal, Band2Horizontal, NE Cell, NW Cell, SE Cell, SW Cell.
+
+            if(val[0] == "1") className += " first-row";
+            if(val[1] == "1") className += " last-row";
+            if(val[2] == "1") className += " first-col";
+            if(val[3] == "1") className += " last-col";
+            if(val[4] == "1") className += " odd-row";
+            if(val[5] == "1") className += " even-row";
+            if(val[6] == "1") className += " odd-col";
+            if(val[7] == "1") className += " even-col";
+            if(val[8] == "1") className += " ne-cell";
+            if(val[9] == "1") className += " nw-cell";
+            if(val[10] == "1") className += " se-cell";
+            if(val[11] == "1") className += " sw-cell";
+            
+            return className.trim();
         }
 
         static valueOfJc(c: Node) {

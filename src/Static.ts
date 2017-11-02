@@ -5,6 +5,7 @@ namespace docx {
         ignoreWidth: boolean;
         ignoreHeight: boolean;
         debug: boolean;
+        className: string;
     }
 
     export function renderAsync(data, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options = null): PromiseLike<any> {
@@ -16,6 +17,8 @@ namespace docx {
             parser.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
             parser.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
             parser.debug = options.debug || parser.debug;
+
+            renderer.className = options.className || "docx";
         }
 
         return new JSZip().loadAsync(data)
