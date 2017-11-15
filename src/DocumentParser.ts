@@ -131,7 +131,7 @@ namespace docx {
 
         parseStyle(node: Node): IDomStyle {
             var result = <IDomStyle>{
-                id: xml.stringAttr(node, "styleId"),
+                id: xml.className(node, "styleId"),
                 isDefault: xml.boolAttr(node, "default"),
                 name: null,
                 target: null,
@@ -393,7 +393,7 @@ namespace docx {
             this.parseDefaultProperties(node, paragraph.style = {}, null, c => {
                 switch (c.localName) {
                     case "pStyle":
-                        paragraph.className = xml.stringAttr(c, "val");
+                        paragraph.className = xml.className(c, "val");
                         break;
                     
                     case "numPr":
@@ -532,7 +532,7 @@ namespace docx {
             this.parseDefaultProperties(node, table.style, table.cellStyle, c => {
                 switch (c.localName) {
                     case "tblStyle":
-                        table.className = xml.stringAttr(c, "val");
+                        table.className = xml.className(c, "val");
                         break;
 
                     default:
@@ -932,6 +932,12 @@ namespace docx {
             }
 
             return val;
+        }
+
+        static className(node: Node, attrName: string) {
+            var val = xml.stringAttr(node, attrName);
+
+            return val && val.replace(' ', '-').replace('.', '-');
         }
     }
 

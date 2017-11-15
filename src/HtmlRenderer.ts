@@ -12,7 +12,7 @@ namespace docx {
             if(!className)
                 return this.className;
                 
-            return `${this.className}_${className}`;            
+            return `${this.className}_${className}`;
         }
 
         processStyles(styles: IDomStyle[]) {

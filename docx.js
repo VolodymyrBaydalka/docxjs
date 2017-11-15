@@ -112,7 +112,7 @@ var docx;
         DocumentParser.prototype.parseStyle = function (node) {
             var _this = this;
             var result = {
-                id: xml.stringAttr(node, "styleId"),
+                id: xml.className(node, "styleId"),
                 isDefault: xml.boolAttr(node, "default"),
                 name: null,
                 target: null,
@@ -353,7 +353,7 @@ var docx;
             this.parseDefaultProperties(node, paragraph.style = {}, null, function (c) {
                 switch (c.localName) {
                     case "pStyle":
-                        paragraph.className = xml.stringAttr(c, "val");
+                        paragraph.className = xml.className(c, "val");
                         break;
                     case "numPr":
                         _this.parseNumbering(c, paragraph);
@@ -461,7 +461,7 @@ var docx;
             this.parseDefaultProperties(node, table.style, table.cellStyle, function (c) {
                 switch (c.localName) {
                     case "tblStyle":
-                        table.className = xml.stringAttr(c, "val");
+                        table.className = xml.className(c, "val");
                         break;
                     default:
                         return false;
@@ -794,6 +794,10 @@ var docx;
                 case SizeType.Percent: return (0.01 * intVal).toFixed(2) + "%";
             }
             return val;
+        };
+        xml.className = function (node, attrName) {
+            var val = xml.stringAttr(node, attrName);
+            return val && val.replace(' ', '-').replace('.', '-');
         };
         return xml;
     }());
