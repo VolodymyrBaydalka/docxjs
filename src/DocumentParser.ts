@@ -702,6 +702,7 @@ namespace docx {
                         break;
 
                     case "tblCellMar":
+                    case "tcMar":
                         this.parseMarginProperties(c, childStyle || style);
                         break;
 

@@ -598,6 +598,7 @@ var docx;
                         _this.parseBorderProperties(c, style);
                         break;
                     case "tblCellMar":
+                    case "tcMar":
                         _this.parseMarginProperties(c, childStyle || style);
                         break;
                     case "tblLayout":
