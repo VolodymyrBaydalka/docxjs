@@ -1,5 +1,10 @@
 var docx;
 (function (docx) {
+    docx.autos = {
+        shd: "white",
+        color: "black",
+        highlight: "transparent"
+    };
     var DocumentParser = (function () {
         function DocumentParser() {
             this.skipDeclaration = true;
@@ -541,16 +546,16 @@ var docx;
                         style["text-align"] = values.valueOfJc(c);
                         break;
                     case "color":
-                        style["color"] = xml.stringAttr(c, "val");
+                        style["color"] = xml.colorAttr(c, "val", null, docx.autos.color);
                         break;
                     case "sz":
                         style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
                         break;
                     case "shd":
-                        style["background-color"] = xml.colorAttr(c, "fill", null, null);
+                        style["background-color"] = xml.colorAttr(c, "fill", null, docx.autos.shd);
                         break;
                     case "highlight":
-                        style["background-color"] = xml.colorAttr(c, "val", null, null);
+                        style["background-color"] = xml.colorAttr(c, "val", null, docx.autos.highlight);
                         break;
                     case "tcW":
                         if (_this.ignoreWidth)

@@ -1,5 +1,11 @@
 
 namespace docx {
+    export var autos = {
+        shd: "white",
+        color: "black",
+        highlight: "transparent"
+    };
+
     export class DocumentParser {
         // removes XML declaration 
         skipDeclaration: boolean = true;
@@ -627,7 +633,7 @@ namespace docx {
                         break;
 
                     case "color":
-                        style["color"] = xml.stringAttr(c, "val");
+                        style["color"] = xml.colorAttr(c, "val", null, autos.color);
                         break;
                     
                     case "sz":
@@ -635,11 +641,11 @@ namespace docx {
                         break;
 
                     case "shd":
-                        style["background-color"] = xml.colorAttr(c, "fill", null, null);
+                        style["background-color"] = xml.colorAttr(c, "fill", null, autos.shd);
                         break;
 
                     case "highlight":
-                        style["background-color"] = xml.colorAttr(c, "val", null, null);
+                        style["background-color"] = xml.colorAttr(c, "val", null, autos.highlight);
                         break;
 
 	                case "tcW": 
