@@ -650,6 +650,10 @@ namespace docx {
                         style["width"] = xml.sizeAttr(c, "w");
                         break;
 
+                    case "trHeight":
+                        this.parseTrHeight(c, style);
+                        break;
+
                     case "strike":
                         style["text-decoration"] = values.valueOfStrike(c);
                         break;
@@ -792,6 +796,20 @@ namespace docx {
                         break;
                 }
             });
+        }
+
+        parseTrHeight(node: Node, output: IDomStyleValues) {
+            switch(xml.stringAttr(node, "hRule")) {
+                case "exact" : 
+                    output["height"] = xml.sizeAttr(node, "val"); 
+                    break;
+
+                case "atLeast" : 
+                    output["height"] = xml.sizeAttr(node, "val"); 
+                    // min-height doesn't work for tr
+                    //output["min-height"] = xml.sizeAttr(node, "val");  
+                    break;
+            }
         }
 
         parseBorderProperties(node: Node, output: IDomStyleValues) {

@@ -558,6 +558,9 @@ var docx;
                     case "tblW":
                         style["width"] = xml.sizeAttr(c, "w");
                         break;
+                    case "trHeight":
+                        _this.parseTrHeight(c, style);
+                        break;
                     case "strike":
                         style["text-decoration"] = values.valueOfStrike(c);
                         break;
@@ -677,6 +680,16 @@ var docx;
                         break;
                 }
             });
+        };
+        DocumentParser.prototype.parseTrHeight = function (node, output) {
+            switch (xml.stringAttr(node, "hRule")) {
+                case "exact":
+                    output["height"] = xml.sizeAttr(node, "val");
+                    break;
+                case "atLeast":
+                    output["height"] = xml.sizeAttr(node, "val");
+                    break;
+            }
         };
         DocumentParser.prototype.parseBorderProperties = function (node, output) {
             xml.foreach(node, function (c) {
