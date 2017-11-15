@@ -158,7 +158,7 @@ namespace docx {
                         styleText += "." + style.id + " " + subStyle.target + "{\r\n";
 
                     for (var key in subStyle.values) {
-                        styleText += key + ": " + subStyle.values[key] + ";\r\n";
+                        styleText += "  " + key + ": " + subStyle.values[key] + ";\r\n";
                     }
 
                     styleText += "}\r\n";
@@ -238,6 +238,7 @@ namespace docx {
 
             var result = this.htmlDocument.createElement("span");
 
+            this.renderClass(elem, result);
             this.renderStyleValues(elem.style, result);
 
             result.textContent = elem.text;

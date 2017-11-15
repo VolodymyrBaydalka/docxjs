@@ -148,6 +148,7 @@ namespace docx {
             switch (xml.stringAttr(node, "type")) {
                 case "paragraph": result.target = "p"; break;
                 case "table": result.target = "table"; break;
+                case "character": result.target = "span"; break;
             }
 
             xml.foreach(node, n => {
@@ -212,7 +213,7 @@ namespace docx {
                 case "firstRow": selector = "tr.first-row"; break;
                 case "lastRow": selector = "tr.last-row"; break;
                 case "firstCol": selector = "td.first-col"; break;
-                case "lastCol": selector = "td.first-col"; break;
+                case "lastCol": selector = "td.last-col"; break;
                 case "band1Vert": selector = "td.odd-col"; break;
                 case "band2Vert": selector = "td.even-col"; break;
                 case "band1Horz": selector = "tr.odd-row"; break;
@@ -482,17 +483,32 @@ namespace docx {
                         result.break = xml.stringAttr(c, "type") || "textWrapping";
                         break;
 
-                    case "tab":
+                   case "tab":
                         //result.text = "\u00A0\u00A0\u00A0\u00A0";  // TODO
                         break;
 
                     case "rPr":
-                        result.style = this.parseDefaultProperties(c, {}, null);
+                        this.parseRunProperties(c, result);
                         break;
                 }
             });
 
             return result;
+        }
+
+        parseRunProperties(node: Node, run: IDomRun) {
+            this.parseDefaultProperties(node, run.style = {}, null, c => {
+                switch (c.localName) {
+                    case "rStyle":
+                        run.className = xml.className(c, "val");
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                return true;
+            });
         }
 
         parseTable(node: Node): IDomTable {
@@ -681,7 +697,7 @@ namespace docx {
                         break;
 
                     case "rFonts":
-                        style["font-family"] = values.valueOfFonts(c);
+                        this.parseFont(c, style);
                         break;
 
                     case "tblBorders":
@@ -783,6 +799,13 @@ namespace docx {
             
             if(col)
                 style["text-decoration-color"] = col;
+        }
+
+        parseFont(node: Node, style: IDomStyleValues) {
+            var ascii = xml.stringAttr(node, "ascii");
+
+            if(ascii)
+                style["font-family"] = ascii;
         }
 
         parseIndentation(node: Node, style: IDomStyleValues){
@@ -1084,16 +1107,32 @@ namespace docx {
             return type;
         }
 
-        static valueOfFonts(c: Node){
-            var ascii = xml.stringAttr(c, "ascii");
-            return ascii;
-        }
-
         static addSize(a: string, b: string): string {
             if(a == null) return b;
             if(b == null) return a;
 
             return `calc(${a} + ${b})`; //TODO
+        }
+
+        static checkMask(num, mask) {
+            return (num & mask) == mask;
+        }
+
+        static classNameOftblLook(c: Node) {
+            let val = xml.stringAttr(c, "val");
+            let num = parseInt(val, 16);
+            let className = "";
+            //FirstRow, LastRow, FirstColumn, LastColumn, Band1Vertical, Band2Vertical, Band1Horizontal, Band2Horizontal, NE Cell, NW Cell, SE Cell, SW Cell.
+
+            if(values.checkMask(num, 0x0020)) className += " first-row";
+            if(values.checkMask(num, 0x0040)) className += " last-row";
+            if(values.checkMask(num, 0x0080)) className += " first-col";
+            if(values.checkMask(num, 0x0100)) className += " last-col";
+
+            if(!values.checkMask(num, 0x0200)) className += " odd-row even-row";
+            if(!values.checkMask(num, 0x0400)) className += " odd-col even-col";
+            
+            return className.trim();        
         }
     }
 }

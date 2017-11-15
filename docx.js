@@ -131,6 +131,9 @@ var docx;
                 case "table":
                     result.target = "table";
                     break;
+                case "character":
+                    result.target = "span";
+                    break;
             }
             xml.foreach(node, function (n) {
                 switch (n.localName) {
@@ -192,7 +195,7 @@ var docx;
                     selector = "td.first-col";
                     break;
                 case "lastCol":
-                    selector = "td.first-col";
+                    selector = "td.last-col";
                     break;
                 case "band1Vert":
                     selector = "td.odd-col";
@@ -425,11 +428,23 @@ var docx;
                     case "tab":
                         break;
                     case "rPr":
-                        result.style = _this.parseDefaultProperties(c, {}, null);
+                        _this.parseRunProperties(c, result);
                         break;
                 }
             });
             return result;
+        };
+        DocumentParser.prototype.parseRunProperties = function (node, run) {
+            this.parseDefaultProperties(node, run.style = {}, null, function (c) {
+                switch (c.localName) {
+                    case "rStyle":
+                        run.className = xml.className(c, "val");
+                        break;
+                    default:
+                        return false;
+                }
+                return true;
+            });
         };
         DocumentParser.prototype.parseTable = function (node) {
             var _this = this;
@@ -582,7 +597,7 @@ var docx;
                         _this.parseIndentation(c, style);
                         break;
                     case "rFonts":
-                        style["font-family"] = values.valueOfFonts(c);
+                        _this.parseFont(c, style);
                         break;
                     case "tblBorders":
                         _this.parseBorderProperties(c, childStyle || style);
@@ -660,6 +675,11 @@ var docx;
             var col = xml.colorAttr(node, "color");
             if (col)
                 style["text-decoration-color"] = col;
+        };
+        DocumentParser.prototype.parseFont = function (node, style) {
+            var ascii = xml.stringAttr(node, "ascii");
+            if (ascii)
+                style["font-family"] = ascii;
         };
         DocumentParser.prototype.parseIndentation = function (node, style) {
             var firstLine = xml.sizeAttr(node, "firstLine");
@@ -929,16 +949,33 @@ var docx;
             }
             return type;
         };
-        values.valueOfFonts = function (c) {
-            var ascii = xml.stringAttr(c, "ascii");
-            return ascii;
-        };
         values.addSize = function (a, b) {
             if (a == null)
                 return b;
             if (b == null)
                 return a;
             return "calc(" + a + " + " + b + ")";
+        };
+        values.checkMask = function (num, mask) {
+            return (num & mask) == mask;
+        };
+        values.classNameOftblLook = function (c) {
+            var val = xml.stringAttr(c, "val");
+            var num = parseInt(val, 16);
+            var className = "";
+            if (values.checkMask(num, 0x0020))
+                className += " first-row";
+            if (values.checkMask(num, 0x0040))
+                className += " last-row";
+            if (values.checkMask(num, 0x0080))
+                className += " first-col";
+            if (values.checkMask(num, 0x0100))
+                className += " last-col";
+            if (!values.checkMask(num, 0x0200))
+                className += " odd-row even-row";
+            if (!values.checkMask(num, 0x0400))
+                className += " odd-col even-col";
+            return className.trim();
         };
         return values;
     }());
@@ -1101,7 +1138,7 @@ var docx;
                     else
                         styleText += "." + style.id + " " + subStyle.target + "{\r\n";
                     for (var key in subStyle.values) {
-                        styleText += key + ": " + subStyle.values[key] + ";\r\n";
+                        styleText += "  " + key + ": " + subStyle.values[key] + ";\r\n";
                     }
                     styleText += "}\r\n";
                 }
@@ -1157,6 +1194,7 @@ var docx;
             if (elem.break)
                 return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
             var result = this.htmlDocument.createElement("span");
+            this.renderClass(elem, result);
             this.renderStyleValues(elem.style, result);
             result.textContent = elem.text;
             if (elem.id) {
