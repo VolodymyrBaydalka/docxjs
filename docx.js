@@ -547,10 +547,10 @@ var docx;
                         style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
                         break;
                     case "shd":
-                        style["background-color"] = xml.colorAttr(c, "fill");
+                        style["background-color"] = xml.colorAttr(c, "fill", null, null);
                         break;
                     case "highlight":
-                        style["background-color"] = xml.colorAttr(c, "val");
+                        style["background-color"] = xml.colorAttr(c, "val", null, null);
                         break;
                     case "tcW":
                         if (_this.ignoreWidth)
@@ -743,14 +743,15 @@ var docx;
             }
             return null;
         };
-        xml.colorAttr = function (node, attrName, defValue) {
+        xml.colorAttr = function (node, attrName, defValue, autoColor) {
             if (defValue === void 0) { defValue = null; }
+            if (autoColor === void 0) { autoColor = 'black'; }
             var v = xml.stringAttr(node, attrName);
             switch (v) {
                 case "yellow":
                     return v;
                 case "auto":
-                    return "black";
+                    return autoColor;
             }
             return v ? "#" + v : defValue;
         };

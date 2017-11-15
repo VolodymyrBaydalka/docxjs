@@ -635,11 +635,11 @@ namespace docx {
                         break;
 
                     case "shd":
-                        style["background-color"] = xml.colorAttr(c, "fill");
+                        style["background-color"] = xml.colorAttr(c, "fill", null, null);
                         break;
 
                     case "highlight":
-                        style["background-color"] = xml.colorAttr(c, "val");
+                        style["background-color"] = xml.colorAttr(c, "val", null, null);
                         break;
 
 	                case "tcW": 
@@ -867,7 +867,7 @@ namespace docx {
             return null;
         }
 
-        static colorAttr(node: Node, attrName: string, defValue: string = null) {
+        static colorAttr(node: Node, attrName: string, defValue: string = null, autoColor: string = 'black') {
             var v = xml.stringAttr(node, attrName);
             
             switch (v)
@@ -876,7 +876,7 @@ namespace docx {
                      return v;
 
                 case "auto":
-                     return "black"
+                     return autoColor;
             }
 
             return v ? `#${v}` : defValue;
