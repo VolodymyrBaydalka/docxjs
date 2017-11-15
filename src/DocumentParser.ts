@@ -673,7 +673,7 @@ namespace docx {
                         break;
 
                     case "u":
-                        style["text-decoration"] = "underline";
+                        this.parseUnderline(c, style);
                         break;
 
                     case "ind":
@@ -734,6 +734,55 @@ namespace docx {
             });
 
             return style;
+        }
+
+        parseUnderline(node: Node, style: IDomStyleValues) {
+            var val = xml.stringAttr(node, "val");
+
+            if(val == "none")
+                return;
+
+            style["text-decoration"] = "underline";
+                
+            switch(val){
+                case "dash": 
+                case "dashDotDotHeavy":
+                case "dashDotHeavy":
+                case "dashedHeavy":
+                case "dashLong": 
+                case "dashLongHeavy":
+                case "dotDash":
+                case "dotDotDash": 
+                    style["text-decoration-style"] = "dashed";
+                    break;
+
+                case "dotted":
+                case "dottedHeavy": 
+                    style["text-decoration-style"] = "dotted";
+                    break;
+
+                case "double":
+                    style["text-decoration-style"] = "double";
+                    break;
+
+                case "single":
+                case "thick":
+                    break;
+
+                case "wave": 
+                case "wavyDouble":
+                case "wavyHeavy":
+                    style["text-decoration-style"] = "wavy";
+                    break;
+
+                case "words":
+                    break;
+            }
+
+            var col = xml.colorAttr(node, "color");
+            
+            if(col)
+                style["text-decoration-color"] = col;
         }
 
         parseIndentation(node: Node, style: IDomStyleValues){

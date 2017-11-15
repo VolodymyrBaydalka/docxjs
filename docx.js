@@ -576,7 +576,7 @@ var docx;
                         style["font-style"] = "italic";
                         break;
                     case "u":
-                        style["text-decoration"] = "underline";
+                        _this.parseUnderline(c, style);
                         break;
                     case "ind":
                         _this.parseIndentation(c, style);
@@ -622,6 +622,44 @@ var docx;
                 }
             });
             return style;
+        };
+        DocumentParser.prototype.parseUnderline = function (node, style) {
+            var val = xml.stringAttr(node, "val");
+            if (val == "none")
+                return;
+            style["text-decoration"] = "underline";
+            switch (val) {
+                case "dash":
+                case "dashDotDotHeavy":
+                case "dashDotHeavy":
+                case "dashedHeavy":
+                case "dashLong":
+                case "dashLongHeavy":
+                case "dotDash":
+                case "dotDotDash":
+                    style["text-decoration-style"] = "dashed";
+                    break;
+                case "dotted":
+                case "dottedHeavy":
+                    style["text-decoration-style"] = "dotted";
+                    break;
+                case "double":
+                    style["text-decoration-style"] = "double";
+                    break;
+                case "single":
+                case "thick":
+                    break;
+                case "wave":
+                case "wavyDouble":
+                case "wavyHeavy":
+                    style["text-decoration-style"] = "wavy";
+                    break;
+                case "words":
+                    break;
+            }
+            var col = xml.colorAttr(node, "color");
+            if (col)
+                style["text-decoration-color"] = col;
         };
         DocumentParser.prototype.parseIndentation = function (node, style) {
             var firstLine = xml.sizeAttr(node, "firstLine");
