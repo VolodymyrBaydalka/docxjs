@@ -190,7 +190,10 @@ namespace docx {
 
                     case "rsid":
                     case "qFormat":
+                    case "hidden":
                     case "semiHidden":
+                    case "unhideWhenUsed":
+                    case "autoRedefine":
                     case "uiPriority":
                         //TODO: ignore
                         break;
@@ -503,6 +506,14 @@ namespace docx {
                         run.className = xml.className(c, "val");
                         break;
 
+                    case "vertAlign":
+                        switch(xml.stringAttr(c, "val"))
+                        {
+                            case "subscript": run.wrapper = "sub"; break;
+                            case "superscript": run.wrapper = "sup"; break;
+                        }
+                        break;
+
                     default:
                         return false;
                 }
@@ -563,6 +574,19 @@ namespace docx {
 
                 return true;
             });
+
+            switch(table.style["text-align"]) {
+                case "center": 
+                    delete table.style["text-align"];
+                    table.style["margin-left"] = "auto";
+                    table.style["margin-right"] = "auto";
+                    break;
+
+                case "right": 
+                    delete table.style["text-align"];
+                    table.style["margin-left"] = "auto";
+                    break;
+            }
         }
 
         parseTableRow(node: Node): IDomTableRow {
@@ -626,6 +650,9 @@ namespace docx {
                     case "gridSpan":
                         cell.span = xml.intAttr(c, "val", null);
                         break;
+                    
+                    case "vMerge": //TODO
+                        break;
 
                     case "cnfStyle":
                         cell.className = values.classNameOfCnfStyle(c);
@@ -646,6 +673,10 @@ namespace docx {
                 switch (c.localName) {
                     case "jc":
                         style["text-align"] = values.valueOfJc(c);
+                        break;
+
+                    case "textAlignment":
+                        style["vertical-align"] = values.valueOfTextAlignment(c);
                         break;
 
                     case "color":
@@ -669,7 +700,7 @@ namespace docx {
                         break;
 
 	                case "tblW":
-                        style["width"] = xml.sizeAttr(c, "w");
+                        style["width"] = values.valueOfSize(c, "w");
                         break;
 
                     case "trHeight":
@@ -717,6 +748,11 @@ namespace docx {
                         this.parseBorderProperties(c, style);
                         break;
 
+                    case "noWrap":
+                        //TODO
+                        //style["white-space"] = "nowrap";
+                        break;
+
                     case "tblCellMar":
                     case "tcMar":
                         this.parseMarginProperties(c, childStyle || style);
@@ -739,6 +775,8 @@ namespace docx {
                         break;
 
                     case "lang":
+                    case "noProof":
+                    case "webHidden": // maybe web-hidden should be implemented
                         //TODO ignore
                         break;
 
@@ -755,11 +793,9 @@ namespace docx {
         parseUnderline(node: Node, style: IDomStyleValues) {
             var val = xml.stringAttr(node, "val");
 
-            if(val == "none")
+            if(val == null || val == "none")
                 return;
 
-            style["text-decoration"] = "underline";
-                
             switch(val){
                 case "dash": 
                 case "dashDotDotHeavy":
@@ -783,6 +819,7 @@ namespace docx {
 
                 case "single":
                 case "thick":
+                    style["text-decoration"] = "underline";
                     break;
 
                 case "wave": 
@@ -792,6 +829,7 @@ namespace docx {
                     break;
 
                 case "words":
+                    style["text-decoration"] = "underline";
                     break;
             }
 
@@ -884,6 +922,7 @@ namespace docx {
                     break;
 
                 case "atLeast" : 
+                default :
                     output["height"] = xml.sizeAttr(node, "val"); 
                     // min-height doesn't work for tr
                     //output["min-height"] = xml.sizeAttr(node, "val");  
@@ -919,6 +958,7 @@ namespace docx {
     enum SizeType {
         FontSize,
         Dxa,
+        Border,
         Percent
     }
 
@@ -1007,7 +1047,8 @@ namespace docx {
             switch (type) {
                 case SizeType.Dxa: return (0.05 * intVal).toFixed(2) + "pt";
                 case SizeType.FontSize: return (0.5 * intVal).toFixed(2) + "pt";
-                case SizeType.Percent: return (0.01 * intVal).toFixed(2) + "%";
+                case SizeType.Border: return (0.125 * intVal).toFixed(2) + "pt";
+                case SizeType.Percent: return (0.02 * intVal).toFixed(2) + "%";
             }
 
             return val;
@@ -1016,13 +1057,24 @@ namespace docx {
         static className(node: Node, attrName: string) {
             var val = xml.stringAttr(node, attrName);
 
-            return val && val.replace(' ', '-').replace('.', '-');
+            return val && val.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
         }
     }
 
     class values {
         static valueOfBold(c: Node) {
             return xml.boolAttr(c, "val", true) ? "bold" : "normal"
+        }
+
+        static valueOfSize(c: Node, attr: string) {
+            var type: SizeType = SizeType.Dxa;
+
+            switch(xml.stringAttr(c, "type")) {
+                case "dxa": break;
+                case "pct": type = SizeType.Percent; break;
+            }
+
+            return xml.sizeAttr(c, attr, type);
         }
 
         static valueOfStrike(c: Node) {
@@ -1061,7 +1113,7 @@ namespace docx {
                 return "none";
 
             var color = xml.colorAttr(c, "color");
-            var size = xml.sizeAttr(c, "sz");
+            var size = xml.sizeAttr(c, "sz", SizeType.Border);
 
             return `${size} solid ${color == "auto" ? "black" : color}`;
         }
@@ -1102,6 +1154,20 @@ namespace docx {
                 case "end": 
                 case "right": return "right";
                 case "both": return "justify";
+            }
+
+            return type;
+        }
+
+        static valueOfTextAlignment(c: Node) {
+            var type = xml.stringAttr(c, "val");
+
+            switch(type){
+                case "auto":
+                case "baseline": return "baseline";
+                case "top": return "top";
+                case "center": return "middle";
+                case "bottom": return "bottom";
             }
 
             return type;

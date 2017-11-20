@@ -48,6 +48,7 @@ namespace docx {
     export interface IDomRun extends IDomElement {
         id?: string; 
         break?: string;
+        wrapper?: string;
         text?: string;
         href?: string;
     }

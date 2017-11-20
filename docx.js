@@ -170,7 +170,10 @@ var docx;
                         break;
                     case "rsid":
                     case "qFormat":
+                    case "hidden":
                     case "semiHidden":
+                    case "unhideWhenUsed":
+                    case "autoRedefine":
                     case "uiPriority":
                         break;
                     default:
@@ -440,6 +443,16 @@ var docx;
                     case "rStyle":
                         run.className = xml.className(c, "val");
                         break;
+                    case "vertAlign":
+                        switch (xml.stringAttr(c, "val")) {
+                            case "subscript":
+                                run.wrapper = "sub";
+                                break;
+                            case "superscript":
+                                run.wrapper = "sup";
+                                break;
+                        }
+                        break;
                     default:
                         return false;
                 }
@@ -488,6 +501,17 @@ var docx;
                 }
                 return true;
             });
+            switch (table.style["text-align"]) {
+                case "center":
+                    delete table.style["text-align"];
+                    table.style["margin-left"] = "auto";
+                    table.style["margin-right"] = "auto";
+                    break;
+                case "right":
+                    delete table.style["text-align"];
+                    table.style["margin-left"] = "auto";
+                    break;
+            }
         };
         DocumentParser.prototype.parseTableRow = function (node) {
             var _this = this;
@@ -540,6 +564,8 @@ var docx;
                     case "gridSpan":
                         cell.span = xml.intAttr(c, "val", null);
                         break;
+                    case "vMerge":
+                        break;
                     case "cnfStyle":
                         cell.className = values.classNameOfCnfStyle(c);
                         break;
@@ -560,6 +586,9 @@ var docx;
                     case "jc":
                         style["text-align"] = values.valueOfJc(c);
                         break;
+                    case "textAlignment":
+                        style["vertical-align"] = values.valueOfTextAlignment(c);
+                        break;
                     case "color":
                         style["color"] = xml.colorAttr(c, "val", null, docx.autos.color);
                         break;
@@ -576,7 +605,7 @@ var docx;
                         if (_this.ignoreWidth)
                             break;
                     case "tblW":
-                        style["width"] = xml.sizeAttr(c, "w");
+                        style["width"] = values.valueOfSize(c, "w");
                         break;
                     case "trHeight":
                         _this.parseTrHeight(c, style);
@@ -612,6 +641,8 @@ var docx;
                     case "tcBorders":
                         _this.parseBorderProperties(c, style);
                         break;
+                    case "noWrap":
+                        break;
                     case "tblCellMar":
                     case "tcMar":
                         _this.parseMarginProperties(c, childStyle || style);
@@ -629,6 +660,8 @@ var docx;
                         _this.parseTabs(c, style);
                         break;
                     case "lang":
+                    case "noProof":
+                    case "webHidden":
                         break;
                     default:
                         if (handler != null && !handler(c))
@@ -640,9 +673,8 @@ var docx;
         };
         DocumentParser.prototype.parseUnderline = function (node, style) {
             var val = xml.stringAttr(node, "val");
-            if (val == "none")
+            if (val == null || val == "none")
                 return;
-            style["text-decoration"] = "underline";
             switch (val) {
                 case "dash":
                 case "dashDotDotHeavy":
@@ -663,6 +695,7 @@ var docx;
                     break;
                 case "single":
                 case "thick":
+                    style["text-decoration"] = "underline";
                     break;
                 case "wave":
                 case "wavyDouble":
@@ -670,6 +703,7 @@ var docx;
                     style["text-decoration-style"] = "wavy";
                     break;
                 case "words":
+                    style["text-decoration"] = "underline";
                     break;
             }
             var col = xml.colorAttr(node, "color");
@@ -751,6 +785,7 @@ var docx;
                     output["height"] = xml.sizeAttr(node, "val");
                     break;
                 case "atLeast":
+                default:
                     output["height"] = xml.sizeAttr(node, "val");
                     break;
             }
@@ -782,7 +817,8 @@ var docx;
     (function (SizeType) {
         SizeType[SizeType["FontSize"] = 0] = "FontSize";
         SizeType[SizeType["Dxa"] = 1] = "Dxa";
-        SizeType[SizeType["Percent"] = 2] = "Percent";
+        SizeType[SizeType["Border"] = 2] = "Border";
+        SizeType[SizeType["Percent"] = 3] = "Percent";
     })(SizeType || (SizeType = {}));
     var xml = (function () {
         function xml() {
@@ -855,13 +891,14 @@ var docx;
             switch (type) {
                 case SizeType.Dxa: return (0.05 * intVal).toFixed(2) + "pt";
                 case SizeType.FontSize: return (0.5 * intVal).toFixed(2) + "pt";
-                case SizeType.Percent: return (0.01 * intVal).toFixed(2) + "%";
+                case SizeType.Border: return (0.125 * intVal).toFixed(2) + "pt";
+                case SizeType.Percent: return (0.02 * intVal).toFixed(2) + "%";
             }
             return val;
         };
         xml.className = function (node, attrName) {
             var val = xml.stringAttr(node, attrName);
-            return val && val.replace(' ', '-').replace('.', '-');
+            return val && val.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
         };
         return xml;
     }());
@@ -870,6 +907,16 @@ var docx;
         }
         values.valueOfBold = function (c) {
             return xml.boolAttr(c, "val", true) ? "bold" : "normal";
+        };
+        values.valueOfSize = function (c, attr) {
+            var type = SizeType.Dxa;
+            switch (xml.stringAttr(c, "type")) {
+                case "dxa": break;
+                case "pct":
+                    type = SizeType.Percent;
+                    break;
+            }
+            return xml.sizeAttr(c, attr, type);
         };
         values.valueOfStrike = function (c) {
             return xml.boolAttr(c, "val", true) ? "line-through" : "none";
@@ -901,7 +948,7 @@ var docx;
             if (type == "nil")
                 return "none";
             var color = xml.colorAttr(c, "color");
-            var size = xml.sizeAttr(c, "sz");
+            var size = xml.sizeAttr(c, "sz", SizeType.Border);
             return size + " solid " + (color == "auto" ? "black" : color);
         };
         values.valueOfTblLayout = function (c) {
@@ -946,6 +993,17 @@ var docx;
                 case "end":
                 case "right": return "right";
                 case "both": return "justify";
+            }
+            return type;
+        };
+        values.valueOfTextAlignment = function (c) {
+            var type = xml.stringAttr(c, "val");
+            switch (type) {
+                case "auto":
+                case "baseline": return "baseline";
+                case "top": return "top";
+                case "center": return "middle";
+                case "bottom": return "bottom";
             }
             return type;
         };
@@ -1129,14 +1187,14 @@ var docx;
                 var style = styles_4[_i];
                 for (var _a = 0, _b = style.styles; _a < _b.length; _a++) {
                     var subStyle = _b[_a];
-                    if (style.isDefault)
-                        styleText += style.target + ", ";
+                    if (style.isDefault && style.target)
+                        styleText += "." + this.className + " " + style.target + ", ";
                     if (style.target == subStyle.target)
-                        styleText += style.target + "." + style.id + "{\r\n";
+                        styleText += style.target + "." + style.id + " {\r\n";
                     else if (style.target)
-                        styleText += style.target + "." + style.id + " " + subStyle.target + "{\r\n";
+                        styleText += style.target + "." + style.id + " " + subStyle.target + " {\r\n";
                     else
-                        styleText += "." + style.id + " " + subStyle.target + "{\r\n";
+                        styleText += "." + style.id + " " + subStyle.target + " {\r\n";
                     for (var key in subStyle.values) {
                         styleText += "  " + key + ": " + subStyle.values[key] + ";\r\n";
                     }
@@ -1205,6 +1263,11 @@ var docx;
                 link.href = elem.href;
                 link.appendChild(result);
                 return link;
+            }
+            else if (elem.wrapper) {
+                var wrapper = this.htmlDocument.createElement(elem.wrapper);
+                wrapper.appendChild(result);
+                return wrapper;
             }
             return result;
         };
@@ -1288,10 +1351,14 @@ var docx;
             styleContainer = styleContainer || bodyContainer;
             clearElement(styleContainer);
             clearElement(bodyContainer);
+            styleContainer.appendChild(document.createComment("docxjs library predefined styles"));
             styleContainer.appendChild(renderer.renderDefaultStyle());
+            styleContainer.appendChild(document.createComment("docx document styles"));
             styleContainer.appendChild(renderer.renderStyles(parts[1]));
-            if (parts[2])
+            if (parts[2]) {
+                styleContainer.appendChild(document.createComment("docx document numbering styles"));
                 styleContainer.appendChild(renderer.renderNumbering(parts[2]));
+            }
             var documentElement = renderer.renderDocument(parts[0]);
             if (inWrapper) {
                 var wrapper = renderer.renderWrapper();

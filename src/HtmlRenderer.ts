@@ -147,18 +147,18 @@ namespace docx {
 
             for (let style of styles) {
                 for (var subStyle of style.styles) {
-                    if (style.isDefault)
-                        styleText += style.target + ", ";
+                    if (style.isDefault && style.target)
+                        styleText += `.${this.className} ${style.target}, `;
 
                     if (style.target == subStyle.target)
-                        styleText += style.target + "." + style.id + "{\r\n";
+                        styleText += `${style.target}.${style.id} {\r\n`;
                     else if(style.target)
-                        styleText += style.target + "." + style.id + " " + subStyle.target + "{\r\n";
+                        styleText += `${style.target}.${style.id} ${subStyle.target} {\r\n`;
                     else
-                        styleText += "." + style.id + " " + subStyle.target + "{\r\n";
+                        styleText += `.${style.id} ${subStyle.target} {\r\n`;
 
                     for (var key in subStyle.values) {
-                        styleText += "  " + key + ": " + subStyle.values[key] + ";\r\n";
+                        styleText += `  ${key}: ${subStyle.values[key]};\r\n`;
                     }
 
                     styleText += "}\r\n";
@@ -255,6 +255,12 @@ namespace docx {
                 link.appendChild(result);
 
                 return link;
+            }
+            else if(elem.wrapper)
+            {
+                var wrapper = this.htmlDocument.createElement(elem.wrapper);
+                wrapper.appendChild(result);
+                return wrapper;
             }
 
             return result;

@@ -39,11 +39,16 @@ namespace docx {
                 clearElement(styleContainer);
                 clearElement(bodyContainer);
 
+                styleContainer.appendChild(document.createComment("docxjs library predefined styles"));
                 styleContainer.appendChild(renderer.renderDefaultStyle());
+                styleContainer.appendChild(document.createComment("docx document styles"));
                 styleContainer.appendChild(renderer.renderStyles(parts[1]));
 
                 if (parts[2])
+                {
+                    styleContainer.appendChild(document.createComment("docx document numbering styles"));
                     styleContainer.appendChild(renderer.renderNumbering(parts[2]));
+                }
 
                 var documentElement = renderer.renderDocument(parts[0]);
 
