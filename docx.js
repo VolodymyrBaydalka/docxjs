@@ -527,11 +527,15 @@ var docx;
             }
         };
         DocumentParser.prototype.parseDrawingWrapper = function (node) {
-            var result = { domType: docx.DomType.Drawing, children: [] };
+            var result = { domType: docx.DomType.Drawing, children: [], style: {} };
             var isAnchor = node.localName == "anchor";
             for (var _i = 0, _a = xml.nodes(node); _i < _a.length; _i++) {
                 var n = _a[_i];
                 switch (n.localName) {
+                    case "extent":
+                        result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
+                        result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                        break;
                     case "graphic":
                         var g = this.parseGraphic(n);
                         if (g)
@@ -553,10 +557,25 @@ var docx;
             return null;
         };
         DocumentParser.prototype.parsePicture = function (node) {
-            var result = { domType: docx.DomType.Image, src: "" };
+            var result = { domType: docx.DomType.Image, src: "", style: {} };
             var blipFill = xml.byTagName(node, "blipFill");
             var blip = xml.byTagName(blipFill, "blip");
             result.src = xml.stringAttr(blip, "embed");
+            var spPr = xml.byTagName(node, "spPr");
+            var xfrm = xml.byTagName(spPr, "xfrm");
+            for (var _i = 0, _a = xml.nodes(xfrm); _i < _a.length; _i++) {
+                var n = _a[_i];
+                switch (n.localName) {
+                    case "ext":
+                        result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
+                        result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                        break;
+                    case "off":
+                        result.style["left"] = xml.sizeAttr(n, "x", SizeType.Emu);
+                        result.style["top"] = xml.sizeAttr(n, "y", SizeType.Emu);
+                        break;
+                }
+            }
             return result;
         };
         DocumentParser.prototype.parseTable = function (node) {
@@ -917,8 +936,9 @@ var docx;
     (function (SizeType) {
         SizeType[SizeType["FontSize"] = 0] = "FontSize";
         SizeType[SizeType["Dxa"] = 1] = "Dxa";
-        SizeType[SizeType["Border"] = 2] = "Border";
-        SizeType[SizeType["Percent"] = 3] = "Percent";
+        SizeType[SizeType["Emu"] = 2] = "Emu";
+        SizeType[SizeType["Border"] = 3] = "Border";
+        SizeType[SizeType["Percent"] = 4] = "Percent";
     })(SizeType || (SizeType = {}));
     var xml = (function () {
         function xml() {
@@ -990,6 +1010,7 @@ var docx;
             var intVal = parseInt(val);
             switch (type) {
                 case SizeType.Dxa: return (0.05 * intVal).toFixed(2) + "pt";
+                case SizeType.Emu: return (intVal / 12700).toFixed(2) + "pt";
                 case SizeType.FontSize: return (0.5 * intVal).toFixed(2) + "pt";
                 case SizeType.Border: return (0.125 * intVal).toFixed(2) + "pt";
                 case SizeType.Percent: return (0.02 * intVal).toFixed(2) + "%";
@@ -1384,12 +1405,17 @@ var docx;
             return result;
         };
         HtmlRenderer.prototype.renderDrawing = function (elem) {
-            var result = this.htmlDocument.createElement("span");
+            var result = this.htmlDocument.createElement("div");
+            result.style.display = "inline-block";
+            result.style.position = "relative";
             this.renderChildren(elem, result);
+            this.renderStyleValues(elem.style, result);
             return result;
         };
         HtmlRenderer.prototype.renderImage = function (elem) {
             var result = this.htmlDocument.createElement("img");
+            result.style.position = "absolute";
+            this.renderStyleValues(elem.style, result);
             if (this.document) {
                 this.document.loadImage(elem.src).then(function (x) {
                     result.src = x;

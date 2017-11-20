@@ -516,11 +516,16 @@ namespace docx {
         }
 
         parseDrawingWrapper(node: Node): IDomDocument {
-            var result = <IDomElement>{ domType: DomType.Drawing, children: [] };
+            var result = <IDomElement>{ domType: DomType.Drawing, children: [], style: {} };
             var isAnchor = node.localName == "anchor";
             
             for(var n of xml.nodes(node)) {
                 switch (n.localName){
+                    case "extent":
+                        result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
+                        result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                        break;
+
                     case "graphic": 
                         var g = this.parseGraphic(n);
 
@@ -547,11 +552,28 @@ namespace docx {
         }
 
         parsePicture(node: Node): IDomImage {
-            var result = <IDomImage>{ domType : DomType.Image, src: "" };
+            var result = <IDomImage>{ domType : DomType.Image, src: "", style: {} };
             var blipFill = xml.byTagName(node, "blipFill");
             var blip = xml.byTagName(blipFill, "blip");
 
             result.src = xml.stringAttr(blip, "embed");
+
+            var spPr = xml.byTagName(node, "spPr");
+            var xfrm = xml.byTagName(spPr, "xfrm");
+
+            for(var n of xml.nodes(xfrm)) {
+                switch (n.localName){
+                    case "ext":
+                        result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
+                        result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                        break;
+
+                    case "off":
+                        result.style["left"] = xml.sizeAttr(n, "x", SizeType.Emu);
+                        result.style["top"] = xml.sizeAttr(n, "y", SizeType.Emu);
+                        break;
+                }
+            }
 
             return result;
         }
@@ -992,6 +1014,7 @@ namespace docx {
     enum SizeType {
         FontSize,
         Dxa,
+        Emu,
         Border,
         Percent
     }
@@ -1080,6 +1103,7 @@ namespace docx {
 
             switch (type) {
                 case SizeType.Dxa: return (0.05 * intVal).toFixed(2) + "pt";
+                case SizeType.Emu: return (intVal / 12700).toFixed(2) + "pt";
                 case SizeType.FontSize: return (0.5 * intVal).toFixed(2) + "pt";
                 case SizeType.Border: return (0.125 * intVal).toFixed(2) + "pt";
                 case SizeType.Percent: return (0.02 * intVal).toFixed(2) + "%";

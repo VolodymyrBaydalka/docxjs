@@ -279,9 +279,13 @@ namespace docx {
         }
 
         renderDrawing(elem: IDomImage) {
-            var result = this.htmlDocument.createElement("span");
+            var result = this.htmlDocument.createElement("div");
+
+            result.style.display = "inline-block";
+            result.style.position = "relative";
 
             this.renderChildren(elem, result);
+            this.renderStyleValues(elem.style, result);
             
             return result;
         }
@@ -289,6 +293,10 @@ namespace docx {
         renderImage(elem: IDomImage) {
             let result = this.htmlDocument.createElement("img");
 
+            result.style.position = "absolute";
+
+            this.renderStyleValues(elem.style, result);
+            
             if(this.document){
                 this.document.loadImage(elem.src).then(x => {
                     result.src = x;
