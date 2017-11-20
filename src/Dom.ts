@@ -9,7 +9,9 @@ namespace docx {
         Table,
         Row,
         Cell,
-        Hyperlink
+        Hyperlink,
+        Drawing,
+        Image
     }
 
     export enum DomRelationshipType {
@@ -68,6 +70,10 @@ namespace docx {
     export interface IDomDocument extends IDomElement {
     }
 
+    export interface IDomImage extends IDomDocument {
+        src: string;
+    }
+
     export interface IDomTableColumn {
         width?: string;
     }
@@ -94,9 +100,5 @@ namespace docx {
 
     export interface IDomStyleValues {
         [name: string]: string;
-    }
-
-    export interface IDomDrawing {
-
     }
 }

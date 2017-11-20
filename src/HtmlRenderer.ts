@@ -1,11 +1,51 @@
 namespace docx {
     export class HtmlRenderer {
 
+        inWrapper: boolean = true;
         className: string = "docx";        
+        document: Document;
 
         private digitTest = /^[0-9]/.test;
 
         constructor(public htmlDocument: HTMLDocument) {
+        }
+
+
+        render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null){
+            this.document = document;
+
+            styleContainer = styleContainer || bodyContainer;
+
+            this.clearElement(styleContainer);
+            this.clearElement(bodyContainer);
+
+            styleContainer.appendChild(this.htmlDocument.createComment("docxjs library predefined styles"));
+            styleContainer.appendChild(this.renderDefaultStyle());
+            styleContainer.appendChild(this.htmlDocument.createComment("docx document styles"));
+            styleContainer.appendChild(this.renderStyles(document.styles));
+
+            if (document.numbering)
+            {
+                styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
+                styleContainer.appendChild(this.renderNumbering(document.numbering));
+            }
+
+            var documentElement = this.renderDocument(document.document);
+
+            if (this.inWrapper) {
+                var wrapper = this.renderWrapper();
+                wrapper.appendChild(documentElement);
+                bodyContainer.appendChild(wrapper);
+            }
+            else {
+                bodyContainer.appendChild(documentElement);
+            }
+        }
+
+        clearElement(elem: HTMLElement) {
+            while (elem.firstChild) {
+                elem.removeChild(elem.firstChild);
+            }
         }
 
         processClassName(className){
@@ -189,7 +229,13 @@ namespace docx {
 
                 case DomType.Hyperlink:
                     return this.renderHyperlink(elem);
-            }
+
+                case DomType.Drawing:
+                    return this.renderDrawing(elem);
+
+                case DomType.Image:
+                    return this.renderImage(elem);
+                }
 
             return null;
         }
@@ -232,16 +278,37 @@ namespace docx {
             return result;
         }
 
+        renderDrawing(elem: IDomImage) {
+            var result = this.htmlDocument.createElement("span");
+
+            this.renderChildren(elem, result);
+            
+            return result;
+        }
+
+        renderImage(elem: IDomImage) {
+            let result = this.htmlDocument.createElement("img");
+
+            if(this.document){
+                this.document.loadImage(elem.src).then(x => {
+                    result.src = x;
+                });
+            }
+
+            return result;
+        }
+
         renderRun(elem: IDomRun) {
             if (elem.break)
                 return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
 
             var result = this.htmlDocument.createElement("span");
 
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.style, result);
-
             result.textContent = elem.text;
+            
+            this.renderClass(elem, result);
+            this.renderChildren(elem, result);
+            this.renderStyleValues(elem.style, result);
 
             if(elem.id) {
                 result.id = elem.id;

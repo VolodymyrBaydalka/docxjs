@@ -15,30 +15,6 @@ namespace docx {
         ignoreHeight: boolean = true; 
         debug: boolean = false;
 
-        parseDocumentAsync(zip) {
-            return zip.files["word/document.xml"]
-                .async("string")
-                .then((xml) => this.parseDocumentFile(xml));
-        }
-
-        parseStylesAsync(zip) {
-            return zip.files["word/styles.xml"]
-                .async("string")
-                .then((xml) => this.parseStylesFile(xml));
-        }
-
-        parseNumberingAsync(zip){
-            var file = zip.files["word/numbering.xml"];
-            return file ? file.async("string")
-                .then((xml) => this.parseNumberingFile(xml)) : null;
-        }
-
-        parseDocumentRelationsAsync(zip){
-            var file = zip.files["word/_rels/document.xml.rels"]
-            return file ? file.async("string")
-                .then((xml) => this.parseDocumentRelationsFile(xml)) : null;
-        }
-
         parseDocumentRelationsFile(xmlString) {
             var xrels = xml.parse(xmlString, this.skipDeclaration);
 
@@ -486,8 +462,15 @@ namespace docx {
                         result.break = xml.stringAttr(c, "type") || "textWrapping";
                         break;
 
-                   case "tab":
+                    case "tab":
                         //result.text = "\u00A0\u00A0\u00A0\u00A0";  // TODO
+                        break;
+
+                    case "drawing":
+                        let d = this.parseDrawing(c);
+
+                        if(d)
+                            result.children = [d];
                         break;
 
                     case "rPr":
@@ -520,6 +503,57 @@ namespace docx {
 
                 return true;
             });
+        }
+
+        parseDrawing(node: Node): IDomElement {
+            for(var n of xml.nodes(node)) {
+                switch (n.localName){
+                    case "inline": 
+                    case "anchor": 
+                        return this.parseDrawingWrapper(n);
+                }
+            }
+        }
+
+        parseDrawingWrapper(node: Node): IDomDocument {
+            var result = <IDomElement>{ domType: DomType.Drawing, children: [] };
+            var isAnchor = node.localName == "anchor";
+            
+            for(var n of xml.nodes(node)) {
+                switch (n.localName){
+                    case "graphic": 
+                        var g = this.parseGraphic(n);
+
+                        if(g)
+                            result.children.push(g);
+                        break;
+                }
+            }
+
+            return result;
+        }
+
+        parseGraphic(node: Node): IDomElement {
+            var graphicData = xml.byTagName(node, "graphicData");
+
+            for(let n of xml.nodes(graphicData)) {
+                switch(n.localName){
+                    case "pic": 
+                        return this.parsePicture(n);
+                }
+            }
+
+            return null;
+        }
+
+        parsePicture(node: Node): IDomImage {
+            var result = <IDomImage>{ domType : DomType.Image, src: "" };
+            var blipFill = xml.byTagName(node, "blipFill");
+            var blip = xml.byTagName(blipFill, "blip");
+
+            result.src = xml.stringAttr(blip, "embed");
+
+            return result;
         }
 
         parseTable(node: Node): IDomTable {

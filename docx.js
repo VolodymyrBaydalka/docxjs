@@ -1,5 +1,81 @@
 var docx;
 (function (docx) {
+    function renderAsync(data, bodyContainer, styleContainer, options) {
+        if (styleContainer === void 0) { styleContainer = null; }
+        if (options === void 0) { options = null; }
+        var parser = new docx.DocumentParser();
+        var renderer = new docx.HtmlRenderer(window.document);
+        if (options) {
+            parser.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
+            parser.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
+            parser.debug = options.debug || parser.debug;
+            renderer.className = options.className || "docx";
+            renderer.inWrapper = options && options.inWrapper != null ? options.inWrapper : true;
+        }
+        return Document.load(data, parser)
+            .then(function (doc) {
+            renderer.render(doc, bodyContainer, styleContainer);
+            return doc;
+        });
+    }
+    docx.renderAsync = renderAsync;
+    var PartType;
+    (function (PartType) {
+        PartType["Document"] = "word/document.xml";
+        PartType["Style"] = "word/styles.xml";
+        PartType["Numbering"] = "word/numbering.xml";
+        PartType["Relations"] = "word/_rels/document.xml.rels";
+    })(PartType || (PartType = {}));
+    var Document = (function () {
+        function Document() {
+            this.zip = new JSZip();
+            this.relations = null;
+            this.styles = null;
+            this.numbering = null;
+            this.document = null;
+        }
+        Document.load = function (blob, parser) {
+            var d = new Document();
+            return d.zip.loadAsync(blob).then(function (z) {
+                var files = [d.loadPart(PartType.Relations, parser), d.loadPart(PartType.Style, parser),
+                    d.loadPart(PartType.Numbering, parser), d.loadPart(PartType.Document, parser)];
+                return Promise.all(files.filter(function (x) { return x != null; })).then(function (x) { return d; });
+            });
+        };
+        Document.prototype.loadImage = function (id) {
+            var rel = this.relations.filter(function (x) { return x.id == id; });
+            if (rel.length == 0)
+                return Promise.resolve(null);
+            var file = this.zip.files["word/" + rel[0].target];
+            return file.async("base64").then(function (x) { return "data:image/png;base64, " + x; });
+        };
+        Document.prototype.loadPart = function (part, parser) {
+            var _this = this;
+            var f = this.zip.files[part];
+            return f ? f.async("string").then(function (xml) {
+                switch (part) {
+                    case PartType.Relations:
+                        _this.relations = parser.parseDocumentRelationsFile(xml);
+                        break;
+                    case PartType.Style:
+                        _this.styles = parser.parseStylesFile(xml);
+                        break;
+                    case PartType.Numbering:
+                        _this.numbering = parser.parseNumberingFile(xml);
+                        break;
+                    case PartType.Document:
+                        _this.document = parser.parseDocumentFile(xml);
+                        break;
+                }
+                return _this;
+            }) : null;
+        };
+        return Document;
+    }());
+    docx.Document = Document;
+})(docx || (docx = {}));
+var docx;
+(function (docx) {
     docx.autos = {
         shd: "white",
         color: "black",
@@ -12,37 +88,13 @@ var docx;
             this.ignoreHeight = true;
             this.debug = false;
         }
-        DocumentParser.prototype.parseDocumentAsync = function (zip) {
-            var _this = this;
-            return zip.files["word/document.xml"]
-                .async("string")
-                .then(function (xml) { return _this.parseDocumentFile(xml); });
-        };
-        DocumentParser.prototype.parseStylesAsync = function (zip) {
-            var _this = this;
-            return zip.files["word/styles.xml"]
-                .async("string")
-                .then(function (xml) { return _this.parseStylesFile(xml); });
-        };
-        DocumentParser.prototype.parseNumberingAsync = function (zip) {
-            var _this = this;
-            var file = zip.files["word/numbering.xml"];
-            return file ? file.async("string")
-                .then(function (xml) { return _this.parseNumberingFile(xml); }) : null;
-        };
-        DocumentParser.prototype.parseDocumentRelationsAsync = function (zip) {
-            var _this = this;
-            var file = zip.files["word/_rels/document.xml.rels"];
-            return file ? file.async("string")
-                .then(function (xml) { return _this.parseDocumentRelationsFile(xml); }) : null;
-        };
         DocumentParser.prototype.parseDocumentRelationsFile = function (xmlString) {
             var xrels = xml.parse(xmlString, this.skipDeclaration);
-            return xml.nodes(xrels).map(function (c) { return {
+            return xml.nodes(xrels).map(function (c) { return ({
                 id: xml.stringAttr(c, "Id"),
                 type: values.valueOfRelType(c),
                 target: xml.stringAttr(c, "Target"),
-            }; });
+            }); });
         };
         DocumentParser.prototype.parseDocumentFile = function (xmlString) {
             var result = {
@@ -430,6 +482,11 @@ var docx;
                         break;
                     case "tab":
                         break;
+                    case "drawing":
+                        var d = _this.parseDrawing(c);
+                        if (d)
+                            result.children = [d];
+                        break;
                     case "rPr":
                         _this.parseRunProperties(c, result);
                         break;
@@ -458,6 +515,49 @@ var docx;
                 }
                 return true;
             });
+        };
+        DocumentParser.prototype.parseDrawing = function (node) {
+            for (var _i = 0, _a = xml.nodes(node); _i < _a.length; _i++) {
+                var n = _a[_i];
+                switch (n.localName) {
+                    case "inline":
+                    case "anchor":
+                        return this.parseDrawingWrapper(n);
+                }
+            }
+        };
+        DocumentParser.prototype.parseDrawingWrapper = function (node) {
+            var result = { domType: docx.DomType.Drawing, children: [] };
+            var isAnchor = node.localName == "anchor";
+            for (var _i = 0, _a = xml.nodes(node); _i < _a.length; _i++) {
+                var n = _a[_i];
+                switch (n.localName) {
+                    case "graphic":
+                        var g = this.parseGraphic(n);
+                        if (g)
+                            result.children.push(g);
+                        break;
+                }
+            }
+            return result;
+        };
+        DocumentParser.prototype.parseGraphic = function (node) {
+            var graphicData = xml.byTagName(node, "graphicData");
+            for (var _i = 0, _a = xml.nodes(graphicData); _i < _a.length; _i++) {
+                var n = _a[_i];
+                switch (n.localName) {
+                    case "pic":
+                        return this.parsePicture(n);
+                }
+            }
+            return null;
+        };
+        DocumentParser.prototype.parsePicture = function (node) {
+            var result = { domType: docx.DomType.Image, src: "" };
+            var blipFill = xml.byTagName(node, "blipFill");
+            var blip = xml.byTagName(blipFill, "blip");
+            result.src = xml.stringAttr(blip, "embed");
+            return result;
         };
         DocumentParser.prototype.parseTable = function (node) {
             var _this = this;
@@ -1040,6 +1140,7 @@ var docx;
 })(docx || (docx = {}));
 var docx;
 (function (docx) {
+    var DomType;
     (function (DomType) {
         DomType[DomType["Document"] = 0] = "Document";
         DomType[DomType["Paragraph"] = 1] = "Paragraph";
@@ -1049,8 +1150,10 @@ var docx;
         DomType[DomType["Row"] = 5] = "Row";
         DomType[DomType["Cell"] = 6] = "Cell";
         DomType[DomType["Hyperlink"] = 7] = "Hyperlink";
-    })(docx.DomType || (docx.DomType = {}));
-    var DomType = docx.DomType;
+        DomType[DomType["Drawing"] = 8] = "Drawing";
+        DomType[DomType["Image"] = 9] = "Image";
+    })(DomType = docx.DomType || (docx.DomType = {}));
+    var DomRelationshipType;
     (function (DomRelationshipType) {
         DomRelationshipType[DomRelationshipType["Settings"] = 0] = "Settings";
         DomRelationshipType[DomRelationshipType["Theme"] = 1] = "Theme";
@@ -1060,17 +1163,46 @@ var docx;
         DomRelationshipType[DomRelationshipType["Image"] = 5] = "Image";
         DomRelationshipType[DomRelationshipType["WebSettings"] = 6] = "WebSettings";
         DomRelationshipType[DomRelationshipType["Unknown"] = 7] = "Unknown";
-    })(docx.DomRelationshipType || (docx.DomRelationshipType = {}));
-    var DomRelationshipType = docx.DomRelationshipType;
+    })(DomRelationshipType = docx.DomRelationshipType || (docx.DomRelationshipType = {}));
 })(docx || (docx = {}));
 var docx;
 (function (docx) {
     var HtmlRenderer = (function () {
         function HtmlRenderer(htmlDocument) {
             this.htmlDocument = htmlDocument;
+            this.inWrapper = true;
             this.className = "docx";
             this.digitTest = /^[0-9]/.test;
         }
+        HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer) {
+            if (styleContainer === void 0) { styleContainer = null; }
+            this.document = document;
+            styleContainer = styleContainer || bodyContainer;
+            this.clearElement(styleContainer);
+            this.clearElement(bodyContainer);
+            styleContainer.appendChild(this.htmlDocument.createComment("docxjs library predefined styles"));
+            styleContainer.appendChild(this.renderDefaultStyle());
+            styleContainer.appendChild(this.htmlDocument.createComment("docx document styles"));
+            styleContainer.appendChild(this.renderStyles(document.styles));
+            if (document.numbering) {
+                styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
+                styleContainer.appendChild(this.renderNumbering(document.numbering));
+            }
+            var documentElement = this.renderDocument(document.document);
+            if (this.inWrapper) {
+                var wrapper = this.renderWrapper();
+                wrapper.appendChild(documentElement);
+                bodyContainer.appendChild(wrapper);
+            }
+            else {
+                bodyContainer.appendChild(documentElement);
+            }
+        };
+        HtmlRenderer.prototype.clearElement = function (elem) {
+            while (elem.firstChild) {
+                elem.removeChild(elem.firstChild);
+            }
+        };
         HtmlRenderer.prototype.processClassName = function (className) {
             if (!className)
                 return this.className;
@@ -1088,13 +1220,12 @@ var docx;
                 var style = styles_2[_a];
                 if (style.basedOn) {
                     var baseStyle = stylesMap[style.basedOn];
-                    var _loop_1 = function(styleValues) {
+                    var _loop_1 = function (styleValues) {
                         baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
                         if (baseValues && baseValues.length > 0)
                             this_1.copyStyleProperties(baseValues[0].values, styleValues.values);
                     };
-                    var this_1 = this;
-                    var baseValues;
+                    var this_1 = this, baseValues;
                     for (var _b = 0, _c = style.styles; _b < _c.length; _b++) {
                         var styleValues = _c[_b];
                         _loop_1(styleValues);
@@ -1218,6 +1349,10 @@ var docx;
                     return this.renderTableCell(elem);
                 case docx.DomType.Hyperlink:
                     return this.renderHyperlink(elem);
+                case docx.DomType.Drawing:
+                    return this.renderDrawing(elem);
+                case docx.DomType.Image:
+                    return this.renderImage(elem);
             }
             return null;
         };
@@ -1248,13 +1383,28 @@ var docx;
                 result.href = elem.href;
             return result;
         };
+        HtmlRenderer.prototype.renderDrawing = function (elem) {
+            var result = this.htmlDocument.createElement("span");
+            this.renderChildren(elem, result);
+            return result;
+        };
+        HtmlRenderer.prototype.renderImage = function (elem) {
+            var result = this.htmlDocument.createElement("img");
+            if (this.document) {
+                this.document.loadImage(elem.src).then(function (x) {
+                    result.src = x;
+                });
+            }
+            return result;
+        };
         HtmlRenderer.prototype.renderRun = function (elem) {
             if (elem.break)
                 return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
             var result = this.htmlDocument.createElement("span");
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.style, result);
             result.textContent = elem.text;
+            this.renderClass(elem, result);
+            this.renderChildren(elem, result);
+            this.renderStyleValues(elem.style, result);
             if (elem.id) {
                 result.id = elem.id;
             }
@@ -1323,59 +1473,5 @@ var docx;
         return HtmlRenderer;
     }());
     docx.HtmlRenderer = HtmlRenderer;
-})(docx || (docx = {}));
-var docx;
-(function (docx) {
-    function renderAsync(data, bodyContainer, styleContainer, options) {
-        if (styleContainer === void 0) { styleContainer = null; }
-        if (options === void 0) { options = null; }
-        var parser = new docx.DocumentParser();
-        var renderer = new docx.HtmlRenderer(window.document);
-        if (options) {
-            parser.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
-            parser.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
-            parser.debug = options.debug || parser.debug;
-            renderer.className = options.className || "docx";
-        }
-        return new JSZip().loadAsync(data)
-            .then(function (zip) {
-            var files = [parser.parseDocumentAsync(zip), parser.parseStylesAsync(zip)];
-            var num = parser.parseNumberingAsync(zip);
-            var rels = parser.parseDocumentRelationsAsync(zip);
-            files.push(num || Promise.resolve());
-            files.push(rels || Promise.resolve());
-            return Promise.all(files);
-        })
-            .then(function (parts) {
-            var inWrapper = options && options.inWrapper != null ? options.inWrapper : true;
-            styleContainer = styleContainer || bodyContainer;
-            clearElement(styleContainer);
-            clearElement(bodyContainer);
-            styleContainer.appendChild(document.createComment("docxjs library predefined styles"));
-            styleContainer.appendChild(renderer.renderDefaultStyle());
-            styleContainer.appendChild(document.createComment("docx document styles"));
-            styleContainer.appendChild(renderer.renderStyles(parts[1]));
-            if (parts[2]) {
-                styleContainer.appendChild(document.createComment("docx document numbering styles"));
-                styleContainer.appendChild(renderer.renderNumbering(parts[2]));
-            }
-            var documentElement = renderer.renderDocument(parts[0]);
-            if (inWrapper) {
-                var wrapper = renderer.renderWrapper();
-                wrapper.appendChild(documentElement);
-                bodyContainer.appendChild(wrapper);
-            }
-            else {
-                bodyContainer.appendChild(documentElement);
-            }
-            return { document: parts[0], styles: parts[1], numbering: parts[2], rels: parts[3] };
-        });
-    }
-    docx.renderAsync = renderAsync;
-    function clearElement(elem) {
-        while (elem.firstChild) {
-            elem.removeChild(elem.firstChild);
-        }
-    }
 })(docx || (docx = {}));
 //# sourceMappingURL=docx.js.map

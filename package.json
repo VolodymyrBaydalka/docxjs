@@ -4,7 +4,7 @@
   },
   "devDependencies": {
     "@types/jszip": "^0.0.31",
-    "typescript": "2.0.9",
+    "typescript": "2.6.1",
     "uglify-js": "2.7.4"
   },
   "scripts": {
