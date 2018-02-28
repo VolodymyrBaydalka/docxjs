@@ -40,7 +40,7 @@ namespace docx {
 
     export interface IDomParagraph extends IDomElement {
         numberingId?: string;
-        numberingLevel?: string;
+        numberingLevel?: number;
     }
 
     export interface IDomHyperlink extends IDomElement {
@@ -94,8 +94,10 @@ namespace docx {
 
     export interface IDomNumbering {
 	    id: string;
-        level: string;
-        style:IDomStyleValues; 
+        level: number;
+        style: IDomStyleValues; 
+        levelText?: string;
+        format?: string;
     }
 
     export interface IDomStyleValues {

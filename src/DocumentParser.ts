@@ -262,11 +262,7 @@ namespace docx {
             xml.foreach(node, n => {
                 switch (n.localName) {
                     case "lvl":
-                        result.push({
-                            id: id,
-                            level:  xml.stringAttr(n, "ilvl"),
-                            style: this.parseNumberingLevel(n)
-                        });
+                        result.push(this.parseNumberingLevel(id, n));
                         break;
                 }
             });
@@ -274,58 +270,30 @@ namespace docx {
             return result;
         }
 
-	    parseNumberingLevel(node: Node): IDomStyleValues {
-            var result = <IDomStyleValues>{}; 
+	    parseNumberingLevel(id: string, node: Node): IDomNumbering {
+            var result: IDomNumbering = {
+                id: id,
+                level: xml.intAttr(node, "ilvl"),
+                style: {}
+            }; 
 
             xml.foreach(node, n => {
                 switch (n.localName) {
                     case "pPr":
-                        this.parseDefaultProperties(n, result);
+                        this.parseDefaultProperties(n, result.style);
                         break;
                     
                     case "lvlText":
+                        result.levelText = xml.stringAttr(n, "val");
                         break;
 
                     case "numFmt":
-                        this.parseNumberingFormating(n, result);
+                        result.format = xml.stringAttr(n, "val");
                         break;
                 }
             });
 
             return result;
-        }
-
-        parseNumberingFormating(node: Node, style: IDomStyleValues) {
-            switch(xml.stringAttr(node, "val")) 
-            {
-                case "bullet":
-                    style["list-style-type"] = "disc";
-                    break;
-
-                case "decimal":
-                    style["list-style-type"] = "decimal";
-                    break;
-
-                case "lowerLetter":
-                    style["list-style-type"] = "lower-alpha";
-                    break;
-
-                case "upperLetter":
-                    style["list-style-type"] = "upper-alpha";
-                    break;
-
-                case "lowerRoman":
-                    style["list-style-type"] = "lower-roman";
-                    break;
-
-                case "upperRoman":
-                    style["list-style-type"] = "upper-roman";
-                    break;
-
-                case "none":
-                    style["list-style-type"] = "none";
-                    break;
-            }
         }
 
         parseSectionProperties(node: Node, elem: IDomElement) {
@@ -410,7 +378,7 @@ namespace docx {
                         break;
 
                     case "ilvl":
-                        paragraph.numberingLevel = xml.stringAttr(c, "val");
+                        paragraph.numberingLevel = xml.intAttr(c, "val");
                         break;
                 }
             });

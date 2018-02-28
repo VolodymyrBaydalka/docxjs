@@ -1,3 +1,11 @@
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var docx;
 (function (docx) {
     function renderAsync(data, bodyContainer, styleContainer, options) {
@@ -319,57 +327,33 @@ var docx;
             xml.foreach(node, function (n) {
                 switch (n.localName) {
                     case "lvl":
-                        result.push({
-                            id: id,
-                            level: xml.stringAttr(n, "ilvl"),
-                            style: _this.parseNumberingLevel(n)
-                        });
+                        result.push(_this.parseNumberingLevel(id, n));
                         break;
                 }
             });
             return result;
         };
-        DocumentParser.prototype.parseNumberingLevel = function (node) {
+        DocumentParser.prototype.parseNumberingLevel = function (id, node) {
             var _this = this;
-            var result = {};
+            var result = {
+                id: id,
+                level: xml.intAttr(node, "ilvl"),
+                style: {}
+            };
             xml.foreach(node, function (n) {
                 switch (n.localName) {
                     case "pPr":
-                        _this.parseDefaultProperties(n, result);
+                        _this.parseDefaultProperties(n, result.style);
                         break;
                     case "lvlText":
+                        result.levelText = xml.stringAttr(n, "val");
                         break;
                     case "numFmt":
-                        _this.parseNumberingFormating(n, result);
+                        result.format = xml.stringAttr(n, "val");
                         break;
                 }
             });
             return result;
-        };
-        DocumentParser.prototype.parseNumberingFormating = function (node, style) {
-            switch (xml.stringAttr(node, "val")) {
-                case "bullet":
-                    style["list-style-type"] = "disc";
-                    break;
-                case "decimal":
-                    style["list-style-type"] = "decimal";
-                    break;
-                case "lowerLetter":
-                    style["list-style-type"] = "lower-alpha";
-                    break;
-                case "upperLetter":
-                    style["list-style-type"] = "upper-alpha";
-                    break;
-                case "lowerRoman":
-                    style["list-style-type"] = "lower-roman";
-                    break;
-                case "upperRoman":
-                    style["list-style-type"] = "upper-roman";
-                    break;
-                case "none":
-                    style["list-style-type"] = "none";
-                    break;
-            }
         };
         DocumentParser.prototype.parseSectionProperties = function (node, elem) {
             var _this = this;
@@ -439,7 +423,7 @@ var docx;
                         paragraph.numberingId = xml.stringAttr(c, "val");
                         break;
                     case "ilvl":
-                        paragraph.numberingLevel = xml.stringAttr(c, "val");
+                        paragraph.numberingLevel = xml.intAttr(c, "val");
                         break;
                 }
             });
@@ -1310,51 +1294,68 @@ var docx;
             return wrapper;
         };
         HtmlRenderer.prototype.renderDefaultStyle = function () {
-            var styleElement = document.createElement("style");
-            styleElement.type = "text/css";
-            styleElement.innerHTML = "." + this.className + "-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
-            return styleElement;
+            var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
+            return this.renderStyle(styleText);
         };
         HtmlRenderer.prototype.renderNumbering = function (styles) {
             var styleText = "";
+            var rootCounters = [];
             for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
                 var num = styles_3[_i];
-                styleText += "p." + this.className + "-num-" + num.id + "-" + num.level + " {\r\n display:list-item; list-style-position:inside; \r\n";
-                for (var key in num.style) {
-                    styleText += key + ": " + num.style[key] + ";\r\n";
+                var selector = "p." + this.numberingClass(num.id, num.level);
+                if (num.levelText && num.format == "decimal") {
+                    var counter = this.numberingCounter(num.id, num.level);
+                    if (num.level > 0) {
+                        styleText += this.styleToString("p." + this.numberingClass(num.id, num.level - 1), {
+                            "counter-reset": counter
+                        });
+                    }
+                    else {
+                        rootCounters.push(counter);
+                    }
+                    styleText += this.styleToString(selector + ":before", {
+                        "content": this.levelTextToContent(num.levelText, num.id),
+                        "counter-increment": counter
+                    });
+                    styleText += this.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": "none" }, num.style));
                 }
-                styleText += "} \r\n";
+                else {
+                    styleText += this.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": this.numFormatToCssValue(num.format) }, num.style));
+                }
             }
+            if (rootCounters.length > 0) {
+                styleText += this.styleToString("." + this.className + "-wrapper", {
+                    "counter-reset": rootCounters.join(" ")
+                });
+            }
+            return this.renderStyle(styleText);
+        };
+        HtmlRenderer.prototype.renderStyle = function (styleContent) {
             var styleElement = document.createElement("style");
             styleElement.type = "text/css";
-            styleElement.innerHTML = styleText;
+            styleElement.innerHTML = styleContent;
             return styleElement;
         };
         HtmlRenderer.prototype.renderStyles = function (styles) {
-            var styleElement = document.createElement("style");
             var styleText = "";
-            styleElement.type = "text/css";
             this.processStyles(styles);
             for (var _i = 0, styles_4 = styles; _i < styles_4.length; _i++) {
                 var style = styles_4[_i];
                 for (var _a = 0, _b = style.styles; _a < _b.length; _a++) {
                     var subStyle = _b[_a];
-                    if (style.isDefault && style.target)
-                        styleText += "." + this.className + " " + style.target + ", ";
+                    var selector = "";
                     if (style.target == subStyle.target)
-                        styleText += style.target + "." + style.id + " {\r\n";
+                        selector += style.target + "." + style.id;
                     else if (style.target)
-                        styleText += style.target + "." + style.id + " " + subStyle.target + " {\r\n";
+                        selector += style.target + "." + style.id + " " + subStyle.target;
                     else
-                        styleText += "." + style.id + " " + subStyle.target + " {\r\n";
-                    for (var key in subStyle.values) {
-                        styleText += "  " + key + ": " + subStyle.values[key] + ";\r\n";
-                    }
-                    styleText += "}\r\n";
+                        selector += "." + style.id + " " + subStyle.target;
+                    if (style.isDefault && style.target)
+                        selector = "." + this.className + " " + style.target + ", " + selector;
+                    styleText += this.styleToString(selector, subStyle.values);
                 }
             }
-            styleElement.innerHTML = styleText;
-            return styleElement;
+            return this.renderStyle(styleText);
         };
         HtmlRenderer.prototype.renderElement = function (elem) {
             switch (elem.domType) {
@@ -1391,8 +1392,8 @@ var docx;
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
-            if (elem.numberingId && elem.numberingLevel) {
-                result.className = result.className + " " + this.className + "-num-" + elem.numberingId + "-" + elem.numberingLevel;
+            if (elem.numberingId && elem.numberingLevel != null) {
+                result.className = result.className + " " + this.numberingClass(elem.numberingId, elem.numberingLevel);
             }
             return result;
         };
@@ -1495,6 +1496,39 @@ var docx;
         HtmlRenderer.prototype.renderClass = function (input, ouput) {
             if (input.className)
                 ouput.className = input.className;
+        };
+        HtmlRenderer.prototype.numberingClass = function (id, lvl) {
+            return this.className + "-num-" + id + "-" + lvl;
+        };
+        HtmlRenderer.prototype.styleToString = function (selectors, values) {
+            var result = selectors + " {\r\n";
+            for (var key in values) {
+                result += "  " + key + ": " + values[key] + ";\r\n";
+            }
+            return result + "}\r\n";
+        };
+        HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
+            return this.className + "-num-" + id + "-" + lvl;
+        };
+        HtmlRenderer.prototype.levelTextToContent = function (text, id) {
+            var _this = this;
+            var result = text.replace(/%\d*/g, function (s) {
+                var lvl = parseInt(s.substring(1), 10) - 1;
+                return "\"counter(" + _this.numberingCounter(id, lvl) + ")\"";
+            });
+            return '"' + result + '"';
+        };
+        HtmlRenderer.prototype.numFormatToCssValue = function (format) {
+            var mapping = {
+                "none": "none",
+                "bullet": "disc",
+                "decimal": "decimal",
+                "lowerLetter": "lower-alpha",
+                "upperLetter": "upper-alpha",
+                "lowerRoman": "lower-roman",
+                "upperRoman": "upper-roman",
+            };
+            return mapping[format] || format;
         };
         return HtmlRenderer;
     }());

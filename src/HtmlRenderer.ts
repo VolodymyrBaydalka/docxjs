@@ -2,7 +2,7 @@ namespace docx {
     export class HtmlRenderer {
 
         inWrapper: boolean = true;
-        className: string = "docx";        
+        className: string = "docx";
         document: Document;
 
         private digitTest = /^[0-9]/.test;
@@ -11,7 +11,7 @@ namespace docx {
         }
 
 
-        render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null){
+        render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null) {
             this.document = document;
 
             styleContainer = styleContainer || bodyContainer;
@@ -24,8 +24,7 @@ namespace docx {
             styleContainer.appendChild(this.htmlDocument.createComment("docx document styles"));
             styleContainer.appendChild(this.renderStyles(document.styles));
 
-            if (document.numbering)
-            {
+            if (document.numbering) {
                 styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
                 styleContainer.appendChild(this.renderNumbering(document.numbering));
             }
@@ -48,32 +47,32 @@ namespace docx {
             }
         }
 
-        processClassName(className){
-            if(!className)
+        processClassName(className) {
+            if (!className)
                 return this.className;
-                
+
             return `${this.className}_${className}`;
         }
 
         processStyles(styles: IDomStyle[]) {
             var stylesMap = {};
 
-            for(let style of styles){
+            for (let style of styles) {
                 style.id = this.processClassName(style.id);
                 style.basedOn = this.processClassName(style.basedOn);
 
                 stylesMap[style.id] = style;
             }
 
-            for(let style of styles){
-                if(style.basedOn){
+            for (let style of styles) {
+                if (style.basedOn) {
                     var baseStyle = stylesMap[style.basedOn];
 
-                    for(let styleValues of style.styles){
+                    for (let styleValues of style.styles) {
                         var baseValues = baseStyle.styles.filter(x => x.target == styleValues.target);
 
-                        if(baseValues && baseValues.length > 0)
-                             this.copyStyleProperties(baseValues[0].values, styleValues.values);
+                        if (baseValues && baseValues.length > 0)
+                            this.copyStyleProperties(baseValues[0].values, styleValues.values);
                     }
                 }
             }
@@ -107,12 +106,12 @@ namespace docx {
             }
         }
 
-	    copyStyleProperties(input: IDomStyleValues, output: IDomStyleValues, attrs: string[] = null): IDomStyleValues {
-            if(!input)
+        copyStyleProperties(input: IDomStyleValues, output: IDomStyleValues, attrs: string[] = null): IDomStyleValues {
+            if (!input)
                 return output;
 
-            if(output == null) output = {};
-            if(attrs == null) attrs = Object.getOwnPropertyNames(input);
+            if (output == null) output = {};
+            if (attrs == null) attrs = Object.getOwnPropertyNames(input);
 
             for (var key of attrs) {
                 if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
@@ -135,7 +134,7 @@ namespace docx {
             return bodyElement;
         }
 
-        renderWrapper(){
+        renderWrapper() {
             var wrapper = document.createElement("div");
 
             wrapper.className = `${this.className}-wrapper`
@@ -143,11 +142,8 @@ namespace docx {
             return wrapper;
         }
 
-        renderDefaultStyle(){
-            var styleElement = document.createElement("style");
-
-            styleElement.type = "text/css";
-            styleElement.innerHTML = `.${this.className}-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } 
+        renderDefaultStyle() {
+            var styleText = `.${this.className}-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } 
                 .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
                 .${this.className} { color: black; }
                 section.${this.className} { box-sizing: border-box; }
@@ -155,59 +151,90 @@ namespace docx {
                 .${this.className} table td, .${this.className} table th { vertical-align: top; }
                 .${this.className} p { margin: 0pt; }`;
 
-            return styleElement;
+            return this.renderStyle(styleText);
         }
 
-	    renderNumbering(styles: IDomNumbering[]) {
+        renderNumbering(styles: IDomNumbering[]) {
             var styleText = "";
+            var rootCounters = [];
 
-            for(var num of styles){
-                styleText += `p.${this.className}-num-${num.id}-${num.level} {\r\n display:list-item; list-style-position:inside; \r\n`
+            for (var num of styles) {
+                var selector = `p.${this.numberingClass(num.id, num.level)}`;
 
-                for (var key in num.style) {
-                    styleText += `${key}: ${num.style[key]};\r\n`;
+                if (num.levelText && num.format == "decimal") {
+                    let counter = this.numberingCounter(num.id, num.level);
+
+                    if (num.level > 0) {
+                        styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
+                            "counter-reset": counter
+                        });
+                    }
+                    else {
+                        rootCounters.push(counter);
+                    }
+
+                    styleText += this.styleToString(`${selector}:before` , {
+                        "content": this.levelTextToContent(num.levelText, num.id),
+                        "counter-increment": counter
+                    });
+
+                    styleText += this.styleToString(selector, {
+                        "display": "list-item",
+                        "list-style-position": "inside",
+                        "list-style-type": "none",
+                        ...num.style
+                    });
                 }
-
-                styleText += "} \r\n";
+                else {
+                    styleText += this.styleToString(selector, {
+                        "display": "list-item",
+                        "list-style-position": "inside",
+                        "list-style-type": this.numFormatToCssValue(num.format),
+                        ...num.style
+                    });
+                }
             }
-            
+
+            if(rootCounters.length > 0) {
+                styleText += this.styleToString(`.${this.className}-wrapper`, {
+                    "counter-reset": rootCounters.join(" ")
+                });
+            }
+
+            return this.renderStyle(styleText);
+        }
+
+        renderStyle(styleContent) {
             var styleElement = document.createElement("style");
             styleElement.type = "text/css";
-            styleElement.innerHTML = styleText;
+            styleElement.innerHTML = styleContent;
             return styleElement;
         }
 
         renderStyles(styles: IDomStyle[]): HTMLElement {
-            var styleElement = document.createElement("style");
             var styleText = "";
-
-            styleElement.type = "text/css";
 
             this.processStyles(styles);
 
             for (let style of styles) {
                 for (var subStyle of style.styles) {
-                    if (style.isDefault && style.target)
-                        styleText += `.${this.className} ${style.target}, `;
+                    var selector = "";
 
                     if (style.target == subStyle.target)
-                        styleText += `${style.target}.${style.id} {\r\n`;
-                    else if(style.target)
-                        styleText += `${style.target}.${style.id} ${subStyle.target} {\r\n`;
+                        selector += `${style.target}.${style.id}`;
+                    else if (style.target)
+                        selector += `${style.target}.${style.id} ${subStyle.target}`;
                     else
-                        styleText += `.${style.id} ${subStyle.target} {\r\n`;
+                        selector += `.${style.id} ${subStyle.target}`;
 
-                    for (var key in subStyle.values) {
-                        styleText += `  ${key}: ${subStyle.values[key]};\r\n`;
-                    }
+                    if (style.isDefault && style.target)
+                        selector = `.${this.className} ${style.target}, ` + selector;
 
-                    styleText += "}\r\n";
+                    styleText += this.styleToString(selector, subStyle.values);
                 }
             }
 
-            styleElement.innerHTML = styleText;
-
-            return styleElement;
+            return this.renderStyle(styleText);
         }
 
         renderElement(elem): HTMLElement {
@@ -235,7 +262,7 @@ namespace docx {
 
                 case DomType.Image:
                     return this.renderImage(elem);
-                }
+            }
 
             return null;
         }
@@ -259,8 +286,8 @@ namespace docx {
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 
-            if(elem.numberingId && elem.numberingLevel) {
-                result.className = `${result.className} ${this.className}-num-${elem.numberingId}-${elem.numberingLevel}`;
+            if (elem.numberingId && elem.numberingLevel != null) {
+                result.className = `${result.className} ${this.numberingClass(elem.numberingId, elem.numberingLevel)}`;
             }
 
             return result;
@@ -272,7 +299,7 @@ namespace docx {
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 
-            if(elem.href) 
+            if (elem.href)
                 result.href = elem.href
 
             return result;
@@ -286,7 +313,7 @@ namespace docx {
 
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
-            
+
             return result;
         }
 
@@ -296,8 +323,8 @@ namespace docx {
             result.style.position = "absolute";
 
             this.renderStyleValues(elem.style, result);
-            
-            if(this.document){
+
+            if (this.document) {
                 this.document.loadImage(elem.src).then(x => {
                     result.src = x;
                 });
@@ -313,26 +340,24 @@ namespace docx {
             var result = this.htmlDocument.createElement("span");
 
             result.textContent = elem.text;
-            
+
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 
-            if(elem.id) {
+            if (elem.id) {
                 result.id = elem.id;
             }
 
-            if(elem.href)
-            {
+            if (elem.href) {
                 var link = this.htmlDocument.createElement("a");
-                
+
                 link.href = elem.href;
                 link.appendChild(result);
 
                 return link;
             }
-            else if(elem.wrapper)
-            {
+            else if (elem.wrapper) {
                 var wrapper = this.htmlDocument.createElement(elem.wrapper);
                 wrapper.appendChild(result);
                 return wrapper;
@@ -348,7 +373,7 @@ namespace docx {
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
 
-            if(elem.columns)
+            if (elem.columns)
                 result.appendChild(this.renderTableColumns(elem.columns));
 
             return result;
@@ -357,12 +382,12 @@ namespace docx {
         renderTableColumns(columns: IDomTableColumn[]) {
             let result = this.htmlDocument.createElement("colGroup");
 
-            for(let col of columns) {
+            for (let col of columns) {
                 let colElem = this.htmlDocument.createElement("col");
 
-                if(col.width)
+                if (col.width)
                     colElem.width = col.width;
-                
+
                 result.appendChild(colElem);
             }
 
@@ -405,6 +430,47 @@ namespace docx {
         renderClass(input: IDomElement, ouput: HTMLElement) {
             if (input.className)
                 ouput.className = input.className;
+        }
+
+        numberingClass(id, lvl) {
+            return `${this.className}-num-${id}-${lvl}`;
+        }
+
+        styleToString(selectors: string, values: IDomStyleValues) {
+            let result = selectors + " {\r\n";
+
+            for (const key in values) {
+                result += `  ${key}: ${values[key]};\r\n`;
+            }
+
+            return result + "}\r\n";
+        }
+
+        numberingCounter(id, lvl) {
+            return `${this.className}-num-${id}-${lvl}`;
+        }
+
+        levelTextToContent(text: string, id: string) {
+            var result = text.replace(/%\d*/g, s => {
+                let lvl = parseInt(s.substring(1), 10) - 1;
+                return `"counter(${this.numberingCounter(id, lvl)})"`;
+            });
+
+            return '"' + result + '"';
+        }
+
+        numFormatToCssValue(format: string) {
+            var mapping = {
+                "none": "none",
+                "bullet": "disc",
+                "decimal": "decimal",
+                "lowerLetter": "lower-alpha",
+                "upperLetter": "upper-alpha",
+                "lowerRoman": "lower-roman",
+                "upperRoman": "upper-roman",
+            };
+
+            return mapping[format] || format;
         }
     }
 }
