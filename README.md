@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/docx-preview.svg)](https://badge.fury.io/js/docx-preview)
+
 # docxjs
 Docx rendering library
 
