@@ -1428,7 +1428,8 @@ var docx;
             if (elem.break)
                 return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
             var result = this.htmlDocument.createElement("span");
-            result.textContent = elem.text;
+            if (elem.text)
+                result.textContent = elem.text;
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
@@ -1463,7 +1464,7 @@ var docx;
                 var col = columns_1[_i];
                 var colElem = this.htmlDocument.createElement("col");
                 if (col.width)
-                    colElem.width = col.width;
+                    colElem.style.width = col.width + "px";
                 result.appendChild(colElem);
             }
             return result;

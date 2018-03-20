@@ -339,7 +339,8 @@ namespace docx {
 
             var result = this.htmlDocument.createElement("span");
 
-            result.textContent = elem.text;
+            if(elem.text)
+                result.textContent = elem.text;
 
             this.renderClass(elem, result);
             this.renderChildren(elem, result);
@@ -386,7 +387,7 @@ namespace docx {
                 let colElem = this.htmlDocument.createElement("col");
 
                 if (col.width)
-                    colElem.width = col.width;
+                    colElem.style.width = `${col.width}px`;
 
                 result.appendChild(colElem);
             }
