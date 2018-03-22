@@ -1,25 +1,29 @@
 <html>
 <head>
+    <script src="https://unpkg.com/promise-polyfill/dist/polyfill.min.js"></script>
     <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
     <script src="docx.js"></script>
+</head>
+<body>
+    <input id="files" type="file" id="files" />
+    <button id="loadButton">load</button>
+    <div id="doc">
+    </div>
+
     <script>
+
+        document.getElementById("loadButton").addEventListener("click", loadDocx);
+
         function loadDocx() {
             var reader = new FileReader();
 
             reader.onload = function (ev) {
                 docx.renderAsync(ev.target.result, document.getElementById("doc"), null, { debug: true })
-                    .then((x) => console.log(x));
+                    .then(function(x){ console.log(x); });
             };
 
             reader.readAsArrayBuffer(document.getElementById("files").files[0]);
         }
     </script>
-
-</head>
-<body>
-    <input id="files" type="file" id="files" />
-    <button onclick="javascript:loadDocx()">load</button>
-    <div id="doc">
-    </div>
 </body>
 </html>
