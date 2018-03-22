@@ -36,11 +36,19 @@ namespace docx {
         children?: IDomElement[];
         style?: IDomStyleValues;
         className?: string;
+        parent?: IDomElement;
     }
 
     export interface IDomParagraph extends IDomElement {
         numberingId?: string;
         numberingLevel?: number;
+        tabs: DocxTab[];
+    }
+
+    export interface DocxTab {
+        style: string;
+        leader: string;
+        position: string;
     }
 
     export interface IDomHyperlink extends IDomElement {
@@ -53,6 +61,7 @@ namespace docx {
         wrapper?: string;
         text?: string;
         href?: string;
+        tab?: boolean;
     }
 
     export interface IDomTable extends IDomElement {
@@ -98,9 +107,21 @@ namespace docx {
         style: IDomStyleValues; 
         levelText?: string;
         format?: string;
+        bullet?: NumberingPicBullet;
+    }
+
+    export interface NumberingPicBullet {
+        id: number;
+        src: string;
+        style?: string;
     }
 
     export interface IDomStyleValues {
         [name: string]: string;
+    }
+
+    export interface IDomFont {
+        name: string;
+        family: string;
     }
 }

@@ -32,38 +32,62 @@ var docx;
         PartType["Document"] = "word/document.xml";
         PartType["Style"] = "word/styles.xml";
         PartType["Numbering"] = "word/numbering.xml";
-        PartType["Relations"] = "word/_rels/document.xml.rels";
+        PartType["DocumentRelations"] = "word/_rels/document.xml.rels";
+        PartType["NumberingRelations"] = "word/_rels/numbering.xml.rels";
+        PartType["FontRelations"] = "word/_rels/fontTable.xml.rels";
     })(PartType || (PartType = {}));
     var Document = (function () {
         function Document() {
             this.zip = new JSZip();
-            this.relations = null;
+            this.docRelations = null;
+            this.fontRelations = null;
+            this.numRelations = null;
             this.styles = null;
+            this.fonts = null;
             this.numbering = null;
             this.document = null;
         }
         Document.load = function (blob, parser) {
             var d = new Document();
             return d.zip.loadAsync(blob).then(function (z) {
-                var files = [d.loadPart(PartType.Relations, parser), d.loadPart(PartType.Style, parser),
-                    d.loadPart(PartType.Numbering, parser), d.loadPart(PartType.Document, parser)];
+                var files = [
+                    d.loadPart(PartType.DocumentRelations, parser),
+                    d.loadPart(PartType.FontRelations, parser),
+                    d.loadPart(PartType.NumberingRelations, parser),
+                    d.loadPart(PartType.Style, parser),
+                    d.loadPart(PartType.Numbering, parser),
+                    d.loadPart(PartType.Document, parser)
+                ];
                 return Promise.all(files.filter(function (x) { return x != null; })).then(function (x) { return d; });
             });
         };
-        Document.prototype.loadImage = function (id) {
-            var rel = this.relations.filter(function (x) { return x.id == id; });
-            if (rel.length == 0)
-                return Promise.resolve(null);
-            var file = this.zip.files["word/" + rel[0].target];
-            return file.async("base64").then(function (x) { return "data:image/png;base64, " + x; });
+        Document.prototype.loadDocumentImage = function (id) {
+            return this.loadResource(this.docRelations, id).then(function (x) { return x ? ("data:image/png;base64," + x) : null; });
+        };
+        Document.prototype.loadNumberingImage = function (id) {
+            return this.loadResource(this.numRelations, id).then(function (x) { return x ? ("data:image/png;base64," + x) : null; });
+        };
+        Document.prototype.loadFont = function (id) {
+            return this.loadResource(this.fontRelations, id)
+                .then(function (x) { return x ? ("data:application/vnd.ms-package.obfuscated-opentype;charset=utf-8;base64," + x) : null; });
+        };
+        Document.prototype.loadResource = function (relations, id) {
+            var rel = relations.filter(function (x) { return x.id == id; });
+            return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async("base64");
         };
         Document.prototype.loadPart = function (part, parser) {
             var _this = this;
             var f = this.zip.files[part];
             return f ? f.async("string").then(function (xml) {
                 switch (part) {
-                    case PartType.Relations:
-                        _this.relations = parser.parseDocumentRelationsFile(xml);
+                    case PartType.FontRelations:
+                        _this.fontRelations = parser.parseDocumentRelationsFile(xml);
+                        break;
+                    case PartType.DocumentRelations:
+                        _this.docRelations = parser.parseDocumentRelationsFile(xml);
+                        break;
+                    case PartType.NumberingRelations:
+                        _this.numRelations = parser.parseDocumentRelationsFile(xml);
                         break;
                     case PartType.Style:
                         _this.styles = parser.parseStylesFile(xml);
@@ -304,11 +328,15 @@ var docx;
             var result = [];
             var xnums = xml.parse(xmlString, this.skipDeclaration);
             var mapping = {};
+            var bullets = [];
             xml.foreach(xnums, function (n) {
                 switch (n.localName) {
                     case "abstractNum":
-                        _this.parseAbstractNumbering(n)
+                        _this.parseAbstractNumbering(n, bullets)
                             .forEach(function (x) { return result.push(x); });
+                        break;
+                    case "numPicBullet":
+                        bullets.push(_this.parseNumberingPicBullet(n));
                         break;
                     case "num":
                         var numId = xml.stringAttr(n, "numId");
@@ -320,20 +348,30 @@ var docx;
             result.forEach(function (x) { return x.id = mapping[x.id]; });
             return result;
         };
-        DocumentParser.prototype.parseAbstractNumbering = function (node) {
+        DocumentParser.prototype.parseNumberingPicBullet = function (node) {
+            var pict = xml.byTagName(node, "pict");
+            var shape = pict && xml.byTagName(pict, "shape");
+            var imagedata = shape && xml.byTagName(shape, "imagedata");
+            return imagedata ? {
+                id: xml.intAttr(node, "numPicBulletId"),
+                src: xml.stringAttr(imagedata, "id"),
+                style: xml.stringAttr(shape, "style")
+            } : null;
+        };
+        DocumentParser.prototype.parseAbstractNumbering = function (node, bullets) {
             var _this = this;
             var result = [];
             var id = xml.stringAttr(node, "abstractNumId");
             xml.foreach(node, function (n) {
                 switch (n.localName) {
                     case "lvl":
-                        result.push(_this.parseNumberingLevel(id, n));
+                        result.push(_this.parseNumberingLevel(id, n, bullets));
                         break;
                 }
             });
             return result;
         };
-        DocumentParser.prototype.parseNumberingLevel = function (id, node) {
+        DocumentParser.prototype.parseNumberingLevel = function (id, node, bullets) {
             var _this = this;
             var result = {
                 id: id,
@@ -344,6 +382,10 @@ var docx;
                 switch (n.localName) {
                     case "pPr":
                         _this.parseDefaultProperties(n, result.style);
+                        break;
+                    case "lvlPicBulletId":
+                        var id = xml.intAttr(n, "val");
+                        result.bullet = bullets.filter(function (x) { return x.id == id; })[0];
                         break;
                     case "lvlText":
                         result.levelText = xml.stringAttr(n, "val");
@@ -380,10 +422,10 @@ var docx;
             xml.foreach(node, function (c) {
                 switch (c.localName) {
                     case "r":
-                        result.children.push(_this.parseRun(c));
+                        result.children.push(_this.parseRun(c, result));
                         break;
                     case "hyperlink":
-                        result.children.push(_this.parseHyperlink(c));
+                        result.children.push(_this.parseHyperlink(c, result));
                         break;
                     case "bookmarkStart":
                         result.children.push(_this.parseBookmark(c));
@@ -407,6 +449,9 @@ var docx;
                         break;
                     case "framePr":
                         _this.parseFrame(c, paragraph);
+                        break;
+                    case "tabs":
+                        _this.parseTabs(c, paragraph);
                         break;
                     case "rPr":
                         break;
@@ -438,24 +483,24 @@ var docx;
             result.id = xml.stringAttr(node, "name");
             return result;
         };
-        DocumentParser.prototype.parseHyperlink = function (node) {
+        DocumentParser.prototype.parseHyperlink = function (node, parent) {
             var _this = this;
-            var result = { domType: docx.DomType.Hyperlink, children: [] };
+            var result = { domType: docx.DomType.Hyperlink, parent: parent, children: [] };
             var anchor = xml.stringAttr(node, "anchor");
             if (anchor)
                 result.href = "#" + anchor;
             xml.foreach(node, function (c) {
                 switch (c.localName) {
                     case "r":
-                        result.children.push(_this.parseRun(c));
+                        result.children.push(_this.parseRun(c, result));
                         break;
                 }
             });
             return result;
         };
-        DocumentParser.prototype.parseRun = function (node) {
+        DocumentParser.prototype.parseRun = function (node, parent) {
             var _this = this;
-            var result = { domType: docx.DomType.Run };
+            var result = { domType: docx.DomType.Run, parent: parent };
             xml.foreach(node, function (c) {
                 switch (c.localName) {
                     case "t":
@@ -465,6 +510,7 @@ var docx;
                         result.break = xml.stringAttr(c, "type") || "textWrapping";
                         break;
                     case "tab":
+                        result.tab = true;
                         break;
                     case "drawing":
                         var d = _this.parseDrawing(c);
@@ -519,6 +565,10 @@ var docx;
                     case "extent":
                         result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
                         result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                        break;
+                    case "positionH":
+                        break;
+                    case "positionV":
                         break;
                     case "graphic":
                         var g = this.parseGraphic(n);
@@ -759,9 +809,6 @@ var docx;
                     case "spacing":
                         _this.parseSpacing(c, style);
                         break;
-                    case "tabs":
-                        _this.parseTabs(c, style);
-                        break;
                     case "lang":
                     case "noProof":
                     case "webHidden":
@@ -844,25 +891,12 @@ var docx;
                 style["min-height"] = line;
             }
         };
-        DocumentParser.prototype.parseTabs = function (node, style) {
-            xml.foreach(node, function (n) {
-                switch (n.localName) {
-                    case "tab":
-                        {
-                            var type = xml.stringAttr(n, "val");
-                            var pos = xml.sizeAttr(n, "pos");
-                            switch (type) {
-                                case "left":
-                                    style["magrin-left"] = values.addSize(style["magrin-left"], pos);
-                                    break;
-                                case "right":
-                                    style["magrin-right"] = values.addSize(style["magrin-right"], pos);
-                                    break;
-                            }
-                        }
-                        break;
-                }
-            });
+        DocumentParser.prototype.parseTabs = function (node, paragraph) {
+            paragraph.tabs = xml.nodes(node, "tab").map(function (n) { return ({
+                position: xml.sizeAttr(n, "pos"),
+                leader: xml.stringAttr(n, "leader"),
+                style: xml.stringAttr(n, "val"),
+            }); });
         };
         DocumentParser.prototype.parseMarginProperties = function (node, output) {
             xml.foreach(node, function (c) {
@@ -933,10 +967,14 @@ var docx;
                 xmlString = xmlString.replace(/<[?].*[?]>/, "");
             return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
         };
-        xml.nodes = function (node) {
+        xml.nodes = function (node, tagName) {
+            if (tagName === void 0) { tagName = null; }
             var result = [];
-            for (var i = 0; i < node.childNodes.length; i++)
-                result.push(node.childNodes[i]);
+            for (var i = 0; i < node.childNodes.length; i++) {
+                var n = node.childNodes[i];
+                if (tagName == null || n.localName == tagName)
+                    result.push(n);
+            }
             return result;
         };
         xml.foreach = function (node, cb) {
@@ -1191,7 +1229,7 @@ var docx;
             styleContainer.appendChild(this.renderStyles(document.styles));
             if (document.numbering) {
                 styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
-                styleContainer.appendChild(this.renderNumbering(document.numbering));
+                styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
             }
             var documentElement = this.renderDocument(document.document);
             if (this.inWrapper) {
@@ -1297,31 +1335,50 @@ var docx;
             var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
             return this.renderStyle(styleText);
         };
-        HtmlRenderer.prototype.renderNumbering = function (styles) {
+        HtmlRenderer.prototype.renderNumbering = function (styles, styleContainer) {
+            var _this = this;
             var styleText = "";
             var rootCounters = [];
-            for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
-                var num = styles_3[_i];
-                var selector = "p." + this.numberingClass(num.id, num.level);
+            var _loop_2 = function () {
+                selector = "p." + this_2.numberingClass(num.id, num.level);
+                listStyleType = "none";
                 if (num.levelText && num.format == "decimal") {
-                    var counter = this.numberingCounter(num.id, num.level);
+                    var counter = this_2.numberingCounter(num.id, num.level);
                     if (num.level > 0) {
-                        styleText += this.styleToString("p." + this.numberingClass(num.id, num.level - 1), {
+                        styleText += this_2.styleToString("p." + this_2.numberingClass(num.id, num.level - 1), {
                             "counter-reset": counter
                         });
                     }
                     else {
                         rootCounters.push(counter);
                     }
-                    styleText += this.styleToString(selector + ":before", {
-                        "content": this.levelTextToContent(num.levelText, num.id),
+                    styleText += this_2.styleToString(selector + ":before", {
+                        "content": this_2.levelTextToContent(num.levelText, num.id),
                         "counter-increment": counter
                     });
-                    styleText += this.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": "none" }, num.style));
+                    styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": "none" }, num.style));
+                }
+                else if (num.bullet) {
+                    var valiable_1 = ("--" + this_2.className + "-" + num.bullet.src).toLowerCase();
+                    styleText += this_2.styleToString(selector + ":before", {
+                        "content": "' '",
+                        "display": "inline-block",
+                        "background": "var(" + valiable_1 + ")"
+                    }, num.bullet.style);
+                    this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
+                        var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
+                        styleContainer.appendChild(_this.renderStyle(text));
+                    });
                 }
                 else {
-                    styleText += this.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": this.numFormatToCssValue(num.format) }, num.style));
+                    listStyleType = this_2.numFormatToCssValue(num.format);
                 }
+                styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
+            };
+            var this_2 = this, selector, listStyleType;
+            for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
+                var num = styles_3[_i];
+                _loop_2();
             }
             if (rootCounters.length > 0) {
                 styleText += this.styleToString("." + this.className + "-wrapper", {
@@ -1357,7 +1414,7 @@ var docx;
             }
             return this.renderStyle(styleText);
         };
-        HtmlRenderer.prototype.renderElement = function (elem) {
+        HtmlRenderer.prototype.renderElement = function (elem, parent) {
             switch (elem.domType) {
                 case docx.DomType.Paragraph:
                     return this.renderParagraph(elem);
@@ -1382,7 +1439,7 @@ var docx;
             var _this = this;
             var result = null;
             if (elem.children != null)
-                result = elem.children.map(function (x) { return _this.renderElement(x); }).filter(function (x) { return x != null; });
+                result = elem.children.map(function (x) { return _this.renderElement(x, elem); }).filter(function (x) { return x != null; });
             if (into && result)
                 result.forEach(function (x) { return into.appendChild(x); });
             return result;
@@ -1418,7 +1475,7 @@ var docx;
             result.style.position = "absolute";
             this.renderStyleValues(elem.style, result);
             if (this.document) {
-                this.document.loadImage(elem.src).then(function (x) {
+                this.document.loadDocumentImage(elem.src).then(function (x) {
                     result.src = x;
                 });
             }
@@ -1436,7 +1493,9 @@ var docx;
             if (elem.id) {
                 result.id = elem.id;
             }
-            if (elem.href) {
+            if (elem.tab) {
+            }
+            else if (elem.href) {
                 var link = this.htmlDocument.createElement("a");
                 link.href = elem.href;
                 link.appendChild(result);
@@ -1501,11 +1560,14 @@ var docx;
         HtmlRenderer.prototype.numberingClass = function (id, lvl) {
             return this.className + "-num-" + id + "-" + lvl;
         };
-        HtmlRenderer.prototype.styleToString = function (selectors, values) {
+        HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
+            if (cssText === void 0) { cssText = null; }
             var result = selectors + " {\r\n";
             for (var key in values) {
                 result += "  " + key + ": " + values[key] + ";\r\n";
             }
+            if (cssText)
+                result += ";" + cssText;
             return result + "}\r\n";
         };
         HtmlRenderer.prototype.numberingCounter = function (id, lvl) {

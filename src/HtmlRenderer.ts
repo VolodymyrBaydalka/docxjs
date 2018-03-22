@@ -26,7 +26,7 @@ namespace docx {
 
             if (document.numbering) {
                 styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
-                styleContainer.appendChild(this.renderNumbering(document.numbering));
+                styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
             }
 
             var documentElement = this.renderDocument(document.document);
@@ -154,12 +154,13 @@ namespace docx {
             return this.renderStyle(styleText);
         }
 
-        renderNumbering(styles: IDomNumbering[]) {
+        renderNumbering(styles: IDomNumbering[], styleContainer: HTMLElement) {
             var styleText = "";
             var rootCounters = [];
 
             for (var num of styles) {
                 var selector = `p.${this.numberingClass(num.id, num.level)}`;
+                var listStyleType = "none";
 
                 if (num.levelText && num.format == "decimal") {
                     let counter = this.numberingCounter(num.id, num.level);
@@ -173,7 +174,7 @@ namespace docx {
                         rootCounters.push(counter);
                     }
 
-                    styleText += this.styleToString(`${selector}:before` , {
+                    styleText += this.styleToString(`${selector}:before`, {
                         "content": this.levelTextToContent(num.levelText, num.id),
                         "counter-increment": counter
                     });
@@ -185,17 +186,33 @@ namespace docx {
                         ...num.style
                     });
                 }
-                else {
-                    styleText += this.styleToString(selector, {
-                        "display": "list-item",
-                        "list-style-position": "inside",
-                        "list-style-type": this.numFormatToCssValue(num.format),
-                        ...num.style
+                else if (num.bullet) {
+                    let valiable = `--${this.className}-${num.bullet.src}`.toLowerCase();
+
+                    styleText += this.styleToString(`${selector}:before`, {
+                        "content": "' '",
+                        "display": "inline-block",
+                        "background": `var(${valiable})`
+                    }, num.bullet.style);
+
+                    this.document.loadNumberingImage(num.bullet.src).then(data => {
+                        var text = `.${this.className}-wrapper { ${valiable}: url(${data}) }`;
+                        styleContainer.appendChild(this.renderStyle(text));
                     });
                 }
+                else {
+                    listStyleType = this.numFormatToCssValue(num.format);
+                }
+
+                styleText += this.styleToString(selector, {
+                    "display": "list-item",
+                    "list-style-position": "inside",
+                    "list-style-type": listStyleType,
+                    ...num.style
+                });
             }
 
-            if(rootCounters.length > 0) {
+            if (rootCounters.length > 0) {
                 styleText += this.styleToString(`.${this.className}-wrapper`, {
                     "counter-reset": rootCounters.join(" ")
                 });
@@ -237,7 +254,7 @@ namespace docx {
             return this.renderStyle(styleText);
         }
 
-        renderElement(elem): HTMLElement {
+        renderElement(elem, parent): HTMLElement {
             switch (elem.domType) {
                 case DomType.Paragraph:
                     return this.renderParagraph(elem);
@@ -271,7 +288,7 @@ namespace docx {
             var result: HTMLElement[] = null;
 
             if (elem.children != null)
-                result = elem.children.map(x => this.renderElement(x)).filter(x => x != null);
+                result = elem.children.map(x => this.renderElement(x, elem)).filter(x => x != null);
 
             if (into && result)
                 result.forEach(x => into.appendChild(x));
@@ -325,7 +342,7 @@ namespace docx {
             this.renderStyleValues(elem.style, result);
 
             if (this.document) {
-                this.document.loadImage(elem.src).then(x => {
+                this.document.loadDocumentImage(elem.src).then(x => {
                     result.src = x;
                 });
             }
@@ -339,7 +356,7 @@ namespace docx {
 
             var result = this.htmlDocument.createElement("span");
 
-            if(elem.text)
+            if (elem.text)
                 result.textContent = elem.text;
 
             this.renderClass(elem, result);
@@ -350,7 +367,35 @@ namespace docx {
                 result.id = elem.id;
             }
 
-            if (elem.href) {
+            if (elem.tab) {
+                //TODO
+                // result.style.display = "inline-block";
+
+                // var paragraph = <IDomParagraph>elem.parent;
+
+                // while (paragraph != null && paragraph.domType != DomType.Paragraph)
+                //     paragraph = <IDomParagraph>paragraph.parent;
+
+                // if (paragraph && paragraph.tabs) {
+                //     var tab = paragraph.tabs[0];
+
+                //     result.style.width = tab.position;
+
+                //     switch (tab.leader) {
+                //         case "dot":
+                //         case "middleDot":
+                //             result.style.borderBottom = "1px black dotted";
+                //             break;
+
+                //         case "hyphen":
+                //         case "heavy":
+                //         case "underscore":
+                //             result.style.borderBottom = "1px black solid";
+                //             break;
+                //     }
+                // }
+            }
+            else if (elem.href) {
                 var link = this.htmlDocument.createElement("a");
 
                 link.href = elem.href;
@@ -437,12 +482,15 @@ namespace docx {
             return `${this.className}-num-${id}-${lvl}`;
         }
 
-        styleToString(selectors: string, values: IDomStyleValues) {
+        styleToString(selectors: string, values: IDomStyleValues, cssText: string = null) {
             let result = selectors + " {\r\n";
 
             for (const key in values) {
                 result += `  ${key}: ${values[key]};\r\n`;
             }
+
+            if(cssText)
+                result += ";" + cssText;
 
             return result + "}\r\n";
         }

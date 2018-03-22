@@ -234,12 +234,17 @@ namespace docx {
             var xnums = xml.parse(xmlString, this.skipDeclaration);
             
             var mapping = {};
+            var bullets = [];
 
             xml.foreach(xnums, n => {
                 switch(n.localName){
                     case "abstractNum":
-                        this.parseAbstractNumbering(n)
+                        this.parseAbstractNumbering(n, bullets)
                             .forEach(x => result.push(x));
+                        break;
+
+                    case "numPicBullet":
+                        bullets.push(this.parseNumberingPicBullet(n));
                         break;
 
                     case "num":
@@ -255,14 +260,26 @@ namespace docx {
             return result;
         }
 
-        parseAbstractNumbering(node: Node): IDomNumbering[] {
+        parseNumberingPicBullet(node: Node): NumberingPicBullet {
+            var pict = xml.byTagName(node, "pict");
+            var shape = pict && xml.byTagName(pict, "shape");
+            var imagedata = shape && xml.byTagName(shape, "imagedata");
+
+            return imagedata ? {
+                id: xml.intAttr(node, "numPicBulletId"),
+                src: xml.stringAttr(imagedata, "id"),
+                style: xml.stringAttr(shape, "style")
+            } : null;
+        }
+
+        parseAbstractNumbering(node: Node, bullets: any[]): IDomNumbering[] {
             var result = [];
             var id = xml.stringAttr(node, "abstractNumId"); 
 
             xml.foreach(node, n => {
                 switch (n.localName) {
                     case "lvl":
-                        result.push(this.parseNumberingLevel(id, n));
+                        result.push(this.parseNumberingLevel(id, n, bullets));
                         break;
                 }
             });
@@ -270,7 +287,7 @@ namespace docx {
             return result;
         }
 
-	    parseNumberingLevel(id: string, node: Node): IDomNumbering {
+	    parseNumberingLevel(id: string, node: Node, bullets: any[]): IDomNumbering {
             var result: IDomNumbering = {
                 id: id,
                 level: xml.intAttr(node, "ilvl"),
@@ -281,6 +298,11 @@ namespace docx {
                 switch (n.localName) {
                     case "pPr":
                         this.parseDefaultProperties(n, result.style);
+                        break;
+
+                    case "lvlPicBulletId":
+                        var id = xml.intAttr(n, "val");
+                        result.bullet = bullets.filter(x => x.id == id)[0];
                         break;
                     
                     case "lvlText":
@@ -318,16 +340,16 @@ namespace docx {
         }
 
         parseParagraph(node: Node): IDomElement {
-            var result: IDomElement = { domType: DomType.Paragraph, children: [] };
+            var result = <IDomParagraph>{ domType: DomType.Paragraph, children: [] };
 
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "r":
-                        result.children.push(this.parseRun(c));
+                        result.children.push(this.parseRun(c, result));
                         break;
 
                     case "hyperlink":
-                        result.children.push(this.parseHyperlink(c));
+                        result.children.push(this.parseHyperlink(c, result));
                         break;
 
                     case "bookmarkStart":
@@ -356,6 +378,10 @@ namespace docx {
 
                     case "framePr":
                         this.parseFrame(c, paragraph);
+                        break;
+
+                    case "tabs":
+                        this.parseTabs(c, paragraph);
                         break;
 
                     case "rPr":
@@ -399,8 +425,8 @@ namespace docx {
             return result;
         }
 
-        parseHyperlink(node: Node): IDomRun {
-            var result: IDomHyperlink = { domType: DomType.Hyperlink, children: [] };
+        parseHyperlink(node: Node, parent?: IDomElement): IDomRun {
+            var result: IDomHyperlink = { domType: DomType.Hyperlink, parent: parent, children: [] };
             var anchor = xml.stringAttr(node, "anchor");
 
             if(anchor)
@@ -409,7 +435,7 @@ namespace docx {
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "r":
-                        result.children.push(this.parseRun(c));
+                        result.children.push(this.parseRun(c, result));
                         break;
                 }
             });     
@@ -417,8 +443,8 @@ namespace docx {
             return result;
         }
 
-        parseRun(node: Node): IDomRun {
-            var result: IDomRun = { domType: DomType.Run };
+        parseRun(node: Node, parent?: IDomElement): IDomRun {
+            var result: IDomRun = { domType: DomType.Run, parent: parent };
 
             xml.foreach(node, c => {
                 switch (c.localName) {
@@ -431,6 +457,7 @@ namespace docx {
                         break;
 
                     case "tab":
+                        result.tab = true;
                         //result.text = "\u00A0\u00A0\u00A0\u00A0";  // TODO
                         break;
 
@@ -486,12 +513,24 @@ namespace docx {
         parseDrawingWrapper(node: Node): IDomDocument {
             var result = <IDomElement>{ domType: DomType.Drawing, children: [], style: {} };
             var isAnchor = node.localName == "anchor";
+
+            //TODO
+            // result.style["left"] = xml.sizeAttr(node, "distL", SizeType.Emu);
+            // result.style["top"] = xml.sizeAttr(node, "distT", SizeType.Emu);
+            // result.style["right"] = xml.sizeAttr(node, "distR", SizeType.Emu);
+            // result.style["bottom"] = xml.sizeAttr(node, "distB", SizeType.Emu);
             
             for(var n of xml.nodes(node)) {
                 switch (n.localName){
                     case "extent":
                         result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
                         result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                        break;
+
+                    case "positionH":
+                        break;
+
+                    case "positionV":
                         break;
 
                     case "graphic": 
@@ -794,10 +833,6 @@ namespace docx {
                         this.parseSpacing(c, style);
                         break;
 
-                    case "tabs":
-                        this.parseTabs(c, style);
-                        break;
-
                     case "lang":
                     case "noProof":
                     case "webHidden": // maybe web-hidden should be implemented
@@ -895,25 +930,11 @@ namespace docx {
             }
         }
 
-	    parseTabs(node: Node, style: IDomStyleValues) {
-            xml.foreach(node, n => {
-                switch(n.localName){
-                    case "tab":{
-                        var type = xml.stringAttr(n, "val");
-                        var pos = xml.sizeAttr(n, "pos");
-
-                        switch(type) {
-                            case "left":
-                                style["magrin-left"] = values.addSize(style["magrin-left"], pos);
-                                break;
-
-                            case "right":
-                                style["magrin-right"] = values.addSize(style["magrin-right"], pos);
-                                break;
-                        }
-                    }
-                        break;                    
-                }
+	    parseTabs(node: Node, paragraph: IDomParagraph) {
+            paragraph.tabs = xml.nodes(node, "tab").map(n => <DocxTab>{
+                position: xml.sizeAttr(n, "pos"),
+                leader: xml.stringAttr(n, "leader"),
+                style: xml.stringAttr(n, "val"),
             });
         }
 
@@ -995,10 +1016,16 @@ namespace docx {
             return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
         }
 
-        static nodes(node: Node) {
+        static nodes(node: Node, tagName: string = null) {
             var result = [];
+            
             for (var i = 0; i < node.childNodes.length; i++)
-                result.push(node.childNodes[i]);
+            {
+                let n = node.childNodes[i];
+                if(tagName == null || n.localName == tagName)
+                    result.push(n);
+            }
+
             return result;
         }
 

@@ -31,14 +31,20 @@ namespace docx {
         Document = "word/document.xml",
         Style = "word/styles.xml",
         Numbering = "word/numbering.xml",
-        Relations = "word/_rels/document.xml.rels"
+        DocumentRelations = "word/_rels/document.xml.rels",
+        NumberingRelations = "word/_rels/numbering.xml.rels",
+        FontRelations = "word/_rels/fontTable.xml.rels",
     }
 
     export class Document {
         private zip: JSZip = new JSZip();
 
-        relations: IDomRelationship[] = null;
+        docRelations: IDomRelationship[] = null;
+        fontRelations: IDomRelationship[] = null;
+        numRelations: IDomRelationship[] = null;
+        
         styles: IDomStyle[] = null;
+        fonts: IDomFont[] = null;
         numbering: IDomNumbering[] = null;
         document: IDomDocument = null;
 
@@ -46,22 +52,36 @@ namespace docx {
             var d = new Document();
             
             return d.zip.loadAsync(blob).then(z => {
-                var files = [d.loadPart(PartType.Relations, parser), d.loadPart(PartType.Style, parser), 
-                    d.loadPart(PartType.Numbering, parser), d.loadPart(PartType.Document, parser)];
+                var files = [
+                    d.loadPart(PartType.DocumentRelations, parser), 
+                    d.loadPart(PartType.FontRelations, parser), 
+                    d.loadPart(PartType.NumberingRelations, parser), 
+                    d.loadPart(PartType.Style, parser), 
+                    d.loadPart(PartType.Numbering, parser), 
+                    d.loadPart(PartType.Document, parser)
+                ];
 
                 return Promise.all(files.filter(x => x != null)).then(x => d);
             });
         }
 
-        loadImage(id: string): PromiseLike<string> {
-            var rel = this.relations.filter(x => x.id == id);
+        loadDocumentImage(id: string): PromiseLike<string> {
+            return this.loadResource(this.docRelations, id).then(x => x ? ("data:image/png;base64," + x) : null);
+        }
 
-            if(rel.length == 0)
-                return Promise.resolve(null);
-            
-            var file = this.zip.files["word/" + rel[0].target];
+        loadNumberingImage(id: string): PromiseLike<string> {
+            return this.loadResource(this.numRelations, id).then(x => x ? ("data:image/png;base64," + x) : null);
+        }
 
-            return file.async("base64").then(x => "data:image/png;base64, " + x);
+        loadFont(id: string): PromiseLike<string> {
+            return this.loadResource(this.fontRelations, id)
+                .then(x => x ? ("data:application/vnd.ms-package.obfuscated-opentype;charset=utf-8;base64," + x) : null);
+        }
+
+        private loadResource(relations: IDomRelationship[], id: string) {
+            let rel = relations.filter(x => x.id == id);
+
+            return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async("base64");
         }
 
         private loadPart(part: PartType, parser: DocumentParser) {
@@ -69,8 +89,16 @@ namespace docx {
 
             return f ? f.async("string").then(xml => {
                 switch(part) {
-                    case PartType.Relations: 
-                        this.relations = parser.parseDocumentRelationsFile(xml); 
+                    case PartType.FontRelations: 
+                        this.fontRelations = parser.parseDocumentRelationsFile(xml); 
+                        break;
+
+                    case PartType.DocumentRelations: 
+                        this.docRelations = parser.parseDocumentRelationsFile(xml); 
+                        break;
+
+                    case PartType.NumberingRelations: 
+                        this.numRelations = parser.parseDocumentRelationsFile(xml); 
                         break;
 
                     case PartType.Style:
