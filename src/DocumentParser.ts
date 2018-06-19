@@ -1,5 +1,5 @@
 
-namespace docx {
+module docx {
     export var autos = {
         shd: "white",
         color: "black",
@@ -1046,8 +1046,10 @@ namespace docx {
         }
 
         static stringAttr(node: Node, attrName: string) {
-            for (var i = 0; i < node.attributes.length; i++) {
-                var attr = node.attributes.item(i);
+            var attrs = (<Element>node).attributes;
+
+            for (var i = 0; attrs && i < attrs.length; i++) {
+                var attr = attrs.item(i);
 
                 if (attr.localName == attrName)
                     return attr.value;

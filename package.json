@@ -1,21 +1,21 @@
 {
   "name": "docx-preview",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "Apache-2.0",
   "keywords": [
     "word",
     "docx"
   ],
   "author": {
-    "name": "Volodymyr Baydalka"    
+    "name": "Volodymyr Baydalka"
   },
   "dependencies": {
     "jszip": "3.1.3"
   },
   "devDependencies": {
     "@types/jszip": "^0.0.31",
-    "typescript": "2.6.1",
-    "uglify-js": "2.7.4"
+    "typescript": "2.9.2",
+    "uglify-js": "3.4.1"
   },
   "scripts": {
     "build": "tsc | uglifyjs docx.js --mangle -o docx.min.js",

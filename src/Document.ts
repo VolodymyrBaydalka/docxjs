@@ -1,4 +1,4 @@
-namespace docx {
+module docx {
     export interface Options {
         inWrapper: boolean;
         ignoreWidth: boolean;

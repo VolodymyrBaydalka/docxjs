@@ -1,4 +1,4 @@
-namespace docx {
+module docx {
     export class HtmlRenderer {
 
         inWrapper: boolean = true;

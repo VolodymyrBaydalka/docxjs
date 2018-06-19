@@ -991,8 +991,9 @@ var docx;
             return n ? xml.stringAttr(n, attrName) : null;
         };
         xml.stringAttr = function (node, attrName) {
-            for (var i = 0; i < node.attributes.length; i++) {
-                var attr = node.attributes.item(i);
+            var attrs = node.attributes;
+            for (var i = 0; attrs && i < attrs.length; i++) {
+                var attr = attrs.item(i);
                 if (attr.localName == attrName)
                     return attr.value;
             }
