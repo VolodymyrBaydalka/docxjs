@@ -9,16 +9,16 @@ namespace docx {
     export class DocumentParser {
         // removes XML declaration 
         skipDeclaration: boolean = true;
-        
-         // ignores page and table sizes
+
+        // ignores page and table sizes
         ignoreWidth: boolean = false;
-        ignoreHeight: boolean = true; 
+        ignoreHeight: boolean = true;
         debug: boolean = false;
 
         parseDocumentRelationsFile(xmlString) {
             var xrels = xml.parse(xmlString, this.skipDeclaration);
 
-            return xml.nodes(xrels).map(c => <IDomRelationship>{
+            return xml.elements(xrels).map(c => <IDomRelationship>{
                 id: xml.stringAttr(c, "Id"),
                 type: values.valueOfRelType(c),
                 target: xml.stringAttr(c, "Target"),
@@ -34,23 +34,21 @@ namespace docx {
 
             var xbody = xml.byTagName(xml.parse(xmlString, this.skipDeclaration), "body");
 
-            for (var i = 0; i < xbody.childNodes.length; i++) {
-                var node = xbody.childNodes[i];
-
-                switch (node.localName) {
+            xml.foreach(xbody, elem => {
+                switch (elem.localName) {
                     case "p":
-                        result.children.push(this.parseParagraph(node));
+                        result.children.push(this.parseParagraph(elem));
                         break;
 
                     case "tbl":
-                        result.children.push(this.parseTable(node));
+                        result.children.push(this.parseTable(elem));
                         break;
 
                     case "sectPr":
-                        this.parseSectionProperties(node, result);
+                        this.parseSectionProperties(elem, result);
                         break;
-                }
-            }
+                }            
+            });
 
             return result;
         }
@@ -75,7 +73,7 @@ namespace docx {
             return result;
         }
 
-        parseDefaultStyles(node: Node): IDomStyle {
+        parseDefaultStyles(node: Element): IDomStyle {
             var result = {
                 id: null,
                 name: null,
@@ -85,21 +83,21 @@ namespace docx {
             };
 
             xml.foreach(node, c => {
-                switch(c.localName) {
-                    case "rPrDefault": 
+                switch (c.localName) {
+                    case "rPrDefault":
                         var rPr = xml.byTagName(c, "rPr");
-                        
-                        if(rPr)
+
+                        if (rPr)
                             result.styles.push({
                                 target: "span",
                                 values: this.parseDefaultProperties(rPr, {})
                             });
                         break;
 
-                    case "pPrDefault": 
+                    case "pPrDefault":
                         var pPr = xml.byTagName(c, "pPr");
 
-                        if(pPr)
+                        if (pPr)
                             result.styles.push({
                                 target: "p",
                                 values: this.parseDefaultProperties(pPr, {})
@@ -111,7 +109,7 @@ namespace docx {
             return result;
         }
 
-        parseStyle(node: Node): IDomStyle {
+        parseStyle(node: Element): IDomStyle {
             var result = <IDomStyle>{
                 id: xml.className(node, "styleId"),
                 isDefault: xml.boolAttr(node, "default"),
@@ -160,7 +158,7 @@ namespace docx {
                         break;
 
                     case "tblStylePr":
-                        for(let s of this.parseTableStyle(n))
+                        for (let s of this.parseTableStyle(n))
                             result.styles.push(s);
                         break;
 
@@ -173,22 +171,22 @@ namespace docx {
                     case "uiPriority":
                         //TODO: ignore
                         break;
-    
+
                     default:
-                    this.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
+                        this.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
                 }
             });
 
             return result;
         }
 
-        parseTableStyle(node: Node): IDomSubStyle[] {
+        parseTableStyle(node: Element): IDomSubStyle[] {
             var result = [];
 
             var type = xml.stringAttr(node, "type");
             var selector = "";
 
-            switch(type){
+            switch (type) {
                 case "firstRow": selector = "tr.first-row"; break;
                 case "lastRow": selector = "tr.last-row"; break;
                 case "firstCol": selector = "td.first-col"; break;
@@ -232,12 +230,12 @@ namespace docx {
         parseNumberingFile(xmlString: string): IDomNumbering[] {
             var result = [];
             var xnums = xml.parse(xmlString, this.skipDeclaration);
-            
+
             var mapping = {};
             var bullets = [];
 
             xml.foreach(xnums, n => {
-                switch(n.localName){
+                switch (n.localName) {
                     case "abstractNum":
                         this.parseAbstractNumbering(n, bullets)
                             .forEach(x => result.push(x));
@@ -249,7 +247,7 @@ namespace docx {
 
                     case "num":
                         var numId = xml.stringAttr(n, "numId");
-                        var abstractNumId = xml.nodeStringAttr(n, "abstractNumId", "val");
+                        var abstractNumId = xml.elementStringAttr(n, "abstractNumId", "val");
                         mapping[abstractNumId] = numId;
                         break;
                 }
@@ -260,21 +258,21 @@ namespace docx {
             return result;
         }
 
-        parseNumberingPicBullet(node: Node): NumberingPicBullet {
-            var pict = xml.byTagName(node, "pict");
+        parseNumberingPicBullet(elem: Element): NumberingPicBullet {
+            var pict = xml.byTagName(elem, "pict");
             var shape = pict && xml.byTagName(pict, "shape");
             var imagedata = shape && xml.byTagName(shape, "imagedata");
 
             return imagedata ? {
-                id: xml.intAttr(node, "numPicBulletId"),
+                id: xml.intAttr(elem, "numPicBulletId"),
                 src: xml.stringAttr(imagedata, "id"),
                 style: xml.stringAttr(shape, "style")
             } : null;
         }
 
-        parseAbstractNumbering(node: Node, bullets: any[]): IDomNumbering[] {
+        parseAbstractNumbering(node: Element, bullets: any[]): IDomNumbering[] {
             var result = [];
-            var id = xml.stringAttr(node, "abstractNumId"); 
+            var id = xml.stringAttr(node, "abstractNumId");
 
             xml.foreach(node, n => {
                 switch (n.localName) {
@@ -287,12 +285,12 @@ namespace docx {
             return result;
         }
 
-	    parseNumberingLevel(id: string, node: Node, bullets: any[]): IDomNumbering {
+        parseNumberingLevel(id: string, node: Element, bullets: any[]): IDomNumbering {
             var result: IDomNumbering = {
                 id: id,
                 level: xml.intAttr(node, "ilvl"),
                 style: {}
-            }; 
+            };
 
             xml.foreach(node, n => {
                 switch (n.localName) {
@@ -304,7 +302,7 @@ namespace docx {
                         var id = xml.intAttr(n, "val");
                         result.bullet = bullets.filter(x => x.id == id)[0];
                         break;
-                    
+
                     case "lvlText":
                         result.levelText = xml.stringAttr(n, "val");
                         break;
@@ -318,28 +316,28 @@ namespace docx {
             return result;
         }
 
-        parseSectionProperties(node: Node, elem: IDomElement) {
-            xml.foreach(node, n => {
+        parseSectionProperties(elem: Element, domElem: IDomElement) {
+            xml.foreach(elem, n => {
                 switch (n.localName) {
                     case "pgMar":
-                        elem.style["padding-left"] = xml.sizeAttr(n, "left");
-                        elem.style["padding-right"] = xml.sizeAttr(n, "right");
-                        elem.style["padding-top"] = xml.sizeAttr(n, "top");
-                        elem.style["padding-bottom"] = xml.sizeAttr(n, "bottom");
+                        domElem.style["padding-left"] = xml.sizeAttr(n, "left");
+                        domElem.style["padding-right"] = xml.sizeAttr(n, "right");
+                        domElem.style["padding-top"] = xml.sizeAttr(n, "top");
+                        domElem.style["padding-bottom"] = xml.sizeAttr(n, "bottom");
                         break;
 
-	                case "pgSz":
-                        if(!this.ignoreWidth)
-                            elem.style["width"] = xml.sizeAttr(n, "w");
+                    case "pgSz":
+                        if (!this.ignoreWidth)
+                            domElem.style["width"] = xml.sizeAttr(n, "w");
 
-                        if(!this.ignoreHeight)
-                            elem.style["height"] = xml.sizeAttr(n, "h");
+                        if (!this.ignoreHeight)
+                            domElem.style["height"] = xml.sizeAttr(n, "h");
                         break;
                 }
             });
         }
 
-        parseParagraph(node: Node): IDomElement {
+        parseParagraph(node: Element): IDomElement {
             var result = <IDomParagraph>{ domType: DomType.Paragraph, children: [] };
 
             xml.foreach(node, c => {
@@ -365,13 +363,13 @@ namespace docx {
             return result;
         }
 
-        parseParagraphProperties(node: Node, paragraph: IDomParagraph) {
-            this.parseDefaultProperties(node, paragraph.style = {}, null, c => {
+        parseParagraphProperties(elem: Element, paragraph: IDomParagraph) {
+            this.parseDefaultProperties(elem, paragraph.style = {}, null, c => {
                 switch (c.localName) {
                     case "pStyle":
                         paragraph.className = xml.className(c, "val");
                         break;
-                    
+
                     case "numPr":
                         this.parseNumbering(c, paragraph);
                         break;
@@ -396,8 +394,8 @@ namespace docx {
             });
         }
 
-        parseNumbering(node: Node, paragraph: IDomParagraph){
-             xml.foreach(node, c => {
+        parseNumbering(node: Element, paragraph: IDomParagraph) {
+            xml.foreach(node, c => {
                 switch (c.localName) {
                     case "numId":
                         paragraph.numberingId = xml.stringAttr(c, "val");
@@ -410,14 +408,14 @@ namespace docx {
             });
         }
 
-        parseFrame(node: Node, paragraph: IDomParagraph){
+        parseFrame(node: Element, paragraph: IDomParagraph) {
             var dropCap = xml.stringAttr(node, "dropCap");
 
-            if(dropCap == "drop")
+            if (dropCap == "drop")
                 paragraph.style["float"] = "left";
         }
 
-        parseBookmark(node: Node): IDomElement {
+        parseBookmark(node: Element): IDomElement {
             var result: IDomRun = { domType: DomType.Run };
 
             result.id = xml.stringAttr(node, "name");
@@ -425,12 +423,12 @@ namespace docx {
             return result;
         }
 
-        parseHyperlink(node: Node, parent?: IDomElement): IDomRun {
+        parseHyperlink(node: Element, parent?: IDomElement): IDomRun {
             var result: IDomHyperlink = { domType: DomType.Hyperlink, parent: parent, children: [] };
             var anchor = xml.stringAttr(node, "anchor");
 
-            if(anchor)
-                result.href = "#" + anchor;   
+            if (anchor)
+                result.href = "#" + anchor;
 
             xml.foreach(node, c => {
                 switch (c.localName) {
@@ -438,12 +436,12 @@ namespace docx {
                         result.children.push(this.parseRun(c, result));
                         break;
                 }
-            });     
-            
+            });
+
             return result;
         }
 
-        parseRun(node: Node, parent?: IDomElement): IDomRun {
+        parseRun(node: Element, parent?: IDomElement): IDomRun {
             var result: IDomRun = { domType: DomType.Run, parent: parent };
 
             xml.foreach(node, c => {
@@ -464,7 +462,7 @@ namespace docx {
                     case "drawing":
                         let d = this.parseDrawing(c);
 
-                        if(d)
+                        if (d)
                             result.children = [d];
                         break;
 
@@ -477,16 +475,15 @@ namespace docx {
             return result;
         }
 
-        parseRunProperties(node: Node, run: IDomRun) {
-            this.parseDefaultProperties(node, run.style = {}, null, c => {
+        parseRunProperties(elem: Element, run: IDomRun) {
+            this.parseDefaultProperties(elem, run.style = {}, null, c => {
                 switch (c.localName) {
                     case "rStyle":
                         run.className = xml.className(c, "val");
                         break;
 
                     case "vertAlign":
-                        switch(xml.stringAttr(c, "val"))
-                        {
+                        switch (xml.stringAttr(c, "val")) {
                             case "subscript": run.wrapper = "sub"; break;
                             case "superscript": run.wrapper = "sup"; break;
                         }
@@ -500,17 +497,17 @@ namespace docx {
             });
         }
 
-        parseDrawing(node: Node): IDomElement {
-            for(var n of xml.nodes(node)) {
-                switch (n.localName){
-                    case "inline": 
-                    case "anchor": 
+        parseDrawing(node: Element): IDomElement {
+            for (var n of xml.elements(node)) {
+                switch (n.localName) {
+                    case "inline":
+                    case "anchor":
                         return this.parseDrawingWrapper(n);
                 }
             }
         }
 
-        parseDrawingWrapper(node: Node): IDomDocument {
+        parseDrawingWrapper(node: Element): IDomElement {
             var result = <IDomElement>{ domType: DomType.Drawing, children: [], style: {} };
             var isAnchor = node.localName == "anchor";
 
@@ -519,38 +516,76 @@ namespace docx {
             // result.style["top"] = xml.sizeAttr(node, "distT", SizeType.Emu);
             // result.style["right"] = xml.sizeAttr(node, "distR", SizeType.Emu);
             // result.style["bottom"] = xml.sizeAttr(node, "distB", SizeType.Emu);
-            
-            for(var n of xml.nodes(node)) {
-                switch (n.localName){
+
+            let wrapTopAndBottom = false;
+            let simplePos = xml.boolAttr(node, "simplePos");
+
+            let posX = { relative: "page", align: "left", offset: "0" };
+            let posY = { relative: "page", align: "top", offset: "0" };
+
+            for (var n of xml.elements(node)) {
+                switch (n.localName) {
+                    case "simplePos":
+                        if (simplePos) {
+                            posX.offset = xml.sizeAttr(n, "x", SizeType.Emu);
+                            posY.offset = xml.sizeAttr(n, "y", SizeType.Emu);
+                        }
+                        break;
+
                     case "extent":
                         result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
                         result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
                         break;
 
                     case "positionH":
-                        break;
-
                     case "positionV":
+                        if (!simplePos) {
+                            let pos = n.localName == "positionH" ? posX : posY;
+                            var alignNode = xml.byTagName(n, "align");
+                            var offsetNode = xml.byTagName(n, "posOffset");
+
+                            if (alignNode)
+                                pos.align = alignNode.textContent;
+
+                            if (offsetNode)
+                                pos.offset = xml.sizeValue(node, SizeType.Emu);
+                        }
                         break;
 
-                    case "graphic": 
+                    case "wrapTopAndBottom":
+                        wrapTopAndBottom = true;
+                        break;
+
+                    case "graphic":
                         var g = this.parseGraphic(n);
 
-                        if(g)
+                        if (g)
                             result.children.push(g);
                         break;
                 }
             }
 
+            if (wrapTopAndBottom) {
+                result.style['display'] = 'block';
+
+                if (posX.align){
+                    result.style['text-align'] = posX.align;
+                    result.style['width'] = "100%";
+                }
+            }
+            else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
+                result.style["float"] = posX.align;
+            }
+
             return result;
         }
 
-        parseGraphic(node: Node): IDomElement {
-            var graphicData = xml.byTagName(node, "graphicData");
+        parseGraphic(elem: Element): IDomElement {
+            var graphicData = xml.byTagName(elem, "graphicData");
 
-            for(let n of xml.nodes(graphicData)) {
-                switch(n.localName){
-                    case "pic": 
+            for (let n of xml.elements(graphicData)) {
+                switch (n.localName) {
+                    case "pic":
                         return this.parsePicture(n);
                 }
             }
@@ -558,18 +593,20 @@ namespace docx {
             return null;
         }
 
-        parsePicture(node: Node): IDomImage {
-            var result = <IDomImage>{ domType : DomType.Image, src: "", style: {} };
-            var blipFill = xml.byTagName(node, "blipFill");
+        parsePicture(elem: Element): IDomImage {
+            var result = <IDomImage>{ domType: DomType.Image, src: "", style: {} };
+            var blipFill = xml.byTagName(elem, "blipFill");
             var blip = xml.byTagName(blipFill, "blip");
 
             result.src = xml.stringAttr(blip, "embed");
 
-            var spPr = xml.byTagName(node, "spPr");
+            var spPr = xml.byTagName(elem, "spPr");
             var xfrm = xml.byTagName(spPr, "xfrm");
 
-            for(var n of xml.nodes(xfrm)) {
-                switch (n.localName){
+            result.style["position"] = "relative";
+
+            for (var n of xml.elements(xfrm)) {
+                switch (n.localName) {
                     case "ext":
                         result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
                         result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
@@ -585,7 +622,7 @@ namespace docx {
             return result;
         }
 
-        parseTable(node: Node): IDomTable {
+        parseTable(node: Element): IDomTable {
             var result: IDomTable = { domType: DomType.Table, children: [] };
 
             xml.foreach(node, c => {
@@ -594,7 +631,7 @@ namespace docx {
                         result.children.push(this.parseTableRow(c));
                         break;
 
-	                case "tblGrid":
+                    case "tblGrid":
                         result.columns = this.parseTableColumns(c);
                         break;
 
@@ -606,10 +643,10 @@ namespace docx {
 
             return result;
         }
-        
-        parseTableColumns(node: Node): IDomTableColumn[] {
+
+        parseTableColumns(node: Element): IDomTableColumn[] {
             var result = [];
-            
+
             xml.foreach(node, n => {
                 switch (n.localName) {
                     case "gridCol":
@@ -621,14 +658,18 @@ namespace docx {
             return result;
         }
 
-        parseTableProperties(node: Node, table: IDomTable) {
+        parseTableProperties(elem: Element, table: IDomTable) {
             table.style = {};
             table.cellStyle = {};
 
-            this.parseDefaultProperties(node, table.style, table.cellStyle, c => {
+            this.parseDefaultProperties(elem, table.style, table.cellStyle, c => {
                 switch (c.localName) {
                     case "tblStyle":
                         table.className = xml.className(c, "val");
+                        break;
+
+                    case "tblpPr":
+                        this.parseTablePosition(c, table);
                         break;
 
                     default:
@@ -638,21 +679,40 @@ namespace docx {
                 return true;
             });
 
-            switch(table.style["text-align"]) {
-                case "center": 
+            switch (table.style["text-align"]) {
+                case "center":
                     delete table.style["text-align"];
                     table.style["margin-left"] = "auto";
                     table.style["margin-right"] = "auto";
                     break;
 
-                case "right": 
+                case "right":
                     delete table.style["text-align"];
                     table.style["margin-left"] = "auto";
                     break;
             }
         }
 
-        parseTableRow(node: Node): IDomTableRow {
+        parseTablePosition(node: Element, table: IDomTable) {
+            var vertAnchor = xml.stringAttr(node, "vertAnchor");
+            var horzAnchor = xml.stringAttr(node, "horzAnchor");
+            var tblpX = xml.sizeAttr(node, "tblpX");
+            var tblpY = xml.sizeAttr(node, "tblpY");
+            var tblpXSpec = xml.stringAttr(node, "tblpXSpec");
+            var tblpYSpec = xml.stringAttr(node, "tblpYSpec");
+            var topFromText = xml.sizeAttr(node, "topFromText");
+            var bottomFromText = xml.sizeAttr(node, "bottomFromText");
+            var rightFromText = xml.sizeAttr(node, "rightFromText");
+            var leftFromText = xml.sizeAttr(node, "leftFromText");
+
+            table.style["float"] = 'left';
+            table.style["margin-bottom"] = values.addSize(table.style["margin-bottom"], bottomFromText);
+            table.style["margin-left"] = values.addSize(table.style["margin-left"], leftFromText);
+            table.style["margin-right"] = values.addSize(table.style["margin-right"], rightFromText);
+            table.style["margin-top"] = values.addSize(table.style["margin-top"], topFromText);
+        }
+
+        parseTableRow(node: Element): IDomTableRow {
             var result: IDomTableRow = { domType: DomType.Row, children: [] };
 
             xml.foreach(node, c => {
@@ -670,8 +730,8 @@ namespace docx {
             return result;
         }
 
-        parseTableRowProperties(node: Node, row: IDomTableRow) {
-            row.style = this.parseDefaultProperties(node, {}, null, c => {
+        parseTableRowProperties(elem: Element, row: IDomTableRow) {
+            row.style = this.parseDefaultProperties(elem, {}, null, c => {
                 switch (c.localName) {
                     case "cnfStyle":
                         row.className = values.classNameOfCnfStyle(c);
@@ -685,7 +745,7 @@ namespace docx {
             });
         }
 
-        parseTableCell(node: Node): IDomElement {
+        parseTableCell(node: Element): IDomElement {
             var result: IDomTableCell = { domType: DomType.Cell, children: [] };
 
             xml.foreach(node, c => {
@@ -707,13 +767,13 @@ namespace docx {
             return result;
         }
 
-        parseTableCellProperties(node: Node, cell: IDomTableCell) {
-            cell.style = this.parseDefaultProperties(node, {}, null, c => {
+        parseTableCellProperties(elem: Element, cell: IDomTableCell) {
+            cell.style = this.parseDefaultProperties(elem, {}, null, c => {
                 switch (c.localName) {
                     case "gridSpan":
                         cell.span = xml.intAttr(c, "val", null);
                         break;
-                    
+
                     case "vMerge": //TODO
                         break;
 
@@ -729,10 +789,10 @@ namespace docx {
             });
         }
 
-        parseDefaultProperties(node: Node, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Node) => void = null): IDomStyleValues {
+        parseDefaultProperties(elem: Element, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Element) => void = null): IDomStyleValues {
             style = style || {};
 
-            xml.foreach(node, c => {
+            xml.foreach(elem, c => {
                 switch (c.localName) {
                     case "jc":
                         style["text-align"] = values.valueOfJc(c);
@@ -745,7 +805,7 @@ namespace docx {
                     case "color":
                         style["color"] = xml.colorAttr(c, "val", null, autos.color);
                         break;
-                    
+
                     case "sz":
                         style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
                         break;
@@ -758,11 +818,11 @@ namespace docx {
                         style["background-color"] = xml.colorAttr(c, "val", null, autos.highlight);
                         break;
 
-	                case "tcW": 
-                        if(this.ignoreWidth)
-                        break;
+                    case "tcW":
+                        if (this.ignoreWidth)
+                            break;
 
-	                case "tblW":
+                    case "tblW":
                         style["width"] = values.valueOfSize(c, "w");
                         break;
 
@@ -834,7 +894,7 @@ namespace docx {
                         break;
 
                     case "lang":
-                    case "noProof":
+                    case "noProof": //ignore spellcheck
                     case "webHidden": // maybe web-hidden should be implemented
                         //TODO ignore
                         break;
@@ -849,26 +909,26 @@ namespace docx {
             return style;
         }
 
-        parseUnderline(node: Node, style: IDomStyleValues) {
+        parseUnderline(node: Element, style: IDomStyleValues) {
             var val = xml.stringAttr(node, "val");
 
-            if(val == null || val == "none")
+            if (val == null || val == "none")
                 return;
 
-            switch(val){
-                case "dash": 
+            switch (val) {
+                case "dash":
                 case "dashDotDotHeavy":
                 case "dashDotHeavy":
                 case "dashedHeavy":
-                case "dashLong": 
+                case "dashLong":
                 case "dashLongHeavy":
                 case "dotDash":
-                case "dotDotDash": 
+                case "dotDotDash":
                     style["text-decoration-style"] = "dashed";
                     break;
 
                 case "dotted":
-                case "dottedHeavy": 
+                case "dottedHeavy":
                     style["text-decoration-style"] = "dotted";
                     break;
 
@@ -881,7 +941,7 @@ namespace docx {
                     style["text-decoration"] = "underline";
                     break;
 
-                case "wave": 
+                case "wave":
                 case "wavyDouble":
                 case "wavyHeavy":
                     style["text-decoration-style"] = "wavy";
@@ -893,52 +953,52 @@ namespace docx {
             }
 
             var col = xml.colorAttr(node, "color");
-            
-            if(col)
+
+            if (col)
                 style["text-decoration-color"] = col;
         }
 
-        parseFont(node: Node, style: IDomStyleValues) {
+        parseFont(node: Element, style: IDomStyleValues) {
             var ascii = xml.stringAttr(node, "ascii");
 
-            if(ascii)
+            if (ascii)
                 style["font-family"] = ascii;
         }
 
-        parseIndentation(node: Node, style: IDomStyleValues){
-            var firstLine = xml.sizeAttr(node, "firstLine"); 
+        parseIndentation(node: Element, style: IDomStyleValues) {
+            var firstLine = xml.sizeAttr(node, "firstLine");
             var left = xml.sizeAttr(node, "left");
             var start = xml.sizeAttr(node, "start");
             var right = xml.sizeAttr(node, "right");
             var end = xml.sizeAttr(node, "end");
 
-            if(firstLine) style["text-indent"] = firstLine;
-            if(left || start) style["margin-left"] = left || start;
-            if(right || end) style["margin-right"] = right || end;
+            if (firstLine) style["text-indent"] = firstLine;
+            if (left || start) style["margin-left"] = left || start;
+            if (right || end) style["margin-right"] = right || end;
         }
 
-        parseSpacing(node: Node, style: IDomStyleValues) {
+        parseSpacing(node: Element, style: IDomStyleValues) {
             var before = xml.sizeAttr(node, "before");
             var after = xml.sizeAttr(node, "after");
             var line = xml.sizeAttr(node, "line");
 
-            if(before) style["margin-top"] = before;
-            if(after) style["margin-bottom"] = after;
-            if(line){ 
+            if (before) style["margin-top"] = before;
+            if (after) style["margin-bottom"] = after;
+            if (line) {
                 style["line-height"] = line;
                 style["min-height"] = line;
             }
         }
 
-	    parseTabs(node: Node, paragraph: IDomParagraph) {
-            paragraph.tabs = xml.nodes(node, "tab").map(n => <DocxTab>{
+        parseTabs(node: Element, paragraph: IDomParagraph) {
+            paragraph.tabs = xml.elements(node, "tab").map(n => <DocxTab>{
                 position: xml.sizeAttr(n, "pos"),
                 leader: xml.stringAttr(n, "leader"),
                 style: xml.stringAttr(n, "val"),
             });
         }
 
-        parseMarginProperties(node: Node, output: IDomStyleValues) {
+        parseMarginProperties(node: Element, output: IDomStyleValues) {
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "left":
@@ -960,22 +1020,22 @@ namespace docx {
             });
         }
 
-        parseTrHeight(node: Node, output: IDomStyleValues) {
-            switch(xml.stringAttr(node, "hRule")) {
-                case "exact" : 
-                    output["height"] = xml.sizeAttr(node, "val"); 
+        parseTrHeight(node: Element, output: IDomStyleValues) {
+            switch (xml.stringAttr(node, "hRule")) {
+                case "exact":
+                    output["height"] = xml.sizeAttr(node, "val");
                     break;
 
-                case "atLeast" : 
-                default :
-                    output["height"] = xml.sizeAttr(node, "val"); 
+                case "atLeast":
+                default:
+                    output["height"] = xml.sizeAttr(node, "val");
                     // min-height doesn't work for tr
                     //output["min-height"] = xml.sizeAttr(node, "val");  
                     break;
             }
         }
 
-        parseBorderProperties(node: Node, output: IDomStyleValues) {
+        parseBorderProperties(node: Element, output: IDomStyleValues) {
             xml.foreach(node, c => {
                 switch (c.localName) {
                     case "start":
@@ -1009,45 +1069,56 @@ namespace docx {
     }
 
     class xml {
-        static parse(xmlString, skipDeclaration = true) {
+        static parse(xmlString, skipDeclaration = true): Element {
             if (skipDeclaration)
                 xmlString = xmlString.replace(/<[?].*[?]>/, "");
 
-            return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
+            return <Element>new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
         }
 
-        static nodes(node: Node, tagName: string = null) {
+        static elements(node: Element, tagName: string = null): Element[] {
             var result = [];
-            
-            for (var i = 0; i < node.childNodes.length; i++)
-            {
+
+            for (var i = 0; i < node.childNodes.length; i++) {
                 let n = node.childNodes[i];
-                if(tagName == null || n.localName == tagName)
+                if (n.nodeType == 1 && (tagName == null || n.localName == tagName))
                     result.push(n);
             }
 
             return result;
         }
 
-        static foreach(node: Node, cb: (n: Node) => void) {
+        static foreach(node: Element, cb: (n: Element) => void) {
             for (var i = 0; i < node.childNodes.length; i++)
-                cb(node.childNodes[i]);
+            {
+                let n = node.childNodes[i];
+
+                if(n.nodeType == 1)
+                    cb(<Element>n);
+            }
         }
 
-        static byTagName(node: Node, tagName: string) {
-            for (var i = 0; i < node.childNodes.length; i++)
-                if (node.childNodes[i].localName == tagName)
-                    return node.childNodes[i];
+        static byTagName(elem: Element, tagName: string): Element {
+            for (var i = 0; i < elem.childNodes.length; i++)
+            {
+                let n = elem.childNodes[i];
+                if (n.nodeType == 1 && n.localName == tagName)
+                    return <Element>elem.childNodes[i];
+            }
+
+            return null;
         }
 
-        static nodeStringAttr(node: Node, nodeName, attrName: string) {
-            var n = xml.byTagName(node, nodeName)
+        static elementStringAttr(elem: Element, nodeName, attrName: string) {
+            var n = xml.byTagName(elem, nodeName)
             return n ? xml.stringAttr(n, attrName) : null;
         }
 
-        static stringAttr(node: Node, attrName: string) {
-            for (var i = 0; i < node.attributes.length; i++) {
-                var attr = node.attributes.item(i);
+        static stringAttr(node: Element, attrName: string) {
+            var elem = <Element>node;
+
+            for (var i = 0; i < elem.attributes.length; i++) {
+                var attr = elem.attributes.item(i);
 
                 if (attr.localName == attrName)
                     return attr.value;
@@ -1056,26 +1127,24 @@ namespace docx {
             return null;
         }
 
-        static colorAttr(node: Node, attrName: string, defValue: string = null, autoColor: string = 'black') {
+        static colorAttr(node: Element, attrName: string, defValue: string = null, autoColor: string = 'black') {
             var v = xml.stringAttr(node, attrName);
-            
-            switch (v)
-            {
+
+            switch (v) {
                 case "yellow":
-                     return v;
+                    return v;
 
                 case "auto":
-                     return autoColor;
+                    return autoColor;
             }
 
             return v ? `#${v}` : defValue;
         }
 
-        static boolAttr(node: Node, attrName: string, defValue: boolean = false) {
+        static boolAttr(node: Element, attrName: string, defValue: boolean = false) {
             var v = xml.stringAttr(node, attrName);
 
-            switch (v)
-            {
+            switch (v) {
                 case "1": return true;
                 case "0": return false;
             }
@@ -1083,14 +1152,20 @@ namespace docx {
             return defValue;
         }
 
-        static intAttr(node: Node, attrName: string, defValue: number = 0) {
+        static intAttr(node: Element, attrName: string, defValue: number = 0) {
             var val = xml.stringAttr(node, attrName);
             return val ? parseInt(xml.stringAttr(node, attrName)) : 0;
         }
 
-        static sizeAttr(node: Node, attrName: string, type: SizeType = SizeType.Dxa) {
-            var val = xml.stringAttr(node, attrName);
+        static sizeAttr(node: Element, attrName: string, type: SizeType = SizeType.Dxa) {
+            return xml.convertSize(xml.stringAttr(node, attrName), type);
+        }
 
+        static sizeValue(node: Element, type: SizeType = SizeType.Dxa) {
+            return xml.convertSize(node.textContent, type);
+        }
+
+        static convertSize(val, type: SizeType = SizeType.Dxa) {
             if (val == null || val.indexOf("pt") > -1)
                 return val;
 
@@ -1107,7 +1182,7 @@ namespace docx {
             return val;
         }
 
-        static className(node: Node, attrName: string) {
+        static className(node: Element, attrName: string) {
             var val = xml.stringAttr(node, attrName);
 
             return val && val.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
@@ -1115,14 +1190,14 @@ namespace docx {
     }
 
     class values {
-        static valueOfBold(c: Node) {
+        static valueOfBold(c: Element) {
             return xml.boolAttr(c, "val", true) ? "bold" : "normal"
         }
 
-        static valueOfSize(c: Node, attr: string) {
+        static valueOfSize(c: Element, attr: string) {
             var type: SizeType = SizeType.Dxa;
 
-            switch(xml.stringAttr(c, "type")) {
+            switch (xml.stringAttr(c, "type")) {
                 case "dxa": break;
                 case "pct": type = SizeType.Percent; break;
             }
@@ -1130,36 +1205,36 @@ namespace docx {
             return xml.sizeAttr(c, attr, type);
         }
 
-        static valueOfStrike(c: Node) {
+        static valueOfStrike(c: Element) {
             return xml.boolAttr(c, "val", true) ? "line-through" : "none"
         }
 
-        static valueOfMargin(c: Node) {
+        static valueOfMargin(c: Element) {
             return xml.sizeAttr(c, "w");
         }
 
-        static valueOfRelType(c: Node) {
-            switch(xml.sizeAttr(c, "Type")) {
-                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings": 
+        static valueOfRelType(c: Element) {
+            switch (xml.sizeAttr(c, "Type")) {
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings":
                     return DomRelationshipType.Settings;
                 case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme":
                     return DomRelationshipType.Theme;
-                case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects": 
+                case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
                     return DomRelationshipType.StylesWithEffects;
                 case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles":
                     return DomRelationshipType.Styles;
-                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable": 
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable":
                     return DomRelationshipType.FontTable;
-                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image": 
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image":
                     return DomRelationshipType.Image;
-                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings": 
+                case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings":
                     return DomRelationshipType.WebSettings;
             }
 
             return DomRelationshipType.Unknown;
         }
 
-        static valueOfBorder(c: Node) {
+        static valueOfBorder(c: Element) {
             var type = xml.stringAttr(c, "val");
 
             if (type == "nil")
@@ -1171,40 +1246,40 @@ namespace docx {
             return `${size} solid ${color == "auto" ? "black" : color}`;
         }
 
-        static valueOfTblLayout(c: Node) {
+        static valueOfTblLayout(c: Element) {
             var type = xml.stringAttr(c, "val");
             return type == "fixed" ? "fixed" : "auto";
         }
 
-        static classNameOfCnfStyle(c: Node){
+        static classNameOfCnfStyle(c: Element) {
             let className = "";
             let val = xml.stringAttr(c, "val");
             //FirstRow, LastRow, FirstColumn, LastColumn, Band1Vertical, Band2Vertical, Band1Horizontal, Band2Horizontal, NE Cell, NW Cell, SE Cell, SW Cell.
 
-            if(val[0] == "1") className += " first-row";
-            if(val[1] == "1") className += " last-row";
-            if(val[2] == "1") className += " first-col";
-            if(val[3] == "1") className += " last-col";
-            if(val[4] == "1") className += " odd-col";
-            if(val[5] == "1") className += " even-col";
-            if(val[6] == "1") className += " odd-row";
-            if(val[7] == "1") className += " even-row";
-            if(val[8] == "1") className += " ne-cell";
-            if(val[9] == "1") className += " nw-cell";
-            if(val[10] == "1") className += " se-cell";
-            if(val[11] == "1") className += " sw-cell";
-            
+            if (val[0] == "1") className += " first-row";
+            if (val[1] == "1") className += " last-row";
+            if (val[2] == "1") className += " first-col";
+            if (val[3] == "1") className += " last-col";
+            if (val[4] == "1") className += " odd-col";
+            if (val[5] == "1") className += " even-col";
+            if (val[6] == "1") className += " odd-row";
+            if (val[7] == "1") className += " even-row";
+            if (val[8] == "1") className += " ne-cell";
+            if (val[9] == "1") className += " nw-cell";
+            if (val[10] == "1") className += " se-cell";
+            if (val[11] == "1") className += " sw-cell";
+
             return className.trim();
         }
 
-        static valueOfJc(c: Node) {
+        static valueOfJc(c: Element) {
             var type = xml.stringAttr(c, "val");
 
-            switch(type){
-                case "start": 
+            switch (type) {
+                case "start":
                 case "left": return "left";
                 case "center": return "center";
-                case "end": 
+                case "end":
                 case "right": return "right";
                 case "both": return "justify";
             }
@@ -1212,10 +1287,10 @@ namespace docx {
             return type;
         }
 
-        static valueOfTextAlignment(c: Node) {
+        static valueOfTextAlignment(c: Element) {
             var type = xml.stringAttr(c, "val");
 
-            switch(type){
+            switch (type) {
                 case "auto":
                 case "baseline": return "baseline";
                 case "top": return "top";
@@ -1227,8 +1302,8 @@ namespace docx {
         }
 
         static addSize(a: string, b: string): string {
-            if(a == null) return b;
-            if(b == null) return a;
+            if (a == null) return b;
+            if (b == null) return a;
 
             return `calc(${a} + ${b})`; //TODO
         }
@@ -1237,21 +1312,21 @@ namespace docx {
             return (num & mask) == mask;
         }
 
-        static classNameOftblLook(c: Node) {
+        static classNameOftblLook(c: Element) {
             let val = xml.stringAttr(c, "val");
             let num = parseInt(val, 16);
             let className = "";
             //FirstRow, LastRow, FirstColumn, LastColumn, Band1Vertical, Band2Vertical, Band1Horizontal, Band2Horizontal, NE Cell, NW Cell, SE Cell, SW Cell.
 
-            if(values.checkMask(num, 0x0020)) className += " first-row";
-            if(values.checkMask(num, 0x0040)) className += " last-row";
-            if(values.checkMask(num, 0x0080)) className += " first-col";
-            if(values.checkMask(num, 0x0100)) className += " last-col";
+            if (values.checkMask(num, 0x0020)) className += " first-row";
+            if (values.checkMask(num, 0x0040)) className += " last-row";
+            if (values.checkMask(num, 0x0080)) className += " first-col";
+            if (values.checkMask(num, 0x0100)) className += " last-col";
 
-            if(!values.checkMask(num, 0x0200)) className += " odd-row even-row";
-            if(!values.checkMask(num, 0x0400)) className += " odd-col even-col";
-            
-            return className.trim();        
+            if (!values.checkMask(num, 0x0200)) className += " odd-row even-row";
+            if (!values.checkMask(num, 0x0400)) className += " odd-col even-col";
+
+            return className.trim();
         }
     }
 }

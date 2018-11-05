@@ -327,6 +327,7 @@ namespace docx {
 
             result.style.display = "inline-block";
             result.style.position = "relative";
+            result.style.textIndent = "0px";
 
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
@@ -336,8 +337,6 @@ namespace docx {
 
         renderImage(elem: IDomImage) {
             let result = this.htmlDocument.createElement("img");
-
-            result.style.position = "absolute";
 
             this.renderStyleValues(elem.style, result);
 

@@ -122,33 +122,33 @@ var docx;
         }
         DocumentParser.prototype.parseDocumentRelationsFile = function (xmlString) {
             var xrels = xml.parse(xmlString, this.skipDeclaration);
-            return xml.nodes(xrels).map(function (c) { return ({
+            return xml.elements(xrels).map(function (c) { return ({
                 id: xml.stringAttr(c, "Id"),
                 type: values.valueOfRelType(c),
                 target: xml.stringAttr(c, "Target"),
             }); });
         };
         DocumentParser.prototype.parseDocumentFile = function (xmlString) {
+            var _this = this;
             var result = {
                 domType: docx.DomType.Document,
                 children: [],
                 style: {}
             };
             var xbody = xml.byTagName(xml.parse(xmlString, this.skipDeclaration), "body");
-            for (var i = 0; i < xbody.childNodes.length; i++) {
-                var node = xbody.childNodes[i];
-                switch (node.localName) {
+            xml.foreach(xbody, function (elem) {
+                switch (elem.localName) {
                     case "p":
-                        result.children.push(this.parseParagraph(node));
+                        result.children.push(_this.parseParagraph(elem));
                         break;
                     case "tbl":
-                        result.children.push(this.parseTable(node));
+                        result.children.push(_this.parseTable(elem));
                         break;
                     case "sectPr":
-                        this.parseSectionProperties(node, result);
+                        _this.parseSectionProperties(elem, result);
                         break;
                 }
-            }
+            });
             return result;
         };
         DocumentParser.prototype.parseStylesFile = function (xmlString) {
@@ -340,7 +340,7 @@ var docx;
                         break;
                     case "num":
                         var numId = xml.stringAttr(n, "numId");
-                        var abstractNumId = xml.nodeStringAttr(n, "abstractNumId", "val");
+                        var abstractNumId = xml.elementStringAttr(n, "abstractNumId", "val");
                         mapping[abstractNumId] = numId;
                         break;
                 }
@@ -348,12 +348,12 @@ var docx;
             result.forEach(function (x) { return x.id = mapping[x.id]; });
             return result;
         };
-        DocumentParser.prototype.parseNumberingPicBullet = function (node) {
-            var pict = xml.byTagName(node, "pict");
+        DocumentParser.prototype.parseNumberingPicBullet = function (elem) {
+            var pict = xml.byTagName(elem, "pict");
             var shape = pict && xml.byTagName(pict, "shape");
             var imagedata = shape && xml.byTagName(shape, "imagedata");
             return imagedata ? {
-                id: xml.intAttr(node, "numPicBulletId"),
+                id: xml.intAttr(elem, "numPicBulletId"),
                 src: xml.stringAttr(imagedata, "id"),
                 style: xml.stringAttr(shape, "style")
             } : null;
@@ -397,21 +397,21 @@ var docx;
             });
             return result;
         };
-        DocumentParser.prototype.parseSectionProperties = function (node, elem) {
+        DocumentParser.prototype.parseSectionProperties = function (elem, domElem) {
             var _this = this;
-            xml.foreach(node, function (n) {
+            xml.foreach(elem, function (n) {
                 switch (n.localName) {
                     case "pgMar":
-                        elem.style["padding-left"] = xml.sizeAttr(n, "left");
-                        elem.style["padding-right"] = xml.sizeAttr(n, "right");
-                        elem.style["padding-top"] = xml.sizeAttr(n, "top");
-                        elem.style["padding-bottom"] = xml.sizeAttr(n, "bottom");
+                        domElem.style["padding-left"] = xml.sizeAttr(n, "left");
+                        domElem.style["padding-right"] = xml.sizeAttr(n, "right");
+                        domElem.style["padding-top"] = xml.sizeAttr(n, "top");
+                        domElem.style["padding-bottom"] = xml.sizeAttr(n, "bottom");
                         break;
                     case "pgSz":
                         if (!_this.ignoreWidth)
-                            elem.style["width"] = xml.sizeAttr(n, "w");
+                            domElem.style["width"] = xml.sizeAttr(n, "w");
                         if (!_this.ignoreHeight)
-                            elem.style["height"] = xml.sizeAttr(n, "h");
+                            domElem.style["height"] = xml.sizeAttr(n, "h");
                         break;
                 }
             });
@@ -437,9 +437,9 @@ var docx;
             });
             return result;
         };
-        DocumentParser.prototype.parseParagraphProperties = function (node, paragraph) {
+        DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
             var _this = this;
-            this.parseDefaultProperties(node, paragraph.style = {}, null, function (c) {
+            this.parseDefaultProperties(elem, paragraph.style = {}, null, function (c) {
                 switch (c.localName) {
                     case "pStyle":
                         paragraph.className = xml.className(c, "val");
@@ -524,8 +524,8 @@ var docx;
             });
             return result;
         };
-        DocumentParser.prototype.parseRunProperties = function (node, run) {
-            this.parseDefaultProperties(node, run.style = {}, null, function (c) {
+        DocumentParser.prototype.parseRunProperties = function (elem, run) {
+            this.parseDefaultProperties(elem, run.style = {}, null, function (c) {
                 switch (c.localName) {
                     case "rStyle":
                         run.className = xml.className(c, "val");
@@ -547,7 +547,7 @@ var docx;
             });
         };
         DocumentParser.prototype.parseDrawing = function (node) {
-            for (var _i = 0, _a = xml.nodes(node); _i < _a.length; _i++) {
+            for (var _i = 0, _a = xml.elements(node); _i < _a.length; _i++) {
                 var n = _a[_i];
                 switch (n.localName) {
                     case "inline":
@@ -559,16 +559,37 @@ var docx;
         DocumentParser.prototype.parseDrawingWrapper = function (node) {
             var result = { domType: docx.DomType.Drawing, children: [], style: {} };
             var isAnchor = node.localName == "anchor";
-            for (var _i = 0, _a = xml.nodes(node); _i < _a.length; _i++) {
+            var wrapTopAndBottom = false;
+            var simplePos = xml.boolAttr(node, "simplePos");
+            var posX = { relative: "page", align: "left", offset: "0" };
+            var posY = { relative: "page", align: "top", offset: "0" };
+            for (var _i = 0, _a = xml.elements(node); _i < _a.length; _i++) {
                 var n = _a[_i];
                 switch (n.localName) {
+                    case "simplePos":
+                        if (simplePos) {
+                            posX.offset = xml.sizeAttr(n, "x", SizeType.Emu);
+                            posY.offset = xml.sizeAttr(n, "y", SizeType.Emu);
+                        }
+                        break;
                     case "extent":
                         result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
                         result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
                         break;
                     case "positionH":
-                        break;
                     case "positionV":
+                        if (!simplePos) {
+                            var pos = n.localName == "positionH" ? posX : posY;
+                            var alignNode = xml.byTagName(n, "align");
+                            var offsetNode = xml.byTagName(n, "posOffset");
+                            if (alignNode)
+                                pos.align = alignNode.textContent;
+                            if (offsetNode)
+                                pos.offset = xml.sizeValue(node, SizeType.Emu);
+                        }
+                        break;
+                    case "wrapTopAndBottom":
+                        wrapTopAndBottom = true;
                         break;
                     case "graphic":
                         var g = this.parseGraphic(n);
@@ -577,11 +598,21 @@ var docx;
                         break;
                 }
             }
+            if (wrapTopAndBottom) {
+                result.style['display'] = 'block';
+                if (posX.align) {
+                    result.style['text-align'] = posX.align;
+                    result.style['width'] = "100%";
+                }
+            }
+            else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
+                result.style["float"] = posX.align;
+            }
             return result;
         };
-        DocumentParser.prototype.parseGraphic = function (node) {
-            var graphicData = xml.byTagName(node, "graphicData");
-            for (var _i = 0, _a = xml.nodes(graphicData); _i < _a.length; _i++) {
+        DocumentParser.prototype.parseGraphic = function (elem) {
+            var graphicData = xml.byTagName(elem, "graphicData");
+            for (var _i = 0, _a = xml.elements(graphicData); _i < _a.length; _i++) {
                 var n = _a[_i];
                 switch (n.localName) {
                     case "pic":
@@ -590,14 +621,15 @@ var docx;
             }
             return null;
         };
-        DocumentParser.prototype.parsePicture = function (node) {
+        DocumentParser.prototype.parsePicture = function (elem) {
             var result = { domType: docx.DomType.Image, src: "", style: {} };
-            var blipFill = xml.byTagName(node, "blipFill");
+            var blipFill = xml.byTagName(elem, "blipFill");
             var blip = xml.byTagName(blipFill, "blip");
             result.src = xml.stringAttr(blip, "embed");
-            var spPr = xml.byTagName(node, "spPr");
+            var spPr = xml.byTagName(elem, "spPr");
             var xfrm = xml.byTagName(spPr, "xfrm");
-            for (var _i = 0, _a = xml.nodes(xfrm); _i < _a.length; _i++) {
+            result.style["position"] = "relative";
+            for (var _i = 0, _a = xml.elements(xfrm); _i < _a.length; _i++) {
                 var n = _a[_i];
                 switch (n.localName) {
                     case "ext":
@@ -641,13 +673,17 @@ var docx;
             });
             return result;
         };
-        DocumentParser.prototype.parseTableProperties = function (node, table) {
+        DocumentParser.prototype.parseTableProperties = function (elem, table) {
+            var _this = this;
             table.style = {};
             table.cellStyle = {};
-            this.parseDefaultProperties(node, table.style, table.cellStyle, function (c) {
+            this.parseDefaultProperties(elem, table.style, table.cellStyle, function (c) {
                 switch (c.localName) {
                     case "tblStyle":
                         table.className = xml.className(c, "val");
+                        break;
+                    case "tblpPr":
+                        _this.parseTablePosition(c, table);
                         break;
                     default:
                         return false;
@@ -666,6 +702,23 @@ var docx;
                     break;
             }
         };
+        DocumentParser.prototype.parseTablePosition = function (node, table) {
+            var vertAnchor = xml.stringAttr(node, "vertAnchor");
+            var horzAnchor = xml.stringAttr(node, "horzAnchor");
+            var tblpX = xml.sizeAttr(node, "tblpX");
+            var tblpY = xml.sizeAttr(node, "tblpY");
+            var tblpXSpec = xml.stringAttr(node, "tblpXSpec");
+            var tblpYSpec = xml.stringAttr(node, "tblpYSpec");
+            var topFromText = xml.sizeAttr(node, "topFromText");
+            var bottomFromText = xml.sizeAttr(node, "bottomFromText");
+            var rightFromText = xml.sizeAttr(node, "rightFromText");
+            var leftFromText = xml.sizeAttr(node, "leftFromText");
+            table.style["float"] = 'left';
+            table.style["margin-bottom"] = values.addSize(table.style["margin-bottom"], bottomFromText);
+            table.style["margin-left"] = values.addSize(table.style["margin-left"], leftFromText);
+            table.style["margin-right"] = values.addSize(table.style["margin-right"], rightFromText);
+            table.style["margin-top"] = values.addSize(table.style["margin-top"], topFromText);
+        };
         DocumentParser.prototype.parseTableRow = function (node) {
             var _this = this;
             var result = { domType: docx.DomType.Row, children: [] };
@@ -681,8 +734,8 @@ var docx;
             });
             return result;
         };
-        DocumentParser.prototype.parseTableRowProperties = function (node, row) {
-            row.style = this.parseDefaultProperties(node, {}, null, function (c) {
+        DocumentParser.prototype.parseTableRowProperties = function (elem, row) {
+            row.style = this.parseDefaultProperties(elem, {}, null, function (c) {
                 switch (c.localName) {
                     case "cnfStyle":
                         row.className = values.classNameOfCnfStyle(c);
@@ -711,8 +764,8 @@ var docx;
             });
             return result;
         };
-        DocumentParser.prototype.parseTableCellProperties = function (node, cell) {
-            cell.style = this.parseDefaultProperties(node, {}, null, function (c) {
+        DocumentParser.prototype.parseTableCellProperties = function (elem, cell) {
+            cell.style = this.parseDefaultProperties(elem, {}, null, function (c) {
                 switch (c.localName) {
                     case "gridSpan":
                         cell.span = xml.intAttr(c, "val", null);
@@ -728,13 +781,13 @@ var docx;
                 return true;
             });
         };
-        DocumentParser.prototype.parseDefaultProperties = function (node, style, childStyle, handler) {
+        DocumentParser.prototype.parseDefaultProperties = function (elem, style, childStyle, handler) {
             var _this = this;
             if (style === void 0) { style = null; }
             if (childStyle === void 0) { childStyle = null; }
             if (handler === void 0) { handler = null; }
             style = style || {};
-            xml.foreach(node, function (c) {
+            xml.foreach(elem, function (c) {
                 switch (c.localName) {
                     case "jc":
                         style["text-align"] = values.valueOfJc(c);
@@ -892,7 +945,7 @@ var docx;
             }
         };
         DocumentParser.prototype.parseTabs = function (node, paragraph) {
-            paragraph.tabs = xml.nodes(node, "tab").map(function (n) { return ({
+            paragraph.tabs = xml.elements(node, "tab").map(function (n) { return ({
                 position: xml.sizeAttr(n, "pos"),
                 leader: xml.stringAttr(n, "leader"),
                 style: xml.stringAttr(n, "val"),
@@ -967,32 +1020,39 @@ var docx;
                 xmlString = xmlString.replace(/<[?].*[?]>/, "");
             return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
         };
-        xml.nodes = function (node, tagName) {
+        xml.elements = function (node, tagName) {
             if (tagName === void 0) { tagName = null; }
             var result = [];
             for (var i = 0; i < node.childNodes.length; i++) {
                 var n = node.childNodes[i];
-                if (tagName == null || n.localName == tagName)
+                if (n.nodeType == 1 && (tagName == null || n.localName == tagName))
                     result.push(n);
             }
             return result;
         };
         xml.foreach = function (node, cb) {
-            for (var i = 0; i < node.childNodes.length; i++)
-                cb(node.childNodes[i]);
+            for (var i = 0; i < node.childNodes.length; i++) {
+                var n = node.childNodes[i];
+                if (n.nodeType == 1)
+                    cb(n);
+            }
         };
-        xml.byTagName = function (node, tagName) {
-            for (var i = 0; i < node.childNodes.length; i++)
-                if (node.childNodes[i].localName == tagName)
-                    return node.childNodes[i];
+        xml.byTagName = function (elem, tagName) {
+            for (var i = 0; i < elem.childNodes.length; i++) {
+                var n = elem.childNodes[i];
+                if (n.nodeType == 1 && n.localName == tagName)
+                    return elem.childNodes[i];
+            }
+            return null;
         };
-        xml.nodeStringAttr = function (node, nodeName, attrName) {
-            var n = xml.byTagName(node, nodeName);
+        xml.elementStringAttr = function (elem, nodeName, attrName) {
+            var n = xml.byTagName(elem, nodeName);
             return n ? xml.stringAttr(n, attrName) : null;
         };
         xml.stringAttr = function (node, attrName) {
-            for (var i = 0; i < node.attributes.length; i++) {
-                var attr = node.attributes.item(i);
+            var elem = node;
+            for (var i = 0; i < elem.attributes.length; i++) {
+                var attr = elem.attributes.item(i);
                 if (attr.localName == attrName)
                     return attr.value;
             }
@@ -1026,7 +1086,14 @@ var docx;
         };
         xml.sizeAttr = function (node, attrName, type) {
             if (type === void 0) { type = SizeType.Dxa; }
-            var val = xml.stringAttr(node, attrName);
+            return xml.convertSize(xml.stringAttr(node, attrName), type);
+        };
+        xml.sizeValue = function (node, type) {
+            if (type === void 0) { type = SizeType.Dxa; }
+            return xml.convertSize(node.textContent, type);
+        };
+        xml.convertSize = function (val, type) {
+            if (type === void 0) { type = SizeType.Dxa; }
             if (val == null || val.indexOf("pt") > -1)
                 return val;
             var intVal = parseInt(val);
@@ -1466,13 +1533,13 @@ var docx;
             var result = this.htmlDocument.createElement("div");
             result.style.display = "inline-block";
             result.style.position = "relative";
+            result.style.textIndent = "0px";
             this.renderChildren(elem, result);
             this.renderStyleValues(elem.style, result);
             return result;
         };
         HtmlRenderer.prototype.renderImage = function (elem) {
             var result = this.htmlDocument.createElement("img");
-            result.style.position = "absolute";
             this.renderStyleValues(elem.style, result);
             if (this.document) {
                 this.document.loadDocumentImage(elem.src).then(function (x) {
