@@ -5,8 +5,7 @@
     <script src="docx.js"></script>
 </head>
 <body>
-    <input id="files" type="file" id="files" accept=".docx" />
-    <button id="loadButton">load</button>
+	<input id="files" type="file" id="files" accept=".docx"/>    <button id="loadButton">load</button>
     <div id="doc">
     </div>
 
@@ -15,14 +14,11 @@
         document.getElementById("loadButton").addEventListener("click", loadDocx);
 
         function loadDocx() {
-            var reader = new FileReader();
-
-            reader.onload = function (ev) {
-                docx.renderAsync(ev.target.result, document.getElementById("doc"), null, { debug: true })
+            var file = document.getElementById("files").files[0];
+            var container = document.getElementById("doc");
+            
+            docx.renderAsync(file, container, null, { debug: true })
                     .then(function(x){ console.log(x); });
-            };
-
-            reader.readAsArrayBuffer(document.getElementById("files").files[0]);
         }
     </script>
 </body>

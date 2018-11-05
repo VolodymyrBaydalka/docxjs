@@ -1,5 +1,4 @@
-
-namespace docx {
+module docx {
     export var autos = {
         shd: "white",
         color: "black",
