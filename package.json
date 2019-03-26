@@ -14,12 +14,17 @@
   },
   "devDependencies": {
     "@types/jszip": "^0.0.31",
-    "typescript": "2.9.2",
-    "uglify-js": "3.4.1"
+    "awesome-typescript-loader": "5.2.1",
+    "typescript": "^3.3.4000",
+    "webpack": "4.29.6",
+    "webpack-cli": "^3.3.0"
   },
   "scripts": {
-    "build": "tsc | uglifyjs docx.js --mangle -o docx.min.js",
-    "tsc": "/node_modules/.bin/tsc",
-    "tsc:w": "tsc -w"
-  }
+    "build": "webpack --mode production",
+    "watch": "webpack --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/docx-preview.min.js"
 }

@@ -12,7 +12,7 @@ Usage
 <script src="https://unpkg.com/promise-polyfill/dist/polyfill.min.js"></script>
 <!--lib uses jszip-->
 <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
-<script src="docx.js"></script>
+<script src="docx-preview.min.js"></script>
 <script>
     var docData = <document Blob>;
 

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "module": "commonjs",
     "declaration": false,
     "noImplicitAny": false,
     "noEmitOnError": true,
@@ -8,7 +9,7 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "target": "es5",
-    "outFile": "docx.js",
+    "outDir": "dist",
     "lib": [
       "es5",
       "dom",
