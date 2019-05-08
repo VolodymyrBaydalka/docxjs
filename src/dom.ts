@@ -76,7 +76,7 @@ export interface IDomTableCell extends IDomElement {
 export interface IDomDocument extends IDomElement {
 }
 
-export interface IDomImage extends IDomDocument {
+export interface IDomImage extends IDomElement {
     src: string;
 }
 

@@ -5,4 +5,4 @@ export interface Options {
     debug: boolean;
     className: string;
 }
-export declare function renderAsync(data: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, options?: Options): PromiseLike<any>;
+export declare function renderAsync(data: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, options?: Partial<Options>): PromiseLike<any>;

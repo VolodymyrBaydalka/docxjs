@@ -49,7 +49,7 @@ export class HtmlRenderer {
         }
     }
 
-    processClassName(className) {
+    processClassName(className: string) {
         if (!className)
             return this.className;
 
@@ -223,7 +223,7 @@ export class HtmlRenderer {
         return this.renderStyle(styleText);
     }
 
-    renderStyle(styleContent) {
+    renderStyle(styleContent: string) {
         var styleElement = document.createElement("style");
         styleElement.type = "text/css";
         styleElement.innerHTML = styleContent;
@@ -256,10 +256,10 @@ export class HtmlRenderer {
         return this.renderStyle(styleText);
     }
 
-    renderElement(elem, parent): HTMLElement {
+    renderElement(elem: IDomElement, parent: IDomElement): HTMLElement {
         switch (elem.domType) {
             case DomType.Paragraph:
-                return this.renderParagraph(elem);
+                return this.renderParagraph(<IDomParagraph>elem);
 
             case DomType.Run:
                 return this.renderRun(<IDomRun>elem);
@@ -277,10 +277,10 @@ export class HtmlRenderer {
                 return this.renderHyperlink(elem);
 
             case DomType.Drawing:
-                return this.renderDrawing(elem);
+                return this.renderDrawing(<IDomImage>elem);
 
             case DomType.Image:
-                return this.renderImage(elem);
+                return this.renderImage(<IDomImage>elem);
         }
 
         return null;

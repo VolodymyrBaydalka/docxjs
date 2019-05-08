@@ -1071,7 +1071,7 @@ enum SizeType {
 }
 
 class xml {
-    static parse(xmlString, skipDeclaration = true): Element {
+    static parse(xmlString: string, skipDeclaration: boolean = true): Element {
         if (skipDeclaration)
             xmlString = xmlString.replace(/<[?].*[?]>/, "");
 
@@ -1165,7 +1165,7 @@ class xml {
         return xml.convertSize(node.textContent, type);
     }
 
-    static convertSize(val, type: SizeType = SizeType.Dxa) {
+    static convertSize(val: string, type: SizeType = SizeType.Dxa) {
         if (val == null || val.indexOf("pt") > -1)
             return val;
 
@@ -1308,7 +1308,7 @@ class values {
         return `calc(${a} + ${b})`; //TODO
     }
 
-    static checkMask(num, mask) {
+    static checkMask(num: number, mask: number) {
         return (num & mask) == mask;
     }
 

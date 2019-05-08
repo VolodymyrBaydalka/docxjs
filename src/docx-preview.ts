@@ -10,7 +10,7 @@ export interface Options {
     className: string;
 }
 
-export function renderAsync(data, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options = null): PromiseLike<any> {
+export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Partial<Options> = null): PromiseLike<any> {
     var parser = new DocumentParser();
     var renderer = new HtmlRenderer(window.document);
 
@@ -20,7 +20,7 @@ export function renderAsync(data, bodyContainer: HTMLElement, styleContainer: HT
         parser.debug = options.debug || parser.debug;
 
         renderer.className = options.className || "docx";
-        renderer.inWrapper = options && options.inWrapper != null ? options.inWrapper : true;
+        renderer.inWrapper = options.inWrapper != null ? options.inWrapper : true;
     }
 
     return Document.load(data, parser)
