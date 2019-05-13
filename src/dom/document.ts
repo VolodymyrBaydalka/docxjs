@@ -23,6 +23,6 @@ export interface SectionProperties {
     columns: Columns;
 }
 
-export interface WordDocument extends OpenXmlElement {
-    section: SectionProperties;
+export interface DocumentElement extends OpenXmlElement {
+    props: SectionProperties;
 }

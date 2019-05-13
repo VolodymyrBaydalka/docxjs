@@ -24,3 +24,8 @@ export interface Columns {
     equalWidth: boolean;
     columns: Column[];
 }
+
+export interface CommonProperties {
+    fontSize: Length;
+    color: string;
+}

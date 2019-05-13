@@ -12,6 +12,11 @@ export function getAttributeIntValue(elem: Element, namespaceURI: string, name: 
     return val ? parseInt(val) : null;
 }
 
+export function getAttributeColorValue(elem: Element, namespaceURI: string, name: string): string {
+    var val = elem.getAttributeNS(namespaceURI, name);
+    return val ? `#${val}` : null;
+}
+
 export function getAttributeBoolValue(elem: Element, namespaceURI: string, name: string, defaultValue: boolean = false): boolean {
     var val = elem.getAttributeNS(namespaceURI, name);
 

@@ -1,9 +1,10 @@
 import { Document } from './document';
 import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomHyperlink, IDomParagraph, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell } from './dom/dom';
-import { Length } from './dom/common';
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell } from './dom/dom';
+import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
-import { WordDocument } from './dom/document';
+import { DocumentElement } from './dom/document';
+import { ParagraphElement } from './dom/paragraph';
 
 export class HtmlRenderer {
 
@@ -128,7 +129,7 @@ export class HtmlRenderer {
         return output;
     }
 
-    renderDocument(document: WordDocument): HTMLElement {
+    renderDocument(document: DocumentElement): HTMLElement {
         var bodyElement = this.htmlDocument.createElement("section");
 
         bodyElement.className = this.className;
@@ -138,8 +139,8 @@ export class HtmlRenderer {
 
         this.renderStyleValues(document.style, bodyElement);
 
-        if(document.section) {
-            var props = document.section;
+        if(document.props) {
+            var props = document.props;
 
             if(props.pageMargins) {
                 bodyElement.style.paddingLeft = this.renderLength(props.pageMargins.left);
@@ -295,7 +296,7 @@ export class HtmlRenderer {
     renderElement(elem: OpenXmlElement, parent: OpenXmlElement): HTMLElement {
         switch (elem.domType) {
             case DomType.Paragraph:
-                return this.renderParagraph(<IDomParagraph>elem);
+                return this.renderParagraph(<ParagraphElement>elem);
 
             case DomType.Run:
                 return this.renderRun(<IDomRun>elem);
@@ -334,18 +335,33 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderParagraph(elem: IDomParagraph) {
+    renderParagraph(elem: ParagraphElement) {
         var result = this.htmlDocument.createElement("p");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
 
+        this.renderCommonProeprties(result, elem.props);
+
         if (elem.numberingId && elem.numberingLevel != null) {
             result.className = `${result.className} ${this.numberingClass(elem.numberingId, elem.numberingLevel)}`;
         }
 
         return result;
+    }
+
+    renderCommonProeprties(elem: HTMLElement, props: CommonProperties){
+        if(props == null)
+            return;
+
+        if(props.color) {
+            elem.style.color = props.color;
+        }
+
+        if (props.fontSize) {
+            elem.style.fontSize = this.renderLength(props.fontSize);
+        }
     }
 
     renderHyperlink(elem: IDomHyperlink) {

@@ -1,12 +1,13 @@
 import {
     IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
-    IDomHyperlink, IDomParagraph, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
     IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DocxTab, DomRelationshipType
 } from './dom/dom';
 import * as utils from './utils';
-import { SectionProperties, WordDocument } from './dom/document';
-import { namespaces, Columns } from './dom/common';
-import { forEachElementNS, getAttributeLengthValue, getAttributeIntValue, getAttributeBoolValue } from './parser/common';
+import { SectionProperties, DocumentElement } from './dom/document';
+import { namespaces, Columns, CommonProperties } from './dom/common';
+import { forEachElementNS, getAttributeLengthValue, getAttributeIntValue, getAttributeBoolValue, getAttributeColorValue, LengthUsage } from './parser/common';
+import { ParagraphElement } from './dom/paragraph';
 
 export var autos = {
     shd: "white",
@@ -34,11 +35,11 @@ export class DocumentParser {
     }
 
     parseDocumentFile(xmlString: string) {
-        var result: WordDocument = {
+        var result: DocumentElement = {
             domType: DomType.Document,
             children: [],
             style: {},
-            section: null
+            props: null
         };
 
         var xbody = xml.byTagName(xml.parse(xmlString, this.skipDeclaration), "body");
@@ -54,7 +55,7 @@ export class DocumentParser {
                     break;
 
                 case "sectPr":
-                    result.section = this.parseSectionProperties(elem);
+                    result.props = this.parseSectionProperties(elem);
                     break;
             }
         });
@@ -116,6 +117,21 @@ export class DocumentParser {
         });
 
         return result;
+    }
+
+    parseCommonProperties(elem: Element, props: CommonProperties) {
+        if(elem.namespaceURI != namespaces.wordml)
+            return;
+
+        switch(elem.localName) {
+            case "color": 
+                props.color = getAttributeColorValue(elem, elem.namespaceURI, "val");
+                break;
+
+            case "sz":
+                props.fontSize = getAttributeLengthValue(elem, elem.namespaceURI, "val", LengthUsage.FontSize);
+                break;
+        }
     }
 
     parseStyle(node: Element): IDomStyle {
@@ -382,7 +398,7 @@ export class DocumentParser {
     }
 
     parseParagraph(node: Element): OpenXmlElement {
-        var result = <IDomParagraph>{ domType: DomType.Paragraph, children: [] };
+        var result = <ParagraphElement>{ domType: DomType.Paragraph, children: [], props: {} };
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -400,6 +416,7 @@ export class DocumentParser {
 
                 case "pPr":
                     this.parseParagraphProperties(c, result);
+                    this.parseCommonProperties(c, result.props);
                     break;
             }
         });
@@ -407,7 +424,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseParagraphProperties(elem: Element, paragraph: IDomParagraph) {
+    parseParagraphProperties(elem: Element, paragraph: ParagraphElement) {
         this.parseDefaultProperties(elem, paragraph.style = {}, null, c => {
             switch (c.localName) {
                 case "pStyle":
@@ -442,7 +459,7 @@ export class DocumentParser {
         });
     }
 
-    parseNumbering(node: Element, paragraph: IDomParagraph) {
+    parseNumbering(node: Element, paragraph: ParagraphElement) {
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "numId":
@@ -456,7 +473,7 @@ export class DocumentParser {
         });
     }
 
-    parseFrame(node: Element, paragraph: IDomParagraph) {
+    parseFrame(node: Element, paragraph: ParagraphElement) {
         var dropCap = xml.stringAttr(node, "dropCap");
 
         if (dropCap == "drop")
@@ -1042,7 +1059,7 @@ export class DocumentParser {
         }
     }
 
-    parseTabs(node: Element, paragraph: IDomParagraph) {
+    parseTabs(node: Element, paragraph: ParagraphElement) {
         paragraph.tabs = xml.elements(node, "tab").map(n => <DocxTab>{
             position: xml.sizeAttr(n, "pos"),
             leader: xml.stringAttr(n, "leader"),

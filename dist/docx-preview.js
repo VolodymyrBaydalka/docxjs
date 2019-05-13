@@ -106,7 +106,10 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom.ts");
+var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
+var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
+var common_1 = __webpack_require__(/*! ./dom/common */ "./src/dom/common.ts");
+var common_2 = __webpack_require__(/*! ./parser/common */ "./src/parser/common.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -132,7 +135,8 @@ var DocumentParser = (function () {
         var result = {
             domType: dom_1.DomType.Document,
             children: [],
-            style: {}
+            style: {},
+            props: null
         };
         var xbody = xml.byTagName(xml.parse(xmlString, this.skipDeclaration), "body");
         xml.foreach(xbody, function (elem) {
@@ -144,7 +148,7 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseTable(elem));
                     break;
                 case "sectPr":
-                    _this.parseSectionProperties(elem, result);
+                    result.props = _this.parseSectionProperties(elem);
                     break;
             }
         });
@@ -196,6 +200,18 @@ var DocumentParser = (function () {
             }
         });
         return result;
+    };
+    DocumentParser.prototype.parseCommonProperties = function (elem, props) {
+        if (elem.namespaceURI != common_1.namespaces.wordml)
+            return;
+        switch (elem.localName) {
+            case "color":
+                props.color = common_2.getAttributeColorValue(elem, elem.namespaceURI, "val");
+                break;
+            case "sz":
+                props.fontSize = common_2.getAttributeLengthValue(elem, elem.namespaceURI, "val", common_2.LengthUsage.FontSize);
+                break;
+        }
     };
     DocumentParser.prototype.parseStyle = function (node) {
         var _this = this;
@@ -272,10 +288,10 @@ var DocumentParser = (function () {
         var selector = "";
         switch (type) {
             case "firstRow":
-                selector = "tr.first-row";
+                selector = "tr.first-row td";
                 break;
             case "lastRow":
-                selector = "tr.last-row";
+                selector = "tr.last-row td";
                 break;
             case "firstCol":
                 selector = "td.first-col";
@@ -396,28 +412,57 @@ var DocumentParser = (function () {
         });
         return result;
     };
-    DocumentParser.prototype.parseSectionProperties = function (elem, domElem) {
+    DocumentParser.prototype.parseSectionProperties = function (elem) {
         var _this = this;
-        xml.foreach(elem, function (n) {
-            switch (n.localName) {
-                case "pgMar":
-                    domElem.style["padding-left"] = xml.sizeAttr(n, "left");
-                    domElem.style["padding-right"] = xml.sizeAttr(n, "right");
-                    domElem.style["padding-top"] = xml.sizeAttr(n, "top");
-                    domElem.style["padding-bottom"] = xml.sizeAttr(n, "bottom");
-                    break;
+        var section = {};
+        common_2.forEachElementNS(elem, common_1.namespaces.wordml, function (e) {
+            switch (e.localName) {
                 case "pgSz":
-                    if (!_this.ignoreWidth)
-                        domElem.style["width"] = xml.sizeAttr(n, "w");
-                    if (!_this.ignoreHeight)
-                        domElem.style["height"] = xml.sizeAttr(n, "h");
+                    section.pageSize = {
+                        width: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "w"),
+                        height: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "h"),
+                        orientation: e.getAttributeNS(common_1.namespaces.wordml, "orient")
+                    };
+                    break;
+                case "pgMar":
+                    section.pageMargins = {
+                        left: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "left"),
+                        right: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "right"),
+                        top: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "top"),
+                        bottom: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "bottom"),
+                        header: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "header"),
+                        footer: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "footer"),
+                        gutter: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "gutter"),
+                    };
+                    break;
+                case "cols":
+                    section.columns = _this.parseColumns(e);
                     break;
             }
         });
+        return section;
+    };
+    DocumentParser.prototype.parseColumns = function (elem) {
+        var result = {
+            numberOfColumns: common_2.getAttributeIntValue(elem, common_1.namespaces.wordml, "num"),
+            space: common_2.getAttributeLengthValue(elem, common_1.namespaces.wordml, "space"),
+            separator: common_2.getAttributeBoolValue(elem, common_1.namespaces.wordml, "sep"),
+            equalWidth: common_2.getAttributeBoolValue(elem, common_1.namespaces.wordml, "equalWidth", true),
+            columns: []
+        };
+        common_2.forEachElementNS(elem, common_1.namespaces.wordml, function (e) {
+            if (e.localName != "col")
+                return;
+            result.columns.push({
+                width: common_2.getAttributeLengthValue(elem, common_1.namespaces.wordml, "w"),
+                space: common_2.getAttributeLengthValue(elem, common_1.namespaces.wordml, "space")
+            });
+        });
+        return result;
     };
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Paragraph, children: [] };
+        var result = { domType: dom_1.DomType.Paragraph, children: [], props: {} };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -431,6 +476,7 @@ var DocumentParser = (function () {
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
+                    _this.parseCommonProperties(c, result.props);
                     break;
             }
         });
@@ -441,7 +487,10 @@ var DocumentParser = (function () {
         this.parseDefaultProperties(elem, paragraph.style = {}, null, function (c) {
             switch (c.localName) {
                 case "pStyle":
-                    paragraph.className = xml.className(c, "val");
+                    utils.addElementClass(paragraph, xml.className(c, "val"));
+                    break;
+                case "cnfStyle":
+                    utils.addElementClass(paragraph, values.classNameOfCnfStyle(c));
                     break;
                 case "numPr":
                     _this.parseNumbering(c, paragraph);
@@ -680,6 +729,9 @@ var DocumentParser = (function () {
             switch (c.localName) {
                 case "tblStyle":
                     table.className = xml.className(c, "val");
+                    break;
+                case "tblLook":
+                    utils.addElementClass(table, values.classNameOftblLook(c));
                     break;
                 case "tblpPr":
                     _this.parseTablePosition(c, table);
@@ -1227,21 +1279,19 @@ var values = (function () {
         return (num & mask) == mask;
     };
     values.classNameOftblLook = function (c) {
-        var val = xml.stringAttr(c, "val");
-        var num = parseInt(val, 16);
         var className = "";
-        if (values.checkMask(num, 0x0020))
-            className += " first-row";
-        if (values.checkMask(num, 0x0040))
-            className += " last-row";
-        if (values.checkMask(num, 0x0080))
+        if (xml.boolAttr(c, "firstColumn"))
             className += " first-col";
-        if (values.checkMask(num, 0x0100))
-            className += " last-col";
-        if (!values.checkMask(num, 0x0200))
-            className += " odd-row even-row";
-        if (!values.checkMask(num, 0x0400))
-            className += " odd-col even-col";
+        if (xml.boolAttr(c, "firstRow"))
+            className += " first-row";
+        if (xml.boolAttr(c, "lastColumn"))
+            className += " lat-col";
+        if (xml.boolAttr(c, "lastRow"))
+            className += " last-row";
+        if (xml.boolAttr(c, "noHBand"))
+            className += " no-hband";
+        if (xml.boolAttr(c, "noVBand"))
+            className += " no-vband";
         return className.trim();
     };
     return values;
@@ -1351,6 +1401,17 @@ exports.Document = Document;
 
 "use strict";
 
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var document_1 = __webpack_require__(/*! ./document */ "./src/document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
@@ -1360,16 +1421,17 @@ function renderAsync(data, bodyContainer, styleContainer, options) {
     if (options === void 0) { options = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
+    options = __assign({ ignoreHeight: true, ignoreWidth: false, debug: false, className: "docx", inWrapper: true }, options);
     if (options) {
-        parser.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
-        parser.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
+        options.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
+        options.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
         parser.debug = options.debug || parser.debug;
         renderer.className = options.className || "docx";
-        renderer.inWrapper = options && options.inWrapper != null ? options.inWrapper : true;
+        renderer.inWrapper = options.inWrapper != null ? options.inWrapper : true;
     }
     return document_1.Document.load(data, parser)
         .then(function (doc) {
-        renderer.render(doc, bodyContainer, styleContainer);
+        renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
     });
 }
@@ -1378,10 +1440,27 @@ exports.renderAsync = renderAsync;
 
 /***/ }),
 
-/***/ "./src/dom.ts":
-/*!********************!*\
-  !*** ./src/dom.ts ***!
-  \********************/
+/***/ "./src/dom/common.ts":
+/*!***************************!*\
+  !*** ./src/dom/common.ts ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.namespaces = {
+    wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+};
+
+
+/***/ }),
+
+/***/ "./src/dom/dom.ts":
+/*!************************!*\
+  !*** ./src/dom/dom.ts ***!
+  \************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1437,7 +1516,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom.ts");
+var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
@@ -1445,9 +1524,10 @@ var HtmlRenderer = (function () {
         this.className = "docx";
         this.digitTest = /^[0-9]/.test;
     }
-    HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer) {
+    HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
+        this.options = options;
         styleContainer = styleContainer || bodyContainer;
         this.clearElement(styleContainer);
         this.clearElement(bodyContainer);
@@ -1552,7 +1632,32 @@ var HtmlRenderer = (function () {
         this.processElement(document);
         this.renderChildren(document, bodyElement);
         this.renderStyleValues(document.style, bodyElement);
+        if (document.props) {
+            var props = document.props;
+            if (props.pageMargins) {
+                bodyElement.style.paddingLeft = this.renderLength(props.pageMargins.left);
+                bodyElement.style.paddingRight = this.renderLength(props.pageMargins.right);
+                bodyElement.style.paddingTop = this.renderLength(props.pageMargins.top);
+                bodyElement.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+            }
+            if (props.pageSize) {
+                if (!this.options.ignoreWidth)
+                    bodyElement.style.width = this.renderLength(props.pageSize.width);
+                if (!this.options.ignoreHeight)
+                    bodyElement.style.height = this.renderLength(props.pageSize.height);
+            }
+            if (props.columns && props.columns.numberOfColumns) {
+                bodyElement.style.columnCount = props.columns.numberOfColumns;
+                bodyElement.style.columnGap = this.renderLength(props.columns.space);
+                if (props.columns.separator) {
+                    bodyElement.style.columnRule = "1px solid black";
+                }
+            }
+        }
         return bodyElement;
+    };
+    HtmlRenderer.prototype.renderLength = function (l) {
+        return !l ? null : "" + l.value + l.type;
     };
     HtmlRenderer.prototype.renderWrapper = function () {
         var wrapper = document.createElement("div");
@@ -1677,10 +1782,21 @@ var HtmlRenderer = (function () {
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
+        this.renderCommonProeprties(result, elem.props);
         if (elem.numberingId && elem.numberingLevel != null) {
             result.className = result.className + " " + this.numberingClass(elem.numberingId, elem.numberingLevel);
         }
         return result;
+    };
+    HtmlRenderer.prototype.renderCommonProeprties = function (elem, props) {
+        if (props == null)
+            return;
+        if (props.color) {
+            elem.style.color = props.color;
+        }
+        if (props.fontSize) {
+            elem.style.fontSize = this.renderLength(props.fontSize);
+        }
     };
     HtmlRenderer.prototype.renderHyperlink = function (elem) {
         var result = this.htmlDocument.createElement("a");
@@ -1824,6 +1940,95 @@ var HtmlRenderer = (function () {
     return HtmlRenderer;
 }());
 exports.HtmlRenderer = HtmlRenderer;
+
+
+/***/ }),
+
+/***/ "./src/parser/common.ts":
+/*!******************************!*\
+  !*** ./src/parser/common.ts ***!
+  \******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function forEachElementNS(elem, namespaceURI, callback) {
+    elem.childNodes.forEach(function (n) {
+        if (n.nodeType == 1 && n.namespaceURI == namespaceURI)
+            callback(n);
+    });
+}
+exports.forEachElementNS = forEachElementNS;
+function getAttributeIntValue(elem, namespaceURI, name) {
+    var val = elem.getAttributeNS(namespaceURI, name);
+    return val ? parseInt(val) : null;
+}
+exports.getAttributeIntValue = getAttributeIntValue;
+function getAttributeColorValue(elem, namespaceURI, name) {
+    var val = elem.getAttributeNS(namespaceURI, name);
+    return val ? "#" + val : null;
+}
+exports.getAttributeColorValue = getAttributeColorValue;
+function getAttributeBoolValue(elem, namespaceURI, name, defaultValue) {
+    if (defaultValue === void 0) { defaultValue = false; }
+    var val = elem.getAttributeNS(namespaceURI, name);
+    if (val == null)
+        return defaultValue;
+    return val === "true" || val === "1";
+}
+exports.getAttributeBoolValue = getAttributeBoolValue;
+function getAttributeLengthValue(elem, namespaceURI, name, usage) {
+    if (usage === void 0) { usage = LengthUsage.Dxa; }
+    return parseLength(elem.getAttributeNS(namespaceURI, name), usage);
+}
+exports.getAttributeLengthValue = getAttributeLengthValue;
+var LengthUsage;
+(function (LengthUsage) {
+    LengthUsage[LengthUsage["Dxa"] = 0] = "Dxa";
+    LengthUsage[LengthUsage["Emu"] = 1] = "Emu";
+    LengthUsage[LengthUsage["FontSize"] = 2] = "FontSize";
+    LengthUsage[LengthUsage["Border"] = 3] = "Border";
+    LengthUsage[LengthUsage["Percent"] = 4] = "Percent";
+})(LengthUsage = exports.LengthUsage || (exports.LengthUsage = {}));
+function parseLength(val, usage) {
+    if (usage === void 0) { usage = LengthUsage.Dxa; }
+    if (!val)
+        return null;
+    var num = parseInt(val);
+    switch (usage) {
+        case LengthUsage.Dxa: return { value: 0.05 * num, type: "pt" };
+        case LengthUsage.Emu: return { value: num / 12700, type: "pt" };
+        case LengthUsage.FontSize: return { value: 0.5 * num, type: "pt" };
+        case LengthUsage.Border: return { value: 0.125 * num, type: "pt" };
+        case LengthUsage.Percent: return { value: 0.02 * num, type: "%" };
+    }
+    return null;
+}
+exports.parseLength = parseLength;
+
+
+/***/ }),
+
+/***/ "./src/utils.ts":
+/*!**********************!*\
+  !*** ./src/utils.ts ***!
+  \**********************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function addElementClass(element, className) {
+    return element.className = appendClass(element.className, className);
+}
+exports.addElementClass = addElementClass;
+function appendClass(classList, className) {
+    return (!classList) ? className : classList + " " + className;
+}
+exports.appendClass = appendClass;
 
 
 /***/ })

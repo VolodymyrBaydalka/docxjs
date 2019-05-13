@@ -1,5 +1,3 @@
-import { SectionProperties } from "./document";
-
 export enum DomType {
     Document,
     Paragraph,
@@ -36,12 +34,6 @@ export interface OpenXmlElement {
     style?: IDomStyleValues;
     className?: string;
     parent?: OpenXmlElement;
-}
-
-export interface IDomParagraph extends OpenXmlElement {
-    numberingId?: string;
-    numberingLevel?: number;
-    tabs: DocxTab[];
 }
 
 export interface DocxTab {
