@@ -1,20 +1,25 @@
 import { Document } from './document';
-import { IDomStyle, IDomDocument, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomHyperlink, IDomParagraph, IDomImage, IDomElement, IDomTableColumn, IDomTableCell } from './dom';
+import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
+    IDomHyperlink, IDomParagraph, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell } from './dom/dom';
+import { Length } from './dom/common';
+import { Options } from './docx-preview';
+import { WordDocument } from './dom/document';
 
 export class HtmlRenderer {
 
     inWrapper: boolean = true;
     className: string = "docx";
     document: Document;
+    options: Partial<Options>;
 
     private digitTest = /^[0-9]/.test;
 
     constructor(public htmlDocument: HTMLDocument) {
     }
 
-    render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null) {
+    render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Partial<Options>) {
         this.document = document;
+        this.options = options;
 
         styleContainer = styleContainer || bodyContainer;
 
@@ -80,7 +85,7 @@ export class HtmlRenderer {
         }
     }
 
-    processElement(element: IDomDocument) {
+    processElement(element: OpenXmlElement) {
         if (element.children) {
             for (var e of element.children) {
                 e.className = this.processClassName(e.className);
@@ -123,7 +128,7 @@ export class HtmlRenderer {
         return output;
     }
 
-    renderDocument(document: IDomDocument): HTMLElement {
+    renderDocument(document: WordDocument): HTMLElement {
         var bodyElement = this.htmlDocument.createElement("section");
 
         bodyElement.className = this.className;
@@ -133,7 +138,38 @@ export class HtmlRenderer {
 
         this.renderStyleValues(document.style, bodyElement);
 
+        if(document.section) {
+            var props = document.section;
+
+            if(props.pageMargins) {
+                bodyElement.style.paddingLeft = this.renderLength(props.pageMargins.left);
+                bodyElement.style.paddingRight = this.renderLength(props.pageMargins.right);
+                bodyElement.style.paddingTop = this.renderLength(props.pageMargins.top);
+                bodyElement.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+            }
+
+            if(props.pageSize) {
+                if(!this.options.ignoreWidth)
+                    bodyElement.style.width = this.renderLength(props.pageSize.width);
+                if(!this.options.ignoreHeight)
+                    bodyElement.style.height = this.renderLength(props.pageSize.height);
+            }
+
+            if(props.columns && props.columns.numberOfColumns) {
+                bodyElement.style.columnCount = props.columns.numberOfColumns;
+                bodyElement.style.columnGap = this.renderLength(props.columns.space);
+
+                if(props.columns.separator) {
+                    bodyElement.style.columnRule = "1px solid black";
+                }
+            }
+        }
+
         return bodyElement;
+    }
+
+    renderLength(l: Length): string {
+        return !l ? null : `${l.value}${l.type}`;
     }
 
     renderWrapper() {
@@ -256,7 +292,7 @@ export class HtmlRenderer {
         return this.renderStyle(styleText);
     }
 
-    renderElement(elem: IDomElement, parent: IDomElement): HTMLElement {
+    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): HTMLElement {
         switch (elem.domType) {
             case DomType.Paragraph:
                 return this.renderParagraph(<IDomParagraph>elem);
@@ -286,7 +322,7 @@ export class HtmlRenderer {
         return null;
     }
 
-    renderChildren(elem: IDomElement, into?: HTMLElement): HTMLElement[] {
+    renderChildren(elem: OpenXmlElement, into?: HTMLElement): HTMLElement[] {
         var result: HTMLElement[] = null;
 
         if (elem.children != null)
@@ -441,7 +477,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTableRow(elem: IDomElement) {
+    renderTableRow(elem: OpenXmlElement) {
         let result = this.htmlDocument.createElement("tr");
 
         this.renderClass(elem, result);
@@ -474,7 +510,7 @@ export class HtmlRenderer {
         }
     }
 
-    renderClass(input: IDomElement, ouput: HTMLElement) {
+    renderClass(input: OpenXmlElement, ouput: HTMLElement) {
         if (input.className)
             ouput.className = input.className;
     }

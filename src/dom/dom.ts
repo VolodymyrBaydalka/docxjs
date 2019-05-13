@@ -1,3 +1,5 @@
+import { SectionProperties } from "./document";
+
 export enum DomType {
     Document,
     Paragraph,
@@ -28,15 +30,15 @@ export interface IDomRelationship {
     target: string;
 }
 
-export interface IDomElement {
+export interface OpenXmlElement {
     domType: DomType;
-    children?: IDomElement[];
+    children?: OpenXmlElement[];
     style?: IDomStyleValues;
     className?: string;
-    parent?: IDomElement;
+    parent?: OpenXmlElement;
 }
 
-export interface IDomParagraph extends IDomElement {
+export interface IDomParagraph extends OpenXmlElement {
     numberingId?: string;
     numberingLevel?: number;
     tabs: DocxTab[];
@@ -48,11 +50,11 @@ export interface DocxTab {
     position: string;
 }
 
-export interface IDomHyperlink extends IDomElement {
+export interface IDomHyperlink extends OpenXmlElement {
     href?: string;
 }
 
-export interface IDomRun extends IDomElement {
+export interface IDomRun extends OpenXmlElement {
     id?: string;
     break?: string;
     wrapper?: string;
@@ -61,22 +63,19 @@ export interface IDomRun extends IDomElement {
     tab?: boolean;
 }
 
-export interface IDomTable extends IDomElement {
+export interface IDomTable extends OpenXmlElement {
     columns?: IDomTableColumn[];
     cellStyle?: IDomStyleValues;
 }
 
-export interface IDomTableRow extends IDomElement {
+export interface IDomTableRow extends OpenXmlElement {
 }
 
-export interface IDomTableCell extends IDomElement {
+export interface IDomTableCell extends OpenXmlElement {
     span?: number;
 }
 
-export interface IDomDocument extends IDomElement {
-}
-
-export interface IDomImage extends IDomElement {
+export interface IDomImage extends OpenXmlElement {
     src: string;
 }
 
@@ -115,9 +114,4 @@ export interface NumberingPicBullet {
 
 export interface IDomStyleValues {
     [name: string]: string;
-}
-
-export interface IDomFont {
-    name: string;
-    family: string;
 }

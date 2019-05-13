@@ -1,5 +1,7 @@
 import { DocumentParser } from './document-parser';
-import { IDomRelationship, IDomStyle, IDomFont, IDomNumbering, IDomDocument } from './dom';
+import { IDomRelationship, IDomStyle, IDomNumbering } from './dom/dom';
+import { Font } from './dom/common';
+import { WordDocument } from './dom/document';
 
 enum PartType {
     Document = "word/document.xml",
@@ -18,9 +20,9 @@ export class Document {
     numRelations: IDomRelationship[] = null;
 
     styles: IDomStyle[] = null;
-    fonts: IDomFont[] = null;
+    fonts: Font[] = null;
     numbering: IDomNumbering[] = null;
-    document: IDomDocument = null;
+    document: WordDocument = null;
 
     static load(blob, parser: DocumentParser): PromiseLike<Document> {
         var d = new Document();

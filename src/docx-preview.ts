@@ -14,9 +14,18 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
     var parser = new DocumentParser();
     var renderer = new HtmlRenderer(window.document);
 
+    options = { 
+        ignoreHeight: true,
+        ignoreWidth: false,
+        debug: false,
+        className: "docx",
+        inWrapper: true,
+        ... options
+    };
+
     if (options) {
-        parser.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
-        parser.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
+        options.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
+        options.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
         parser.debug = options.debug || parser.debug;
 
         renderer.className = options.className || "docx";
@@ -25,7 +34,7 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
 
     return Document.load(data, parser)
         .then(doc => {
-            renderer.render(doc, bodyContainer, styleContainer);
+            renderer.render(doc, bodyContainer, styleContainer, options);
             return doc;
         });
 }
