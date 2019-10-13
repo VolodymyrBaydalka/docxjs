@@ -221,7 +221,8 @@ var DocumentParser = (function () {
             name: null,
             target: null,
             basedOn: null,
-            styles: []
+            styles: [],
+            linked: null
         };
         switch (xml.stringAttr(node, "type")) {
             case "paragraph":
@@ -237,10 +238,16 @@ var DocumentParser = (function () {
         xml.foreach(node, function (n) {
             switch (n.localName) {
                 case "basedOn":
-                    result.basedOn = xml.stringAttr(n, "val");
+                    result.basedOn = xml.className(n, "val");
                     break;
                 case "name":
                     result.name = xml.stringAttr(n, "val");
+                    break;
+                case "link":
+                    result.linked = xml.className(n, "val");
+                    break;
+                case "aliases":
+                    result.aliases = xml.stringAttr(n, "val").split(",");
                     break;
                 case "pPr":
                     result.styles.push({
@@ -880,6 +887,7 @@ var DocumentParser = (function () {
                     _this.parseUnderline(c, style);
                     break;
                 case "ind":
+                case "tblInd":
                     _this.parseIndentation(c, style);
                     break;
                 case "rFonts":
@@ -911,7 +919,8 @@ var DocumentParser = (function () {
                     style["vertical-align"] = xml.stringAttr(c, "val");
                     break;
                 case "spacing":
-                    _this.parseSpacing(c, style);
+                    if (elem.localName == "pPr")
+                        _this.parseSpacing(c, style);
                     break;
                 case "lang":
                 case "noProof":
@@ -985,14 +994,27 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseSpacing = function (node, style) {
         var before = xml.sizeAttr(node, "before");
         var after = xml.sizeAttr(node, "after");
-        var line = xml.sizeAttr(node, "line");
+        var line = xml.intAttr(node, "line", null);
+        var lineRule = xml.stringAttr(node, "lineRule");
         if (before)
             style["margin-top"] = before;
         if (after)
             style["margin-bottom"] = after;
-        if (line) {
-            style["line-height"] = line;
-            style["min-height"] = line;
+        if (line !== null) {
+            var lineHeight = null;
+            switch (lineRule) {
+                case "auto":
+                    lineHeight = 100 * line / 240 + "%";
+                    break;
+                case "atLeast":
+                    lineHeight = "calc(100% + " + line / 20 + "pt)";
+                    break;
+                default:
+                    lineHeight = line / 20 + "pt";
+                    break;
+            }
+            style["line-height"] = lineHeight;
+            style["min-height"] = lineHeight;
         }
     };
     DocumentParser.prototype.parseTabs = function (node, paragraph) {
@@ -1133,7 +1155,7 @@ var xml = (function () {
     xml.intAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = 0; }
         var val = xml.stringAttr(node, attrName);
-        return val ? parseInt(xml.stringAttr(node, attrName)) : 0;
+        return val ? parseInt(xml.stringAttr(node, attrName)) : defValue;
     };
     xml.sizeAttr = function (node, attrName, type) {
         if (type === void 0) { type = SizeType.Dxa; }
@@ -1561,33 +1583,33 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
         var stylesMap = {};
-        for (var _i = 0, styles_1 = styles; _i < styles_1.length; _i++) {
-            var style = styles_1[_i];
-            style.id = this.processClassName(style.id);
-            style.basedOn = this.processClassName(style.basedOn);
+        for (var _i = 0, _a = styles.filter(function (x) { return x.id != null; }); _i < _a.length; _i++) {
+            var style = _a[_i];
             stylesMap[style.id] = style;
         }
-        for (var _a = 0, styles_2 = styles; _a < styles_2.length; _a++) {
-            var style = styles_2[_a];
-            if (style.basedOn) {
-                var baseStyle = stylesMap[style.basedOn];
-                if (!baseStyle) {
-                    if (this.options.debug)
-                        console.warn("Can't find style " + style.basedOn);
-                    continue;
-                }
+        for (var _b = 0, _c = styles.filter(function (x) { return x.basedOn; }); _b < _c.length; _b++) {
+            var style = _c[_b];
+            var baseStyle = stylesMap[style.basedOn];
+            if (baseStyle) {
                 var _loop_1 = function (styleValues) {
                     baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
                     if (baseValues && baseValues.length > 0)
                         this_1.copyStyleProperties(baseValues[0].values, styleValues.values);
                 };
                 var this_1 = this, baseValues;
-                for (var _b = 0, _c = style.styles; _b < _c.length; _b++) {
-                    var styleValues = _c[_b];
+                for (var _d = 0, _e = style.styles; _d < _e.length; _d++) {
+                    var styleValues = _e[_d];
                     _loop_1(styleValues);
                 }
             }
+            else if (this.options.debug)
+                console.warn("Can't find base style " + style.basedOn);
         }
+        for (var _f = 0, styles_1 = styles; _f < styles_1.length; _f++) {
+            var style = styles_1[_f];
+            style.id = this.processClassName(style.id);
+        }
+        return stylesMap;
     };
     HtmlRenderer.prototype.processElement = function (element) {
         if (element.children) {
@@ -1714,8 +1736,8 @@ var HtmlRenderer = (function () {
             styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
         };
         var this_2 = this, selector, listStyleType;
-        for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
-            var num = styles_3[_i];
+        for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
+            var num = styles_2[_i];
             _loop_2();
         }
         if (rootCounters.length > 0) {
@@ -1733,11 +1755,19 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
-        this.processStyles(styles);
-        for (var _i = 0, styles_4 = styles; _i < styles_4.length; _i++) {
-            var style = styles_4[_i];
-            for (var _a = 0, _b = style.styles; _a < _b.length; _a++) {
-                var subStyle = _b[_a];
+        var stylesMap = this.processStyles(styles);
+        for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
+            var style = styles_3[_i];
+            var subStyles = style.styles;
+            if (style.linked) {
+                var linkedStyle = style.linked && stylesMap[style.linked];
+                if (linkedStyle)
+                    subStyles = subStyles.concat(linkedStyle.styles);
+                else if (this.options.debug)
+                    console.warn("Can't find linked style " + style.linked);
+            }
+            for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
+                var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
                     selector += style.target + "." + style.id;

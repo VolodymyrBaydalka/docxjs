@@ -78,10 +78,12 @@ export interface IDomTableColumn {
 export interface IDomStyle {
     id: string;
     name?: string;
+    aliases?: string[];
     target: string;
     basedOn?: string;
     isDefault?: boolean;
     styles: IDomSubStyle[];
+    linked?: string;
 }
 
 export interface IDomSubStyle {

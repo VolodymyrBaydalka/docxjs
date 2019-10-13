@@ -65,24 +65,14 @@ export class HtmlRenderer {
     processStyles(styles: IDomStyle[]) {
         var stylesMap: Record<string, IDomStyle> = {};
 
-        for (let style of styles) {
-            style.id = this.processClassName(style.id);
-            style.basedOn = this.processClassName(style.basedOn);
-
+        for (let style of styles.filter(x => x.id != null)) {
             stylesMap[style.id] = style;
         }
 
-        for (let style of styles) {
-            if (style.basedOn) {
-                var baseStyle = stylesMap[style.basedOn];
+        for (let style of styles.filter(x => x.basedOn)) {
+            var baseStyle = stylesMap[style.basedOn];
 
-                if(!baseStyle) {
-                    if(this.options.debug)
-                        console.warn(`Can't find style ${style.basedOn}`);
-
-                    continue;
-                }
-
+            if (baseStyle) {
                 for (let styleValues of style.styles) {
                     var baseValues = baseStyle.styles.filter(x => x.target == styleValues.target);
 
@@ -90,7 +80,15 @@ export class HtmlRenderer {
                         this.copyStyleProperties(baseValues[0].values, styleValues.values);
                 }
             }
+            else if (this.options.debug)
+                console.warn(`Can't find base style ${style.basedOn}`);
         }
+
+        for (let style of styles) {
+            style.id = this.processClassName(style.id);
+        }
+
+        return stylesMap;
     }
 
     processElement(element: OpenXmlElement) {
@@ -276,11 +274,21 @@ export class HtmlRenderer {
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
-
-        this.processStyles(styles);
+        var stylesMap = this.processStyles(styles);
 
         for (let style of styles) {
-            for (var subStyle of style.styles) {
+            var subStyles =  style.styles;
+
+            if(style.linked) {
+                var linkedStyle = style.linked && stylesMap[style.linked];
+
+                if (linkedStyle)
+                    subStyles = subStyles.concat(linkedStyle.styles);
+                else if(this.options.debug)
+                    console.warn(`Can't find linked style ${style.linked}`);
+            }
+
+            for (var subStyle of subStyles) {
                 var selector = "";
 
                 if (style.target == subStyle.target)

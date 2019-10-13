@@ -26,3 +26,10 @@ export interface SectionProperties {
 export interface DocumentElement extends OpenXmlElement {
     props: SectionProperties;
 }
+
+export interface LineSpacing {
+    after: Length;
+    before: Length;
+    line: number;
+    lineRule: "atLeast" | "exactly" | "auto";
+}

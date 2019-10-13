@@ -141,7 +141,8 @@ export class DocumentParser {
             name: null,
             target: null,
             basedOn: null,
-            styles: []
+            styles: [],
+            linked: null
         };
 
         switch (xml.stringAttr(node, "type")) {
@@ -153,11 +154,19 @@ export class DocumentParser {
         xml.foreach(node, n => {
             switch (n.localName) {
                 case "basedOn":
-                    result.basedOn = xml.stringAttr(n, "val");
+                    result.basedOn = xml.className(n, "val");
                     break;
 
                 case "name":
                     result.name = xml.stringAttr(n, "val");
+                    break;
+
+                case "link":
+                    result.linked = xml.className(n, "val");
+                    break;
+
+                case "aliases":
+                    result.aliases = xml.stringAttr(n, "val").split(",");
                     break;
 
                 case "pPr":
@@ -916,6 +925,7 @@ export class DocumentParser {
                     break;
 
                 case "ind":
+                case "tblInd":
                     this.parseIndentation(c, style);
                     break;
 
@@ -959,7 +969,8 @@ export class DocumentParser {
                     break;
 
                 case "spacing":
-                    this.parseSpacing(c, style);
+                    if (elem.localName == "pPr")
+                        this.parseSpacing(c, style);
                     break;
 
                 case "lang":
@@ -1049,13 +1060,31 @@ export class DocumentParser {
     parseSpacing(node: Element, style: IDomStyleValues) {
         var before = xml.sizeAttr(node, "before");
         var after = xml.sizeAttr(node, "after");
-        var line = xml.sizeAttr(node, "line");
+        var line = xml.intAttr(node, "line", null);
+        var lineRule = xml.stringAttr(node, "lineRule");
 
         if (before) style["margin-top"] = before;
         if (after) style["margin-bottom"] = after;
-        if (line) {
-            style["line-height"] = line;
-            style["min-height"] = line;
+        
+        if (line !== null) {
+            var lineHeight = null;
+
+            switch(lineRule) {
+                case "auto": 
+                    lineHeight = `${100 * line / 240}%`;
+                    break;
+
+                case "atLeast":
+                    lineHeight = `calc(100% + ${line / 20}pt)`;
+                    break;
+
+                default:
+                    lineHeight = `${line / 20}pt`
+                    break;
+            }
+
+            style["line-height"] = lineHeight;
+            style["min-height"] = lineHeight;
         }
     }
 
@@ -1221,7 +1250,7 @@ class xml {
 
     static intAttr(node: Element, attrName: string, defValue: number = 0) {
         var val = xml.stringAttr(node, attrName);
-        return val ? parseInt(xml.stringAttr(node, attrName)) : 0;
+        return val ? parseInt(xml.stringAttr(node, attrName)) : defValue;
     }
 
     static sizeAttr(node: Element, attrName: string, type: SizeType = SizeType.Dxa) {
