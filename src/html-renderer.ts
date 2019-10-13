@@ -345,7 +345,8 @@ export class HtmlRenderer {
             result = elem.children.map(x => this.renderElement(x, elem)).filter(x => x != null);
 
         if (into && result)
-            result.forEach(x => into.appendChild(x));
+            for(let x of result)
+                into.appendChild(x);
 
         return result;
     }

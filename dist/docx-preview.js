@@ -1001,20 +1001,17 @@ var DocumentParser = (function () {
         if (after)
             style["margin-bottom"] = after;
         if (line !== null) {
-            var lineHeight = null;
             switch (lineRule) {
                 case "auto":
-                    lineHeight = 100 * line / 240 + "%";
+                    style["line-height"] = 100 * line / 240 + "%";
                     break;
                 case "atLeast":
-                    lineHeight = "calc(100% + " + line / 20 + "pt)";
+                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
                     break;
                 default:
-                    lineHeight = line / 20 + "pt";
+                    style["line-height"] = style["min-height"] = line / 20 + "pt";
                     break;
             }
-            style["line-height"] = lineHeight;
-            style["min-height"] = lineHeight;
         }
     };
     DocumentParser.prototype.parseTabs = function (node, paragraph) {
@@ -1809,7 +1806,10 @@ var HtmlRenderer = (function () {
         if (elem.children != null)
             result = elem.children.map(function (x) { return _this.renderElement(x, elem); }).filter(function (x) { return x != null; });
         if (into && result)
-            result.forEach(function (x) { return into.appendChild(x); });
+            for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
+                var x = result_1[_i];
+                into.appendChild(x);
+            }
         return result;
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
@@ -1990,10 +1990,11 @@ exports.HtmlRenderer = HtmlRenderer;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 function forEachElementNS(elem, namespaceURI, callback) {
-    elem.childNodes.forEach(function (n) {
+    for (var i = 0; i < elem.childNodes.length; i++) {
+        var n = elem.childNodes[i];
         if (n.nodeType == 1 && n.namespaceURI == namespaceURI)
             callback(n);
-    });
+    }
 }
 exports.forEachElementNS = forEachElementNS;
 function getAttributeIntValue(elem, namespaceURI, name) {

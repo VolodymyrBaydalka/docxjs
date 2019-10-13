@@ -1067,24 +1067,19 @@ export class DocumentParser {
         if (after) style["margin-bottom"] = after;
         
         if (line !== null) {
-            var lineHeight = null;
-
             switch(lineRule) {
                 case "auto": 
-                    lineHeight = `${100 * line / 240}%`;
+                    style["line-height"] = `${100 * line / 240}%`;
                     break;
 
                 case "atLeast":
-                    lineHeight = `calc(100% + ${line / 20}pt)`;
+                    style["line-height"] = `calc(100% + ${line / 20}pt)`;
                     break;
 
                 default:
-                    lineHeight = `${line / 20}pt`
+                    style["line-height"] = style["min-height"] = `${line / 20}pt`
                     break;
             }
-
-            style["line-height"] = lineHeight;
-            style["min-height"] = lineHeight;
         }
     }
 

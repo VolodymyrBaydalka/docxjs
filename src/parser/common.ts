@@ -1,10 +1,12 @@
 import { Length } from "../dom/common";
 
 export function forEachElementNS(elem: Element, namespaceURI: string, callback: (elem: Element) => any) {
-    elem.childNodes.forEach(n => {
+    for(let i = 0; i < elem.childNodes.length; i ++) {
+        let n = elem.childNodes[i];
+
         if(n.nodeType == 1 && n.namespaceURI == namespaceURI)
             callback(<Element>n);
-    });
+    }
 }
 
 export function getAttributeIntValue(elem: Element, namespaceURI: string, name: string): number {
