@@ -1571,6 +1571,11 @@ var HtmlRenderer = (function () {
             var style = styles_2[_a];
             if (style.basedOn) {
                 var baseStyle = stylesMap[style.basedOn];
+                if (!baseStyle) {
+                    if (this.options.debug)
+                        console.warn("Can't find style " + style.basedOn);
+                    continue;
+                }
                 var _loop_1 = function (styleValues) {
                     baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
                     if (baseValues && baseValues.length > 0)
@@ -1647,7 +1652,7 @@ var HtmlRenderer = (function () {
                     bodyElement.style.height = this.renderLength(props.pageSize.height);
             }
             if (props.columns && props.columns.numberOfColumns) {
-                bodyElement.style.columnCount = props.columns.numberOfColumns;
+                bodyElement.style.columnCount = "" + props.columns.numberOfColumns;
                 bodyElement.style.columnGap = this.renderLength(props.columns.space);
                 if (props.columns.separator) {
                     bodyElement.style.columnRule = "1px solid black";

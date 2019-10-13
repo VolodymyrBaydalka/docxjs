@@ -63,7 +63,7 @@ export class HtmlRenderer {
     }
 
     processStyles(styles: IDomStyle[]) {
-        var stylesMap = {};
+        var stylesMap: Record<string, IDomStyle> = {};
 
         for (let style of styles) {
             style.id = this.processClassName(style.id);
@@ -75,6 +75,13 @@ export class HtmlRenderer {
         for (let style of styles) {
             if (style.basedOn) {
                 var baseStyle = stylesMap[style.basedOn];
+
+                if(!baseStyle) {
+                    if(this.options.debug)
+                        console.warn(`Can't find style ${style.basedOn}`);
+
+                    continue;
+                }
 
                 for (let styleValues of style.styles) {
                     var baseValues = baseStyle.styles.filter(x => x.target == styleValues.target);
@@ -157,7 +164,7 @@ export class HtmlRenderer {
             }
 
             if(props.columns && props.columns.numberOfColumns) {
-                bodyElement.style.columnCount = props.columns.numberOfColumns;
+                bodyElement.style.columnCount = `${props.columns.numberOfColumns}`;
                 bodyElement.style.columnGap = this.renderLength(props.columns.space);
 
                 if(props.columns.separator) {
