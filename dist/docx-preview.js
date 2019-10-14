@@ -614,7 +614,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseDrawingWrapper = function (node) {
         var result = { domType: dom_1.DomType.Drawing, children: [], style: {} };
         var isAnchor = node.localName == "anchor";
-        var wrapTopAndBottom = false;
+        var wrapType = null;
         var simplePos = xml.boolAttr(node, "simplePos");
         var posX = { relative: "page", align: "left", offset: "0" };
         var posY = { relative: "page", align: "top", offset: "0" };
@@ -640,11 +640,14 @@ var DocumentParser = (function () {
                         if (alignNode)
                             pos.align = alignNode.textContent;
                         if (offsetNode)
-                            pos.offset = xml.sizeValue(node, SizeType.Emu);
+                            pos.offset = xml.sizeValue(offsetNode, SizeType.Emu);
                     }
                     break;
                 case "wrapTopAndBottom":
-                    wrapTopAndBottom = true;
+                    wrapType = "wrapTopAndBottom";
+                    break;
+                case "wrapNone":
+                    wrapType = "wrapNone";
                     break;
                 case "graphic":
                     var g = this.parseGraphic(n);
@@ -653,12 +656,22 @@ var DocumentParser = (function () {
                     break;
             }
         }
-        if (wrapTopAndBottom) {
+        if (wrapType == "wrapTopAndBottom") {
             result.style['display'] = 'block';
             if (posX.align) {
                 result.style['text-align'] = posX.align;
                 result.style['width'] = "100%";
             }
+        }
+        else if (wrapType == "wrapNone") {
+            result.style['display'] = 'block';
+            result.style['position'] = 'relative';
+            result.style["width"] = "0px";
+            result.style["height"] = "0px";
+            if (posX.offset)
+                result.style["left"] = posX.offset;
+            if (posY.offset)
+                result.style["top"] = posY.offset;
         }
         else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
             result.style["float"] = posX.align;
@@ -1003,7 +1016,7 @@ var DocumentParser = (function () {
         if (line !== null) {
             switch (lineRule) {
                 case "auto":
-                    style["line-height"] = 100 * line / 240 + "%";
+                    style["line-height"] = "" + (line / 240).toFixed(2);
                     break;
                 case "atLeast":
                     style["line-height"] = "calc(100% + " + line / 20 + "pt)";

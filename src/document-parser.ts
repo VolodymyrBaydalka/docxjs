@@ -586,12 +586,12 @@ export class DocumentParser {
         var isAnchor = node.localName == "anchor";
 
         //TODO
-        // result.style["left"] = xml.sizeAttr(node, "distL", SizeType.Emu);
-        // result.style["top"] = xml.sizeAttr(node, "distT", SizeType.Emu);
-        // result.style["right"] = xml.sizeAttr(node, "distR", SizeType.Emu);
-        // result.style["bottom"] = xml.sizeAttr(node, "distB", SizeType.Emu);
+        // result.style["margin-left"] = xml.sizeAttr(node, "distL", SizeType.Emu);
+        // result.style["margin-top"] = xml.sizeAttr(node, "distT", SizeType.Emu);
+        // result.style["margin-right"] = xml.sizeAttr(node, "distR", SizeType.Emu);
+        // result.style["margin-bottom"] = xml.sizeAttr(node, "distB", SizeType.Emu);
 
-        let wrapTopAndBottom = false;
+        let wrapType: "wrapTopAndBottom" | "wrapNone" | null = null; 
         let simplePos = xml.boolAttr(node, "simplePos");
 
         let posX = { relative: "page", align: "left", offset: "0" };
@@ -622,12 +622,16 @@ export class DocumentParser {
                             pos.align = alignNode.textContent;
 
                         if (offsetNode)
-                            pos.offset = xml.sizeValue(node, SizeType.Emu);
+                            pos.offset = xml.sizeValue(offsetNode, SizeType.Emu);
                     }
                     break;
 
                 case "wrapTopAndBottom":
-                    wrapTopAndBottom = true;
+                    wrapType = "wrapTopAndBottom";
+                    break;
+                
+                case "wrapNone":
+                    wrapType = "wrapNone";
                     break;
 
                 case "graphic":
@@ -639,13 +643,24 @@ export class DocumentParser {
             }
         }
 
-        if (wrapTopAndBottom) {
+        if (wrapType == "wrapTopAndBottom") {
             result.style['display'] = 'block';
 
             if (posX.align) {
                 result.style['text-align'] = posX.align;
                 result.style['width'] = "100%";
             }
+        }
+        else if(wrapType == "wrapNone") {
+            result.style['display'] = 'block';
+            result.style['position'] = 'relative';
+            result.style["width"] = "0px";
+            result.style["height"] = "0px";
+
+            if(posX.offset)
+                result.style["left"] = posX.offset;
+            if(posY.offset)
+                result.style["top"] = posY.offset;
         }
         else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
             result.style["float"] = posX.align;
@@ -1069,7 +1084,7 @@ export class DocumentParser {
         if (line !== null) {
             switch(lineRule) {
                 case "auto": 
-                    style["line-height"] = `${100 * line / 240}%`;
+                    style["line-height"] = `${(line / 240).toFixed(2)}`;
                     break;
 
                 case "atLeast":
