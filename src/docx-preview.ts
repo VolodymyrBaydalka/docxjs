@@ -6,35 +6,33 @@ export interface Options {
     inWrapper: boolean;
     ignoreWidth: boolean;
     ignoreHeight: boolean;
+    breakPages: boolean;
     debug: boolean;
     className: string;
 }
 
-export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Partial<Options> = null): PromiseLike<any> {
+export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null) {
     var parser = new DocumentParser();
     var renderer = new HtmlRenderer(window.document);
 
-    options = { 
-        ignoreHeight: true,
+    var options = { 
+        ignoreHeight: false,
         ignoreWidth: false,
+        breakPages: true,
         debug: false,
         className: "docx",
         inWrapper: true,
-        ... options
+        ... userOptions
     };
 
-    if (options) {
-        options.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
-        options.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
-        parser.debug = options.debug || parser.debug;
+    parser.ignoreWidth = options.ignoreWidth;
+    parser.debug = options.debug || parser.debug;
 
-        renderer.className = options.className || "docx";
-        renderer.inWrapper = options.inWrapper != null ? options.inWrapper : true;
-    }
+    renderer.className = options.className || "docx";
+    renderer.inWrapper = options.inWrapper;
 
-    return Document.load(data, parser)
-        .then(doc => {
-            renderer.render(doc, bodyContainer, styleContainer, options);
-            return doc;
-        });
+    return Document.load(data, parser).then(doc => {
+        renderer.render(doc, bodyContainer, styleContainer, options);
+        return doc;
+    })
 }

@@ -7,7 +7,7 @@ import * as utils from './utils';
 import { SectionProperties, DocumentElement } from './dom/document';
 import { namespaces, Columns, CommonProperties } from './dom/common';
 import { forEachElementNS, getAttributeLengthValue, getAttributeIntValue, getAttributeBoolValue, getAttributeColorValue, LengthUsage } from './parser/common';
-import { ParagraphElement } from './dom/paragraph';
+import { ParagraphElement, ParagraphProperties } from './dom/paragraph';
 
 export var autos = {
     shd: "white",
@@ -21,7 +21,6 @@ export class DocumentParser {
 
     // ignores page and table sizes
     ignoreWidth: boolean = false;
-    ignoreHeight: boolean = true;
     debug: boolean = false;
 
     parseDocumentRelationsFile(xmlString: string) {
@@ -442,6 +441,10 @@ export class DocumentParser {
 
                 case "cnfStyle":
                     utils.addElementClass(paragraph, values.classNameOfCnfStyle(c));
+                    break;
+                
+                case "sectPr":
+                    paragraph.props.sectionProps = this.parseSectionProperties(c);
                     break;
 
                 case "numPr":

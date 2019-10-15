@@ -1,3 +1,5 @@
+import * as JSZip from 'jszip';
+
 import { DocumentParser } from './document-parser';
 import { IDomRelationship, IDomStyle, IDomNumbering } from './dom/dom';
 import { Font } from './dom/common';
@@ -63,7 +65,7 @@ export class Document {
     private loadPart(part: PartType, parser: DocumentParser) {
         var f = this.zip.files[part];
 
-        return f ? f.async("string").then(xml => {
+        return f ? f.async("text").then(xml => {
             switch (part) {
                 case PartType.FontRelations:
                     this.fontRelations = parser.parseDocumentRelationsFile(xml);

@@ -3,7 +3,7 @@ import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
-import { DocumentElement } from './dom/document';
+import { DocumentElement, SectionProperties } from './dom/document';
 import { ParagraphElement } from './dom/paragraph';
 
 export class HtmlRenderer {
@@ -11,47 +11,41 @@ export class HtmlRenderer {
     inWrapper: boolean = true;
     className: string = "docx";
     document: Document;
-    options: Partial<Options>;
+    options: Options;
 
     private digitTest = /^[0-9]/.test;
 
     constructor(public htmlDocument: HTMLDocument) {
     }
 
-    render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Partial<Options>) {
+    render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
 
         styleContainer = styleContainer || bodyContainer;
 
-        this.clearElement(styleContainer);
-        this.clearElement(bodyContainer);
+        removeAllElements(styleContainer);
+        removeAllElements(bodyContainer);
 
-        styleContainer.appendChild(this.htmlDocument.createComment("docxjs library predefined styles"));
+        appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
-        styleContainer.appendChild(this.htmlDocument.createComment("docx document styles"));
+        appendComment(styleContainer, "docx document styles");
         styleContainer.appendChild(this.renderStyles(document.styles));
 
         if (document.numbering) {
-            styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
+            appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
         }
 
-        var documentElement = this.renderDocument(document.document);
+        var sectionElements = this.renderSections(document.document);
 
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
-            wrapper.appendChild(documentElement);
+            appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
         }
         else {
-            bodyContainer.appendChild(documentElement);
-        }
-    }
-
-    clearElement(elem: HTMLElement) {
-        while (elem.firstChild) {
-            elem.removeChild(elem.firstChild);
+            appentElements(bodyContainer, sectionElements);
         }
     }
 
@@ -134,44 +128,82 @@ export class HtmlRenderer {
         return output;
     }
 
-    renderDocument(document: DocumentElement): HTMLElement {
-        var bodyElement = this.htmlDocument.createElement("section");
+    createSection(className: string, props: SectionProperties) {
+        var elem = this.htmlDocument.createElement("section");
+        
+        elem.className = className;
 
-        bodyElement.className = this.className;
-
-        this.processElement(document);
-        this.renderChildren(document, bodyElement);
-
-        this.renderStyleValues(document.style, bodyElement);
-
-        if(document.props) {
-            var props = document.props;
-
-            if(props.pageMargins) {
-                bodyElement.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                bodyElement.style.paddingRight = this.renderLength(props.pageMargins.right);
-                bodyElement.style.paddingTop = this.renderLength(props.pageMargins.top);
-                bodyElement.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+        if (props) {
+            if (props.pageMargins) {
+                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
             }
 
-            if(props.pageSize) {
-                if(!this.options.ignoreWidth)
-                    bodyElement.style.width = this.renderLength(props.pageSize.width);
-                if(!this.options.ignoreHeight)
-                    bodyElement.style.height = this.renderLength(props.pageSize.height);
+            if (props.pageSize) {
+                if (!this.options.ignoreWidth)
+                    elem.style.width = this.renderLength(props.pageSize.width);
+                if (!this.options.ignoreHeight)
+                    elem.style.minHeight = this.renderLength(props.pageSize.height);
             }
 
-            if(props.columns && props.columns.numberOfColumns) {
-                bodyElement.style.columnCount = `${props.columns.numberOfColumns}`;
-                bodyElement.style.columnGap = this.renderLength(props.columns.space);
+            if (props.columns && props.columns.numberOfColumns) {
+                elem.style.columnCount = `${props.columns.numberOfColumns}`;
+                elem.style.columnGap = this.renderLength(props.columns.space);
 
-                if(props.columns.separator) {
-                    bodyElement.style.columnRule = "1px solid black";
+                if (props.columns.separator) {
+                    elem.style.columnRule = "1px solid black";
                 }
             }
         }
 
-        return bodyElement;
+        return elem;
+    }
+
+    renderSections(document: DocumentElement): HTMLElement[] {
+        var result = [];
+
+        this.processElement(document);
+
+        for(let section of this.splitBySection(document.children)) {
+            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            this.renderElements(section.elements, document, sectionElement);
+            result.push(sectionElement);
+        }
+
+        return result;
+    }
+
+    splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
+        var current = { sectProps: null, elements: [] };
+        var result = [current];
+
+        for(let elem of elements) {
+            current.elements.push(elem);
+
+            if(elem.domType == DomType.Paragraph)
+            {
+                const p = elem as ParagraphElement;
+                var sectProps = p.props.sectionProps;
+                var breakIndex = this.options.breakPages ? (p.children && p.children.findIndex(x => (<any>x).break == "page")) : -1;
+    
+                if(sectProps || breakIndex != -1) {
+                    current.sectProps = sectProps;
+                    current = { sectProps: null, elements: [] };
+                    result.push(current);
+                }
+
+                if(breakIndex != -1 && breakIndex < p.children.length - 1) {
+                    var children = elem.children;
+                    var newParagraph = { ...elem, children: children.slice(breakIndex) };
+                    elem.children = children.slice(0, breakIndex);
+                    current.elements.push(newParagraph);
+                }
+            }
+        }
+
+        return result;
     }
 
     renderLength(l: Length): string {
@@ -187,15 +219,15 @@ export class HtmlRenderer {
     }
 
     renderDefaultStyle() {
-        var styleText = `.${this.className}-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } 
-                .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+        var styleText = `.${this.className}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+                .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
                 .${this.className} { color: black; }
                 section.${this.className} { box-sizing: border-box; }
                 .${this.className} table { border-collapse: collapse; }
                 .${this.className} table td, .${this.className} table th { vertical-align: top; }
                 .${this.className} p { margin: 0pt; }`;
 
-        return this.renderStyle(styleText);
+        return createStyleElement(styleText);
     }
 
     renderNumbering(styles: IDomNumbering[], styleContainer: HTMLElement) {
@@ -241,7 +273,7 @@ export class HtmlRenderer {
 
                 this.document.loadNumberingImage(num.bullet.src).then(data => {
                     var text = `.${this.className}-wrapper { ${valiable}: url(${data}) }`;
-                    styleContainer.appendChild(this.renderStyle(text));
+                    styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else {
@@ -262,14 +294,7 @@ export class HtmlRenderer {
             });
         }
 
-        return this.renderStyle(styleText);
-    }
-
-    renderStyle(styleContent: string) {
-        var styleElement = document.createElement("style");
-        styleElement.type = "text/css";
-        styleElement.innerHTML = styleContent;
-        return styleElement;
+        return createStyleElement(styleText);
     }
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
@@ -305,7 +330,7 @@ export class HtmlRenderer {
             }
         }
 
-        return this.renderStyle(styleText);
+        return createStyleElement(styleText);
     }
 
     renderElement(elem: OpenXmlElement, parent: OpenXmlElement): HTMLElement {
@@ -339,14 +364,18 @@ export class HtmlRenderer {
     }
 
     renderChildren(elem: OpenXmlElement, into?: HTMLElement): HTMLElement[] {
-        var result: HTMLElement[] = null;
+        return this.renderElements(elem.children, elem, into);
+    }
 
-        if (elem.children != null)
-            result = elem.children.map(x => this.renderElement(x, elem)).filter(x => x != null);
+    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): HTMLElement[] {
+        if(elems == null)
+            return null;
 
-        if (into && result)
-            for(let x of result)
-                into.appendChild(x);
+        var result = elems.map(e => this.renderElement(e, parent)).filter(e => e != null);
+
+        if(into)
+            for(let c of result)
+                into.appendChild(c);
 
         return result;
     }
@@ -421,7 +450,7 @@ export class HtmlRenderer {
 
     renderRun(elem: IDomRun) {
         if (elem.break)
-            return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
+            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
 
         var result = this.htmlDocument.createElement("span");
 
@@ -590,4 +619,26 @@ export class HtmlRenderer {
 
         return mapping[format] || format;
     }
+}
+
+function appentElements(container: HTMLElement, children: HTMLElement[]) {
+    for (let c of children)
+        container.appendChild(c);
+}
+
+function removeAllElements(elem: HTMLElement) {
+    while (elem.firstChild) {
+        elem.removeChild(elem.firstChild);
+    }
+}
+
+function createStyleElement(cssText: string) {
+    var styleElement = document.createElement("style");
+    styleElement.type = "text/css";
+    styleElement.innerHTML = cssText;
+    return styleElement;
+}
+
+function appendComment(elem: HTMLElement, comment: string) {
+    elem.appendChild(document.createComment(comment));
 }

@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
+		module.exports = factory(require("JSZip"));
 	else if(typeof define === 'function' && define.amd)
-		define([], factory);
+		define(["JSZip"], factory);
 	else if(typeof exports === 'object')
-		exports["docx"] = factory();
+		exports["docx"] = factory(require("JSZip"));
 	else
-		root["docx"] = factory();
-})(window, function() {
+		root["docx"] = factory(root["JSZip"]);
+})(window, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -119,7 +119,6 @@ var DocumentParser = (function () {
     function DocumentParser() {
         this.skipDeclaration = true;
         this.ignoreWidth = false;
-        this.ignoreHeight = true;
         this.debug = false;
     }
     DocumentParser.prototype.parseDocumentRelationsFile = function (xmlString) {
@@ -498,6 +497,9 @@ var DocumentParser = (function () {
                     break;
                 case "cnfStyle":
                     utils.addElementClass(paragraph, values.classNameOfCnfStyle(c));
+                    break;
+                case "sectPr":
+                    paragraph.props.sectionProps = _this.parseSectionProperties(c);
                     break;
                 case "numPr":
                     _this.parseNumbering(c, paragraph);
@@ -1342,6 +1344,7 @@ var values = (function () {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var PartType;
 (function (PartType) {
     PartType["Document"] = "word/document.xml";
@@ -1393,7 +1396,7 @@ var Document = (function () {
     Document.prototype.loadPart = function (part, parser) {
         var _this = this;
         var f = this.zip.files[part];
-        return f ? f.async("string").then(function (xml) {
+        return f ? f.async("text").then(function (xml) {
             switch (part) {
                 case PartType.FontRelations:
                     _this.fontRelations = parser.parseDocumentRelationsFile(xml);
@@ -1448,21 +1451,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var document_1 = __webpack_require__(/*! ./document */ "./src/document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
-function renderAsync(data, bodyContainer, styleContainer, options) {
+function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (styleContainer === void 0) { styleContainer = null; }
-    if (options === void 0) { options = null; }
+    if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    options = __assign({ ignoreHeight: true, ignoreWidth: false, debug: false, className: "docx", inWrapper: true }, options);
-    if (options) {
-        options.ignoreWidth = options.ignoreWidth || parser.ignoreWidth;
-        options.ignoreHeight = options.ignoreHeight || parser.ignoreHeight;
-        parser.debug = options.debug || parser.debug;
-        renderer.className = options.className || "docx";
-        renderer.inWrapper = options.inWrapper != null ? options.inWrapper : true;
-    }
-    return document_1.Document.load(data, parser)
-        .then(function (doc) {
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, breakPages: true, debug: false, className: "docx", inWrapper: true }, userOptions);
+    parser.ignoreWidth = options.ignoreWidth;
+    parser.debug = options.debug || parser.debug;
+    renderer.className = options.className || "docx";
+    renderer.inWrapper = options.inWrapper;
+    return document_1.Document.load(data, parser).then(function (doc) {
         renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
     });
@@ -1561,29 +1560,24 @@ var HtmlRenderer = (function () {
         this.document = document;
         this.options = options;
         styleContainer = styleContainer || bodyContainer;
-        this.clearElement(styleContainer);
-        this.clearElement(bodyContainer);
-        styleContainer.appendChild(this.htmlDocument.createComment("docxjs library predefined styles"));
+        removeAllElements(styleContainer);
+        removeAllElements(bodyContainer);
+        appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
-        styleContainer.appendChild(this.htmlDocument.createComment("docx document styles"));
+        appendComment(styleContainer, "docx document styles");
         styleContainer.appendChild(this.renderStyles(document.styles));
         if (document.numbering) {
-            styleContainer.appendChild(this.htmlDocument.createComment("docx document numbering styles"));
+            appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
         }
-        var documentElement = this.renderDocument(document.document);
+        var sectionElements = this.renderSections(document.document);
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
-            wrapper.appendChild(documentElement);
+            appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
         }
         else {
-            bodyContainer.appendChild(documentElement);
-        }
-    };
-    HtmlRenderer.prototype.clearElement = function (elem) {
-        while (elem.firstChild) {
-            elem.removeChild(elem.firstChild);
+            appentElements(bodyContainer, sectionElements);
         }
     };
     HtmlRenderer.prototype.processClassName = function (className) {
@@ -1663,35 +1657,67 @@ var HtmlRenderer = (function () {
         }
         return output;
     };
-    HtmlRenderer.prototype.renderDocument = function (document) {
-        var bodyElement = this.htmlDocument.createElement("section");
-        bodyElement.className = this.className;
-        this.processElement(document);
-        this.renderChildren(document, bodyElement);
-        this.renderStyleValues(document.style, bodyElement);
-        if (document.props) {
-            var props = document.props;
+    HtmlRenderer.prototype.createSection = function (className, props) {
+        var elem = this.htmlDocument.createElement("section");
+        elem.className = className;
+        if (props) {
             if (props.pageMargins) {
-                bodyElement.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                bodyElement.style.paddingRight = this.renderLength(props.pageMargins.right);
-                bodyElement.style.paddingTop = this.renderLength(props.pageMargins.top);
-                bodyElement.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
             }
             if (props.pageSize) {
                 if (!this.options.ignoreWidth)
-                    bodyElement.style.width = this.renderLength(props.pageSize.width);
+                    elem.style.width = this.renderLength(props.pageSize.width);
                 if (!this.options.ignoreHeight)
-                    bodyElement.style.height = this.renderLength(props.pageSize.height);
+                    elem.style.minHeight = this.renderLength(props.pageSize.height);
             }
             if (props.columns && props.columns.numberOfColumns) {
-                bodyElement.style.columnCount = "" + props.columns.numberOfColumns;
-                bodyElement.style.columnGap = this.renderLength(props.columns.space);
+                elem.style.columnCount = "" + props.columns.numberOfColumns;
+                elem.style.columnGap = this.renderLength(props.columns.space);
                 if (props.columns.separator) {
-                    bodyElement.style.columnRule = "1px solid black";
+                    elem.style.columnRule = "1px solid black";
                 }
             }
         }
-        return bodyElement;
+        return elem;
+    };
+    HtmlRenderer.prototype.renderSections = function (document) {
+        var result = [];
+        this.processElement(document);
+        for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
+            var section = _a[_i];
+            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            this.renderElements(section.elements, document, sectionElement);
+            result.push(sectionElement);
+        }
+        return result;
+    };
+    HtmlRenderer.prototype.splitBySection = function (elements) {
+        var current = { sectProps: null, elements: [] };
+        var result = [current];
+        for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
+            var elem = elements_1[_i];
+            current.elements.push(elem);
+            if (elem.domType == dom_1.DomType.Paragraph) {
+                var p = elem;
+                var sectProps = p.props.sectionProps;
+                var breakIndex = this.options.breakPages ? (p.children && p.children.findIndex(function (x) { return x.break == "page"; })) : -1;
+                if (sectProps || breakIndex != -1) {
+                    current.sectProps = sectProps;
+                    current = { sectProps: null, elements: [] };
+                    result.push(current);
+                }
+                if (breakIndex != -1 && breakIndex < p.children.length - 1) {
+                    var children = elem.children;
+                    var newParagraph = __assign(__assign({}, elem), { children: children.slice(breakIndex) });
+                    elem.children = children.slice(0, breakIndex);
+                    current.elements.push(newParagraph);
+                }
+            }
+        }
+        return result;
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         return !l ? null : "" + l.value + l.type;
@@ -1702,8 +1728,8 @@ var HtmlRenderer = (function () {
         return wrapper;
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
-        var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; display: flex; justify-content: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
-        return this.renderStyle(styleText);
+        var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
+        return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (styles, styleContainer) {
         var _this = this;
@@ -1737,7 +1763,7 @@ var HtmlRenderer = (function () {
                 }, num.bullet.style);
                 this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
                     var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
-                    styleContainer.appendChild(_this.renderStyle(text));
+                    styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else {
@@ -1755,13 +1781,7 @@ var HtmlRenderer = (function () {
                 "counter-reset": rootCounters.join(" ")
             });
         }
-        return this.renderStyle(styleText);
-    };
-    HtmlRenderer.prototype.renderStyle = function (styleContent) {
-        var styleElement = document.createElement("style");
-        styleElement.type = "text/css";
-        styleElement.innerHTML = styleContent;
-        return styleElement;
+        return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
@@ -1790,7 +1810,7 @@ var HtmlRenderer = (function () {
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
-        return this.renderStyle(styleText);
+        return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderElement = function (elem, parent) {
         switch (elem.domType) {
@@ -1814,14 +1834,17 @@ var HtmlRenderer = (function () {
         return null;
     };
     HtmlRenderer.prototype.renderChildren = function (elem, into) {
+        return this.renderElements(elem.children, elem, into);
+    };
+    HtmlRenderer.prototype.renderElements = function (elems, parent, into) {
         var _this = this;
-        var result = null;
-        if (elem.children != null)
-            result = elem.children.map(function (x) { return _this.renderElement(x, elem); }).filter(function (x) { return x != null; });
-        if (into && result)
+        if (elems == null)
+            return null;
+        var result = elems.map(function (e) { return _this.renderElement(e, parent); }).filter(function (e) { return e != null; });
+        if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
-                var x = result_1[_i];
-                into.appendChild(x);
+                var c = result_1[_i];
+                into.appendChild(c);
             }
         return result;
     };
@@ -1875,7 +1898,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
         if (elem.break)
-            return this.htmlDocument.createElement(elem.break == "page" ? "hr" : "br");
+            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
         var result = this.htmlDocument.createElement("span");
         if (elem.text)
             result.textContent = elem.text;
@@ -1988,6 +2011,26 @@ var HtmlRenderer = (function () {
     return HtmlRenderer;
 }());
 exports.HtmlRenderer = HtmlRenderer;
+function appentElements(container, children) {
+    for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
+        var c = children_1[_i];
+        container.appendChild(c);
+    }
+}
+function removeAllElements(elem) {
+    while (elem.firstChild) {
+        elem.removeChild(elem.firstChild);
+    }
+}
+function createStyleElement(cssText) {
+    var styleElement = document.createElement("style");
+    styleElement.type = "text/css";
+    styleElement.innerHTML = cssText;
+    return styleElement;
+}
+function appendComment(elem, comment) {
+    elem.appendChild(document.createComment(comment));
+}
 
 
 /***/ }),
@@ -2079,6 +2122,17 @@ function appendClass(classList, className) {
 }
 exports.appendClass = appendClass;
 
+
+/***/ }),
+
+/***/ "jszip":
+/*!************************!*\
+  !*** external "JSZip" ***!
+  \************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 
 /***/ })
 

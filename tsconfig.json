@@ -11,9 +11,8 @@
     "target": "es5",
     "outDir": "dist",
     "lib": [
-      "es5",
-      "dom",
-      "es2015.promise"
+      "es6",
+      "dom"
     ]
   },
   "exclude": [
