@@ -2,6 +2,7 @@ export interface Options {
     inWrapper: boolean;
     ignoreWidth: boolean;
     ignoreHeight: boolean;
+    ignoreFonts: boolean;
     breakPages: boolean;
     debug: boolean;
     className: string;

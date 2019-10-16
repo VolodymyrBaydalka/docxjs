@@ -6,6 +6,7 @@ export interface Options {
     inWrapper: boolean;
     ignoreWidth: boolean;
     ignoreHeight: boolean;
+    ignoreFonts: boolean;
     breakPages: boolean;
     debug: boolean;
     className: string;
@@ -18,6 +19,7 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
     var options = { 
         ignoreHeight: false,
         ignoreWidth: false,
+        ignoreFonts: false,
         breakPages: true,
         debug: false,
         className: "docx",

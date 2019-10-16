@@ -37,6 +37,9 @@ export class HtmlRenderer {
             styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
         }
 
+        if(!options.ignoreFonts)
+            this.renderFontTable(document.fontTable, styleContainer);
+
         var sectionElements = this.renderSections(document.document);
 
         if (this.inWrapper) {
@@ -46,6 +49,20 @@ export class HtmlRenderer {
         }
         else {
             appentElements(bodyContainer, sectionElements);
+        }
+    }
+
+    renderFontTable(fonts: any[], styleContainer: HTMLElement) {
+        for(let f of fonts.filter(x => x.refId)) {
+            this.document.loadFont(f.refId, f.fontKey).then(fontData => {
+                var cssTest = `@font-face {
+                    font-family: "${f.name}";
+                    src: url(${fontData});
+                }`;
+
+                appendComment(styleContainer, `Font ${f.name}`);
+                styleContainer.appendChild(createStyleElement(cssTest));
+            });
         }
     }
 

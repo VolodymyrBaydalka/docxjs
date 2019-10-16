@@ -96,6 +96,35 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
+/***/ "./src/deobfuscate.ts":
+/*!****************************!*\
+  !*** ./src/deobfuscate.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function deobfuscate(data, guidKey) {
+    var hexStrings = guidKey.replace(/{|}|-/g, "").replace(/(..)/g, "$1 ").trim().split(" ");
+    var hexNumbers = hexStrings.map(function (hexString) { return parseInt(hexString, 16); });
+    hexNumbers.reverse();
+    var array = new Uint8Array(data);
+    for (var i = 0; i < 32; i++) {
+        array[i] = array[i] ^ hexNumbers[i % hexNumbers.length];
+    }
+    return new Promise(function (resolve) {
+        var reader = new FileReader();
+        reader.onload = function (event) { return resolve(event.target.result); };
+        reader.readAsDataURL(new Blob([array]));
+    });
+}
+exports.deobfuscate = deobfuscate;
+
+
+/***/ }),
+
 /***/ "./src/document-parser.ts":
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
@@ -127,6 +156,14 @@ var DocumentParser = (function () {
             id: xml.stringAttr(c, "Id"),
             type: values.valueOfRelType(c),
             target: xml.stringAttr(c, "Target"),
+        }); });
+    };
+    DocumentParser.prototype.parseFontTable = function (xmlString) {
+        var xfonts = xml.parse(xmlString, this.skipDeclaration);
+        return xml.elements(xfonts).map(function (c) { return ({
+            name: xml.stringAttr(c, "name"),
+            fontKey: xml.elementStringAttr(c, "embedRegular", "fontKey"),
+            refId: xml.elementStringAttr(c, "embedRegular", "id")
         }); });
     };
     DocumentParser.prototype.parseDocumentFile = function (xmlString) {
@@ -873,6 +910,10 @@ var DocumentParser = (function () {
                     break;
                 case "sz":
                     style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
+                    if (elem.localName == "pPr") {
+                        style["min-height"] = style["font-size"];
+                        debugger;
+                    }
                     break;
                 case "shd":
                     style["background-color"] = xml.colorAttr(c, "fill", null, exports.autos.shd);
@@ -1345,11 +1386,13 @@ var values = (function () {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
+var deobfuscate_1 = __webpack_require__(/*! ./deobfuscate */ "./src/deobfuscate.ts");
 var PartType;
 (function (PartType) {
     PartType["Document"] = "word/document.xml";
     PartType["Style"] = "word/styles.xml";
     PartType["Numbering"] = "word/numbering.xml";
+    PartType["FontTable"] = "word/fontTable.xml";
     PartType["DocumentRelations"] = "word/_rels/document.xml.rels";
     PartType["NumberingRelations"] = "word/_rels/numbering.xml.rels";
     PartType["FontRelations"] = "word/_rels/fontTable.xml.rels";
@@ -1373,6 +1416,7 @@ var Document = (function () {
                 d.loadPart(PartType.FontRelations, parser),
                 d.loadPart(PartType.NumberingRelations, parser),
                 d.loadPart(PartType.Style, parser),
+                d.loadPart(PartType.FontTable, parser),
                 d.loadPart(PartType.Numbering, parser),
                 d.loadPart(PartType.Document, parser)
             ];
@@ -1385,13 +1429,15 @@ var Document = (function () {
     Document.prototype.loadNumberingImage = function (id) {
         return this.loadResource(this.numRelations, id).then(function (x) { return x ? ("data:image/png;base64," + x) : null; });
     };
-    Document.prototype.loadFont = function (id) {
-        return this.loadResource(this.fontRelations, id)
-            .then(function (x) { return x ? ("data:application/vnd.ms-package.obfuscated-opentype;charset=utf-8;base64," + x) : null; });
+    Document.prototype.loadFont = function (id, key) {
+        var mimeType = "application/x-font-ttf";
+        return this.loadResource(this.fontRelations, id, "array")
+            .then(function (x) { return x ? deobfuscate_1.deobfuscate(x, key) : x; });
     };
-    Document.prototype.loadResource = function (relations, id) {
+    Document.prototype.loadResource = function (relations, id, output) {
+        if (output === void 0) { output = "base64"; }
         var rel = relations.filter(function (x) { return x.id == id; });
-        return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async("base64");
+        return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async(output);
     };
     Document.prototype.loadPart = function (part, parser) {
         var _this = this;
@@ -1415,6 +1461,9 @@ var Document = (function () {
                     break;
                 case PartType.Document:
                     _this.document = parser.parseDocumentFile(xml);
+                    break;
+                case PartType.FontTable:
+                    _this.fontTable = parser.parseFontTable(xml);
                     break;
             }
             return _this;
@@ -1456,7 +1505,7 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, breakPages: true, debug: false, className: "docx", inWrapper: true }, userOptions);
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, className: "docx", inWrapper: true }, userOptions);
     parser.ignoreWidth = options.ignoreWidth;
     parser.debug = options.debug || parser.debug;
     renderer.className = options.className || "docx";
@@ -1570,6 +1619,8 @@ var HtmlRenderer = (function () {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
         }
+        if (!options.ignoreFonts)
+            this.renderFontTable(document.fontTable, styleContainer);
         var sectionElements = this.renderSections(document.document);
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
@@ -1578,6 +1629,20 @@ var HtmlRenderer = (function () {
         }
         else {
             appentElements(bodyContainer, sectionElements);
+        }
+    };
+    HtmlRenderer.prototype.renderFontTable = function (fonts, styleContainer) {
+        var _loop_1 = function (f) {
+            this_1.document.loadFont(f.refId, f.fontKey).then(function (fontData) {
+                var cssTest = "@font-face {\n                    font-family: \"" + f.name + "\";\n                    src: url(" + fontData + ");\n                }";
+                appendComment(styleContainer, "Font " + f.name);
+                styleContainer.appendChild(createStyleElement(cssTest));
+            });
+        };
+        var this_1 = this;
+        for (var _i = 0, _a = fonts.filter(function (x) { return x.refId; }); _i < _a.length; _i++) {
+            var f = _a[_i];
+            _loop_1(f);
         }
     };
     HtmlRenderer.prototype.processClassName = function (className) {
@@ -1595,15 +1660,15 @@ var HtmlRenderer = (function () {
             var style = _c[_b];
             var baseStyle = stylesMap[style.basedOn];
             if (baseStyle) {
-                var _loop_1 = function (styleValues) {
+                var _loop_2 = function (styleValues) {
                     baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
                     if (baseValues && baseValues.length > 0)
-                        this_1.copyStyleProperties(baseValues[0].values, styleValues.values);
+                        this_2.copyStyleProperties(baseValues[0].values, styleValues.values);
                 };
-                var this_1 = this, baseValues;
+                var this_2 = this, baseValues;
                 for (var _d = 0, _e = style.styles; _d < _e.length; _d++) {
                     var styleValues = _e[_d];
-                    _loop_1(styleValues);
+                    _loop_2(styleValues);
                 }
             }
             else if (this.options.debug)
@@ -1735,46 +1800,46 @@ var HtmlRenderer = (function () {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
-        var _loop_2 = function () {
-            selector = "p." + this_2.numberingClass(num.id, num.level);
+        var _loop_3 = function () {
+            selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
             if (num.levelText && num.format == "decimal") {
-                var counter = this_2.numberingCounter(num.id, num.level);
+                var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_2.styleToString("p." + this_2.numberingClass(num.id, num.level - 1), {
+                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_2.styleToString(selector + ":before", {
-                    "content": this_2.levelTextToContent(num.levelText, num.id),
+                styleText += this_3.styleToString(selector + ":before", {
+                    "content": this_3.levelTextToContent(num.levelText, num.id),
                     "counter-increment": counter
                 });
-                styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": "none" }, num.style));
+                styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": "none" }, num.style));
             }
             else if (num.bullet) {
-                var valiable_1 = ("--" + this_2.className + "-" + num.bullet.src).toLowerCase();
-                styleText += this_2.styleToString(selector + ":before", {
+                var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString(selector + ":before", {
                     "content": "' '",
                     "display": "inline-block",
                     "background": "var(" + valiable_1 + ")"
                 }, num.bullet.style);
-                this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
+                this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
                     var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else {
-                listStyleType = this_2.numFormatToCssValue(num.format);
+                listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
+            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
         };
-        var this_2 = this, selector, listStyleType;
+        var this_3 = this, selector, listStyleType;
         for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
             var num = styles_2[_i];
-            _loop_2();
+            _loop_3();
         }
         if (rootCounters.length > 0) {
             styleText += this.styleToString("." + this.className + "-wrapper", {

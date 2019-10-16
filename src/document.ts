@@ -4,11 +4,13 @@ import { DocumentParser } from './document-parser';
 import { IDomRelationship, IDomStyle, IDomNumbering } from './dom/dom';
 import { Font } from './dom/common';
 import { DocumentElement } from './dom/document';
+import { deobfuscate } from './deobfuscate';
 
 enum PartType {
     Document = "word/document.xml",
     Style = "word/styles.xml",
     Numbering = "word/numbering.xml",
+    FontTable = "word/fontTable.xml",
     DocumentRelations = "word/_rels/document.xml.rels",
     NumberingRelations = "word/_rels/numbering.xml.rels",
     FontRelations = "word/_rels/fontTable.xml.rels",
@@ -23,6 +25,7 @@ export class Document {
 
     styles: IDomStyle[] = null;
     fonts: Font[] = null;
+    fontTable: any;
     numbering: IDomNumbering[] = null;
     document: DocumentElement = null;
 
@@ -35,6 +38,7 @@ export class Document {
                 d.loadPart(PartType.FontRelations, parser),
                 d.loadPart(PartType.NumberingRelations, parser),
                 d.loadPart(PartType.Style, parser),
+                d.loadPart(PartType.FontTable, parser),
                 d.loadPart(PartType.Numbering, parser),
                 d.loadPart(PartType.Document, parser)
             ];
@@ -51,15 +55,19 @@ export class Document {
         return this.loadResource(this.numRelations, id).then(x => x ? ("data:image/png;base64," + x) : null);
     }
 
-    loadFont(id: string): PromiseLike<string> {
-        return this.loadResource(this.fontRelations, id)
-            .then(x => x ? ("data:application/vnd.ms-package.obfuscated-opentype;charset=utf-8;base64," + x) : null);
+    loadFont(id: string, key: string): PromiseLike<string> {
+        //const mimeType = "application/vnd.ms-package.obfuscated-opentype";
+        const mimeType = "application/x-font-ttf";
+        //const mimeType = "application/vnd.ms-fontobject";
+        return this.loadResource(this.fontRelations, id, "array")
+            .then(x => x ? deobfuscate(x, key) : x);
+            //.then(x => x ? (`data:${mimeType};base64,${x}`) : null);
     }
 
-    private loadResource(relations: IDomRelationship[], id: string) {
+    private loadResource(relations: IDomRelationship[], id: string, output: "base64" | "array" = "base64") {
         let rel = relations.filter(x => x.id == id);
 
-        return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async("base64");
+        return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async(output);
     }
 
     private loadPart(part: PartType, parser: DocumentParser) {
@@ -89,6 +97,10 @@ export class Document {
 
                 case PartType.Document:
                     this.document = parser.parseDocumentFile(xml);
+                    break;
+
+                case PartType.FontTable:
+                    this.fontTable = parser.parseFontTable(xml);
                     break;
             }
 

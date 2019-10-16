@@ -33,6 +33,16 @@ export class DocumentParser {
         });
     }
 
+    parseFontTable(xmlString: string) {
+        var xfonts = xml.parse(xmlString, this.skipDeclaration);
+
+        return xml.elements(xfonts).map(c => <any>{
+            name: xml.stringAttr(c, "name"),
+            fontKey: xml.elementStringAttr(c, "embedRegular", "fontKey"), 
+            refId: xml.elementStringAttr(c, "embedRegular", "id")
+        });
+    }
+
     parseDocumentFile(xmlString: string) {
         var result: DocumentElement = {
             domType: DomType.Document,
@@ -904,6 +914,11 @@ export class DocumentParser {
 
                 case "sz":
                     style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
+
+                    if(elem.localName == "pPr") {
+                        style["min-height"] = style["font-size"];
+                        debugger;
+                    }
                     break;
 
                 case "shd":
