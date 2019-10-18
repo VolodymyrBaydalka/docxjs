@@ -1,14 +1,16 @@
 export enum DomType {
-    Document,
-    Paragraph,
-    Run,
-    Break,
-    Table,
-    Row,
-    Cell,
-    Hyperlink,
-    Drawing,
-    Image
+    Document = "document",
+    Paragraph = "paragraph",
+    Run = "run",
+    Break = "break",
+    Table = "table",
+    Row = "row",
+    Cell = "cell",
+    Hyperlink = "hyperlink",
+    Drawing = "drawing",
+    Image = "image",
+    Text = "text",
+    Tab = "tab"
 }
 
 export enum DomRelationshipType {
@@ -29,30 +31,30 @@ export interface IDomRelationship {
 }
 
 export interface OpenXmlElement {
-    domType: DomType;
+    type: DomType;
     children?: OpenXmlElement[];
     style?: IDomStyleValues;
     className?: string;
     parent?: OpenXmlElement;
 }
 
-export interface DocxTab {
-    style: string;
-    leader: string;
-    position: string;
-}
-
 export interface IDomHyperlink extends OpenXmlElement {
     href?: string;
+}
+
+export const tabObject = { tab: true };
+
+export interface TextElement extends OpenXmlElement{
+    text: string;
 }
 
 export interface IDomRun extends OpenXmlElement {
     id?: string;
     break?: string;
     wrapper?: string;
-    text?: string;
     href?: string;
-    tab?: boolean;
+    fldCharType?: "begin" | "end" | "separate" | string;
+    instrText?: string;
 }
 
 export interface IDomTable extends OpenXmlElement {

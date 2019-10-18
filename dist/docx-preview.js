@@ -96,35 +96,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/deobfuscate.ts":
-/*!****************************!*\
-  !*** ./src/deobfuscate.ts ***!
-  \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function deobfuscate(data, guidKey) {
-    var hexStrings = guidKey.replace(/{|}|-/g, "").replace(/(..)/g, "$1 ").trim().split(" ");
-    var hexNumbers = hexStrings.map(function (hexString) { return parseInt(hexString, 16); });
-    hexNumbers.reverse();
-    var array = new Uint8Array(data);
-    for (var i = 0; i < 32; i++) {
-        array[i] = array[i] ^ hexNumbers[i % hexNumbers.length];
-    }
-    return new Promise(function (resolve) {
-        var reader = new FileReader();
-        reader.onload = function (event) { return resolve(event.target.result); };
-        reader.readAsDataURL(new Blob([array]));
-    });
-}
-exports.deobfuscate = deobfuscate;
-
-
-/***/ }),
-
 /***/ "./src/document-parser.ts":
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
@@ -139,6 +110,8 @@ var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var common_1 = __webpack_require__(/*! ./dom/common */ "./src/dom/common.ts");
 var common_2 = __webpack_require__(/*! ./parser/common */ "./src/parser/common.ts");
+var paragraph_1 = __webpack_require__(/*! ./parser/paragraph */ "./src/parser/paragraph.ts");
+var section_1 = __webpack_require__(/*! ./parser/section */ "./src/parser/section.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -169,7 +142,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseDocumentFile = function (xmlString) {
         var _this = this;
         var result = {
-            domType: dom_1.DomType.Document,
+            type: dom_1.DomType.Document,
             children: [],
             style: {},
             props: null
@@ -184,7 +157,7 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseTable(elem));
                     break;
                 case "sectPr":
-                    result.props = _this.parseSectionProperties(elem);
+                    result.props = section_1.parseSectionProperties(elem);
                     break;
             }
         });
@@ -238,14 +211,14 @@ var DocumentParser = (function () {
         return result;
     };
     DocumentParser.prototype.parseCommonProperties = function (elem, props) {
-        if (elem.namespaceURI != common_1.namespaces.wordml)
+        if (elem.namespaceURI != common_1.ns.wordml)
             return;
         switch (elem.localName) {
             case "color":
-                props.color = common_2.getAttributeColorValue(elem, elem.namespaceURI, "val");
+                props.color = common_2.colorAttr(elem, elem.namespaceURI, "val");
                 break;
             case "sz":
-                props.fontSize = common_2.getAttributeLengthValue(elem, elem.namespaceURI, "val", common_2.LengthUsage.FontSize);
+                props.fontSize = common_2.lengthAttr(elem, elem.namespaceURI, "val", common_2.LengthUsage.FontSize);
                 break;
         }
     };
@@ -455,57 +428,9 @@ var DocumentParser = (function () {
         });
         return result;
     };
-    DocumentParser.prototype.parseSectionProperties = function (elem) {
-        var _this = this;
-        var section = {};
-        common_2.forEachElementNS(elem, common_1.namespaces.wordml, function (e) {
-            switch (e.localName) {
-                case "pgSz":
-                    section.pageSize = {
-                        width: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "w"),
-                        height: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "h"),
-                        orientation: e.getAttributeNS(common_1.namespaces.wordml, "orient")
-                    };
-                    break;
-                case "pgMar":
-                    section.pageMargins = {
-                        left: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "left"),
-                        right: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "right"),
-                        top: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "top"),
-                        bottom: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "bottom"),
-                        header: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "header"),
-                        footer: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "footer"),
-                        gutter: common_2.getAttributeLengthValue(e, common_1.namespaces.wordml, "gutter"),
-                    };
-                    break;
-                case "cols":
-                    section.columns = _this.parseColumns(e);
-                    break;
-            }
-        });
-        return section;
-    };
-    DocumentParser.prototype.parseColumns = function (elem) {
-        var result = {
-            numberOfColumns: common_2.getAttributeIntValue(elem, common_1.namespaces.wordml, "num"),
-            space: common_2.getAttributeLengthValue(elem, common_1.namespaces.wordml, "space"),
-            separator: common_2.getAttributeBoolValue(elem, common_1.namespaces.wordml, "sep"),
-            equalWidth: common_2.getAttributeBoolValue(elem, common_1.namespaces.wordml, "equalWidth", true),
-            columns: []
-        };
-        common_2.forEachElementNS(elem, common_1.namespaces.wordml, function (e) {
-            if (e.localName != "col")
-                return;
-            result.columns.push({
-                width: common_2.getAttributeLengthValue(elem, common_1.namespaces.wordml, "w"),
-                space: common_2.getAttributeLengthValue(elem, common_1.namespaces.wordml, "space")
-            });
-        });
-        return result;
-    };
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Paragraph, children: [], props: {} };
+        var result = { type: dom_1.DomType.Paragraph, children: [], props: {} };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -528,6 +453,8 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
         var _this = this;
         this.parseDefaultProperties(elem, paragraph.style = {}, null, function (c) {
+            if (paragraph_1.parseParagraphProperties(c, paragraph.props))
+                return true;
             switch (c.localName) {
                 case "pStyle":
                     utils.addElementClass(paragraph, xml.className(c, "val"));
@@ -535,17 +462,8 @@ var DocumentParser = (function () {
                 case "cnfStyle":
                     utils.addElementClass(paragraph, values.classNameOfCnfStyle(c));
                     break;
-                case "sectPr":
-                    paragraph.props.sectionProps = _this.parseSectionProperties(c);
-                    break;
-                case "numPr":
-                    _this.parseNumbering(c, paragraph);
-                    break;
                 case "framePr":
                     _this.parseFrame(c, paragraph);
-                    break;
-                case "tabs":
-                    _this.parseTabs(c, paragraph);
                     break;
                 case "rPr":
                     break;
@@ -555,31 +473,19 @@ var DocumentParser = (function () {
             return true;
         });
     };
-    DocumentParser.prototype.parseNumbering = function (node, paragraph) {
-        xml.foreach(node, function (c) {
-            switch (c.localName) {
-                case "numId":
-                    paragraph.numberingId = xml.stringAttr(c, "val");
-                    break;
-                case "ilvl":
-                    paragraph.numberingLevel = xml.intAttr(c, "val");
-                    break;
-            }
-        });
-    };
     DocumentParser.prototype.parseFrame = function (node, paragraph) {
         var dropCap = xml.stringAttr(node, "dropCap");
         if (dropCap == "drop")
             paragraph.style["float"] = "left";
     };
     DocumentParser.prototype.parseBookmark = function (node) {
-        var result = { domType: dom_1.DomType.Run };
+        var result = { type: dom_1.DomType.Run };
         result.id = xml.stringAttr(node, "name");
         return result;
     };
     DocumentParser.prototype.parseHyperlink = function (node, parent) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Hyperlink, parent: parent, children: [] };
+        var result = { type: dom_1.DomType.Hyperlink, parent: parent, children: [] };
         var anchor = xml.stringAttr(node, "anchor");
         if (anchor)
             result.href = "#" + anchor;
@@ -594,17 +500,26 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseRun = function (node, parent) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Run, parent: parent };
+        var result = { type: dom_1.DomType.Run, parent: parent, children: [] };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "t":
-                    result.text = c.textContent;
+                    result.children.push({
+                        type: dom_1.DomType.Text,
+                        text: c.textContent
+                    });
+                    break;
+                case "fldChar":
+                    result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
                 case "br":
                     result.break = xml.stringAttr(c, "type") || "textWrapping";
                     break;
                 case "tab":
-                    result.tab = true;
+                    result.children.push({ type: dom_1.DomType.Tab });
+                    break;
+                case "instrText":
+                    result.instrText = c.textContent;
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
@@ -651,7 +566,7 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseDrawingWrapper = function (node) {
-        var result = { domType: dom_1.DomType.Drawing, children: [], style: {} };
+        var result = { type: dom_1.DomType.Drawing, children: [], style: {} };
         var isAnchor = node.localName == "anchor";
         var wrapType = null;
         var simplePos = xml.boolAttr(node, "simplePos");
@@ -729,7 +644,7 @@ var DocumentParser = (function () {
         return null;
     };
     DocumentParser.prototype.parsePicture = function (elem) {
-        var result = { domType: dom_1.DomType.Image, src: "", style: {} };
+        var result = { type: dom_1.DomType.Image, src: "", style: {} };
         var blipFill = xml.byTagName(elem, "blipFill");
         var blip = xml.byTagName(blipFill, "blip");
         result.src = xml.stringAttr(blip, "embed");
@@ -753,7 +668,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTable = function (node) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Table, children: [] };
+        var result = { type: dom_1.DomType.Table, children: [] };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tr":
@@ -813,12 +728,6 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseTablePosition = function (node, table) {
-        var vertAnchor = xml.stringAttr(node, "vertAnchor");
-        var horzAnchor = xml.stringAttr(node, "horzAnchor");
-        var tblpX = xml.sizeAttr(node, "tblpX");
-        var tblpY = xml.sizeAttr(node, "tblpY");
-        var tblpXSpec = xml.stringAttr(node, "tblpXSpec");
-        var tblpYSpec = xml.stringAttr(node, "tblpYSpec");
         var topFromText = xml.sizeAttr(node, "topFromText");
         var bottomFromText = xml.sizeAttr(node, "bottomFromText");
         var rightFromText = xml.sizeAttr(node, "rightFromText");
@@ -831,7 +740,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableRow = function (node) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Row, children: [] };
+        var result = { type: dom_1.DomType.Row, children: [] };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tc":
@@ -858,7 +767,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableCell = function (node) {
         var _this = this;
-        var result = { domType: dom_1.DomType.Cell, children: [] };
+        var result = { type: dom_1.DomType.Cell, children: [] };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tbl":
@@ -1069,13 +978,6 @@ var DocumentParser = (function () {
                     break;
             }
         }
-    };
-    DocumentParser.prototype.parseTabs = function (node, paragraph) {
-        paragraph.tabs = xml.elements(node, "tab").map(function (n) { return ({
-            position: xml.sizeAttr(n, "pos"),
-            leader: xml.stringAttr(n, "leader"),
-            style: xml.stringAttr(n, "val"),
-        }); });
     };
     DocumentParser.prototype.parseMarginProperties = function (node, output) {
         xml.foreach(node, function (c) {
@@ -1386,7 +1288,6 @@ var values = (function () {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
-var deobfuscate_1 = __webpack_require__(/*! ./deobfuscate */ "./src/deobfuscate.ts");
 var PartType;
 (function (PartType) {
     PartType["Document"] = "word/document.xml";
@@ -1424,20 +1325,21 @@ var Document = (function () {
         });
     };
     Document.prototype.loadDocumentImage = function (id) {
-        return this.loadResource(this.docRelations, id).then(function (x) { return x ? ("data:image/png;base64," + x) : null; });
+        return this.loadResource(this.docRelations, id, "blob")
+            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
     };
     Document.prototype.loadNumberingImage = function (id) {
-        return this.loadResource(this.numRelations, id).then(function (x) { return x ? ("data:image/png;base64," + x) : null; });
+        return this.loadResource(this.numRelations, id, "blob")
+            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
     };
     Document.prototype.loadFont = function (id, key) {
-        var mimeType = "application/x-font-ttf";
-        return this.loadResource(this.fontRelations, id, "array")
-            .then(function (x) { return x ? deobfuscate_1.deobfuscate(x, key) : x; });
+        return this.loadResource(this.fontRelations, id, "uint8array")
+            .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
     };
-    Document.prototype.loadResource = function (relations, id, output) {
-        if (output === void 0) { output = "base64"; }
-        var rel = relations.filter(function (x) { return x.id == id; });
-        return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async(output);
+    Document.prototype.loadResource = function (relations, id, outputType) {
+        if (outputType === void 0) { outputType = "base64"; }
+        var rel = relations.find(function (x) { return x.id == id; });
+        return rel ? this.zip.files["word/" + rel.target].async(outputType) : Promise.resolve(null);
     };
     Document.prototype.loadPart = function (part, parser) {
         var _this = this;
@@ -1472,6 +1374,17 @@ var Document = (function () {
     return Document;
 }());
 exports.Document = Document;
+function deobfuscate(data, guidKey) {
+    var len = 16;
+    var trimmed = guidKey.replace(/{|}|-/g, "");
+    var numbers = new Array(len);
+    for (var i = 0; i < len; i++)
+        numbers[len - i - 1] = parseInt(trimmed.substr(i * 2, 2), 16);
+    for (var i = 0; i < 32; i++)
+        data[i] = data[i] ^ numbers[i % len];
+    return data;
+}
+exports.deobfuscate = deobfuscate;
 
 
 /***/ }),
@@ -1505,7 +1418,7 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, className: "docx", inWrapper: true }, userOptions);
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true }, userOptions);
     parser.ignoreWidth = options.ignoreWidth;
     parser.debug = options.debug || parser.debug;
     renderer.className = options.className || "docx";
@@ -1530,7 +1443,7 @@ exports.renderAsync = renderAsync;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.namespaces = {
+exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 };
 
@@ -1549,16 +1462,18 @@ exports.namespaces = {
 Object.defineProperty(exports, "__esModule", { value: true });
 var DomType;
 (function (DomType) {
-    DomType[DomType["Document"] = 0] = "Document";
-    DomType[DomType["Paragraph"] = 1] = "Paragraph";
-    DomType[DomType["Run"] = 2] = "Run";
-    DomType[DomType["Break"] = 3] = "Break";
-    DomType[DomType["Table"] = 4] = "Table";
-    DomType[DomType["Row"] = 5] = "Row";
-    DomType[DomType["Cell"] = 6] = "Cell";
-    DomType[DomType["Hyperlink"] = 7] = "Hyperlink";
-    DomType[DomType["Drawing"] = 8] = "Drawing";
-    DomType[DomType["Image"] = 9] = "Image";
+    DomType["Document"] = "document";
+    DomType["Paragraph"] = "paragraph";
+    DomType["Run"] = "run";
+    DomType["Break"] = "break";
+    DomType["Table"] = "table";
+    DomType["Row"] = "row";
+    DomType["Cell"] = "cell";
+    DomType["Hyperlink"] = "hyperlink";
+    DomType["Drawing"] = "drawing";
+    DomType["Image"] = "image";
+    DomType["Text"] = "text";
+    DomType["Tab"] = "tab";
 })(DomType = exports.DomType || (exports.DomType = {}));
 var DomRelationshipType;
 (function (DomRelationshipType) {
@@ -1571,6 +1486,7 @@ var DomRelationshipType;
     DomRelationshipType[DomRelationshipType["WebSettings"] = 6] = "WebSettings";
     DomRelationshipType[DomRelationshipType["Unknown"] = 7] = "Unknown";
 })(DomRelationshipType = exports.DomRelationshipType || (exports.DomRelationshipType = {}));
+exports.tabObject = { tab: true };
 
 
 /***/ }),
@@ -1597,12 +1513,13 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
+var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
+var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
 var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
         this.inWrapper = true;
         this.className = "docx";
-        this.digitTest = /^[0-9]/.test;
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
@@ -1685,7 +1602,8 @@ var HtmlRenderer = (function () {
             for (var _i = 0, _a = element.children; _i < _a.length; _i++) {
                 var e = _a[_i];
                 e.className = this.processClassName(e.className);
-                if (e.domType == dom_1.DomType.Table) {
+                e.parent = element;
+                if (e.type == dom_1.DomType.Table) {
                     this.processTable(e);
                 }
                 else {
@@ -1765,7 +1683,7 @@ var HtmlRenderer = (function () {
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             current.elements.push(elem);
-            if (elem.domType == dom_1.DomType.Paragraph) {
+            if (elem.type == dom_1.DomType.Paragraph) {
                 var p = elem;
                 var sectProps = p.props.sectionProps;
                 var breakIndex = this.options.breakPages ? (p.children && p.children.findIndex(function (x) { return x.break == "page"; })) : -1;
@@ -1878,7 +1796,7 @@ var HtmlRenderer = (function () {
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderElement = function (elem, parent) {
-        switch (elem.domType) {
+        switch (elem.type) {
             case dom_1.DomType.Paragraph:
                 return this.renderParagraph(elem);
             case dom_1.DomType.Run:
@@ -1895,6 +1813,10 @@ var HtmlRenderer = (function () {
                 return this.renderDrawing(elem);
             case dom_1.DomType.Image:
                 return this.renderImage(elem);
+            case dom_1.DomType.Text:
+                return this.renderText(elem);
+            case dom_1.DomType.Tab:
+                return this.renderTab(elem);
         }
         return null;
     };
@@ -1919,8 +1841,9 @@ var HtmlRenderer = (function () {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
         this.renderCommonProeprties(result, elem.props);
-        if (elem.numberingId && elem.numberingLevel != null) {
-            result.className = result.className + " " + this.numberingClass(elem.numberingId, elem.numberingLevel);
+        if (elem.props.numbering) {
+            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
+            result.className = utils_1.appendClass(result.className, numberingClass);
         }
         return result;
     };
@@ -1961,21 +1884,34 @@ var HtmlRenderer = (function () {
         }
         return result;
     };
+    HtmlRenderer.prototype.renderText = function (elem) {
+        return this.htmlDocument.createTextNode(elem.text);
+    };
+    HtmlRenderer.prototype.renderTab = function (elem) {
+        var tabSpan = this.htmlDocument.createElement("span");
+        tabSpan.innerHTML = "&emsp;";
+        if (this.options.experimental) {
+            setTimeout(function () {
+                var paragraph = findParent(elem, dom_1.DomType.Paragraph);
+                paragraph.props.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
+                tabSpan.style.display = "inline-block";
+                javascript_1.updateTabStop(tabSpan, paragraph.props.tabs);
+            }, 0);
+        }
+        return tabSpan;
+    };
     HtmlRenderer.prototype.renderRun = function (elem) {
         if (elem.break)
             return elem.break == "page" ? null : this.htmlDocument.createElement("br");
+        if (elem.fldCharType || elem.instrText)
+            return null;
         var result = this.htmlDocument.createElement("span");
-        if (elem.text)
-            result.textContent = elem.text;
+        if (elem.id)
+            result.id = elem.id;
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
-        if (elem.id) {
-            result.id = elem.id;
-        }
-        if (elem.tab) {
-        }
-        else if (elem.href) {
+        if (elem.href) {
             var link = this.htmlDocument.createElement("a");
             link.href = elem.href;
             link.appendChild(result);
@@ -2096,6 +2032,50 @@ function createStyleElement(cssText) {
 function appendComment(elem, comment) {
     elem.appendChild(document.createComment(comment));
 }
+function findParent(elem, type) {
+    var parent = elem.parent;
+    while (parent != null && parent.type != type)
+        parent = parent.parent;
+    return parent;
+}
+
+
+/***/ }),
+
+/***/ "./src/javascript.ts":
+/*!***************************!*\
+  !*** ./src/javascript.ts ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function updateTabStop(elem, tabs, pixelToPoint) {
+    if (pixelToPoint === void 0) { pixelToPoint = 72 / 96; }
+    var p = elem.closest("p");
+    var tbb = elem.getBoundingClientRect();
+    var pbb = p.getBoundingClientRect();
+    var left = (tbb.left - pbb.left) * pixelToPoint;
+    var tab = tabs.find(function (t) { return t.style != "clear" && t.position.value > left; });
+    if (tab == null)
+        return;
+    elem.style.display = "inline-block";
+    elem.style.width = (tab.position.value - left) + "pt";
+    switch (tab.leader) {
+        case "dot":
+        case "middleDot":
+            elem.style.borderBottom = "1px black dotted";
+            break;
+        case "hyphen":
+        case "heavy":
+        case "underscore":
+            elem.style.borderBottom = "1px black solid";
+            break;
+    }
+}
+exports.updateTabStop = updateTabStop;
 
 
 /***/ }),
@@ -2110,37 +2090,47 @@ function appendComment(elem, comment) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function forEachElementNS(elem, namespaceURI, callback) {
+function elements(elem, namespaceURI, localName) {
+    if (namespaceURI === void 0) { namespaceURI = null; }
+    if (localName === void 0) { localName = null; }
+    var result = [];
     for (var i = 0; i < elem.childNodes.length; i++) {
         var n = elem.childNodes[i];
-        if (n.nodeType == 1 && n.namespaceURI == namespaceURI)
-            callback(n);
+        if (n.nodeType == 1
+            && (namespaceURI == null || n.namespaceURI == namespaceURI)
+            && (localName == null || n.localName == localName))
+            result.push(n);
     }
+    return result;
 }
-exports.forEachElementNS = forEachElementNS;
-function getAttributeIntValue(elem, namespaceURI, name) {
+exports.elements = elements;
+function stringAttr(elem, namespaceURI, name) {
+    return elem.getAttributeNS(namespaceURI, name);
+}
+exports.stringAttr = stringAttr;
+function intAttr(elem, namespaceURI, name) {
     var val = elem.getAttributeNS(namespaceURI, name);
     return val ? parseInt(val) : null;
 }
-exports.getAttributeIntValue = getAttributeIntValue;
-function getAttributeColorValue(elem, namespaceURI, name) {
+exports.intAttr = intAttr;
+function colorAttr(elem, namespaceURI, name) {
     var val = elem.getAttributeNS(namespaceURI, name);
     return val ? "#" + val : null;
 }
-exports.getAttributeColorValue = getAttributeColorValue;
-function getAttributeBoolValue(elem, namespaceURI, name, defaultValue) {
+exports.colorAttr = colorAttr;
+function boolAttr(elem, namespaceURI, name, defaultValue) {
     if (defaultValue === void 0) { defaultValue = false; }
     var val = elem.getAttributeNS(namespaceURI, name);
     if (val == null)
         return defaultValue;
     return val === "true" || val === "1";
 }
-exports.getAttributeBoolValue = getAttributeBoolValue;
-function getAttributeLengthValue(elem, namespaceURI, name, usage) {
+exports.boolAttr = boolAttr;
+function lengthAttr(elem, namespaceURI, name, usage) {
     if (usage === void 0) { usage = LengthUsage.Dxa; }
     return parseLength(elem.getAttributeNS(namespaceURI, name), usage);
 }
-exports.getAttributeLengthValue = getAttributeLengthValue;
+exports.lengthAttr = lengthAttr;
 var LengthUsage;
 (function (LengthUsage) {
     LengthUsage[LengthUsage["Dxa"] = 0] = "Dxa";
@@ -2164,6 +2154,125 @@ function parseLength(val, usage) {
     return null;
 }
 exports.parseLength = parseLength;
+
+
+/***/ }),
+
+/***/ "./src/parser/paragraph.ts":
+/*!*********************************!*\
+  !*** ./src/parser/paragraph.ts ***!
+  \*********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var xml = __webpack_require__(/*! ./common */ "./src/parser/common.ts");
+var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
+var section_1 = __webpack_require__(/*! ./section */ "./src/parser/section.ts");
+function parseParagraphProperties(elem, props) {
+    if (elem.namespaceURI != common_1.ns.wordml)
+        return false;
+    switch (elem.localName) {
+        case "tabs":
+            props.tabs = parseTabs(elem);
+            break;
+        case "sectPr":
+            props.sectionProps = section_1.parseSectionProperties(elem);
+            break;
+        case "numPr":
+            props.numbering = parseNumbering(elem);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+exports.parseParagraphProperties = parseParagraphProperties;
+function parseTabs(elem) {
+    return xml.elements(elem, common_1.ns.wordml, "tab")
+        .map(function (e) { return ({
+        position: xml.lengthAttr(e, common_1.ns.wordml, "pos"),
+        leader: xml.stringAttr(e, common_1.ns.wordml, "leader"),
+        style: xml.stringAttr(e, common_1.ns.wordml, "val")
+    }); });
+}
+function parseNumbering(elem) {
+    var result = {};
+    for (var _i = 0, _a = xml.elements(elem, common_1.ns.wordml); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "numId":
+                result.id = xml.stringAttr(e, common_1.ns.wordml, "val");
+                break;
+            case "ilvl":
+                result.level = xml.intAttr(e, common_1.ns.wordml, "val");
+                break;
+        }
+    }
+    return result;
+}
+
+
+/***/ }),
+
+/***/ "./src/parser/section.ts":
+/*!*******************************!*\
+  !*** ./src/parser/section.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
+var xml = __webpack_require__(/*! ./common */ "./src/parser/common.ts");
+function parseSectionProperties(elem) {
+    var section = {};
+    for (var _i = 0, _a = xml.elements(elem, common_1.ns.wordml); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "pgSz":
+                section.pageSize = {
+                    width: xml.lengthAttr(e, common_1.ns.wordml, "w"),
+                    height: xml.lengthAttr(e, common_1.ns.wordml, "h"),
+                    orientation: xml.stringAttr(e, common_1.ns.wordml, "orient")
+                };
+                break;
+            case "pgMar":
+                section.pageMargins = {
+                    left: xml.lengthAttr(e, common_1.ns.wordml, "left"),
+                    right: xml.lengthAttr(e, common_1.ns.wordml, "right"),
+                    top: xml.lengthAttr(e, common_1.ns.wordml, "top"),
+                    bottom: xml.lengthAttr(e, common_1.ns.wordml, "bottom"),
+                    header: xml.lengthAttr(e, common_1.ns.wordml, "header"),
+                    footer: xml.lengthAttr(e, common_1.ns.wordml, "footer"),
+                    gutter: xml.lengthAttr(e, common_1.ns.wordml, "gutter"),
+                };
+                break;
+            case "cols":
+                section.columns = parseColumns(e);
+                break;
+        }
+    }
+    return section;
+}
+exports.parseSectionProperties = parseSectionProperties;
+function parseColumns(elem) {
+    return {
+        numberOfColumns: xml.intAttr(elem, common_1.ns.wordml, "num"),
+        space: xml.lengthAttr(elem, common_1.ns.wordml, "space"),
+        separator: xml.boolAttr(elem, common_1.ns.wordml, "sep"),
+        equalWidth: xml.boolAttr(elem, common_1.ns.wordml, "equalWidth", true),
+        columns: xml.elements(elem, common_1.ns.wordml, "col")
+            .map(function (e) { return ({
+            width: xml.lengthAttr(e, common_1.ns.wordml, "w"),
+            space: xml.lengthAttr(e, common_1.ns.wordml, "space")
+        }); })
+    };
+}
 
 
 /***/ }),

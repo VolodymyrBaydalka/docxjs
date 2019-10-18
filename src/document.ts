@@ -4,7 +4,6 @@ import { DocumentParser } from './document-parser';
 import { IDomRelationship, IDomStyle, IDomNumbering } from './dom/dom';
 import { Font } from './dom/common';
 import { DocumentElement } from './dom/document';
-import { deobfuscate } from './deobfuscate';
 
 enum PartType {
     Document = "word/document.xml",
@@ -48,26 +47,23 @@ export class Document {
     }
 
     loadDocumentImage(id: string): PromiseLike<string> {
-        return this.loadResource(this.docRelations, id).then(x => x ? ("data:image/png;base64," + x) : null);
+        return this.loadResource(this.docRelations, id, "blob")
+            .then(x => x ? URL.createObjectURL(x) : null);
     }
 
     loadNumberingImage(id: string): PromiseLike<string> {
-        return this.loadResource(this.numRelations, id).then(x => x ? ("data:image/png;base64," + x) : null);
+        return this.loadResource(this.numRelations, id, "blob")
+            .then(x => x ? URL.createObjectURL(x) : null);
     }
 
     loadFont(id: string, key: string): PromiseLike<string> {
-        //const mimeType = "application/vnd.ms-package.obfuscated-opentype";
-        const mimeType = "application/x-font-ttf";
-        //const mimeType = "application/vnd.ms-fontobject";
-        return this.loadResource(this.fontRelations, id, "array")
-            .then(x => x ? deobfuscate(x, key) : x);
-            //.then(x => x ? (`data:${mimeType};base64,${x}`) : null);
+        return this.loadResource(this.fontRelations, id, "uint8array")
+            .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
     }
 
-    private loadResource(relations: IDomRelationship[], id: string, output: "base64" | "array" = "base64") {
-        let rel = relations.filter(x => x.id == id);
-
-        return rel.length == 0 ? Promise.resolve(null) : this.zip.files["word/" + rel[0].target].async(output);
+    private loadResource(relations: IDomRelationship[], id: string, outputType: JSZip.OutputType = "base64") {
+        let rel = relations.find(x => x.id == id);
+        return rel ? this.zip.files["word/" + rel.target].async(outputType) : Promise.resolve(null);
     }
 
     private loadPart(part: PartType, parser: DocumentParser) {
@@ -107,4 +103,18 @@ export class Document {
             return this;
         }) : null;
     }
+}
+
+export function deobfuscate(data: Uint8Array, guidKey: string): Uint8Array {
+    const len = 16;
+    const trimmed = guidKey.replace(/{|}|-/g, "");
+    const numbers = new Array(len);
+    
+    for(let i = 0; i < len; i ++)
+        numbers[len - i - 1] = parseInt(trimmed.substr(i * 2, 2), 16);
+
+    for (let i = 0; i < 32; i++)
+        data[i] = data[i] ^ numbers[i % len]
+
+    return data;
 }

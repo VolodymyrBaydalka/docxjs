@@ -20,8 +20,10 @@
             var file = document.getElementById("files").files[0];
             var container = document.getElementById("doc");
             
-            docx.renderAsync(file, container, null, { debug: true })
-                    .then(function(x){ console.log(x); });
+            docx.renderAsync(file, container, null, { 
+                debug: true,
+                experimental: true 
+            }).then(function(x){ console.log(x); });
         }
     </script>
 </body>

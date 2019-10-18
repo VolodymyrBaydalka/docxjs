@@ -1,10 +1,12 @@
 import { Document } from './document';
 import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell } from './dom/dom';
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement, SectionProperties } from './dom/document';
-import { ParagraphElement } from './dom/paragraph';
+import { ParagraphElement} from './dom/paragraph';
+import { appendClass } from './utils';
+import { updateTabStop } from './javascript';
 
 export class HtmlRenderer {
 
@@ -12,8 +14,6 @@ export class HtmlRenderer {
     className: string = "docx";
     document: Document;
     options: Options;
-
-    private digitTest = /^[0-9]/.test;
 
     constructor(public htmlDocument: HTMLDocument) {
     }
@@ -106,8 +106,9 @@ export class HtmlRenderer {
         if (element.children) {
             for (var e of element.children) {
                 e.className = this.processClassName(e.className);
+                e.parent = element;
 
-                if (e.domType == DomType.Table) {
+                if (e.type == DomType.Table) {
                     this.processTable(e);
                 }
                 else {
@@ -199,7 +200,7 @@ export class HtmlRenderer {
         for(let elem of elements) {
             current.elements.push(elem);
 
-            if(elem.domType == DomType.Paragraph)
+            if(elem.type == DomType.Paragraph)
             {
                 const p = elem as ParagraphElement;
                 var sectProps = p.props.sectionProps;
@@ -350,8 +351,8 @@ export class HtmlRenderer {
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): HTMLElement {
-        switch (elem.domType) {
+    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): Node {
+        switch (elem.type) {
             case DomType.Paragraph:
                 return this.renderParagraph(<ParagraphElement>elem);
 
@@ -375,16 +376,22 @@ export class HtmlRenderer {
 
             case DomType.Image:
                 return this.renderImage(<IDomImage>elem);
+            
+            case DomType.Text:
+                return this.renderText(<TextElement>elem);
+
+            case DomType.Tab:
+                return this.renderTab(elem);
         }
 
         return null;
     }
 
-    renderChildren(elem: OpenXmlElement, into?: HTMLElement): HTMLElement[] {
+    renderChildren(elem: OpenXmlElement, into?: HTMLElement): Node[] {
         return this.renderElements(elem.children, elem, into);
     }
 
-    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): HTMLElement[] {
+    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): Node[] {
         if(elems == null)
             return null;
 
@@ -406,8 +413,9 @@ export class HtmlRenderer {
 
         this.renderCommonProeprties(result, elem.props);
 
-        if (elem.numberingId && elem.numberingLevel != null) {
-            result.className = `${result.className} ${this.numberingClass(elem.numberingId, elem.numberingLevel)}`;
+        if (elem.props.numbering) {
+            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
+            result.className = appendClass(result.className, numberingClass);
         }
 
         return result;
@@ -465,52 +473,44 @@ export class HtmlRenderer {
         return result;
     }
 
+    renderText(elem: TextElement) {
+        return this.htmlDocument.createTextNode(elem.text);
+    }
+
+    renderTab(elem: OpenXmlElement) {
+        var tabSpan = this.htmlDocument.createElement("span");
+     
+        tabSpan.innerHTML = "&emsp;";//"&nbsp;";
+
+        if(this.options.experimental) {
+            setTimeout(() => {
+                var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
+                paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
+                tabSpan.style.display = "inline-block";
+                updateTabStop(tabSpan, paragraph.props.tabs);
+            }, 0);
+        }
+
+        return tabSpan;
+    }
+
     renderRun(elem: IDomRun) {
         if (elem.break)
             return elem.break == "page" ? null : this.htmlDocument.createElement("br");
+        
+        if (elem.fldCharType || elem.instrText)
+            return null;
 
         var result = this.htmlDocument.createElement("span");
 
-        if (elem.text)
-            result.textContent = elem.text;
+        if(elem.id)
+            result.id = elem.id;
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
 
-        if (elem.id) {
-            result.id = elem.id;
-        }
-
-        if (elem.tab) {
-            //TODO
-            // result.style.display = "inline-block";
-
-            // var paragraph = <IDomParagraph>elem.parent;
-
-            // while (paragraph != null && paragraph.domType != DomType.Paragraph)
-            //     paragraph = <IDomParagraph>paragraph.parent;
-
-            // if (paragraph && paragraph.tabs) {
-            //     var tab = paragraph.tabs[0];
-
-            //     result.style.width = tab.position;
-
-            //     switch (tab.leader) {
-            //         case "dot":
-            //         case "middleDot":
-            //             result.style.borderBottom = "1px black dotted";
-            //             break;
-
-            //         case "hyphen":
-            //         case "heavy":
-            //         case "underscore":
-            //             result.style.borderBottom = "1px black solid";
-            //             break;
-            //     }
-            // }
-        }
-        else if (elem.href) {
+        if (elem.href) {
             var link = this.htmlDocument.createElement("a");
 
             link.href = elem.href;
@@ -593,7 +593,7 @@ export class HtmlRenderer {
             ouput.className = input.className;
     }
 
-    numberingClass(id, lvl) {
+    numberingClass(id: string, lvl: number) {
         return `${this.className}-num-${id}-${lvl}`;
     }
 
@@ -610,7 +610,7 @@ export class HtmlRenderer {
         return result + "}\r\n";
     }
 
-    numberingCounter(id, lvl) {
+    numberingCounter(id: string, lvl: number) {
         return `${this.className}-num-${id}-${lvl}`;
     }
 
@@ -658,4 +658,13 @@ function createStyleElement(cssText: string) {
 
 function appendComment(elem: HTMLElement, comment: string) {
     elem.appendChild(document.createComment(comment));
+}
+
+function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomType): T {
+    var parent = elem.parent;
+
+    while (parent != null && parent.type != type)
+        parent = parent.parent;
+    
+    return <T>parent;
 }

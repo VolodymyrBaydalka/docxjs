@@ -1,25 +1,35 @@
 import { Length } from "../dom/common";
 
-export function forEachElementNS(elem: Element, namespaceURI: string, callback: (elem: Element) => any) {
-    for(let i = 0; i < elem.childNodes.length; i ++) {
+export function elements(elem: Element, namespaceURI: string = null, localName: string = null): Element[] {
+    let result = [];
+
+    for (let i = 0; i < elem.childNodes.length; i++) {
         let n = elem.childNodes[i];
 
-        if(n.nodeType == 1 && n.namespaceURI == namespaceURI)
-            callback(<Element>n);
+        if (n.nodeType == 1
+            && (namespaceURI == null || n.namespaceURI == namespaceURI)
+            && (localName == null || (n as Element).localName == localName))
+            result.push(n);
     }
+
+    return result;
 }
 
-export function getAttributeIntValue(elem: Element, namespaceURI: string, name: string): number {
+export function stringAttr(elem: Element, namespaceURI: string, name: string): string {
+    return elem.getAttributeNS(namespaceURI, name);
+}
+
+export function intAttr(elem: Element, namespaceURI: string, name: string): number {
     var val = elem.getAttributeNS(namespaceURI, name);
     return val ? parseInt(val) : null;
 }
 
-export function getAttributeColorValue(elem: Element, namespaceURI: string, name: string): string {
+export function colorAttr(elem: Element, namespaceURI: string, name: string): string {
     var val = elem.getAttributeNS(namespaceURI, name);
     return val ? `#${val}` : null;
 }
 
-export function getAttributeBoolValue(elem: Element, namespaceURI: string, name: string, defaultValue: boolean = false): boolean {
+export function boolAttr(elem: Element, namespaceURI: string, name: string, defaultValue: boolean = false): boolean {
     var val = elem.getAttributeNS(namespaceURI, name);
 
     if(val == null)
@@ -28,12 +38,12 @@ export function getAttributeBoolValue(elem: Element, namespaceURI: string, name:
     return val === "true" || val === "1";
 }
 
-export function getAttributeLengthValue(elem: Element, namespaceURI: string, name: string, usage: LengthUsage = LengthUsage.Dxa): Length {
+export function lengthAttr(elem: Element, namespaceURI: string, name: string, usage: LengthUsage = LengthUsage.Dxa): Length {
     return parseLength(elem.getAttributeNS(namespaceURI, name), usage);
 }
 
 export enum LengthUsage {
-    Dxa,
+    Dxa, //twips
     Emu,
     FontSize,
     Border,
