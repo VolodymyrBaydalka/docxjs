@@ -1,5 +1,5 @@
 import { OpenXmlElement } from "./dom";
-import { CommonProperties, Length } from "./common";
+import { CommonProperties, Length, Borders } from "./common";
 import { SectionProperties } from "./document";
 
 export interface ParagraphElement extends OpenXmlElement {
@@ -10,6 +10,9 @@ export interface ParagraphProperties extends CommonProperties {
     sectionProps: SectionProperties;
     tabs: ParagraphTab[];
     numbering: ParagraphNumbering;
+
+    border: Borders;
+    lineSpacing: LineSpacing;
 }
 
 export interface ParagraphTab {
@@ -21,4 +24,11 @@ export interface ParagraphTab {
 export interface ParagraphNumbering {
     id: string;
     level: number;
+}
+
+export interface LineSpacing {
+    after: Length;
+    before: Length;
+    line: number;
+    lineRule: "atLeast" | "exactly" | "auto";
 }

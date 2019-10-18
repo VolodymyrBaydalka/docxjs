@@ -1,12 +1,13 @@
 import { Document } from './document';
 import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement } from './dom/dom';
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement, SectionProperties } from './dom/document';
 import { ParagraphElement} from './dom/paragraph';
 import { appendClass } from './utils';
 import { updateTabStop } from './javascript';
+import { LengthUsage } from './parser/common';
 
 export class HtmlRenderer {
 
@@ -382,6 +383,9 @@ export class HtmlRenderer {
 
             case DomType.Tab:
                 return this.renderTab(elem);
+            
+            case DomType.Symbol:
+                return this.renderSymbol(<SymbolElement>elem);
         }
 
         return null;
@@ -475,6 +479,13 @@ export class HtmlRenderer {
 
     renderText(elem: TextElement) {
         return this.htmlDocument.createTextNode(elem.text);
+    }
+
+    renderSymbol(elem: SymbolElement) {
+        var span = this.htmlDocument.createElement("span");
+        span.style.fontFamily = elem.font;
+        span.innerHTML = `&#x${elem.char};`
+        return span;
     }
 
     renderTab(elem: OpenXmlElement) {

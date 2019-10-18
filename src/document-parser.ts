@@ -1,7 +1,7 @@
 import {
     IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DomRelationshipType, tabObject, TextElement
+    IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DomRelationshipType, TextElement, SymbolElement
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
@@ -471,6 +471,14 @@ export class DocumentParser {
                 case "br":
                     result.break = xml.stringAttr(c, "type") || "textWrapping";
                     break;
+                
+                case "sym":
+                    result.children.push(<SymbolElement>{ 
+                        type: DomType.Symbol, 
+                        font: xml.stringAttr(c, "font"),
+                        char: xml.stringAttr(c, "char")
+                    });
+                    break;
 
                 case "tab":
                     result.children.push({ type: DomType.Tab });
@@ -826,6 +834,8 @@ export class DocumentParser {
     parseDefaultProperties(elem: Element, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Element) => boolean = null): IDomStyleValues {
         style = style || {};
 
+        let spacing = null;
+
         xml.foreach(elem, c => {
             switch (c.localName) {
                 case "jc":
@@ -841,12 +851,7 @@ export class DocumentParser {
                     break;
 
                 case "sz":
-                    style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
-
-                    if(elem.localName == "pPr") {
-                        style["min-height"] = style["font-size"];
-                        debugger;
-                    }
+                    style["font-size"] = style["min-height"] = xml.sizeAttr(c, "val", SizeType.FontSize);
                     break;
 
                 case "shd":
@@ -905,6 +910,10 @@ export class DocumentParser {
 
                 case "pBdr":
                     this.parseBorderProperties(c, style);
+                    break;
+                
+                case "bdr":
+                    style["border"] = values.valueOfBorder(c);
                     break;
 
                 case "tcBorders":

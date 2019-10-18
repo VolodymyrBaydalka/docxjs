@@ -1,4 +1,4 @@
-import { ParagraphTab, ParagraphProperties, ParagraphNumbering } from "../dom/paragraph";
+import { ParagraphTab, ParagraphProperties, ParagraphNumbering, LineSpacing } from "../dom/paragraph";
 import * as xml from "./common";
 import { ns } from "../dom/common";
 import { parseSectionProperties } from "./section";
@@ -18,6 +18,11 @@ export function parseParagraphProperties(elem: Element, props: ParagraphProperti
 
         case "numPr":
             props.numbering = parseNumbering(elem);
+            break;
+        
+        case "spacing":
+            props.lineSpacing = parseLineSpacing(elem);
+            return false; // TODO
             break;
 
         default:
@@ -52,4 +57,13 @@ function parseNumbering(elem: Element): ParagraphNumbering {
     }
 
     return result;
+}
+
+function parseLineSpacing(elem: Element): LineSpacing {
+    return {
+        before: xml.lengthAttr(elem, ns.wordml, "before"),
+        after: xml.lengthAttr(elem, ns.wordml, "after"),
+        line: xml.intAttr(elem, ns.wordml, "line"),
+        lineRule: xml.stringAttr(elem, ns.wordml, "lineRule")
+    } as LineSpacing;
 }

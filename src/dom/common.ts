@@ -2,9 +2,24 @@ export const ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 }
 
+export type LengthType = "px" | "pt" | "%";
+
 export interface Length {
     value: number;
-    type: "px" | "pt" | "%"
+    type: LengthType
+}
+
+export interface Border {
+    color: string;
+    type: string;
+    size: Length;
+}
+
+export interface Borders {
+    top: Border;
+    left: Border;
+    right: Border;
+    botton: Border;
 }
 
 export interface Font {

@@ -515,6 +515,13 @@ var DocumentParser = (function () {
                 case "br":
                     result.break = xml.stringAttr(c, "type") || "textWrapping";
                     break;
+                case "sym":
+                    result.children.push({
+                        type: dom_1.DomType.Symbol,
+                        font: xml.stringAttr(c, "font"),
+                        char: xml.stringAttr(c, "char")
+                    });
+                    break;
                 case "tab":
                     result.children.push({ type: dom_1.DomType.Tab });
                     break;
@@ -806,6 +813,7 @@ var DocumentParser = (function () {
         if (childStyle === void 0) { childStyle = null; }
         if (handler === void 0) { handler = null; }
         style = style || {};
+        var spacing = null;
         xml.foreach(elem, function (c) {
             switch (c.localName) {
                 case "jc":
@@ -818,11 +826,7 @@ var DocumentParser = (function () {
                     style["color"] = xml.colorAttr(c, "val", null, exports.autos.color);
                     break;
                 case "sz":
-                    style["font-size"] = xml.sizeAttr(c, "val", SizeType.FontSize);
-                    if (elem.localName == "pPr") {
-                        style["min-height"] = style["font-size"];
-                        debugger;
-                    }
+                    style["font-size"] = style["min-height"] = xml.sizeAttr(c, "val", SizeType.FontSize);
                     break;
                 case "shd":
                     style["background-color"] = xml.colorAttr(c, "fill", null, exports.autos.shd);
@@ -867,6 +871,9 @@ var DocumentParser = (function () {
                     break;
                 case "pBdr":
                     _this.parseBorderProperties(c, style);
+                    break;
+                case "bdr":
+                    style["border"] = values.valueOfBorder(c);
                     break;
                 case "tcBorders":
                     _this.parseBorderProperties(c, style);
@@ -1474,6 +1481,7 @@ var DomType;
     DomType["Image"] = "image";
     DomType["Text"] = "text";
     DomType["Tab"] = "tab";
+    DomType["Symbol"] = "symbol";
 })(DomType = exports.DomType || (exports.DomType = {}));
 var DomRelationshipType;
 (function (DomRelationshipType) {
@@ -1486,7 +1494,6 @@ var DomRelationshipType;
     DomRelationshipType[DomRelationshipType["WebSettings"] = 6] = "WebSettings";
     DomRelationshipType[DomRelationshipType["Unknown"] = 7] = "Unknown";
 })(DomRelationshipType = exports.DomRelationshipType || (exports.DomRelationshipType = {}));
-exports.tabObject = { tab: true };
 
 
 /***/ }),
@@ -1817,6 +1824,8 @@ var HtmlRenderer = (function () {
                 return this.renderText(elem);
             case dom_1.DomType.Tab:
                 return this.renderTab(elem);
+            case dom_1.DomType.Symbol:
+                return this.renderSymbol(elem);
         }
         return null;
     };
@@ -1886,6 +1895,12 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderText = function (elem) {
         return this.htmlDocument.createTextNode(elem.text);
+    };
+    HtmlRenderer.prototype.renderSymbol = function (elem) {
+        var span = this.htmlDocument.createElement("span");
+        span.style.fontFamily = elem.font;
+        span.innerHTML = "&#x" + elem.char + ";";
+        return span;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
         var tabSpan = this.htmlDocument.createElement("span");
@@ -2090,6 +2105,7 @@ exports.updateTabStop = updateTabStop;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 function elements(elem, namespaceURI, localName) {
     if (namespaceURI === void 0) { namespaceURI = null; }
     if (localName === void 0) { localName = null; }
@@ -2126,34 +2142,50 @@ function boolAttr(elem, namespaceURI, name, defaultValue) {
     return val === "true" || val === "1";
 }
 exports.boolAttr = boolAttr;
+exports.LengthUsage = {
+    Dxa: { mul: 0.05, unit: "pt" },
+    Emu: { mul: 1 / 12700, unit: "pt" },
+    FontSize: { mul: 0.5, unit: "pt" },
+    Border: { mul: 0.125, unit: "pt" },
+    Percent: { mul: 0.02, unit: "%" },
+    LineHeight: { mul: 1 / 240, unit: null }
+};
 function lengthAttr(elem, namespaceURI, name, usage) {
-    if (usage === void 0) { usage = LengthUsage.Dxa; }
-    return parseLength(elem.getAttributeNS(namespaceURI, name), usage);
+    if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
+    var val = elem.getAttributeNS(namespaceURI, name);
+    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 exports.lengthAttr = lengthAttr;
-var LengthUsage;
-(function (LengthUsage) {
-    LengthUsage[LengthUsage["Dxa"] = 0] = "Dxa";
-    LengthUsage[LengthUsage["Emu"] = 1] = "Emu";
-    LengthUsage[LengthUsage["FontSize"] = 2] = "FontSize";
-    LengthUsage[LengthUsage["Border"] = 3] = "Border";
-    LengthUsage[LengthUsage["Percent"] = 4] = "Percent";
-})(LengthUsage = exports.LengthUsage || (exports.LengthUsage = {}));
-function parseLength(val, usage) {
-    if (usage === void 0) { usage = LengthUsage.Dxa; }
-    if (!val)
-        return null;
-    var num = parseInt(val);
-    switch (usage) {
-        case LengthUsage.Dxa: return { value: 0.05 * num, type: "pt" };
-        case LengthUsage.Emu: return { value: num / 12700, type: "pt" };
-        case LengthUsage.FontSize: return { value: 0.5 * num, type: "pt" };
-        case LengthUsage.Border: return { value: 0.125 * num, type: "pt" };
-        case LengthUsage.Percent: return { value: 0.02 * num, type: "%" };
-    }
-    return null;
+function parseBorder(elem) {
+    return {
+        type: stringAttr(elem, common_1.ns.wordml, "val"),
+        color: colorAttr(elem, common_1.ns.wordml, "color"),
+        size: lengthAttr(elem, common_1.ns.wordml, "sz", exports.LengthUsage.Border)
+    };
 }
-exports.parseLength = parseLength;
+exports.parseBorder = parseBorder;
+function parseBorders(elem) {
+    var result = {};
+    for (var _i = 0, _a = elements(elem, common_1.ns.wordml); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "left":
+                result.left = parseBorder(e);
+                break;
+            case "top":
+                result.top = parseBorder(e);
+                break;
+            case "right":
+                result.right = parseBorder(e);
+                break;
+            case "botton":
+                result.botton = parseBorder(e);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseBorders = parseBorders;
 
 
 /***/ }),
@@ -2184,6 +2216,10 @@ function parseParagraphProperties(elem, props) {
         case "numPr":
             props.numbering = parseNumbering(elem);
             break;
+        case "spacing":
+            props.lineSpacing = parseLineSpacing(elem);
+            return false;
+            break;
         default:
             return false;
     }
@@ -2212,6 +2248,14 @@ function parseNumbering(elem) {
         }
     }
     return result;
+}
+function parseLineSpacing(elem) {
+    return {
+        before: xml.lengthAttr(elem, common_1.ns.wordml, "before"),
+        after: xml.lengthAttr(elem, common_1.ns.wordml, "after"),
+        line: xml.intAttr(elem, common_1.ns.wordml, "line"),
+        lineRule: xml.stringAttr(elem, common_1.ns.wordml, "lineRule")
+    };
 }
 
 

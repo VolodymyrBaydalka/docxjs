@@ -1,4 +1,4 @@
-import { Length } from "../dom/common";
+import { Length, LengthType, ns, Border, Borders } from "../dom/common";
 
 export function elements(elem: Element, namespaceURI: string = null, localName: string = null): Element[] {
     let result = [];
@@ -32,37 +32,47 @@ export function colorAttr(elem: Element, namespaceURI: string, name: string): st
 export function boolAttr(elem: Element, namespaceURI: string, name: string, defaultValue: boolean = false): boolean {
     var val = elem.getAttributeNS(namespaceURI, name);
 
-    if(val == null)
+    if (val == null)
         return defaultValue;
 
     return val === "true" || val === "1";
 }
 
-export function lengthAttr(elem: Element, namespaceURI: string, name: string, usage: LengthUsage = LengthUsage.Dxa): Length {
-    return parseLength(elem.getAttributeNS(namespaceURI, name), usage);
+export type LengthUsageType = { mul: number, unit: LengthType };
+
+export const LengthUsage: Record<string, LengthUsageType> = {
+    Dxa: { mul: 0.05, unit: "pt" }, //twips
+    Emu: { mul: 1 / 12700, unit: "pt" },
+    FontSize: { mul: 0.5, unit: "pt" },
+    Border: { mul: 0.125, unit: "pt" },
+    Percent: { mul: 0.02, unit: "%" },
+    LineHeight: { mul: 1 / 240, unit: null }
 }
 
-export enum LengthUsage {
-    Dxa, //twips
-    Emu,
-    FontSize,
-    Border,
-    Percent
+export function lengthAttr(elem: Element, namespaceURI: string, name: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
+    var val = elem.getAttributeNS(namespaceURI, name);
+    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 
-export function parseLength(val: string | null, usage: LengthUsage = LengthUsage.Dxa): Length {
-    if (!val)
-        return null;
+export function parseBorder(elem: Element): Border {
+    return {
+        type: stringAttr(elem, ns.wordml, "val"),
+        color: colorAttr(elem, ns.wordml, "color"),
+        size: lengthAttr(elem, ns.wordml, "sz", LengthUsage.Border)
+    };
+}
 
-    var num = parseInt(val);
+export function parseBorders(elem: Element): Borders {
+    var result = <Borders>{};
 
-    switch (usage) {
-        case LengthUsage.Dxa: return { value: 0.05 * num, type: "pt" };
-        case LengthUsage.Emu: return { value: num / 12700, type: "pt" };
-        case LengthUsage.FontSize: return { value: 0.5 * num, type: "pt" };
-        case LengthUsage.Border: return { value: 0.125 * num, type: "pt" };
-        case LengthUsage.Percent: return { value: 0.02 * num, type: "%" };
+    for (let e of elements(elem, ns.wordml)) {
+        switch (e.localName) {
+            case "left": result.left = parseBorder(e); break;
+            case "top": result.top = parseBorder(e); break;
+            case "right": result.right = parseBorder(e); break;
+            case "botton": result.botton = parseBorder(e); break;
+        }
     }
 
-    return null;
+    return result;
 }

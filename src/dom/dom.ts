@@ -10,7 +10,8 @@ export enum DomType {
     Drawing = "drawing",
     Image = "image",
     Text = "text",
-    Tab = "tab"
+    Tab = "tab",
+    Symbol = "symbol"
 }
 
 export enum DomRelationshipType {
@@ -42,10 +43,14 @@ export interface IDomHyperlink extends OpenXmlElement {
     href?: string;
 }
 
-export const tabObject = { tab: true };
 
 export interface TextElement extends OpenXmlElement{
     text: string;
+}
+
+export interface SymbolElement extends OpenXmlElement {
+    font: string;
+    char: string;
 }
 
 export interface IDomRun extends OpenXmlElement {
