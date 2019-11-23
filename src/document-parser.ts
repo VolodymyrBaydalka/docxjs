@@ -1,7 +1,7 @@
 import {
     IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DomRelationshipType, TextElement, SymbolElement
+    IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DomRelationshipType, TextElement, SymbolElement, BreakElement
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
@@ -469,7 +469,17 @@ export class DocumentParser {
                     break;
 
                 case "br":
-                    result.break = xml.stringAttr(c, "type") || "textWrapping";
+                    result.children.push(<BreakElement>{ 
+                        type: DomType.Break, 
+                        break: xml.stringAttr(c, "type") || "textWrapping"
+                    });
+                    break;
+
+                case "lastRenderedPageBreak":
+                    result.children.push(<BreakElement>{ 
+                        type: DomType.Break, 
+                        break: "page"
+                    });
                     break;
                 
                 case "sym":

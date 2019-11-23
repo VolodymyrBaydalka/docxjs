@@ -44,6 +44,10 @@ export interface IDomHyperlink extends OpenXmlElement {
 }
 
 
+export interface BreakElement extends OpenXmlElement{
+    break: "page" | "lastRenderedPageBreak" | "textWrapping";
+}
+
 export interface TextElement extends OpenXmlElement{
     text: string;
 }

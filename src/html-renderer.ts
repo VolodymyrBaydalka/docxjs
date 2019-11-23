@@ -1,6 +1,6 @@
 import { Document } from './document';
 import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement } from './dom/dom';
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement, SectionProperties } from './dom/document';
@@ -205,19 +205,39 @@ export class HtmlRenderer {
             {
                 const p = elem as ParagraphElement;
                 var sectProps = p.props.sectionProps;
-                var breakIndex = this.options.breakPages ? (p.children && p.children.findIndex(x => (<any>x).break == "page")) : -1;
+                var pBreakIndex = -1;
+                var rBreakIndex = -1;
+                
+                if(this.options.breakPages && p.children) {
+                    pBreakIndex = p.children.findIndex(r => {
+                        rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
+                        return rBreakIndex != -1;
+                    });
+                }
     
-                if(sectProps || breakIndex != -1) {
+                if(sectProps || pBreakIndex != -1) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
 
-                if(breakIndex != -1 && breakIndex < p.children.length - 1) {
-                    var children = elem.children;
-                    var newParagraph = { ...elem, children: children.slice(breakIndex) };
-                    elem.children = children.slice(0, breakIndex);
-                    current.elements.push(newParagraph);
+                if(pBreakIndex != -1) {
+                    let breakRun = p.children[pBreakIndex];
+                    let splitRun = rBreakIndex < breakRun.children.length - 1;
+
+                    if(pBreakIndex < p.children.length - 1 || splitRun) {
+                        var children = elem.children;
+                        var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
+                        elem.children = children.slice(0, pBreakIndex);
+                        current.elements.push(newParagraph);
+
+                        if(splitRun) {
+                            let runChildren = breakRun.children;
+                            let newRun =  { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
+                            elem.children.push(newRun);
+                            breakRun.children = runChildren.slice(rBreakIndex);
+                        }
+                    }
                 }
             }
         }

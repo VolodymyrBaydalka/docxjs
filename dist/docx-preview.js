@@ -513,7 +513,16 @@ var DocumentParser = (function () {
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
                 case "br":
-                    result.break = xml.stringAttr(c, "type") || "textWrapping";
+                    result.children.push({
+                        type: dom_1.DomType.Break,
+                        break: xml.stringAttr(c, "type") || "textWrapping"
+                    });
+                    break;
+                case "lastRenderedPageBreak":
+                    result.children.push({
+                        type: dom_1.DomType.Break,
+                        break: "page"
+                    });
                     break;
                 case "sym":
                     result.children.push({
@@ -1693,17 +1702,35 @@ var HtmlRenderer = (function () {
             if (elem.type == dom_1.DomType.Paragraph) {
                 var p = elem;
                 var sectProps = p.props.sectionProps;
-                var breakIndex = this.options.breakPages ? (p.children && p.children.findIndex(function (x) { return x.break == "page"; })) : -1;
-                if (sectProps || breakIndex != -1) {
+                var pBreakIndex = -1;
+                var rBreakIndex = -1;
+                if (this.options.breakPages && p.children) {
+                    pBreakIndex = p.children.findIndex(function (r) {
+                        var _a, _b;
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; }), (_b !== null && _b !== void 0 ? _b : -1));
+                        return rBreakIndex != -1;
+                    });
+                }
+                if (sectProps || pBreakIndex != -1) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
-                if (breakIndex != -1 && breakIndex < p.children.length - 1) {
-                    var children = elem.children;
-                    var newParagraph = __assign(__assign({}, elem), { children: children.slice(breakIndex) });
-                    elem.children = children.slice(0, breakIndex);
-                    current.elements.push(newParagraph);
+                if (pBreakIndex != -1) {
+                    var breakRun = p.children[pBreakIndex];
+                    var splitRun = rBreakIndex < breakRun.children.length - 1;
+                    if (pBreakIndex < p.children.length - 1 || splitRun) {
+                        var children = elem.children;
+                        var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
+                        elem.children = children.slice(0, pBreakIndex);
+                        current.elements.push(newParagraph);
+                        if (splitRun) {
+                            var runChildren = breakRun.children;
+                            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
+                            elem.children.push(newRun);
+                            breakRun.children = runChildren.slice(rBreakIndex);
+                        }
+                    }
                 }
             }
         }
