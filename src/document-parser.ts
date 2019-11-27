@@ -1,7 +1,6 @@
 import {
     IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DomRelationshipType, TextElement, SymbolElement, BreakElement
+    IDomImage, OpenXmlElement, IDomRelationship, IDomSubStyle, NumberingPicBullet, DomRelationshipType
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
@@ -10,6 +9,18 @@ import { lengthAttr, colorAttr, LengthUsage } from './parser/common';
 import { ParagraphElement } from './dom/paragraph';
 import { parseParagraphProperties } from './parser/paragraph';
 import { parseSectionProperties } from './parser/section';
+
+import { Text } from './elements/text';
+import { Symbol } from './elements/symbol';
+import { Break } from './elements/break';
+import { Tab } from './elements/tab';
+import { Hyperlink } from './elements/hyperlink';
+import { Run } from './elements/run';
+import { Bookmark } from './elements/bookmark';
+import { Cell } from './elements/cell';
+import { Table, TableColumn } from './elements/table';
+import { Row } from './elements/row';
+import { Paragraph } from './elements/paragraph';
 
 export var autos = {
     shd: "white",
@@ -362,17 +373,17 @@ export class DocumentParser {
     }
 
 
-    parseParagraph(node: Element): OpenXmlElement {
-        var result = <ParagraphElement>{ type: DomType.Paragraph, children: [], props: {} };
+    parseParagraph(node: Element): Paragraph {
+        var result = new Paragraph();
 
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "r":
-                    result.children.push(this.parseRun(c, result));
+                    result.children.push(this.parseRun(c));
                     break;
 
                 case "hyperlink":
-                    result.children.push(this.parseHyperlink(c, result));
+                    result.children.push(this.parseHyperlink(c));
                     break;
 
                 case "bookmarkStart":
@@ -426,25 +437,20 @@ export class DocumentParser {
             paragraph.style["float"] = "left";
     }
 
-    parseBookmark(node: Element): OpenXmlElement {
-        var result: IDomRun = { type: DomType.Run };
-
-        result.id = xml.stringAttr(node, "name");
-
+    parseBookmark(node: Element): Bookmark {
+        var result = new Bookmark();
+        result.name = xml.stringAttr(node, "name");
         return result;
     }
 
-    parseHyperlink(node: Element, parent?: OpenXmlElement): IDomRun {
-        var result: IDomHyperlink = { type: DomType.Hyperlink, parent: parent, children: [] };
-        var anchor = xml.stringAttr(node, "anchor");
-
-        if (anchor)
-            result.href = "#" + anchor;
+    parseHyperlink(node: Element): Hyperlink {
+        var result = new Hyperlink();
+        result.anchor = xml.stringAttr(node, "anchor");
 
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "r":
-                    result.children.push(this.parseRun(c, result));
+                    result.children.push(this.parseRun(c));
                     break;
             }
         });
@@ -452,57 +458,52 @@ export class DocumentParser {
         return result;
     }
 
-    parseRun(node: Element, parent?: OpenXmlElement): IDomRun {
-        var result: IDomRun = { type: DomType.Run, parent: parent, children: [] };
+    parseRun(node: Element): Run {
+        var result = new Run();
 
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "t":
-                    result.children.push(<TextElement>{ 
-                        type: DomType.Text, 
-                        text: c.textContent 
-                    });//.replace(" ", "\u00A0"); // TODO
+                    let text = new Text();
+                    text.text = c.textContent;
+                    result.children.push(text);
                     break;
                 
                 case "fldChar":
-                    result.fldCharType = xml.stringAttr(c, "fldCharType");
+                    //result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
 
                 case "br":
-                    result.children.push(<BreakElement>{ 
-                        type: DomType.Break, 
-                        break: xml.stringAttr(c, "type") || "textWrapping"
-                    });
+                    var br = new Break();
+                    br.break = xml.stringAttr(c, "type") || "textWrapping";
+                    result.children.push(br);
                     break;
 
                 case "lastRenderedPageBreak":
-                    result.children.push(<BreakElement>{ 
-                        type: DomType.Break, 
-                        break: "page"
-                    });
+                    var br = new Break();
+                    br.break = "page";
+                    result.children.push(br);
                     break;
                 
                 case "sym":
-                    result.children.push(<SymbolElement>{ 
-                        type: DomType.Symbol, 
-                        font: xml.stringAttr(c, "font"),
-                        char: xml.stringAttr(c, "char")
-                    });
+                    let symbol = new Symbol();
+                    symbol.font = xml.stringAttr(c, "font");
+                    symbol.char = xml.stringAttr(c, "char");
+                    result.children.push(symbol);
                     break;
 
                 case "tab":
-                    result.children.push({ type: DomType.Tab });
+                    result.children.push(new Tab());
                     break;
 
                 case "instrText":
-                    result.instrText = c.textContent;
+                    //result.instrText = c.textContent;
                     break;
 
                 case "drawing":
-                    let d = this.parseDrawing(c);
 
-                    if (d)
-                        result.children = [d];
+                    // if (d)
+                    //     result.children = [d];
                     break;
 
                 case "rPr":
@@ -676,8 +677,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseTable(node: Element): IDomTable {
-        var result: IDomTable = { type: DomType.Table, children: [] };
+    parseTable(node: Element): Table {
+        var result = new Table();
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -690,7 +691,7 @@ export class DocumentParser {
                     break;
 
                 case "tblPr":
-                    this.parseTableProperties(c, result);
+                    this.parseTableProperties(c, result as OpenXmlElement);
                     break;
             }
         });
@@ -698,13 +699,13 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableColumns(node: Element): IDomTableColumn[] {
+    parseTableColumns(node: Element): TableColumn[] {
         var result = [];
 
         xml.foreach(node, n => {
             switch (n.localName) {
                 case "gridCol":
-                    result.push({ width: xml.sizeAttr(n, "w") });
+                    result.push({ width: lengthAttr(n, ns.wordml, "w") });
                     break;
             }
         });
@@ -764,8 +765,8 @@ export class DocumentParser {
         table.style["margin-top"] = values.addSize(table.style["margin-top"], topFromText);
     }
 
-    parseTableRow(node: Element): IDomTableRow {
-        var result: IDomTableRow = { type: DomType.Row, children: [] };
+    parseTableRow(node: Element): Row {
+        var result = new Row();
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -782,7 +783,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableRowProperties(elem: Element, row: IDomTableRow) {
+    parseTableRowProperties(elem: Element, row: Row) {
         row.style = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "cnfStyle":
@@ -797,8 +798,8 @@ export class DocumentParser {
         });
     }
 
-    parseTableCell(node: Element): OpenXmlElement {
-        var result: IDomTableCell = { type: DomType.Cell, children: [] };
+    parseTableCell(node: Element): Cell {
+        var result = new Cell();
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -819,11 +820,11 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableCellProperties(elem: Element, cell: IDomTableCell) {
+    parseTableCellProperties(elem: Element, cell: Cell) {
         cell.style = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "gridSpan":
-                    cell.span = xml.intAttr(c, "val", null);
+                    cell.props.gridSpan = xml.intAttr(c, "val", null);
                     break;
 
                 case "vMerge": //TODO
@@ -844,7 +845,6 @@ export class DocumentParser {
     parseDefaultProperties(elem: Element, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Element) => boolean = null): IDomStyleValues {
         style = style || {};
 
-        let spacing = null;
 
         xml.foreach(elem, c => {
             switch (c.localName) {

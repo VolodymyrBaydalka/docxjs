@@ -1,17 +1,7 @@
 export enum DomType {
     Document = "document",
-    Paragraph = "paragraph",
-    Run = "run",
-    Break = "break",
-    Table = "table",
-    Row = "row",
-    Cell = "cell",
-    Hyperlink = "hyperlink",
     Drawing = "drawing",
-    Image = "image",
-    Text = "text",
-    Tab = "tab",
-    Symbol = "symbol"
+    Image = "image"
 }
 
 export enum DomRelationshipType {
@@ -39,27 +29,8 @@ export interface OpenXmlElement {
     parent?: OpenXmlElement;
 }
 
-export interface IDomHyperlink extends OpenXmlElement {
-    href?: string;
-}
-
-
-export interface BreakElement extends OpenXmlElement{
-    break: "page" | "lastRenderedPageBreak" | "textWrapping";
-}
-
-export interface TextElement extends OpenXmlElement{
-    text: string;
-}
-
-export interface SymbolElement extends OpenXmlElement {
-    font: string;
-    char: string;
-}
-
 export interface IDomRun extends OpenXmlElement {
     id?: string;
-    break?: string;
     wrapper?: string;
     href?: string;
     fldCharType?: "begin" | "end" | "separate" | string;
@@ -67,23 +38,11 @@ export interface IDomRun extends OpenXmlElement {
 }
 
 export interface IDomTable extends OpenXmlElement {
-    columns?: IDomTableColumn[];
     cellStyle?: IDomStyleValues;
-}
-
-export interface IDomTableRow extends OpenXmlElement {
-}
-
-export interface IDomTableCell extends OpenXmlElement {
-    span?: number;
 }
 
 export interface IDomImage extends OpenXmlElement {
     src: string;
-}
-
-export interface IDomTableColumn {
-    width?: string;
 }
 
 export interface IDomStyle {

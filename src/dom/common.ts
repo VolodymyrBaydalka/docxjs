@@ -44,3 +44,7 @@ export interface CommonProperties {
     fontSize: Length;
     color: string;
 }
+
+export function renderLength(l: Length): string {
+    return !l ? null : `${l.value}${l.type}`;
+}

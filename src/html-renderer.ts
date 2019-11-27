@@ -1,13 +1,17 @@
 import { Document } from './document';
 import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
+    IDomImage, OpenXmlElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement, SectionProperties } from './dom/document';
 import { ParagraphElement} from './dom/paragraph';
 import { appendClass } from './utils';
-import { updateTabStop } from './javascript';
-import { LengthUsage } from './parser/common';
+import { ElementBase, ContainerBase } from './elements/element-base';
+import { Break } from './elements/break';
+import { Paragraph } from './elements/paragraph';
+import { Run } from './elements/run';
+import { Table } from './elements/table';
+import { RenderContext } from './dom/render-context';
 
 export class HtmlRenderer {
 
@@ -16,12 +20,18 @@ export class HtmlRenderer {
     document: Document;
     options: Options;
 
+    private _renderContext: RenderContext = new RenderContext();
+
     constructor(public htmlDocument: HTMLDocument) {
+        this._renderContext.html = htmlDocument;
     }
 
     render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+
+        this._renderContext.options = options;
+        this._renderContext.className = this.className;
 
         styleContainer = styleContainer || bodyContainer;
 
@@ -109,7 +119,7 @@ export class HtmlRenderer {
                 e.className = this.processClassName(e.className);
                 e.parent = element;
 
-                if (e.type == DomType.Table) {
+                if (e instanceof Table) {
                     this.processTable(e);
                 }
                 else {
@@ -187,7 +197,7 @@ export class HtmlRenderer {
 
         for(let section of this.splitBySection(document.children)) {
             var sectionElement = this.createSection(this.className, section.sectProps || document.props);
-            this.renderElements(section.elements, document, sectionElement);
+            this.renderElements(section.elements, sectionElement);
             result.push(sectionElement);
         }
 
@@ -198,19 +208,31 @@ export class HtmlRenderer {
         var current = { sectProps: null, elements: [] };
         var result = [current];
 
+        function splitElement(elem: ContainerBase, index: number, revert: boolean) {
+            var children = elem.children;
+            var newElem = Object.create(Object.getPrototypeOf(elem));
+            Object.assign(newElem, elem);
+
+            let [f,s] = revert ? [newElem, elem] : [elem, newElem];
+
+            f.children = children.slice(pBreakIndex);
+            s.children = children.slice(0, rBreakIndex)
+
+            return newElem;
+        }
+
         for(let elem of elements) {
             current.elements.push(elem);
 
-            if(elem.type == DomType.Paragraph)
+            if(elem instanceof Paragraph)
             {
-                const p = elem as ParagraphElement;
-                var sectProps = p.props.sectionProps;
+                var sectProps = elem.props.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
                 
-                if(this.options.breakPages && p.children) {
-                    pBreakIndex = p.children.findIndex(r => {
-                        rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
+                if(this.options.breakPages && elem.children) {
+                    pBreakIndex = elem.children.findIndex((r: Run) => {
+                        rBreakIndex = r.children?.findIndex(t => (t instanceof Break) && t.break == "page") ?? -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -222,20 +244,14 @@ export class HtmlRenderer {
                 }
 
                 if(pBreakIndex != -1) {
-                    let breakRun = p.children[pBreakIndex];
+                    let breakRun = elem.children[pBreakIndex] as Run;
                     let splitRun = rBreakIndex < breakRun.children.length - 1;
 
-                    if(pBreakIndex < p.children.length - 1 || splitRun) {
-                        var children = elem.children;
-                        var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
-                        elem.children = children.slice(0, pBreakIndex);
-                        current.elements.push(newParagraph);
+                    if(pBreakIndex < elem.children.length - 1 || splitRun) {
+                        current.elements.push(splitElement(elem, pBreakIndex, false));
 
                         if(splitRun) {
-                            let runChildren = breakRun.children;
-                            let newRun =  { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
-                            elem.children.push(newRun);
-                            breakRun.children = runChildren.slice(rBreakIndex);
+                            elem.children.push(splitElement(breakRun, rBreakIndex, true));
                         }
                     }
                 }
@@ -372,54 +388,37 @@ export class HtmlRenderer {
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): Node {
-        switch (elem.type) {
-            case DomType.Paragraph:
-                return this.renderParagraph(<ParagraphElement>elem);
+    renderElement(elem: OpenXmlElement): Node {
 
-            case DomType.Run:
-                return this.renderRun(<IDomRun>elem);
+        if (elem instanceof ElementBase)
+            return elem.render(this._renderContext);
 
-            case DomType.Table:
-                return this.renderTable(elem);
+        // switch (elem.type) {
+        //     case DomType.Paragraph:
+        //         return this.renderParagraph(<ParagraphElement>elem);
 
-            case DomType.Row:
-                return this.renderTableRow(elem);
+        //     case DomType.Run:
+        //         return this.renderRun(<IDomRun>elem);
 
-            case DomType.Cell:
-                return this.renderTableCell(elem);
+        //     case DomType.Drawing:
+        //         return this.renderDrawing(<IDomImage>elem);
 
-            case DomType.Hyperlink:
-                return this.renderHyperlink(elem);
-
-            case DomType.Drawing:
-                return this.renderDrawing(<IDomImage>elem);
-
-            case DomType.Image:
-                return this.renderImage(<IDomImage>elem);
-            
-            case DomType.Text:
-                return this.renderText(<TextElement>elem);
-
-            case DomType.Tab:
-                return this.renderTab(elem);
-            
-            case DomType.Symbol:
-                return this.renderSymbol(<SymbolElement>elem);
-        }
+        //     case DomType.Image:
+        //         return this.renderImage(<IDomImage>elem);
+        // }
 
         return null;
     }
 
     renderChildren(elem: OpenXmlElement, into?: HTMLElement): Node[] {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     }
 
-    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): Node[] {
+    renderElements(elems: OpenXmlElement[], into?: HTMLElement): Node[] {
         if(elems == null)
             return null;
 
-        var result = elems.map(e => this.renderElement(e, parent)).filter(e => e != null);
+        var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
 
         if(into)
             for(let c of result)
@@ -458,18 +457,6 @@ export class HtmlRenderer {
         }
     }
 
-    renderHyperlink(elem: IDomHyperlink) {
-        var result = this.htmlDocument.createElement("a");
-
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        if (elem.href)
-            result.href = elem.href
-
-        return result;
-    }
-
     renderDrawing(elem: IDomImage) {
         var result = this.htmlDocument.createElement("div");
 
@@ -497,45 +484,11 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderText(elem: TextElement) {
-        return this.htmlDocument.createTextNode(elem.text);
-    }
-
-    renderSymbol(elem: SymbolElement) {
-        var span = this.htmlDocument.createElement("span");
-        span.style.fontFamily = elem.font;
-        span.innerHTML = `&#x${elem.char};`
-        return span;
-    }
-
-    renderTab(elem: OpenXmlElement) {
-        var tabSpan = this.htmlDocument.createElement("span");
-     
-        tabSpan.innerHTML = "&emsp;";//"&nbsp;";
-
-        if(this.options.experimental) {
-            setTimeout(() => {
-                var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
-                paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
-                tabSpan.style.display = "inline-block";
-                updateTabStop(tabSpan, paragraph.props.tabs);
-            }, 0);
-        }
-
-        return tabSpan;
-    }
-
     renderRun(elem: IDomRun) {
-        if (elem.break)
-            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
-        
         if (elem.fldCharType || elem.instrText)
             return null;
 
         var result = this.htmlDocument.createElement("span");
-
-        if(elem.id)
-            result.id = elem.id;
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -554,56 +507,6 @@ export class HtmlRenderer {
             wrapper.appendChild(result);
             return wrapper;
         }
-
-        return result;
-    }
-
-    renderTable(elem: IDomTable) {
-        let result = this.htmlDocument.createElement("table");
-
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        if (elem.columns)
-            result.appendChild(this.renderTableColumns(elem.columns));
-
-        return result;
-    }
-
-    renderTableColumns(columns: IDomTableColumn[]) {
-        let result = this.htmlDocument.createElement("colGroup");
-
-        for (let col of columns) {
-            let colElem = this.htmlDocument.createElement("col");
-
-            if (col.width)
-                colElem.style.width = `${col.width}px`;
-
-            result.appendChild(colElem);
-        }
-
-        return result;
-    }
-
-    renderTableRow(elem: OpenXmlElement) {
-        let result = this.htmlDocument.createElement("tr");
-
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        return result;
-    }
-
-    renderTableCell(elem: IDomTableCell) {
-        let result = this.htmlDocument.createElement("td");
-
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        if (elem.span) result.colSpan = elem.span;
 
         return result;
     }
@@ -689,13 +592,4 @@ function createStyleElement(cssText: string) {
 
 function appendComment(elem: HTMLElement, comment: string) {
     elem.appendChild(document.createComment(comment));
-}
-
-function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomType): T {
-    var parent = elem.parent;
-
-    while (parent != null && parent.type != type)
-        parent = parent.parent;
-    
-    return <T>parent;
 }
