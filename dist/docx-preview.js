@@ -520,6 +520,7 @@ var DocumentParser = (function () {
                     result.children.push(text);
                     break;
                 case "fldChar":
+                    result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
                 case "br":
                     var br = new break_1.Break();
@@ -541,8 +542,12 @@ var DocumentParser = (function () {
                     result.children.push(new tab_1.Tab());
                     break;
                 case "instrText":
+                    result.instrText = c.textContent;
                     break;
                 case "drawing":
+                    var d = _this.parseDrawing(c);
+                    if (d)
+                        result.children = [d];
                     break;
                 case "rPr":
                     _this.parseRunProperties(c, result);
@@ -1667,7 +1672,9 @@ var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/e
 var Drawing = (function (_super) {
     __extends(Drawing, _super);
     function Drawing() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.style = {};
+        return _this;
     }
     Drawing.prototype.render = function (ctx) {
         var elem = this.renderContainer(ctx, "div");
@@ -1820,7 +1827,9 @@ var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/e
 var Image = (function (_super) {
     __extends(Image, _super);
     function Image() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.style = {};
+        return _this;
     }
     Image.prototype.render = function (ctx) {
         var result = ctx.html.createElement("img");
@@ -2233,6 +2242,7 @@ var HtmlRenderer = (function () {
         this.options = options;
         this._renderContext.options = options;
         this._renderContext.className = this.className;
+        this._renderContext.document = document;
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);

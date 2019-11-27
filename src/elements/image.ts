@@ -4,7 +4,7 @@ import { RenderContext } from "../dom/render-context";
 export class Image extends ElementBase {
 
     src: string;
-    style: any;
+    style: any = {};
 
     render(ctx: RenderContext): Node {
         let result = ctx.html.createElement("img");

@@ -2,6 +2,9 @@ import { ContainerBase } from "./element-base";
 import { RenderContext } from "../dom/render-context";
 
 export class Drawing extends ContainerBase {
+
+    style = {};
+
     render(ctx: RenderContext): Node {
         var elem = this.renderContainer(ctx, "div");
 

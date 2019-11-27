@@ -29,6 +29,7 @@ export class HtmlRenderer {
 
         this._renderContext.options = options;
         this._renderContext.className = this.className;
+        this._renderContext.document = document;
 
         styleContainer = styleContainer || bodyContainer;
 

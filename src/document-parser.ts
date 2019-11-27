@@ -472,7 +472,7 @@ export class DocumentParser {
                     break;
                 
                 case "fldChar":
-                    //result.fldCharType = xml.stringAttr(c, "fldCharType");
+                    result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
 
                 case "br":
@@ -499,13 +499,14 @@ export class DocumentParser {
                     break;
 
                 case "instrText":
-                    //result.instrText = c.textContent;
+                    result.instrText = c.textContent;
                     break;
 
                 case "drawing":
+                    let d = this.parseDrawing(c);
 
-                    // if (d)
-                    //     result.children = [d];
+                    if (d)
+                         result.children = [d];
                     break;
 
                 case "rPr":
