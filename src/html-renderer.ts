@@ -1,12 +1,9 @@
 import { Document } from './document';
-import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
-    IDomImage, OpenXmlElement } from './dom/dom';
-import { Length, CommonProperties } from './dom/common';
+import { IDomStyle, IDomTable, IDomStyleValues, IDomNumbering, OpenXmlElement } from './dom/dom';
+import { Length } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement, SectionProperties } from './dom/document';
-import { ParagraphElement} from './dom/paragraph';
-import { appendClass } from './utils';
-import { ElementBase, ContainerBase } from './elements/element-base';
+import { ContainerBase } from './elements/element-base';
 import { Break } from './elements/break';
 import { Paragraph } from './elements/paragraph';
 import { Run } from './elements/run';
@@ -208,7 +205,7 @@ export class HtmlRenderer {
         var current = { sectProps: null, elements: [] };
         var result = [current];
 
-        function splitElement(elem: ContainerBase, index: number, revert: boolean) {
+        function splitElement(elem: ContainerBase, revert: boolean) {
             var children = elem.children;
             var newElem = Object.create(Object.getPrototypeOf(elem));
             Object.assign(newElem, elem);
@@ -248,10 +245,10 @@ export class HtmlRenderer {
                     let splitRun = rBreakIndex < breakRun.children.length - 1;
 
                     if(pBreakIndex < elem.children.length - 1 || splitRun) {
-                        current.elements.push(splitElement(elem, pBreakIndex, false));
+                        current.elements.push(splitElement(elem, false));
 
                         if(splitRun) {
-                            elem.children.push(splitElement(breakRun, rBreakIndex, true));
+                            elem.children.push(splitElement(breakRun, true));
                         }
                     }
                 }
@@ -388,143 +385,17 @@ export class HtmlRenderer {
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: OpenXmlElement): Node {
-
-        if (elem instanceof ElementBase)
-            return elem.render(this._renderContext);
-
-        // switch (elem.type) {
-        //     case DomType.Paragraph:
-        //         return this.renderParagraph(<ParagraphElement>elem);
-
-        //     case DomType.Run:
-        //         return this.renderRun(<IDomRun>elem);
-
-        //     case DomType.Drawing:
-        //         return this.renderDrawing(<IDomImage>elem);
-
-        //     case DomType.Image:
-        //         return this.renderImage(<IDomImage>elem);
-        // }
-
-        return null;
-    }
-
-    renderChildren(elem: OpenXmlElement, into?: HTMLElement): Node[] {
-        return this.renderElements(elem.children, into);
-    }
-
     renderElements(elems: OpenXmlElement[], into?: HTMLElement): Node[] {
         if(elems == null)
             return null;
 
-        var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
+        var result = elems.map((e: any) => e.render(this._renderContext)).filter(e => e != null);
 
         if(into)
             for(let c of result)
                 into.appendChild(c);
 
         return result;
-    }
-
-    renderParagraph(elem: ParagraphElement) {
-        var result = this.htmlDocument.createElement("p");
-
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        this.renderCommonProeprties(result, elem.props);
-
-        if (elem.props.numbering) {
-            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
-            result.className = appendClass(result.className, numberingClass);
-        }
-
-        return result;
-    }
-
-    renderCommonProeprties(elem: HTMLElement, props: CommonProperties){
-        if(props == null)
-            return;
-
-        if(props.color) {
-            elem.style.color = props.color;
-        }
-
-        if (props.fontSize) {
-            elem.style.fontSize = this.renderLength(props.fontSize);
-        }
-    }
-
-    renderDrawing(elem: IDomImage) {
-        var result = this.htmlDocument.createElement("div");
-
-        result.style.display = "inline-block";
-        result.style.position = "relative";
-        result.style.textIndent = "0px";
-
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        return result;
-    }
-
-    renderImage(elem: IDomImage) {
-        let result = this.htmlDocument.createElement("img");
-
-        this.renderStyleValues(elem.style, result);
-
-        if (this.document) {
-            this.document.loadDocumentImage(elem.src).then(x => {
-                result.src = x;
-            });
-        }
-
-        return result;
-    }
-
-    renderRun(elem: IDomRun) {
-        if (elem.fldCharType || elem.instrText)
-            return null;
-
-        var result = this.htmlDocument.createElement("span");
-
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-
-        if (elem.href) {
-            var link = this.htmlDocument.createElement("a");
-
-            link.href = elem.href;
-            link.appendChild(result);
-
-            return link;
-        }
-        else if (elem.wrapper) {
-            var wrapper = this.htmlDocument.createElement(elem.wrapper);
-            wrapper.appendChild(result);
-            return wrapper;
-        }
-
-        return result;
-    }
-
-    renderStyleValues(style: IDomStyleValues, ouput: HTMLElement) {
-        if (style == null)
-            return;
-
-        for (let key in style) {
-            if (style.hasOwnProperty(key)) {
-                ouput.style[key] = style[key];
-            }
-        }
-    }
-
-    renderClass(input: OpenXmlElement, ouput: HTMLElement) {
-        if (input.className)
-            ouput.className = input.className;
     }
 
     numberingClass(id: string, lvl: number) {

@@ -1,6 +1,5 @@
 import {
-    IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
-    IDomImage, OpenXmlElement, IDomRelationship, IDomSubStyle, NumberingPicBullet, DomRelationshipType
+    IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, OpenXmlElement, IDomRelationship, IDomSubStyle, NumberingPicBullet, DomRelationshipType
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
@@ -21,6 +20,9 @@ import { Cell } from './elements/cell';
 import { Table, TableColumn } from './elements/table';
 import { Row } from './elements/row';
 import { Paragraph } from './elements/paragraph';
+import { Image } from './elements/image';
+import { Drawing } from './elements/drawing';
+import { ElementBase } from './elements/element-base';
 
 export var autos = {
     shd: "white",
@@ -515,7 +517,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseRunProperties(elem: Element, run: IDomRun) {
+    parseRunProperties(elem: Element, run: Run) {
         this.parseDefaultProperties(elem, run.style = {}, null, c => {
             switch (c.localName) {
                 case "rStyle":
@@ -523,10 +525,7 @@ export class DocumentParser {
                     break;
 
                 case "vertAlign":
-                    switch (xml.stringAttr(c, "val")) {
-                        case "subscript": run.wrapper = "sub"; break;
-                        case "superscript": run.wrapper = "sup"; break;
-                    }
+                    run.props.verticalAlignment = xml.stringAttr(c, "val"); 
                     break;
 
                 default:
@@ -537,7 +536,7 @@ export class DocumentParser {
         });
     }
 
-    parseDrawing(node: Element): OpenXmlElement {
+    parseDrawing(node: Element): Drawing {
         for (var n of xml.elements(node)) {
             switch (n.localName) {
                 case "inline":
@@ -547,8 +546,8 @@ export class DocumentParser {
         }
     }
 
-    parseDrawingWrapper(node: Element): OpenXmlElement {
-        var result = <OpenXmlElement>{ type: DomType.Drawing, children: [], style: {} };
+    parseDrawingWrapper(node: Element): Drawing {
+        var result = new Drawing();
         var isAnchor = node.localName == "anchor";
 
         //TODO
@@ -635,7 +634,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseGraphic(elem: Element): OpenXmlElement {
+    parseGraphic(elem: Element): ElementBase {
         var graphicData = xml.byTagName(elem, "graphicData");
 
         for (let n of xml.elements(graphicData)) {
@@ -648,8 +647,8 @@ export class DocumentParser {
         return null;
     }
 
-    parsePicture(elem: Element): IDomImage {
-        var result = <IDomImage>{ type: DomType.Image, src: "", style: {} };
+    parsePicture(elem: Element): Image {
+        var result = new Image();
         var blipFill = xml.byTagName(elem, "blipFill");
         var blip = xml.byTagName(blipFill, "blip");
 

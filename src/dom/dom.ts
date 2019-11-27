@@ -1,7 +1,5 @@
 export enum DomType {
     Document = "document",
-    Drawing = "drawing",
-    Image = "image"
 }
 
 export enum DomRelationshipType {
@@ -29,20 +27,8 @@ export interface OpenXmlElement {
     parent?: OpenXmlElement;
 }
 
-export interface IDomRun extends OpenXmlElement {
-    id?: string;
-    wrapper?: string;
-    href?: string;
-    fldCharType?: "begin" | "end" | "separate" | string;
-    instrText?: string;
-}
-
 export interface IDomTable extends OpenXmlElement {
     cellStyle?: IDomStyleValues;
-}
-
-export interface IDomImage extends OpenXmlElement {
-    src: string;
 }
 
 export interface IDomStyle {

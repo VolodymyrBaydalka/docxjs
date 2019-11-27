@@ -123,6 +123,8 @@ var cell_1 = __webpack_require__(/*! ./elements/cell */ "./src/elements/cell.ts"
 var table_1 = __webpack_require__(/*! ./elements/table */ "./src/elements/table.ts");
 var row_1 = __webpack_require__(/*! ./elements/row */ "./src/elements/row.ts");
 var paragraph_2 = __webpack_require__(/*! ./elements/paragraph */ "./src/elements/paragraph.ts");
+var image_1 = __webpack_require__(/*! ./elements/image */ "./src/elements/image.ts");
+var drawing_1 = __webpack_require__(/*! ./elements/drawing */ "./src/elements/drawing.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -556,14 +558,7 @@ var DocumentParser = (function () {
                     run.className = xml.className(c, "val");
                     break;
                 case "vertAlign":
-                    switch (xml.stringAttr(c, "val")) {
-                        case "subscript":
-                            run.wrapper = "sub";
-                            break;
-                        case "superscript":
-                            run.wrapper = "sup";
-                            break;
-                    }
+                    run.props.verticalAlignment = xml.stringAttr(c, "val");
                     break;
                 default:
                     return false;
@@ -582,7 +577,7 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseDrawingWrapper = function (node) {
-        var result = { type: dom_1.DomType.Drawing, children: [], style: {} };
+        var result = new drawing_1.Drawing();
         var isAnchor = node.localName == "anchor";
         var wrapType = null;
         var simplePos = xml.boolAttr(node, "simplePos");
@@ -660,7 +655,7 @@ var DocumentParser = (function () {
         return null;
     };
     DocumentParser.prototype.parsePicture = function (elem) {
-        var result = { type: dom_1.DomType.Image, src: "", style: {} };
+        var result = new image_1.Image();
         var blipFill = xml.byTagName(elem, "blipFill");
         var blip = xml.byTagName(blipFill, "blip");
         result.src = xml.stringAttr(blip, "embed");
@@ -1482,8 +1477,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var DomType;
 (function (DomType) {
     DomType["Document"] = "document";
-    DomType["Drawing"] = "drawing";
-    DomType["Image"] = "image";
 })(DomType = exports.DomType || (exports.DomType = {}));
 var DomRelationshipType;
 (function (DomRelationshipType) {
@@ -1647,6 +1640,49 @@ exports.Cell = Cell;
 
 /***/ }),
 
+/***/ "./src/elements/drawing.ts":
+/*!*********************************!*\
+  !*** ./src/elements/drawing.ts ***!
+  \*********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var Drawing = (function (_super) {
+    __extends(Drawing, _super);
+    function Drawing() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    Drawing.prototype.render = function (ctx) {
+        var elem = this.renderContainer(ctx, "div");
+        elem.style.display = "inline-block";
+        elem.style.position = "relative";
+        elem.style.textIndent = "0px";
+        return elem;
+    };
+    return Drawing;
+}(element_base_1.ContainerBase));
+exports.Drawing = Drawing;
+
+
+/***/ }),
+
 /***/ "./src/elements/element-base.ts":
 /*!**************************************!*\
   !*** ./src/elements/element-base.ts ***!
@@ -1670,6 +1706,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var ElementBase = (function () {
     function ElementBase() {
     }
@@ -1690,7 +1727,7 @@ var ContainerBase = (function (_super) {
         var elem = ctx.html.createElement(tagName);
         renderStyleValues(this.style, elem);
         if (this.className)
-            elem.className += " " + this.className;
+            elem.className = utils_1.appendClass(elem.className, this.className);
         for (var _i = 0, _a = this.children.map(function (c) { return c.render(ctx); }).filter(function (x) { return x != null; }); _i < _a.length; _i++) {
             var n = _a[_i];
             elem.appendChild(n);
@@ -1709,6 +1746,7 @@ function renderStyleValues(style, ouput) {
         }
     }
 }
+exports.renderStyleValues = renderStyleValues;
 
 
 /***/ }),
@@ -1751,6 +1789,52 @@ var Hyperlink = (function (_super) {
     return Hyperlink;
 }(element_base_1.ContainerBase));
 exports.Hyperlink = Hyperlink;
+
+
+/***/ }),
+
+/***/ "./src/elements/image.ts":
+/*!*******************************!*\
+  !*** ./src/elements/image.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var Image = (function (_super) {
+    __extends(Image, _super);
+    function Image() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    Image.prototype.render = function (ctx) {
+        var result = ctx.html.createElement("img");
+        element_base_1.renderStyleValues(this.style, result);
+        if (ctx.document) {
+            ctx.document.loadDocumentImage(this.src).then(function (x) {
+                result.src = x;
+            });
+        }
+        return result;
+    };
+    return Image;
+}(element_base_1.ElementBase));
+exports.Image = Image;
 
 
 /***/ }),
@@ -1868,10 +1952,33 @@ var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/e
 var Run = (function (_super) {
     __extends(Run, _super);
     function Run() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.props = {};
+        return _this;
     }
     Run.prototype.render = function (ctx) {
-        return this.renderContainer(ctx, "span");
+        if (this.fldCharType || this.instrText)
+            return null;
+        var elem = this.renderContainer(ctx, "span");
+        var wrapper = null;
+        if (this.href) {
+            wrapper = ctx.html.createElement("a");
+            wrapper.href = this.href;
+        }
+        else {
+            switch (this.props.verticalAlignment) {
+                case "subscript":
+                    wrapper = ctx.html.createElement("sub");
+                    break;
+                case "superscript":
+                    wrapper = ctx.html.createElement("sup");
+                    break;
+            }
+        }
+        if (wrapper == null)
+            return elem;
+        wrapper.appendChild(elem);
+        return wrapper;
     };
     return Run;
 }(element_base_1.ContainerBase));
@@ -2108,8 +2215,6 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
-var element_base_1 = __webpack_require__(/*! ./elements/element-base */ "./src/elements/element-base.ts");
 var break_1 = __webpack_require__(/*! ./elements/break */ "./src/elements/break.ts");
 var paragraph_1 = __webpack_require__(/*! ./elements/paragraph */ "./src/elements/paragraph.ts");
 var table_1 = __webpack_require__(/*! ./elements/table */ "./src/elements/table.ts");
@@ -2283,7 +2388,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.splitBySection = function (elements) {
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        function splitElement(elem, index, revert) {
+        function splitElement(elem, revert) {
             var children = elem.children;
             var newElem = Object.create(Object.getPrototypeOf(elem));
             Object.assign(newElem, elem);
@@ -2315,9 +2420,9 @@ var HtmlRenderer = (function () {
                     var breakRun = elem.children[pBreakIndex];
                     var splitRun = rBreakIndex < breakRun.children.length - 1;
                     if (pBreakIndex < elem.children.length - 1 || splitRun) {
-                        current.elements.push(splitElement(elem, pBreakIndex, false));
+                        current.elements.push(splitElement(elem, false));
                         if (splitRun) {
-                            elem.children.push(splitElement(breakRun, rBreakIndex, true));
+                            elem.children.push(splitElement(breakRun, true));
                         }
                     }
                 }
@@ -2418,99 +2523,17 @@ var HtmlRenderer = (function () {
         }
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderElement = function (elem) {
-        if (elem instanceof element_base_1.ElementBase)
-            return elem.render(this._renderContext);
-        return null;
-    };
-    HtmlRenderer.prototype.renderChildren = function (elem, into) {
-        return this.renderElements(elem.children, into);
-    };
     HtmlRenderer.prototype.renderElements = function (elems, into) {
         var _this = this;
         if (elems == null)
             return null;
-        var result = elems.map(function (e) { return _this.renderElement(e); }).filter(function (e) { return e != null; });
+        var result = elems.map(function (e) { return e.render(_this._renderContext); }).filter(function (e) { return e != null; });
         if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var c = result_1[_i];
                 into.appendChild(c);
             }
         return result;
-    };
-    HtmlRenderer.prototype.renderParagraph = function (elem) {
-        var result = this.htmlDocument.createElement("p");
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-        this.renderCommonProeprties(result, elem.props);
-        if (elem.props.numbering) {
-            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
-            result.className = utils_1.appendClass(result.className, numberingClass);
-        }
-        return result;
-    };
-    HtmlRenderer.prototype.renderCommonProeprties = function (elem, props) {
-        if (props == null)
-            return;
-        if (props.color) {
-            elem.style.color = props.color;
-        }
-        if (props.fontSize) {
-            elem.style.fontSize = this.renderLength(props.fontSize);
-        }
-    };
-    HtmlRenderer.prototype.renderDrawing = function (elem) {
-        var result = this.htmlDocument.createElement("div");
-        result.style.display = "inline-block";
-        result.style.position = "relative";
-        result.style.textIndent = "0px";
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-        return result;
-    };
-    HtmlRenderer.prototype.renderImage = function (elem) {
-        var result = this.htmlDocument.createElement("img");
-        this.renderStyleValues(elem.style, result);
-        if (this.document) {
-            this.document.loadDocumentImage(elem.src).then(function (x) {
-                result.src = x;
-            });
-        }
-        return result;
-    };
-    HtmlRenderer.prototype.renderRun = function (elem) {
-        if (elem.fldCharType || elem.instrText)
-            return null;
-        var result = this.htmlDocument.createElement("span");
-        this.renderClass(elem, result);
-        this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
-        if (elem.href) {
-            var link = this.htmlDocument.createElement("a");
-            link.href = elem.href;
-            link.appendChild(result);
-            return link;
-        }
-        else if (elem.wrapper) {
-            var wrapper = this.htmlDocument.createElement(elem.wrapper);
-            wrapper.appendChild(result);
-            return wrapper;
-        }
-        return result;
-    };
-    HtmlRenderer.prototype.renderStyleValues = function (style, ouput) {
-        if (style == null)
-            return;
-        for (var key in style) {
-            if (style.hasOwnProperty(key)) {
-                ouput.style[key] = style[key];
-            }
-        }
-    };
-    HtmlRenderer.prototype.renderClass = function (input, ouput) {
-        if (input.className)
-            ouput.className = input.className;
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
         return this.className + "-num-" + id + "-" + lvl;
