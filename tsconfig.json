@@ -7,6 +7,7 @@
     "pretty": true,
     "removeComments": true,
     "preserveConstEnums": true,
+    "experimentalDecorators": true,
     "sourceMap": true,
     "target": "es5",
     "outDir": "dist",

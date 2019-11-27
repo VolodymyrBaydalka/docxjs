@@ -1,7 +1,10 @@
 import { ElementBase } from "./element-base";
 import { RenderContext } from "../dom/render-context";
+import { fromText, element } from "../parser/xml-serialize";
 
+@element("t")
 export class Text extends ElementBase {
+    @fromText()
     text: string;
 
     render(context: RenderContext) {

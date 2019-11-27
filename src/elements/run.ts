@@ -1,6 +1,8 @@
 import { ContainerBase } from "./element-base";
 import { RenderContext } from "../dom/render-context";
+import { element } from "../parser/xml-serialize";
 
+@element("r")
 export class Run extends ContainerBase {
     props: RunProeprties = {} as RunProeprties;
 

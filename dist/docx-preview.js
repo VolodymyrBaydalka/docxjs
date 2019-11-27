@@ -125,6 +125,7 @@ var row_1 = __webpack_require__(/*! ./elements/row */ "./src/elements/row.ts");
 var paragraph_2 = __webpack_require__(/*! ./elements/paragraph */ "./src/elements/paragraph.ts");
 var image_1 = __webpack_require__(/*! ./elements/image */ "./src/elements/image.ts");
 var drawing_1 = __webpack_require__(/*! ./elements/drawing */ "./src/elements/drawing.ts");
+var xml_serialize_1 = __webpack_require__(/*! ./parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -453,7 +454,7 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseHyperlink(c));
                     break;
                 case "bookmarkStart":
-                    result.children.push(_this.parseBookmark(c));
+                    result.children.push(xml_serialize_1.deserialize(node, new bookmark_1.Bookmark()));
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
@@ -491,15 +492,9 @@ var DocumentParser = (function () {
         if (dropCap == "drop")
             paragraph.style["float"] = "left";
     };
-    DocumentParser.prototype.parseBookmark = function (node) {
-        var result = new bookmark_1.Bookmark();
-        result.name = xml.stringAttr(node, "name");
-        return result;
-    };
     DocumentParser.prototype.parseHyperlink = function (node) {
         var _this = this;
-        var result = new hyperlink_1.Hyperlink();
-        result.anchor = xml.stringAttr(node, "anchor");
+        var result = xml_serialize_1.deserialize(node, new hyperlink_1.Hyperlink());
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -515,17 +510,13 @@ var DocumentParser = (function () {
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "t":
-                    var text = new text_1.Text();
-                    text.text = c.textContent;
-                    result.children.push(text);
+                    result.children.push(xml_serialize_1.deserialize(c, new text_1.Text()));
                     break;
                 case "fldChar":
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
                 case "br":
-                    var br = new break_1.Break();
-                    br.break = xml.stringAttr(c, "type") || "textWrapping";
-                    result.children.push(br);
+                    result.children.push(xml_serialize_1.deserialize(c, new break_1.Break()));
                     break;
                 case "lastRenderedPageBreak":
                     var br = new break_1.Break();
@@ -533,10 +524,7 @@ var DocumentParser = (function () {
                     result.children.push(br);
                     break;
                 case "sym":
-                    var symbol = new symbol_1.Symbol();
-                    symbol.font = xml.stringAttr(c, "font");
-                    symbol.char = xml.stringAttr(c, "char");
-                    result.children.push(symbol);
+                    result.children.push(xml_serialize_1.deserialize(c, new symbol_1.Symbol()));
                     break;
                 case "tab":
                     result.children.push(new tab_1.Tab());
@@ -1543,8 +1531,15 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Bookmark = (function (_super) {
     __extends(Bookmark, _super);
     function Bookmark() {
@@ -1555,6 +1550,9 @@ var Bookmark = (function (_super) {
         elem.id = this.name;
         return elem;
     };
+    __decorate([
+        xml_serialize_1.fromAttribute("name")
+    ], Bookmark.prototype, "name", void 0);
     return Bookmark;
 }(element_base_1.ElementBase));
 exports.Bookmark = Bookmark;
@@ -1584,16 +1582,28 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Break = (function (_super) {
     __extends(Break, _super);
     function Break() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.break = "textWrapping";
+        return _this;
     }
     Break.prototype.render = function (ctx) {
         return this.break == "textWrapping" ? ctx.html.createElement("br") : null;
     };
+    __decorate([
+        xml_serialize_1.fromAttribute("type")
+    ], Break.prototype, "break", void 0);
     return Break;
 }(element_base_1.ElementBase));
 exports.Break = Break;
@@ -1780,8 +1790,15 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Hyperlink = (function (_super) {
     __extends(Hyperlink, _super);
     function Hyperlink() {
@@ -1793,6 +1810,9 @@ var Hyperlink = (function (_super) {
             a.href = "#" + this.anchor;
         return a;
     };
+    __decorate([
+        xml_serialize_1.fromAttribute("anchor")
+    ], Hyperlink.prototype, "anchor", void 0);
     return Hyperlink;
 }(element_base_1.ContainerBase));
 exports.Hyperlink = Hyperlink;
@@ -1870,9 +1890,16 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Paragraph = (function (_super) {
     __extends(Paragraph, _super);
     function Paragraph() {
@@ -1888,6 +1915,9 @@ var Paragraph = (function (_super) {
         }
         return elem;
     };
+    Paragraph = __decorate([
+        xml_serialize_1.element("p")
+    ], Paragraph);
     return Paragraph;
 }(element_base_1.ContainerBase));
 exports.Paragraph = Paragraph;
@@ -1956,8 +1986,15 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Run = (function (_super) {
     __extends(Run, _super);
     function Run() {
@@ -1989,6 +2026,9 @@ var Run = (function (_super) {
         wrapper.appendChild(elem);
         return wrapper;
     };
+    Run = __decorate([
+        xml_serialize_1.element("r")
+    ], Run);
     return Run;
 }(element_base_1.ContainerBase));
 exports.Run = Run;
@@ -2018,8 +2058,15 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Symbol = (function (_super) {
     __extends(Symbol, _super);
     function Symbol() {
@@ -2031,6 +2078,12 @@ var Symbol = (function (_super) {
         span.innerHTML = "&#x" + this.char + ";";
         return span;
     };
+    __decorate([
+        xml_serialize_1.fromAttribute("font")
+    ], Symbol.prototype, "font", void 0);
+    __decorate([
+        xml_serialize_1.fromAttribute("char")
+    ], Symbol.prototype, "char", void 0);
     return Symbol;
 }(element_base_1.ElementBase));
 exports.Symbol = Symbol;
@@ -2172,8 +2225,15 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_base_1 = __webpack_require__(/*! ./element-base */ "./src/elements/element-base.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var Text = (function (_super) {
     __extends(Text, _super);
     function Text() {
@@ -2182,6 +2242,12 @@ var Text = (function (_super) {
     Text.prototype.render = function (context) {
         return context.html.createTextNode(this.text);
     };
+    __decorate([
+        xml_serialize_1.fromText()
+    ], Text.prototype, "text", void 0);
+    Text = __decorate([
+        xml_serialize_1.element("t")
+    ], Text);
     return Text;
 }(element_base_1.ElementBase));
 exports.Text = Text;
@@ -2402,7 +2468,7 @@ var HtmlRenderer = (function () {
             var children = elem.children;
             var newElem = Object.create(Object.getPrototypeOf(elem));
             Object.assign(newElem, elem);
-            var _a = revert ? [newElem, elem] : [elem, newElem], f = _a[0], s = _a[1];
+            var _a = revert ? [elem, newElem] : [newElem, elem], f = _a[0], s = _a[1];
             f.children = children.slice(pBreakIndex);
             s.children = children.slice(0, rBreakIndex);
             return newElem;
@@ -2867,6 +2933,69 @@ function parseColumns(elem) {
             space: xml.lengthAttr(e, common_1.ns.wordml, "space")
         }); })
     };
+}
+
+
+/***/ }),
+
+/***/ "./src/parser/xml-serialize.ts":
+/*!*************************************!*\
+  !*** ./src/parser/xml-serialize.ts ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var schemaSymbol = Symbol("open-xml-schema");
+function element(name) {
+    return function (target) {
+        var schema = getPrototypeXmlSchema(target);
+        schema.elemName = name;
+    };
+}
+exports.element = element;
+function fromText(convert) {
+    if (convert === void 0) { convert = null; }
+    return function (target, prop) {
+        var schema = getPrototypeXmlSchema(target);
+        schema.text = { prop: prop, convert: convert };
+    };
+}
+exports.fromText = fromText;
+function fromAttribute(attrName, convert) {
+    if (convert === void 0) { convert = null; }
+    return function (target, prop) {
+        var schema = getPrototypeXmlSchema(target);
+        schema.attrs[attrName] = { prop: prop, convert: convert };
+    };
+}
+exports.fromAttribute = fromAttribute;
+function deserialize(n, output) {
+    var proto = Object.getPrototypeOf(output);
+    var schema = proto[schemaSymbol];
+    if (schema == null)
+        return output;
+    if (schema.text) {
+        var prop = schema.text;
+        output[prop.prop] = prop.convert ? prop.convert(n.textContent) : n.textContent;
+    }
+    for (var i = 0, l = n.attributes.length; i < l; i++) {
+        var attr = n.attributes.item(i);
+        var prop = schema.attrs[attr.localName];
+        if (prop == null)
+            continue;
+        output[prop.prop] = prop.convert ? prop.convert(attr.value) : attr.value;
+    }
+    return output;
+}
+exports.deserialize = deserialize;
+function getPrototypeXmlSchema(proto) {
+    return proto[schemaSymbol] || (proto[schemaSymbol] = {
+        text: null,
+        attrs: {}
+    });
 }
 
 

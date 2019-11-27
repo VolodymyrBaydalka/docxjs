@@ -23,6 +23,7 @@ import { Paragraph } from './elements/paragraph';
 import { Image } from './elements/image';
 import { Drawing } from './elements/drawing';
 import { ElementBase } from './elements/element-base';
+import { deserialize } from './parser/xml-serialize';
 
 export var autos = {
     shd: "white",
@@ -389,7 +390,7 @@ export class DocumentParser {
                     break;
 
                 case "bookmarkStart":
-                    result.children.push(this.parseBookmark(c));
+                    result.children.push(deserialize(node, new Bookmark()));
                     break;
 
                 case "pPr":
@@ -439,15 +440,8 @@ export class DocumentParser {
             paragraph.style["float"] = "left";
     }
 
-    parseBookmark(node: Element): Bookmark {
-        var result = new Bookmark();
-        result.name = xml.stringAttr(node, "name");
-        return result;
-    }
-
     parseHyperlink(node: Element): Hyperlink {
-        var result = new Hyperlink();
-        result.anchor = xml.stringAttr(node, "anchor");
+        var result = deserialize(node, new Hyperlink());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -466,9 +460,7 @@ export class DocumentParser {
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "t":
-                    let text = new Text();
-                    text.text = c.textContent;
-                    result.children.push(text);
+                    result.children.push(deserialize(c, new Text()));
                     break;
                 
                 case "fldChar":
@@ -476,9 +468,7 @@ export class DocumentParser {
                     break;
 
                 case "br":
-                    var br = new Break();
-                    br.break = xml.stringAttr(c, "type") || "textWrapping";
-                    result.children.push(br);
+                    result.children.push(deserialize(c, new Break()));
                     break;
 
                 case "lastRenderedPageBreak":
@@ -488,10 +478,7 @@ export class DocumentParser {
                     break;
                 
                 case "sym":
-                    let symbol = new Symbol();
-                    symbol.font = xml.stringAttr(c, "font");
-                    symbol.char = xml.stringAttr(c, "char");
-                    result.children.push(symbol);
+                    result.children.push(deserialize(c, new Symbol()));
                     break;
 
                 case "tab":
@@ -713,7 +700,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableProperties(elem: Element, table: IDomTable) {
+    parseTableProperties(elem: Element, table: any) {
         table.style = {};
         table.cellStyle = {};
 

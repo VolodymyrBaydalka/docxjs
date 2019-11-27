@@ -211,7 +211,7 @@ export class HtmlRenderer {
             var newElem = Object.create(Object.getPrototypeOf(elem));
             Object.assign(newElem, elem);
 
-            let [f,s] = revert ? [newElem, elem] : [elem, newElem];
+            let [f,s] = revert ? [elem, newElem] : [newElem, elem];
 
             f.children = children.slice(pBreakIndex);
             s.children = children.slice(0, rBreakIndex)
