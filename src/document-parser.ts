@@ -15,7 +15,7 @@ import { Break } from './elements/break';
 import { Tab } from './elements/tab';
 import { Hyperlink } from './elements/hyperlink';
 import { Run } from './elements/run';
-import { Bookmark } from './elements/bookmark';
+import { BookmarkStart, BookmarkEnd } from './elements/bookmark';
 import { Cell } from './elements/cell';
 import { Table, TableColumn } from './elements/table';
 import { Row } from './elements/row';
@@ -24,6 +24,7 @@ import { Image } from './elements/image';
 import { Drawing } from './elements/drawing';
 import { ElementBase } from './elements/element-base';
 import { deserialize } from './parser/xml-serialize';
+import { InstructionText } from './elements/instructions';
 
 export var autos = {
     shd: "white",
@@ -389,10 +390,6 @@ export class DocumentParser {
                     result.children.push(this.parseHyperlink(c));
                     break;
 
-                case "bookmarkStart":
-                    result.children.push(deserialize(node, new Bookmark()));
-                    break;
-
                 case "pPr":
                     this.parseParagraphProperties(c, result);
                     this.parseCommonProperties(c, result.props);
@@ -455,38 +452,18 @@ export class DocumentParser {
     }
 
     parseRun(node: Element): Run {
-        var result = new Run();
+        var result = deserialize(node, new Run());
 
         xml.foreach(node, c => {
             switch (c.localName) {
-                case "t":
-                    result.children.push(deserialize(c, new Text()));
-                    break;
-                
                 case "fldChar":
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
-                    break;
-
-                case "br":
-                    result.children.push(deserialize(c, new Break()));
                     break;
 
                 case "lastRenderedPageBreak":
                     var br = new Break();
                     br.break = "page";
                     result.children.push(br);
-                    break;
-                
-                case "sym":
-                    result.children.push(deserialize(c, new Symbol()));
-                    break;
-
-                case "tab":
-                    result.children.push(new Tab());
-                    break;
-
-                case "instrText":
-                    result.instrText = c.textContent;
                     break;
 
                 case "drawing":

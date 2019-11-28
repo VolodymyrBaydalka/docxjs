@@ -1,39 +1,33 @@
 import { ContainerBase } from "./element-base";
 import { RenderContext } from "../dom/render-context";
-import { element } from "../parser/xml-serialize";
+import { element, children } from "../parser/xml-serialize";
+import { Break } from "./break";
+import { Symbol, Text } from "./text";
+import { Tab } from "./tab";
 
 @element("r")
+@children(Text, Break, Symbol, Tab)
 export class Run extends ContainerBase {
     props: RunProeprties = {} as RunProeprties;
 
     //TODO
     fldCharType: any;
-    instrText: any;
-    href: any;
 
     render(ctx: RenderContext) : Node {
-        if (this.fldCharType || this.instrText)
+        if (this.fldCharType)
             return null;
 
         var elem = this.renderContainer(ctx, "span");
         var wrapper: HTMLElement = null;
 
-        if(this.href)
-        {
-            wrapper = ctx.html.createElement("a");
-            (wrapper as HTMLAnchorElement).href = this.href;
-        }
-        else
-        {
-            switch(this.props.verticalAlignment) {
-                case "subscript": 
-                    wrapper = ctx.html.createElement("sub");
-                    break;
+        switch(this.props.verticalAlignment) {
+            case "subscript": 
+                wrapper = ctx.html.createElement("sub");
+                break;
 
-                case "superscript": 
-                    wrapper = ctx.html.createElement("sup");
-                    break;
-            }
+            case "superscript": 
+                wrapper = ctx.html.createElement("sup");
+                break;
         }
 
         if(wrapper == null)

@@ -114,7 +114,6 @@ export class HtmlRenderer {
     processElement(element: OpenXmlElement) {
         if (element.children) {
             for (var e of element.children) {
-                e.className = this.processClassName(e.className);
                 e.parent = element;
 
                 if (e instanceof Table) {

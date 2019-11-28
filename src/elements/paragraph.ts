@@ -2,9 +2,12 @@ import { ContainerBase } from "./element-base";
 import { ParagraphProperties } from "../dom/paragraph";
 import { RenderContext } from "../dom/render-context";
 import { appendClass } from "../utils";
-import { element } from "../parser/xml-serialize";
+import { element, children } from "../parser/xml-serialize";
+import { Run } from "./run";
+import { BookmarkStart, BookmarkEnd } from "./bookmark";
 
 @element("p")
+@children(BookmarkStart, BookmarkEnd) //Run
 export class Paragraph extends ContainerBase {
     props: ParagraphProperties = {} as ParagraphProperties;
 

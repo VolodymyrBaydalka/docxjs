@@ -21,8 +21,13 @@ export abstract class ContainerBase extends ElementBase {
 
         renderStyleValues(this.style, elem);
 
-        if (this.className)
-            elem.className = appendClass(elem.className, this.className);
+        if (this.className) {
+            let classes = this.className.split(" ").map(c => `${ctx.className}_${c}`);
+            elem.className = appendClass(elem.className, classes.join(" "));
+        }
+        else {
+            elem.className = appendClass(elem.className, ctx.className);
+        }
         
         for(let n of this.children.map(c => c.render(ctx)).filter(x => x != null))
             elem.appendChild(n);

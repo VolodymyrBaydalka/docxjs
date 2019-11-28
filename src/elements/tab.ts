@@ -3,7 +3,9 @@ import { OpenXmlElement } from "../dom/dom";
 import { updateTabStop } from "../javascript";
 import { Paragraph } from "./paragraph";
 import { RenderContext } from "../dom/render-context";
+import { element } from "../parser/xml-serialize";
 
+@element("tab")
 export class Tab extends ElementBase {
 
     render(ctx: RenderContext): Node {
