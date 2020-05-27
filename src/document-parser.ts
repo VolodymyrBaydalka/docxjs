@@ -9,13 +9,9 @@ import { ParagraphElement } from './dom/paragraph';
 import { parseParagraphProperties } from './parser/paragraph';
 import { parseSectionProperties } from './parser/section';
 
-import { Text } from './elements/text';
-import { Symbol } from './elements/symbol';
 import { Break } from './elements/break';
-import { Tab } from './elements/tab';
 import { Hyperlink } from './elements/hyperlink';
 import { Run } from './elements/run';
-import { BookmarkStart, BookmarkEnd } from './elements/bookmark';
 import { Cell } from './elements/cell';
 import { Table, TableColumn } from './elements/table';
 import { Row } from './elements/row';
@@ -23,8 +19,7 @@ import { Paragraph } from './elements/paragraph';
 import { Image } from './elements/image';
 import { Drawing } from './elements/drawing';
 import { ElementBase } from './elements/element-base';
-import { deserialize } from './parser/xml-serialize';
-import { InstructionText } from './elements/instructions';
+import { deserializeElement } from './parser/xml-serialize';
 
 export var autos = {
     shd: "white",
@@ -378,7 +373,7 @@ export class DocumentParser {
 
 
     parseParagraph(node: Element): Paragraph {
-        var result = new Paragraph();
+        var result = deserializeElement(node, new Paragraph());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -438,7 +433,7 @@ export class DocumentParser {
     }
 
     parseHyperlink(node: Element): Hyperlink {
-        var result = deserialize(node, new Hyperlink());
+        var result = deserializeElement(node, new Hyperlink());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -452,7 +447,7 @@ export class DocumentParser {
     }
 
     parseRun(node: Element): Run {
-        var result = deserialize(node, new Run());
+        var result = deserializeElement(node, new Run());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -1241,7 +1236,7 @@ class values {
     }
 
     static valueOfRelType(c: Element) {
-        switch (xml.sizeAttr(c, "Type")) {
+        switch (xml.stringAttr(c, "Type")) {
             case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings":
                 return DomRelationshipType.Settings;
             case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme":

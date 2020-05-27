@@ -16,6 +16,10 @@ export class Tab extends ElementBase {
         if (ctx.options.experimental) {
             setTimeout(() => {
                 var paragraph = findParent<Paragraph>(this);
+
+                if(paragraph.props.tabs == null)
+                    return;
+
                 paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
                 tabSpan.style.display = "inline-block";
                 updateTabStop(tabSpan, paragraph.props.tabs);

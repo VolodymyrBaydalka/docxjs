@@ -34,13 +34,52 @@ export function fromAttribute(attrName: string, convert: Converter = null) {
     }
 }
 
-export function deserialize(n: Element, output: any) {
+export function buildXmlSchema(schemaObj: any): OpenXmlSchema {
+    var schema: OpenXmlSchema = {
+        text: null,
+        attrs: {},
+        elemName: null,
+        children: null
+    };
+
+    for(let p in schemaObj) {
+        let v = schemaObj[p];
+
+        if(p == "$elem") {
+            schema.elemName = v;
+        }
+        else if(v.$attr) {
+            schema.attrs[v.$attr] = { prop: p, convert: null };
+        }
+    }
+
+    return schema;
+}
+
+export function deserializeElement(n: Element, output: any) {
     var proto = Object.getPrototypeOf(output);
     var schema = proto[schemaSymbol];
 
     if (schema == null)
         return output;
 
+    deserializeSchema(n, output, schema);
+
+    for (let i = 0, l = n.children.length; i < l; i ++) {
+        let elem = n.children.item(i);
+        let child = schema.children[elem.localName];
+
+        if (child) {
+            let obj = Object.create(child.proto);
+            deserializeElement(elem, obj);
+            output.children.push(obj);
+        }
+    }
+
+    return output;
+}
+
+export function deserializeSchema(n: Element, output: any, schema: OpenXmlSchema) {
     if (schema.text) {
         let prop = schema.text;
         output[prop.prop] = prop.convert ? prop.convert(n.textContent) : n.textContent; 
@@ -56,28 +95,17 @@ export function deserialize(n: Element, output: any) {
         output[prop.prop] = prop.convert ? prop.convert(attr.value) : attr.value; 
     }
 
-    for (let i = 0, l = n.children.length; i < l; i ++) {
-        let elem = n.children.item(i);
-        let child = schema.children[elem.localName];
-
-        if (child) {
-            let obj = Object.create(child.proto);
-            deserialize(elem, obj);
-            output.children.push(obj);
-        }
-    }
-
     return output;
 }
 
-interface OpenXmlSchema {
+export interface OpenXmlSchema {
     elemName: string;
     text: OpenXmlSchemaProperty;
     attrs: Record<string, OpenXmlSchemaProperty>;
     children: Record<string, any>;
 }
 
-interface OpenXmlSchemaProperty {
+export interface OpenXmlSchemaProperty {
     prop: string;
     convert: Converter;
 }

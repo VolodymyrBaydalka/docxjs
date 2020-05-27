@@ -2,6 +2,8 @@ import { ParagraphTab, ParagraphProperties, ParagraphNumbering, LineSpacing } fr
 import * as xml from "./common";
 import { ns } from "../dom/common";
 import { parseSectionProperties } from "./section";
+import { convertLength } from "./common";
+import { buildXmlSchema, deserializeSchema } from "./xml-serialize";
 
 export function parseParagraphProperties(elem: Element, props: ParagraphProperties) {
     if (elem.namespaceURI != ns.wordml)
@@ -17,11 +19,11 @@ export function parseParagraphProperties(elem: Element, props: ParagraphProperti
             break;
 
         case "numPr":
-            props.numbering = parseNumbering(elem);
+            props.numbering = deserializeSchema(elem, {}, numberingSchema);
             break;
         
         case "spacing":
-            props.lineSpacing = parseLineSpacing(elem);
+            props.lineSpacing = deserializeSchema(elem, {}, lineSpacingSchema);
             return false; // TODO
             break;
 
@@ -41,29 +43,16 @@ function parseTabs(elem: Element): ParagraphTab[] {
         });
 }
 
-function parseNumbering(elem: Element): ParagraphNumbering {
-    var result = <ParagraphNumbering>{};
+const numberingSchema = buildXmlSchema({
+    $elem: "numPr",
+    id: { $attr: "numId" },
+    level: { $attr: "ilvl", convert: (v) => parseInt(v) },
+})
 
-    for (let e of xml.elements(elem, ns.wordml)) {
-        switch (e.localName) {
-            case "numId":
-                result.id = xml.stringAttr(e, ns.wordml, "val");
-                break;
-
-            case "ilvl":
-                result.level = xml.intAttr(e, ns.wordml, "val");
-                break;
-        }
-    }
-
-    return result;
-}
-
-function parseLineSpacing(elem: Element): LineSpacing {
-    return {
-        before: xml.lengthAttr(elem, ns.wordml, "before"),
-        after: xml.lengthAttr(elem, ns.wordml, "after"),
-        line: xml.intAttr(elem, ns.wordml, "line"),
-        lineRule: xml.stringAttr(elem, ns.wordml, "lineRule")
-    } as LineSpacing;
-}
+const lineSpacingSchema = buildXmlSchema({
+    $elem: "spacing",
+    before: { $attr: "before", convert: (v) => convertLength(v) },
+    after: { $attr: "after", convert: (v) => convertLength(v) },
+    line: { $attr: "line", convert: (v) => parseInt(v) },
+    lineRule: { $attr: "before" },
+});

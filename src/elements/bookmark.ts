@@ -1,7 +1,8 @@
 import { ElementBase } from "./element-base";
 import { RenderContext } from "../dom/render-context";
-import { fromAttribute } from "../parser/xml-serialize";
+import { fromAttribute, element } from "../parser/xml-serialize";
 
+@element("bookmarkStart")
 export class BookmarkStart extends ElementBase {
     @fromAttribute("id")
     id: string;
@@ -15,6 +16,7 @@ export class BookmarkStart extends ElementBase {
     }
 }
 
+@element("bookmarkEnd")
 export class BookmarkEnd extends ElementBase {
     @fromAttribute("id")
     id: string;

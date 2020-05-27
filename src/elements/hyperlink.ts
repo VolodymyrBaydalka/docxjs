@@ -1,7 +1,10 @@
 import { ContainerBase } from "./element-base";
 import { RenderContext } from "../dom/render-context";
-import { fromAttribute } from "../parser/xml-serialize";
+import { fromAttribute, element, children } from "../parser/xml-serialize";
+import { Run } from "./run";
 
+@element("hyperlink")
+//@children(Run)
 export class Hyperlink extends ContainerBase {
     @fromAttribute("anchor")
     anchor: string;
