@@ -15,6 +15,10 @@ export function parseSectionProperties(elem: Element): SectionProperties {
                 }
                 break;
 
+            case "type":
+                section.type = xml.stringAttr(e, ns.wordml, "val");
+                break;
+
             case "pgMar":
                 section.pageMargins = {
                     left: xml.lengthAttr(e, ns.wordml, "left"),

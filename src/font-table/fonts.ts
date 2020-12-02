@@ -1,27 +1,37 @@
 import { XmlParser } from "../parser/xml-parser";
 
-export interface FontDeclatation {
+export interface FontDeclaration {
     name: string,
-    fontKey?: string,
-    refId?: string
+    altName: string,
+    family: string,
+    fontKey: string,
+    refId: string
 }
 
-export function parseFonts(root: Element, xmlParser: XmlParser): FontDeclatation[] {
-    const result = [];
+export function parseFonts(root: Element, xmlParser: XmlParser): FontDeclaration[] {
+    return xmlParser.elements(root).map(el => parseFont(el, xmlParser));
+}
 
-    for(let el of xmlParser.elements(root)) {
-        let font: FontDeclatation = {
-            name: xmlParser.attr(el, "name")
+export function parseFont(elem: Element, xmlParser: XmlParser): FontDeclaration {
+    let result = <FontDeclaration>{
+        name: xmlParser.attr(elem, "name")
+    };
+
+    for (let el of xmlParser.elements(elem)) {
+        switch (el.nodeName) {
+            case "family":
+                result.family = xmlParser.attr(el, "val");
+                break;
+
+            case "altName":
+                result.altName = xmlParser.attr(el, "val");
+                break;
+
+            case "embedRegular":
+                result.fontKey = xmlParser.attr(el, "fontKey");
+                result.refId = xmlParser.attr(el, "id");
+                break;
         }
-
-        let embed = xmlParser.element(el, "embedRegular");
-
-        if(embed) {
-            font.fontKey = xmlParser.attr(embed, "fontKey");    
-            font.refId = xmlParser.attr(embed, "id");    
-        }
-
-        result.push(font);
     }
 
     return result;

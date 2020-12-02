@@ -1,9 +1,9 @@
 import { Package } from "../common/package";
 import { Part } from "../common/part";
-import { FontDeclatation, parseFonts } from "./fonts";
+import { FontDeclaration, parseFonts } from "./fonts";
 
 export class FontTablePart extends Part {
-    fonts: FontDeclatation[];
+    fonts: FontDeclaration[];
 
     load(pkg: Package): Promise<void> {
         return super.load(pkg)

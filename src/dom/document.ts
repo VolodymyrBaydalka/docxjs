@@ -17,7 +17,16 @@ export interface PageMargins {
     gutter: Length;
 }
 
+export enum SectionType {
+    Continuous = "continuous",
+    NextPage = "nextPage", 
+    NextColumn = "nextColumn",
+    EvenPage = "evenPage",
+    OddPage = "oddPage",
+}
+
 export interface SectionProperties {
+    type: SectionType | string;
     pageSize: PageSize,
     pageMargins: PageMargins,
     columns: Columns;
