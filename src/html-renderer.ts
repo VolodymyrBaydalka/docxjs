@@ -7,7 +7,6 @@ import { DocumentElement, SectionProperties } from './dom/document';
 import { ParagraphElement} from './dom/paragraph';
 import { appendClass } from './utils';
 import { updateTabStop } from './javascript';
-import { LengthUsage } from './parser/common';
 import { FontTablePart } from './font-table/font-table';
 
 export class HtmlRenderer {
@@ -243,6 +242,16 @@ export class HtmlRenderer {
                         }
                     }
                 }
+            }
+        }
+
+        let currentSectProps = null;
+
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i].sectProps == null) {
+                result[i].sectProps = currentSectProps;
+            } else {
+                currentSectProps = result[i].sectProps
             }
         }
 

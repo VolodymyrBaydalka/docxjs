@@ -1571,24 +1571,33 @@ exports.FontTablePart = FontTablePart;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseFonts = void 0;
+exports.parseFont = exports.parseFonts = void 0;
 function parseFonts(root, xmlParser) {
-    var result = [];
-    for (var _i = 0, _a = xmlParser.elements(root); _i < _a.length; _i++) {
+    return xmlParser.elements(root).map(function (el) { return parseFont(el, xmlParser); });
+}
+exports.parseFonts = parseFonts;
+function parseFont(elem, xmlParser) {
+    var result = {
+        name: xmlParser.attr(elem, "name")
+    };
+    for (var _i = 0, _a = xmlParser.elements(elem); _i < _a.length; _i++) {
         var el = _a[_i];
-        var font = {
-            name: xmlParser.attr(el, "name")
-        };
-        var embed = xmlParser.element(el, "embedRegular");
-        if (embed) {
-            font.fontKey = xmlParser.attr(embed, "fontKey");
-            font.refId = xmlParser.attr(embed, "id");
+        switch (el.nodeName) {
+            case "family":
+                result.family = xmlParser.attr(el, "val");
+                break;
+            case "altName":
+                result.altName = xmlParser.attr(el, "val");
+                break;
+            case "embedRegular":
+                result.fontKey = xmlParser.attr(el, "fontKey");
+                result.refId = xmlParser.attr(el, "id");
+                break;
         }
-        result.push(font);
     }
     return result;
 }
-exports.parseFonts = parseFonts;
+exports.parseFont = parseFont;
 
 
 /***/ }),
@@ -1821,6 +1830,15 @@ var HtmlRenderer = (function () {
                         }
                     }
                 }
+            }
+        }
+        var currentSectProps = null;
+        for (var i = result.length - 1; i >= 0; i--) {
+            if (result[i].sectProps == null) {
+                result[i].sectProps = currentSectProps;
+            }
+            else {
+                currentSectProps = result[i].sectProps;
             }
         }
         return result;
@@ -2454,6 +2472,9 @@ function parseSectionProperties(elem) {
                     orientation: xml.stringAttr(e, common_1.ns.wordml, "orient")
                 };
                 break;
+            case "type":
+                section.type = xml.stringAttr(e, common_1.ns.wordml, "val");
+                break;
             case "pgMar":
                 section.pageMargins = {
                     left: xml.lengthAttr(e, common_1.ns.wordml, "left"),
@@ -2535,6 +2556,25 @@ var XmlParser = (function () {
         }
         return null;
     };
+    XmlParser.prototype.intAttr = function (node, attrName, defaultValue) {
+        if (defaultValue === void 0) { defaultValue = null; }
+        var val = this.attr(node, attrName);
+        return val ? parseInt(val) : defaultValue;
+    };
+    XmlParser.prototype.floatAttr = function (node, attrName, defaultValue) {
+        if (defaultValue === void 0) { defaultValue = null; }
+        var val = this.attr(node, attrName);
+        return val ? parseFloat(val) : defaultValue;
+    };
+    XmlParser.prototype.boolAttr = function (node, attrName, defaultValue) {
+        if (defaultValue === void 0) { defaultValue = null; }
+        var v = this.attr(node, attrName);
+        switch (v) {
+            case "1": return true;
+            case "0": return false;
+            default: return defaultValue;
+        }
+    };
     return XmlParser;
 }());
 exports.XmlParser = XmlParser;
@@ -2567,7 +2607,6 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
-var document_parser_1 = __webpack_require__(/*! ../document-parser */ "./src/document-parser.ts");
 var StylesPart = (function (_super) {
     __extends(StylesPart, _super);
     function StylesPart(path, parser) {
@@ -2580,7 +2619,7 @@ var StylesPart = (function (_super) {
         return _super.prototype.load.call(this, pkg)
             .then(function () { return pkg.load(_this.path, "string"); })
             .then(function (xml) {
-            _this.styles = new document_parser_1.DocumentParser().parseStylesFile(xml);
+            _this.styles = _this._documentParser.parseStylesFile(xml);
         });
     };
     return StylesPart;

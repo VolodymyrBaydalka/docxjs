@@ -17,7 +17,7 @@ export class StylesPart extends Part {
         return super.load(pkg)
             .then(() => pkg.load(this.path, "string"))
             .then(xml => {
-                this.styles = new DocumentParser().parseStylesFile(xml);
+                this.styles = this._documentParser.parseStylesFile(xml);
             })
     }
 }
