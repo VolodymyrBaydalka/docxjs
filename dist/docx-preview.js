@@ -96,6 +96,121 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
+/***/ "./src/common/package.ts":
+/*!*******************************!*\
+  !*** ./src/common/package.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Package = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
+var relationship_1 = __webpack_require__(/*! ./relationship */ "./src/common/relationship.ts");
+var Package = (function () {
+    function Package(_zip) {
+        this._zip = _zip;
+        this.xmlParser = new xml_parser_1.XmlParser();
+    }
+    Package.prototype.exists = function (path) {
+        return this._zip.files[path] != null;
+    };
+    Package.prototype.load = function (path, type) {
+        var _this = this;
+        var file = this._zip.files[path];
+        if (file == null)
+            return Promise.resolve(null);
+        if (type == "xml")
+            return file.async("string").then(function (t) { return _this.xmlParser.parse(t); });
+        return file.async(type);
+    };
+    Package.prototype.loadRelationships = function (path) {
+        var _this = this;
+        if (path === void 0) { path = null; }
+        var relsPath = "_rels/.rels";
+        if (path != null) {
+            var _a = utils_1.splitPath(path), f = _a[0], fn = _a[1];
+            relsPath = f + "_rels/" + fn + ".rels";
+        }
+        return this.load(relsPath, "xml").then(function (xml) {
+            return xml == null ? null : relationship_1.parseRelationships(xml, _this.xmlParser);
+        });
+    };
+    return Package;
+}());
+exports.Package = Package;
+
+
+/***/ }),
+
+/***/ "./src/common/part.ts":
+/*!****************************!*\
+  !*** ./src/common/part.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Part = void 0;
+var Part = (function () {
+    function Part(path) {
+        this.path = path;
+    }
+    Part.prototype.load = function (pkg) {
+        var _this = this;
+        return pkg.loadRelationships(this.path).then(function (rels) {
+            _this.rels = rels;
+        });
+    };
+    return Part;
+}());
+exports.Part = Part;
+
+
+/***/ }),
+
+/***/ "./src/common/relationship.ts":
+/*!************************************!*\
+  !*** ./src/common/relationship.ts ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseRelationships = exports.RelationshipTypes = void 0;
+var RelationshipTypes;
+(function (RelationshipTypes) {
+    RelationshipTypes["OfficeDocument"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+    RelationshipTypes["FontTable"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable";
+    RelationshipTypes["Image"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+    RelationshipTypes["Numbering"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
+    RelationshipTypes["Styles"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
+    RelationshipTypes["StylesWithEffects"] = "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects";
+    RelationshipTypes["Theme"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme";
+    RelationshipTypes["Settings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings";
+    RelationshipTypes["WebSettings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings";
+    RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
+})(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
+function parseRelationships(root, xmlParser) {
+    return xmlParser.elements(root).map(function (e) { return ({
+        id: xmlParser.attr(e, "Id"),
+        type: xmlParser.attr(e, "Type"),
+        target: xmlParser.attr(e, "Target"),
+        targetMode: xmlParser.attr(e, "TargetMode")
+    }); });
+}
+exports.parseRelationships = parseRelationships;
+
+
+/***/ }),
+
 /***/ "./src/document-parser.ts":
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
@@ -106,6 +221,7 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var common_1 = __webpack_require__(/*! ./dom/common */ "./src/dom/common.ts");
@@ -123,22 +239,6 @@ var DocumentParser = (function () {
         this.ignoreWidth = false;
         this.debug = false;
     }
-    DocumentParser.prototype.parseDocumentRelationsFile = function (xmlString) {
-        var xrels = xml.parse(xmlString, this.skipDeclaration);
-        return xml.elements(xrels).map(function (c) { return ({
-            id: xml.stringAttr(c, "Id"),
-            type: values.valueOfRelType(c),
-            target: xml.stringAttr(c, "Target"),
-        }); });
-    };
-    DocumentParser.prototype.parseFontTable = function (xmlString) {
-        var xfonts = xml.parse(xmlString, this.skipDeclaration);
-        return xml.elements(xfonts).map(function (c) { return ({
-            name: xml.stringAttr(c, "name"),
-            fontKey: xml.elementStringAttr(c, "embedRegular", "fontKey"),
-            refId: xml.elementStringAttr(c, "embedRegular", "id")
-        }); });
-    };
     DocumentParser.prototype.parseDocumentFile = function (xmlString) {
         var _this = this;
         var result = {
@@ -1178,25 +1278,6 @@ var values = (function () {
     values.valueOfMargin = function (c) {
         return xml.sizeAttr(c, "w");
     };
-    values.valueOfRelType = function (c) {
-        switch (xml.sizeAttr(c, "Type")) {
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings":
-                return dom_1.DomRelationshipType.Settings;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme":
-                return dom_1.DomRelationshipType.Theme;
-            case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
-                return dom_1.DomRelationshipType.StylesWithEffects;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles":
-                return dom_1.DomRelationshipType.Styles;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable":
-                return dom_1.DomRelationshipType.FontTable;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image":
-                return dom_1.DomRelationshipType.Image;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings":
-                return dom_1.DomRelationshipType.WebSettings;
-        }
-        return dom_1.DomRelationshipType.Unknown;
-    };
     values.valueOfBorder = function (c) {
         var type = xml.stringAttr(c, "val");
         if (type == "nil")
@@ -1293,118 +1374,6 @@ var values = (function () {
 
 /***/ }),
 
-/***/ "./src/document.ts":
-/*!*************************!*\
-  !*** ./src/document.ts ***!
-  \*************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var JSZip = __webpack_require__(/*! jszip */ "jszip");
-var PartType;
-(function (PartType) {
-    PartType["Document"] = "word/document.xml";
-    PartType["Style"] = "word/styles.xml";
-    PartType["Numbering"] = "word/numbering.xml";
-    PartType["FontTable"] = "word/fontTable.xml";
-    PartType["DocumentRelations"] = "word/_rels/document.xml.rels";
-    PartType["NumberingRelations"] = "word/_rels/numbering.xml.rels";
-    PartType["FontRelations"] = "word/_rels/fontTable.xml.rels";
-})(PartType || (PartType = {}));
-var Document = (function () {
-    function Document() {
-        this.zip = new JSZip();
-        this.docRelations = null;
-        this.fontRelations = null;
-        this.numRelations = null;
-        this.styles = null;
-        this.fonts = null;
-        this.numbering = null;
-        this.document = null;
-    }
-    Document.load = function (blob, parser) {
-        var d = new Document();
-        return d.zip.loadAsync(blob).then(function (z) {
-            var files = [
-                d.loadPart(PartType.DocumentRelations, parser),
-                d.loadPart(PartType.FontRelations, parser),
-                d.loadPart(PartType.NumberingRelations, parser),
-                d.loadPart(PartType.Style, parser),
-                d.loadPart(PartType.FontTable, parser),
-                d.loadPart(PartType.Numbering, parser),
-                d.loadPart(PartType.Document, parser)
-            ];
-            return Promise.all(files.filter(function (x) { return x != null; })).then(function (x) { return d; });
-        });
-    };
-    Document.prototype.loadDocumentImage = function (id) {
-        return this.loadResource(this.docRelations, id, "blob")
-            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
-    };
-    Document.prototype.loadNumberingImage = function (id) {
-        return this.loadResource(this.numRelations, id, "blob")
-            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
-    };
-    Document.prototype.loadFont = function (id, key) {
-        return this.loadResource(this.fontRelations, id, "uint8array")
-            .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
-    };
-    Document.prototype.loadResource = function (relations, id, outputType) {
-        if (outputType === void 0) { outputType = "base64"; }
-        var rel = relations.find(function (x) { return x.id == id; });
-        return rel ? this.zip.files["word/" + rel.target].async(outputType) : Promise.resolve(null);
-    };
-    Document.prototype.loadPart = function (part, parser) {
-        var _this = this;
-        var f = this.zip.files[part];
-        return f ? f.async("text").then(function (xml) {
-            switch (part) {
-                case PartType.FontRelations:
-                    _this.fontRelations = parser.parseDocumentRelationsFile(xml);
-                    break;
-                case PartType.DocumentRelations:
-                    _this.docRelations = parser.parseDocumentRelationsFile(xml);
-                    break;
-                case PartType.NumberingRelations:
-                    _this.numRelations = parser.parseDocumentRelationsFile(xml);
-                    break;
-                case PartType.Style:
-                    _this.styles = parser.parseStylesFile(xml);
-                    break;
-                case PartType.Numbering:
-                    _this.numbering = parser.parseNumberingFile(xml);
-                    break;
-                case PartType.Document:
-                    _this.document = parser.parseDocumentFile(xml);
-                    break;
-                case PartType.FontTable:
-                    _this.fontTable = parser.parseFontTable(xml);
-                    break;
-            }
-            return _this;
-        }) : null;
-    };
-    return Document;
-}());
-exports.Document = Document;
-function deobfuscate(data, guidKey) {
-    var len = 16;
-    var trimmed = guidKey.replace(/{|}|-/g, "");
-    var numbers = new Array(len);
-    for (var i = 0; i < len; i++)
-        numbers[len - i - 1] = parseInt(trimmed.substr(i * 2, 2), 16);
-    for (var i = 0; i < 32; i++)
-        data[i] = data[i] ^ numbers[i % len];
-    return data;
-}
-exports.deobfuscate = deobfuscate;
-
-
-/***/ }),
-
 /***/ "./src/docx-preview.ts":
 /*!*****************************!*\
   !*** ./src/docx-preview.ts ***!
@@ -1426,7 +1395,8 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var document_1 = __webpack_require__(/*! ./document */ "./src/document.ts");
+exports.renderAsync = void 0;
+var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
 function renderAsync(data, bodyContainer, styleContainer, userOptions) {
@@ -1439,7 +1409,7 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     parser.debug = options.debug || parser.debug;
     renderer.className = options.className || "docx";
     renderer.inWrapper = options.inWrapper;
-    return document_1.Document.load(data, parser).then(function (doc) {
+    return word_document_1.WordDocument.load(data, parser).then(function (doc) {
         renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
     });
@@ -1459,9 +1429,57 @@ exports.renderAsync = renderAsync;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ns = void 0;
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 };
+
+
+/***/ }),
+
+/***/ "./src/dom/document-part.ts":
+/*!**********************************!*\
+  !*** ./src/dom/document-part.ts ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DocumentPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var DocumentPart = (function (_super) {
+    __extends(DocumentPart, _super);
+    function DocumentPart(path, parser) {
+        var _this = _super.call(this, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    DocumentPart.prototype.load = function (pkg) {
+        var _this = this;
+        return _super.prototype.load.call(this, pkg)
+            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function (xml) {
+            _this.body = _this._documentParser.parseDocumentFile(xml);
+        });
+    };
+    return DocumentPart;
+}(part_1.Part));
+exports.DocumentPart = DocumentPart;
 
 
 /***/ }),
@@ -1476,6 +1494,7 @@ exports.ns = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DomType = void 0;
 var DomType;
 (function (DomType) {
     DomType["Document"] = "document";
@@ -1492,17 +1511,84 @@ var DomType;
     DomType["Tab"] = "tab";
     DomType["Symbol"] = "symbol";
 })(DomType = exports.DomType || (exports.DomType = {}));
-var DomRelationshipType;
-(function (DomRelationshipType) {
-    DomRelationshipType[DomRelationshipType["Settings"] = 0] = "Settings";
-    DomRelationshipType[DomRelationshipType["Theme"] = 1] = "Theme";
-    DomRelationshipType[DomRelationshipType["StylesWithEffects"] = 2] = "StylesWithEffects";
-    DomRelationshipType[DomRelationshipType["Styles"] = 3] = "Styles";
-    DomRelationshipType[DomRelationshipType["FontTable"] = 4] = "FontTable";
-    DomRelationshipType[DomRelationshipType["Image"] = 5] = "Image";
-    DomRelationshipType[DomRelationshipType["WebSettings"] = 6] = "WebSettings";
-    DomRelationshipType[DomRelationshipType["Unknown"] = 7] = "Unknown";
-})(DomRelationshipType = exports.DomRelationshipType || (exports.DomRelationshipType = {}));
+
+
+/***/ }),
+
+/***/ "./src/font-table/font-table.ts":
+/*!**************************************!*\
+  !*** ./src/font-table/font-table.ts ***!
+  \**************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FontTablePart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var fonts_1 = __webpack_require__(/*! ./fonts */ "./src/font-table/fonts.ts");
+var FontTablePart = (function (_super) {
+    __extends(FontTablePart, _super);
+    function FontTablePart() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    FontTablePart.prototype.load = function (pkg) {
+        var _this = this;
+        return _super.prototype.load.call(this, pkg)
+            .then(function () { return pkg.load(_this.path, "xml"); })
+            .then(function (el) {
+            _this.fonts = fonts_1.parseFonts(el, pkg.xmlParser);
+        });
+    };
+    return FontTablePart;
+}(part_1.Part));
+exports.FontTablePart = FontTablePart;
+
+
+/***/ }),
+
+/***/ "./src/font-table/fonts.ts":
+/*!*********************************!*\
+  !*** ./src/font-table/fonts.ts ***!
+  \*********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseFonts = void 0;
+function parseFonts(root, xmlParser) {
+    var result = [];
+    for (var _i = 0, _a = xmlParser.elements(root); _i < _a.length; _i++) {
+        var el = _a[_i];
+        var font = {
+            name: xmlParser.attr(el, "name")
+        };
+        var embed = xmlParser.element(el, "embedRegular");
+        if (embed) {
+            font.fontKey = xmlParser.attr(embed, "fontKey");
+            font.refId = xmlParser.attr(embed, "id");
+        }
+        result.push(font);
+    }
+    return result;
+}
+exports.parseFonts = parseFonts;
 
 
 /***/ }),
@@ -1528,6 +1614,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.HtmlRenderer = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
@@ -1546,15 +1633,17 @@ var HtmlRenderer = (function () {
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
-        appendComment(styleContainer, "docx document styles");
-        styleContainer.appendChild(this.renderStyles(document.styles));
-        if (document.numbering) {
-            appendComment(styleContainer, "docx document numbering styles");
-            styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
+        if (document.stylesPart != null) {
+            appendComment(styleContainer, "docx document styles");
+            styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
-        if (!options.ignoreFonts)
-            this.renderFontTable(document.fontTable, styleContainer);
-        var sectionElements = this.renderSections(document.document);
+        if (document.numberingPart) {
+            appendComment(styleContainer, "docx document numbering styles");
+            styleContainer.appendChild(this.renderNumbering(document.numberingPart.numberings, styleContainer));
+        }
+        if (!options.ignoreFonts && document.fontTablePart)
+            this.renderFontTable(document.fontTablePart, styleContainer);
+        var sectionElements = this.renderSections(document.documentPart.body);
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
@@ -1564,7 +1653,7 @@ var HtmlRenderer = (function () {
             appentElements(bodyContainer, sectionElements);
         }
     };
-    HtmlRenderer.prototype.renderFontTable = function (fonts, styleContainer) {
+    HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
         var _loop_1 = function (f) {
             this_1.document.loadFont(f.refId, f.fontKey).then(function (fontData) {
                 var cssTest = "@font-face {\n                    font-family: \"" + f.name + "\";\n                    src: url(" + fontData + ");\n                }";
@@ -1573,7 +1662,7 @@ var HtmlRenderer = (function () {
             });
         };
         var this_1 = this;
-        for (var _i = 0, _a = fonts.filter(function (x) { return x.refId; }); _i < _a.length; _i++) {
+        for (var _i = 0, _a = fontsPart.fonts.filter(function (x) { return x.refId; }); _i < _a.length; _i++) {
             var f = _a[_i];
             _loop_1(f);
         }
@@ -1707,7 +1796,7 @@ var HtmlRenderer = (function () {
                 if (this.options.breakPages && p.children) {
                     pBreakIndex = p.children.findIndex(function (r) {
                         var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; }), (_b !== null && _b !== void 0 ? _b : -1));
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; })) !== null && _b !== void 0 ? _b : -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -1935,6 +2024,8 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
+                if (paragraph.props.tabs == null)
+                    return;
                 paragraph.props.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
                 javascript_1.updateTabStop(tabSpan, paragraph.props.tabs);
@@ -2094,6 +2185,7 @@ function findParent(elem, type) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateTabStop = void 0;
 function updateTabStop(elem, tabs, pixelToPoint) {
     if (pixelToPoint === void 0) { pixelToPoint = 72 / 96; }
     var p = elem.closest("p");
@@ -2122,6 +2214,53 @@ exports.updateTabStop = updateTabStop;
 
 /***/ }),
 
+/***/ "./src/numbering/numbering-part.ts":
+/*!*****************************************!*\
+  !*** ./src/numbering/numbering-part.ts ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NumberingPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var NumberingPart = (function (_super) {
+    __extends(NumberingPart, _super);
+    function NumberingPart(path, parser) {
+        var _this = _super.call(this, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    NumberingPart.prototype.load = function (pkg) {
+        var _this = this;
+        return _super.prototype.load.call(this, pkg)
+            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function (xml) {
+            _this.numberings = _this._documentParser.parseNumberingFile(xml);
+        });
+    };
+    return NumberingPart;
+}(part_1.Part));
+exports.NumberingPart = NumberingPart;
+
+
+/***/ }),
+
 /***/ "./src/parser/common.ts":
 /*!******************************!*\
   !*** ./src/parser/common.ts ***!
@@ -2132,6 +2271,7 @@ exports.updateTabStop = updateTabStop;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseBorders = exports.parseBorder = exports.lengthAttr = exports.LengthUsage = exports.boolAttr = exports.colorAttr = exports.intAttr = exports.stringAttr = exports.elements = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 function elements(elem, namespaceURI, localName) {
     if (namespaceURI === void 0) { namespaceURI = null; }
@@ -2227,6 +2367,7 @@ exports.parseBorders = parseBorders;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseParagraphProperties = void 0;
 var xml = __webpack_require__(/*! ./common */ "./src/parser/common.ts");
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/parser/section.ts");
@@ -2298,6 +2439,7 @@ function parseLineSpacing(elem) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseSectionProperties = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 var xml = __webpack_require__(/*! ./common */ "./src/parser/common.ts");
 function parseSectionProperties(elem) {
@@ -2348,6 +2490,106 @@ function parseColumns(elem) {
 
 /***/ }),
 
+/***/ "./src/parser/xml-parser.ts":
+/*!**********************************!*\
+  !*** ./src/parser/xml-parser.ts ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.XmlParser = void 0;
+var XmlParser = (function () {
+    function XmlParser() {
+    }
+    XmlParser.prototype.parse = function (xmlString, skipDeclaration) {
+        if (skipDeclaration === void 0) { skipDeclaration = true; }
+        if (skipDeclaration)
+            xmlString = xmlString.replace(/<[?].*[?]>/, "");
+        return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
+    };
+    XmlParser.prototype.elements = function (elem) {
+        var result = [];
+        for (var i = 0, l = elem.childNodes.length; i < l; i++) {
+            var c = elem.childNodes.item(i);
+            if (c.nodeType == 1)
+                result.push(c);
+        }
+        return result;
+    };
+    XmlParser.prototype.element = function (elem, localName) {
+        for (var i = 0, l = elem.childNodes.length; i < l; i++) {
+            var c = elem.childNodes.item(i);
+            if (c.nodeType == 1 && c.nodeName == localName)
+                return c;
+        }
+        return null;
+    };
+    XmlParser.prototype.attr = function (elem, localName) {
+        for (var i = 0, l = elem.attributes.length; i < l; i++) {
+            var a = elem.attributes.item(i);
+            if (a.localName == localName)
+                return a.value;
+        }
+        return null;
+    };
+    return XmlParser;
+}());
+exports.XmlParser = XmlParser;
+
+
+/***/ }),
+
+/***/ "./src/styles/styles-part.ts":
+/*!***********************************!*\
+  !*** ./src/styles/styles-part.ts ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StylesPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var document_parser_1 = __webpack_require__(/*! ../document-parser */ "./src/document-parser.ts");
+var StylesPart = (function (_super) {
+    __extends(StylesPart, _super);
+    function StylesPart(path, parser) {
+        var _this = _super.call(this, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    StylesPart.prototype.load = function (pkg) {
+        var _this = this;
+        return _super.prototype.load.call(this, pkg)
+            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function (xml) {
+            _this.styles = new document_parser_1.DocumentParser().parseStylesFile(xml);
+        });
+    };
+    return StylesPart;
+}(part_1.Part));
+exports.StylesPart = StylesPart;
+
+
+/***/ }),
+
 /***/ "./src/utils.ts":
 /*!**********************!*\
   !*** ./src/utils.ts ***!
@@ -2358,6 +2600,7 @@ function parseColumns(elem) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -2366,6 +2609,126 @@ function appendClass(classList, className) {
     return (!classList) ? className : classList + " " + className;
 }
 exports.appendClass = appendClass;
+function splitPath(path) {
+    var si = path.lastIndexOf('/') + 1;
+    var folder = si == 0 ? "" : path.substring(0, si);
+    var fileName = si == 0 ? path : path.substring(si);
+    return [folder, fileName];
+}
+exports.splitPath = splitPath;
+
+
+/***/ }),
+
+/***/ "./src/word-document.ts":
+/*!******************************!*\
+  !*** ./src/word-document.ts ***!
+  \******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deobfuscate = exports.WordDocument = void 0;
+var JSZip = __webpack_require__(/*! jszip */ "jszip");
+var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
+var font_table_1 = __webpack_require__(/*! ./font-table/font-table */ "./src/font-table/font-table.ts");
+var package_1 = __webpack_require__(/*! ./common/package */ "./src/common/package.ts");
+var document_part_1 = __webpack_require__(/*! ./dom/document-part */ "./src/dom/document-part.ts");
+var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
+var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
+var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
+var WordDocument = (function () {
+    function WordDocument() {
+        this.parts = [];
+        this.partsMap = {};
+    }
+    WordDocument.load = function (blob, parser) {
+        var d = new WordDocument();
+        d._parser = parser;
+        return JSZip.loadAsync(blob)
+            .then(function (zip) {
+            d._package = new package_1.Package(zip);
+            return d._package.loadRelationships();
+        }).then(function (rels) {
+            var _a;
+            d.rels = rels;
+            var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.OfficeDocument; })) !== null && _a !== void 0 ? _a : {
+                target: "word/document.xml",
+                type: relationship_1.RelationshipTypes.OfficeDocument
+            }, target = _b.target, type = _b.type;
+            return d.loadRelationshipPart(target, type).then(function () { return d; });
+        });
+    };
+    WordDocument.prototype.loadRelationshipPart = function (path, type) {
+        var _this = this;
+        if (this.partsMap[path])
+            return Promise.resolve(this.partsMap[path]);
+        if (!this._package.exists(path))
+            return Promise.resolve(null);
+        var part = null;
+        switch (type) {
+            case relationship_1.RelationshipTypes.OfficeDocument:
+                this.documentPart = part = new document_part_1.DocumentPart(path, this._parser);
+                break;
+            case relationship_1.RelationshipTypes.FontTable:
+                this.fontTablePart = part = new font_table_1.FontTablePart(path);
+                break;
+            case relationship_1.RelationshipTypes.Numbering:
+                this.numberingPart = part = new numbering_part_1.NumberingPart(path, this._parser);
+                break;
+            case relationship_1.RelationshipTypes.Styles:
+                this.stylesPart = part = new styles_part_1.StylesPart(path, this._parser);
+                break;
+        }
+        if (part == null)
+            return Promise.resolve(null);
+        this.partsMap[path] = part;
+        this.parts.push(part);
+        return part.load(this._package).then(function () {
+            if (part.rels == null || part.rels.length == 0)
+                return part;
+            var folder = utils_1.splitPath(part.path)[0];
+            var rels = part.rels.map(function (rel) {
+                return _this.loadRelationshipPart("" + folder + rel.target, rel.type);
+            });
+            return Promise.all(rels).then(function () { return part; });
+        });
+    };
+    WordDocument.prototype.loadDocumentImage = function (id) {
+        return this.loadResource(this.documentPart, id, "blob")
+            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
+    };
+    WordDocument.prototype.loadNumberingImage = function (id) {
+        return this.loadResource(this.numberingPart, id, "blob")
+            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
+    };
+    WordDocument.prototype.loadFont = function (id, key) {
+        return this.loadResource(this.fontTablePart, id, "uint8array")
+            .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
+    };
+    WordDocument.prototype.loadResource = function (part, id, outputType) {
+        var rel = part.rels.find(function (x) { return x.id == id; });
+        if (rel == null)
+            return Promise.resolve(null);
+        var fodler = utils_1.splitPath(part.path)[0];
+        return this._package.load(fodler + rel.target, outputType);
+    };
+    return WordDocument;
+}());
+exports.WordDocument = WordDocument;
+function deobfuscate(data, guidKey) {
+    var len = 16;
+    var trimmed = guidKey.replace(/{|}|-/g, "");
+    var numbers = new Array(len);
+    for (var i = 0; i < len; i++)
+        numbers[len - i - 1] = parseInt(trimmed.substr(i * 2, 2), 16);
+    for (var i = 0; i < 32; i++)
+        data[i] = data[i] ^ numbers[i % len];
+    return data;
+}
+exports.deobfuscate = deobfuscate;
 
 
 /***/ }),

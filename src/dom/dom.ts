@@ -14,23 +14,6 @@ export enum DomType {
     Symbol = "symbol"
 }
 
-export enum DomRelationshipType {
-    Settings,
-    Theme,
-    StylesWithEffects,
-    Styles,
-    FontTable,
-    Image,
-    WebSettings,
-    Unknown
-}
-
-export interface IDomRelationship {
-    id: string;
-    type: DomRelationshipType;
-    target: string;
-}
-
 export interface OpenXmlElement {
     type: DomType;
     children?: OpenXmlElement[];

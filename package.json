@@ -32,7 +32,7 @@
   "scripts": {
     "build": "webpack --mode production",
     "watch": "webpack --watch",
-    "test": "karma start"
+    "e2e": "karma start"
   },
   "files": [
     "dist"

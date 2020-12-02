@@ -1,7 +1,7 @@
 import {
     IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomRelationship, IDomSubStyle, IDomTableRow, NumberingPicBullet, DomRelationshipType, TextElement, SymbolElement, BreakElement
+    IDomSubStyle, IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
@@ -24,26 +24,6 @@ export class DocumentParser {
     // ignores page and table sizes
     ignoreWidth: boolean = false;
     debug: boolean = false;
-
-    parseDocumentRelationsFile(xmlString: string) {
-        var xrels = xml.parse(xmlString, this.skipDeclaration);
-
-        return xml.elements(xrels).map(c => <IDomRelationship>{
-            id: xml.stringAttr(c, "Id"),
-            type: values.valueOfRelType(c),
-            target: xml.stringAttr(c, "Target"),
-        });
-    }
-
-    parseFontTable(xmlString: string) {
-        var xfonts = xml.parse(xmlString, this.skipDeclaration);
-
-        return xml.elements(xfonts).map(c => <any>{
-            name: xml.stringAttr(c, "name"),
-            fontKey: xml.elementStringAttr(c, "embedRegular", "fontKey"), 
-            refId: xml.elementStringAttr(c, "embedRegular", "id")
-        });
-    }
 
     parseDocumentFile(xmlString: string) {
         var result: DocumentElement = {
@@ -1274,27 +1254,6 @@ class values {
 
     static valueOfMargin(c: Element) {
         return xml.sizeAttr(c, "w");
-    }
-
-    static valueOfRelType(c: Element) {
-        switch (xml.sizeAttr(c, "Type")) {
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings":
-                return DomRelationshipType.Settings;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme":
-                return DomRelationshipType.Theme;
-            case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
-                return DomRelationshipType.StylesWithEffects;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles":
-                return DomRelationshipType.Styles;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable":
-                return DomRelationshipType.FontTable;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image":
-                return DomRelationshipType.Image;
-            case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings":
-                return DomRelationshipType.WebSettings;
-        }
-
-        return DomRelationshipType.Unknown;
     }
 
     static valueOfBorder(c: Element) {

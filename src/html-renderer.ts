@@ -1,4 +1,4 @@
-import { Document } from './document';
+import { WordDocument } from './word-document';
 import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
@@ -8,18 +8,19 @@ import { ParagraphElement} from './dom/paragraph';
 import { appendClass } from './utils';
 import { updateTabStop } from './javascript';
 import { LengthUsage } from './parser/common';
+import { FontTablePart } from './font-table/font-table';
 
 export class HtmlRenderer {
 
     inWrapper: boolean = true;
     className: string = "docx";
-    document: Document;
+    document: WordDocument;
     options: Options;
 
     constructor(public htmlDocument: HTMLDocument) {
     }
 
-    render(document: Document, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
+    render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
 
@@ -30,18 +31,21 @@ export class HtmlRenderer {
 
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
-        appendComment(styleContainer, "docx document styles");
-        styleContainer.appendChild(this.renderStyles(document.styles));
-
-        if (document.numbering) {
-            appendComment(styleContainer, "docx document numbering styles");
-            styleContainer.appendChild(this.renderNumbering(document.numbering, styleContainer));
+        
+        if (document.stylesPart != null) {
+            appendComment(styleContainer, "docx document styles");
+            styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
 
-        if(!options.ignoreFonts)
-            this.renderFontTable(document.fontTable, styleContainer);
+        if (document.numberingPart) {
+            appendComment(styleContainer, "docx document numbering styles");
+            styleContainer.appendChild(this.renderNumbering(document.numberingPart.numberings, styleContainer));
+        }
 
-        var sectionElements = this.renderSections(document.document);
+        if(!options.ignoreFonts && document.fontTablePart)
+            this.renderFontTable(document.fontTablePart, styleContainer);
+
+        var sectionElements = this.renderSections(document.documentPart.body);
 
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
@@ -53,8 +57,8 @@ export class HtmlRenderer {
         }
     }
 
-    renderFontTable(fonts: any[], styleContainer: HTMLElement) {
-        for(let f of fonts.filter(x => x.refId)) {
+    renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
+        for(let f of fontsPart.fonts.filter(x => x.refId)) {
             this.document.loadFont(f.refId, f.fontKey).then(fontData => {
                 var cssTest = `@font-face {
                     font-family: "${f.name}";
@@ -516,6 +520,10 @@ export class HtmlRenderer {
         if(this.options.experimental) {
             setTimeout(() => {
                 var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
+                
+                if(paragraph.props.tabs == null)
+                    return;
+
                 paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
                 tabSpan.style.display = "inline-block";
                 updateTabStop(tabSpan, paragraph.props.tabs);

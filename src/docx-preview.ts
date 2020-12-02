@@ -1,4 +1,4 @@
-import { Document } from './document';
+import { WordDocument } from './word-document';
 import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
 
@@ -35,7 +35,7 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
     renderer.className = options.className || "docx";
     renderer.inWrapper = options.inWrapper;
 
-    return Document.load(data, parser).then(doc => {
+    return WordDocument.load(data, parser).then(doc => {
         renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
     })

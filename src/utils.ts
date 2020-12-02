@@ -7,3 +7,11 @@ export function addElementClass(element: OpenXmlElement, className: string): str
 export function appendClass(classList: string, className: string): string {
     return (!classList) ? className : `${classList} ${className}`
 }
+
+export function splitPath(path: string): [string, string] {
+    let si = path.lastIndexOf('/') + 1;
+    let folder = si == 0 ? "" : path.substring(0, si);
+    let fileName = si == 0 ? path : path.substring(si);
+
+    return [folder, fileName];
+}
