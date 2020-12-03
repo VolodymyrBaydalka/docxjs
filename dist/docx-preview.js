@@ -1582,7 +1582,7 @@ function parseFont(elem, xmlParser) {
     };
     for (var _i = 0, _a = xmlParser.elements(elem); _i < _a.length; _i++) {
         var el = _a[_i];
-        switch (el.nodeName) {
+        switch (el.localName) {
             case "family":
                 result.family = xmlParser.attr(el, "val");
                 break;

@@ -18,7 +18,7 @@ export function parseFont(elem: Element, xmlParser: XmlParser): FontDeclaration 
     };
 
     for (let el of xmlParser.elements(elem)) {
-        switch (el.nodeName) {
+        switch (el.localName) {
             case "family":
                 result.family = xmlParser.attr(el, "val");
                 break;
