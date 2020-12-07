@@ -49,9 +49,12 @@ export const LengthUsage: Record<string, LengthUsageType> = {
     LineHeight: { mul: 1 / 240, unit: null }
 }
 
-export function lengthAttr(elem: Element, namespaceURI: string, name: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
-    var val = elem.getAttributeNS(namespaceURI, name);
+export function parseLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+}
+
+export function lengthAttr(elem: Element, namespaceURI: string, name: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
+    return parseLength(elem.getAttributeNS(namespaceURI, name), usage)
 }
 
 export function parseBorder(elem: Element): Border {

@@ -1,3 +1,6 @@
+import { Length } from "../dom/common";
+import { parseLength } from "./common";
+
 export class XmlParser {
     parse(xmlString: string, skipDeclaration: boolean = true): Element {
         if (skipDeclaration)
@@ -6,13 +9,13 @@ export class XmlParser {
         return <Element>new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
     }
 
-    elements(elem: Element): Element[] {
+    elements(elem: Element, localName: string = null): Element[] {
         const result = [];
 
         for (let i = 0, l = elem.childNodes.length; i < l; i++) {
             let c = elem.childNodes.item(i);
 
-            if (c.nodeType == 1)
+            if (c.nodeType == 1 && (localName == null || (c as Element).localName == localName))
                 result.push(c);
         }
 
@@ -60,4 +63,10 @@ export class XmlParser {
             default: return defaultValue;
         }
     }
+
+    lengthAttr(node: Element, attrName: string): Length {
+        return parseLength(this.attr(node, attrName));
+    }
 }
+
+export const globalXmlParser = new XmlParser();
