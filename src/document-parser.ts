@@ -1,15 +1,15 @@
 import {
-    IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun,
+    IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
     IDomSubStyle, IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
-import { ns, CommonProperties } from './dom/common';
-import { lengthAttr, colorAttr, LengthUsage } from './parser/common';
-import { ParagraphElement } from './dom/paragraph';
-import { parseParagraphProperties } from './parser/paragraph';
-import { parseSectionProperties } from './parser/section';
+import { ParagraphElement, parseParagraphProperty } from './dom/paragraph';
+import { parseSectionProperties } from './dom/section';
+import globalXmlParser from './parser/xml-parser';
+import { RunElement } from './dom/run';
+import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 
 export var autos = {
     shd: "white",
@@ -46,7 +46,7 @@ export class DocumentParser {
                     break;
 
                 case "sectPr":
-                    result.props = parseSectionProperties(elem);
+                    result.props = parseSectionProperties(elem, globalXmlParser);
                     break;
             }
         });
@@ -108,21 +108,6 @@ export class DocumentParser {
         });
 
         return result;
-    }
-
-    parseCommonProperties(elem: Element, props: CommonProperties) {
-        if(elem.namespaceURI != ns.wordml)
-            return;
-
-        switch(elem.localName) {
-            case "color": 
-                props.color = colorAttr(elem, elem.namespaceURI, "val");
-                break;
-
-            case "sz":
-                props.fontSize = lengthAttr(elem, elem.namespaceURI, "val", LengthUsage.FontSize);
-                break;
-        }
     }
 
     parseStyle(node: Element): IDomStyle {
@@ -343,7 +328,7 @@ export class DocumentParser {
 
 
     parseParagraph(node: Element): OpenXmlElement {
-        var result = <ParagraphElement>{ type: DomType.Paragraph, children: [], props: {} };
+        var result = <ParagraphElement>{ type: DomType.Paragraph, children: [] };
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -356,12 +341,15 @@ export class DocumentParser {
                     break;
 
                 case "bookmarkStart":
-                    result.children.push(this.parseBookmark(c));
+                    result.children.push(parseBookmarkStart(c, globalXmlParser));
+                    break;               
+
+                    case "bookmarkEnd":
+                    result.children.push(parseBookmarkEnd(c, globalXmlParser));
                     break;
 
                 case "pPr":
                     this.parseParagraphProperties(c, result);
-                    this.parseCommonProperties(c, result.props);
                     break;
             }
         });
@@ -371,7 +359,7 @@ export class DocumentParser {
 
     parseParagraphProperties(elem: Element, paragraph: ParagraphElement) {
         this.parseDefaultProperties(elem, paragraph.style = {}, null, c => {
-            if(parseParagraphProperties(c, paragraph.props))
+            if(parseParagraphProperty(c, paragraph, globalXmlParser))
                 return true;
 
             switch (c.localName) {
@@ -406,16 +394,8 @@ export class DocumentParser {
             paragraph.style["float"] = "left";
     }
 
-    parseBookmark(node: Element): OpenXmlElement {
-        var result: IDomRun = { type: DomType.Run };
-
-        result.id = xml.stringAttr(node, "name");
-
-        return result;
-    }
-
-    parseHyperlink(node: Element, parent?: OpenXmlElement): IDomRun {
-        var result: IDomHyperlink = { type: DomType.Hyperlink, parent: parent, children: [] };
+    parseHyperlink(node: Element, parent?: OpenXmlElement): IDomHyperlink {
+        var result: IDomHyperlink = <IDomHyperlink>{ type: DomType.Hyperlink, parent: parent, children: [] };
         var anchor = xml.stringAttr(node, "anchor");
 
         if (anchor)
@@ -432,8 +412,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseRun(node: Element, parent?: OpenXmlElement): IDomRun {
-        var result: IDomRun = { type: DomType.Run, parent: parent, children: [] };
+    parseRun(node: Element, parent?: OpenXmlElement): RunElement {
+        var result: RunElement = <RunElement>{ type: DomType.Run, parent: parent, children: [] };
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -494,7 +474,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseRunProperties(elem: Element, run: IDomRun) {
+    parseRunProperties(elem: Element, run: RunElement) {
         this.parseDefaultProperties(elem, run.style = {}, null, c => {
             switch (c.localName) {
                 case "rStyle":

@@ -1,5 +1,4 @@
-import { Length } from "../dom/common";
-import { parseLength } from "./common";
+import { Length,  LengthUsage, LengthUsageType, convertLength  } from "../dom/common";
 
 export class XmlParser {
     parse(xmlString: string, skipDeclaration: boolean = true): Element {
@@ -64,9 +63,11 @@ export class XmlParser {
         }
     }
 
-    lengthAttr(node: Element, attrName: string): Length {
-        return parseLength(this.attr(node, attrName));
+    lengthAttr(node: Element, attrName: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
+        return convertLength(this.attr(node, attrName), usage);
     }
 }
 
-export const globalXmlParser = new XmlParser();
+const globalXmlParser = new XmlParser();
+
+export default globalXmlParser;

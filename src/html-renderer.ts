@@ -1,13 +1,16 @@
 import { WordDocument } from './word-document';
-import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, IDomRun, 
+import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, 
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
-import { DocumentElement, SectionProperties } from './dom/document';
+import { DocumentElement } from './dom/document';
 import { ParagraphElement} from './dom/paragraph';
 import { appendClass } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
+import { SectionProperties } from './dom/section';
+import { RunElement } from './dom/run';
+import { BookmarkStartElement } from './dom/bookmark';
 
 export class HtmlRenderer {
 
@@ -207,7 +210,7 @@ export class HtmlRenderer {
             if(elem.type == DomType.Paragraph)
             {
                 const p = elem as ParagraphElement;
-                var sectProps = p.props.sectionProps;
+                var sectProps = p.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
                 
@@ -390,8 +393,14 @@ export class HtmlRenderer {
             case DomType.Paragraph:
                 return this.renderParagraph(<ParagraphElement>elem);
 
+            case DomType.BookmarkStart:
+                return this.renderBookmarkStart(<BookmarkStartElement>elem);
+
+            case DomType.BookmarkEnd:
+                return null;
+    
             case DomType.Run:
-                return this.renderRun(<IDomRun>elem);
+                return this.renderRun(<RunElement>elem);
 
             case DomType.Table:
                 return this.renderTable(elem);
@@ -448,11 +457,16 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
 
-        this.renderCommonProeprties(result, elem.props);
+        this.renderCommonProeprties(result, elem);
 
-        if (elem.props.numbering) {
-            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
+        if (elem.numbering) {
+            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
             result.className = appendClass(result.className, numberingClass);
+        }
+
+        if (elem.styleName) {
+            var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
+            result.className = appendClass(result.className, styleClassName);
         }
 
         return result;
@@ -530,19 +544,25 @@ export class HtmlRenderer {
             setTimeout(() => {
                 var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
                 
-                if(paragraph.props.tabs == null)
+                if(paragraph.tabs == null)
                     return;
 
-                paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
+                paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
                 tabSpan.style.display = "inline-block";
-                updateTabStop(tabSpan, paragraph.props.tabs);
+                updateTabStop(tabSpan, paragraph.tabs);
             }, 0);
         }
 
         return tabSpan;
     }
 
-    renderRun(elem: IDomRun) {
+    renderBookmarkStart(elem: BookmarkStartElement): HTMLElement {
+        var result = this.htmlDocument.createElement("span");
+        result.id = elem.name;
+        return result;
+    }
+
+    renderRun(elem: RunElement) {
         if (elem.break)
             return elem.break == "page" ? null : this.htmlDocument.createElement("br");
         
@@ -578,12 +598,12 @@ export class HtmlRenderer {
     renderTable(elem: IDomTable) {
         let result = this.htmlDocument.createElement("table");
 
+        if (elem.columns)
+            result.appendChild(this.renderTableColumns(elem.columns));
+
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
-
-        if (elem.columns)
-            result.appendChild(this.renderTableColumns(elem.columns));
 
         return result;
     }
@@ -683,6 +703,10 @@ export class HtmlRenderer {
         };
 
         return mapping[format] || format;
+    }
+
+    escapeClassName(className: string) {
+        return className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
 }
 

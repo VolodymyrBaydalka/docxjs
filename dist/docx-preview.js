@@ -224,10 +224,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
-var common_1 = __webpack_require__(/*! ./dom/common */ "./src/dom/common.ts");
-var common_2 = __webpack_require__(/*! ./parser/common */ "./src/parser/common.ts");
-var paragraph_1 = __webpack_require__(/*! ./parser/paragraph */ "./src/parser/paragraph.ts");
-var section_1 = __webpack_require__(/*! ./parser/section */ "./src/parser/section.ts");
+var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragraph.ts");
+var section_1 = __webpack_require__(/*! ./dom/section */ "./src/dom/section.ts");
+var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
+var bookmark_1 = __webpack_require__(/*! ./dom/bookmark */ "./src/dom/bookmark.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -257,7 +257,7 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseTable(elem));
                     break;
                 case "sectPr":
-                    result.props = section_1.parseSectionProperties(elem);
+                    result.props = section_1.parseSectionProperties(elem, xml_parser_1.default);
                     break;
             }
         });
@@ -309,18 +309,6 @@ var DocumentParser = (function () {
             }
         });
         return result;
-    };
-    DocumentParser.prototype.parseCommonProperties = function (elem, props) {
-        if (elem.namespaceURI != common_1.ns.wordml)
-            return;
-        switch (elem.localName) {
-            case "color":
-                props.color = common_2.colorAttr(elem, elem.namespaceURI, "val");
-                break;
-            case "sz":
-                props.fontSize = common_2.lengthAttr(elem, elem.namespaceURI, "val", common_2.LengthUsage.FontSize);
-                break;
-        }
     };
     DocumentParser.prototype.parseStyle = function (node) {
         var _this = this;
@@ -530,7 +518,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
-        var result = { type: dom_1.DomType.Paragraph, children: [], props: {} };
+        var result = { type: dom_1.DomType.Paragraph, children: [] };
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -540,11 +528,13 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseHyperlink(c, result));
                     break;
                 case "bookmarkStart":
-                    result.children.push(_this.parseBookmark(c));
+                    result.children.push(bookmark_1.parseBookmarkStart(c, xml_parser_1.default));
+                    break;
+                case "bookmarkEnd":
+                    result.children.push(bookmark_1.parseBookmarkEnd(c, xml_parser_1.default));
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
-                    _this.parseCommonProperties(c, result.props);
                     break;
             }
         });
@@ -553,7 +543,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
         var _this = this;
         this.parseDefaultProperties(elem, paragraph.style = {}, null, function (c) {
-            if (paragraph_1.parseParagraphProperties(c, paragraph.props))
+            if (paragraph_1.parseParagraphProperty(c, paragraph, xml_parser_1.default))
                 return true;
             switch (c.localName) {
                 case "pStyle":
@@ -577,11 +567,6 @@ var DocumentParser = (function () {
         var dropCap = xml.stringAttr(node, "dropCap");
         if (dropCap == "drop")
             paragraph.style["float"] = "left";
-    };
-    DocumentParser.prototype.parseBookmark = function (node) {
-        var result = { type: dom_1.DomType.Run };
-        result.id = xml.stringAttr(node, "name");
-        return result;
     };
     DocumentParser.prototype.parseHyperlink = function (node, parent) {
         var _this = this;
@@ -1419,6 +1404,39 @@ exports.renderAsync = renderAsync;
 
 /***/ }),
 
+/***/ "./src/dom/bookmark.ts":
+/*!*****************************!*\
+  !*** ./src/dom/bookmark.ts ***!
+  \*****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseBookmarkEnd = exports.parseBookmarkStart = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+function parseBookmarkStart(elem, xml) {
+    return {
+        type: dom_1.DomType.BookmarkStart,
+        id: xml.attr(elem, "id"),
+        name: xml.attr(elem, "name"),
+        colFirst: xml.intAttr(elem, "colFirst"),
+        colLast: xml.intAttr(elem, "colLast")
+    };
+}
+exports.parseBookmarkStart = parseBookmarkStart;
+function parseBookmarkEnd(elem, xml) {
+    return {
+        type: dom_1.DomType.BookmarkEnd,
+        id: xml.attr(elem, "id")
+    };
+}
+exports.parseBookmarkEnd = parseBookmarkEnd;
+
+
+/***/ }),
+
 /***/ "./src/dom/common.ts":
 /*!***************************!*\
   !*** ./src/dom/common.ts ***!
@@ -1429,10 +1447,39 @@ exports.renderAsync = renderAsync;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ns = void 0;
+exports.parseCommonProperty = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 };
+exports.LengthUsage = {
+    Dxa: { mul: 0.05, unit: "pt" },
+    Emu: { mul: 1 / 12700, unit: "pt" },
+    FontSize: { mul: 0.5, unit: "pt" },
+    Border: { mul: 0.125, unit: "pt" },
+    Percent: { mul: 0.02, unit: "%" },
+    LineHeight: { mul: 1 / 240, unit: null }
+};
+function convertLength(val, usage) {
+    if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
+    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+}
+exports.convertLength = convertLength;
+function parseCommonProperty(elem, props, xml) {
+    if (elem.namespaceURI != exports.ns.wordml)
+        return false;
+    switch (elem.localName) {
+        case "color":
+            props.color = xml.attr(elem, "val");
+            break;
+        case "sz":
+            props.fontSize = xml.lengthAttr(elem, "val", exports.LengthUsage.FontSize);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+exports.parseCommonProperty = parseCommonProperty;
 
 
 /***/ }),
@@ -1510,7 +1557,218 @@ var DomType;
     DomType["Text"] = "text";
     DomType["Tab"] = "tab";
     DomType["Symbol"] = "symbol";
+    DomType["BookmarkStart"] = "bookmarkStart";
+    DomType["BookmarkEnd"] = "bookmarkEnd";
 })(DomType = exports.DomType || (exports.DomType = {}));
+
+
+/***/ }),
+
+/***/ "./src/dom/line-spacing.ts":
+/*!*********************************!*\
+  !*** ./src/dom/line-spacing.ts ***!
+  \*********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseLineSpacing = void 0;
+function parseLineSpacing(elem, xml) {
+    return {
+        before: xml.lengthAttr(elem, "before"),
+        after: xml.lengthAttr(elem, "after"),
+        line: xml.intAttr(elem, "line"),
+        lineRule: xml.attr(elem, "lineRule")
+    };
+}
+exports.parseLineSpacing = parseLineSpacing;
+
+
+/***/ }),
+
+/***/ "./src/dom/paragraph.ts":
+/*!******************************!*\
+  !*** ./src/dom/paragraph.ts ***!
+  \******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = void 0;
+var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
+var section_1 = __webpack_require__(/*! ./section */ "./src/dom/section.ts");
+var line_spacing_1 = __webpack_require__(/*! ./line-spacing */ "./src/dom/line-spacing.ts");
+var run_1 = __webpack_require__(/*! ./run */ "./src/dom/run.ts");
+function parseParagraphProperty(elem, props, xml) {
+    if (elem.namespaceURI != common_1.ns.wordml)
+        return false;
+    if (common_1.parseCommonProperty(elem, props, xml))
+        return true;
+    switch (elem.localName) {
+        case "tabs":
+            props.tabs = parseTabs(elem, xml);
+            break;
+        case "sectPr":
+            props.sectionProps = section_1.parseSectionProperties(elem, xml);
+            break;
+        case "numPr":
+            props.numbering = parseNumbering(elem, xml);
+            break;
+        case "spacing":
+            props.lineSpacing = line_spacing_1.parseLineSpacing(elem, xml);
+            return false;
+            break;
+        case "keepNext":
+            props.keepLines = true;
+            break;
+        case "keepNext":
+            props.keepNext = true;
+            break;
+        case "outlineLvl":
+            props.outlineLevel = xml.intAttr(elem, "outlineLvl");
+            break;
+        case "pStyle":
+            props.styleName = xml.attr(elem, "val");
+            break;
+        case "rPr":
+            props.runProps = run_1.parseRunProperties(elem, xml);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+exports.parseParagraphProperty = parseParagraphProperty;
+function parseTabs(elem, xml) {
+    return xml.elements(elem, "tab")
+        .map(function (e) { return ({
+        position: xml.lengthAttr(e, "pos"),
+        leader: xml.attr(e, "leader"),
+        style: xml.attr(e, "val")
+    }); });
+}
+exports.parseTabs = parseTabs;
+function parseNumbering(elem, xml) {
+    var result = {};
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "numId":
+                result.id = xml.attr(e, "val");
+                break;
+            case "ilvl":
+                result.level = xml.intAttr(e, "val");
+                break;
+        }
+    }
+    return result;
+}
+exports.parseNumbering = parseNumbering;
+
+
+/***/ }),
+
+/***/ "./src/dom/run.ts":
+/*!************************!*\
+  !*** ./src/dom/run.ts ***!
+  \************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseRunProperty = exports.parseRunProperties = void 0;
+var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
+function parseRunProperties(elem, xml) {
+    var result = {};
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var el = _a[_i];
+        parseRunProperty(el, result, xml);
+    }
+    return result;
+}
+exports.parseRunProperties = parseRunProperties;
+function parseRunProperty(elem, props, xml) {
+    if (common_1.parseCommonProperty(elem, props, xml))
+        return true;
+    return false;
+}
+exports.parseRunProperty = parseRunProperty;
+
+
+/***/ }),
+
+/***/ "./src/dom/section.ts":
+/*!****************************!*\
+  !*** ./src/dom/section.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseSectionProperties = exports.SectionType = void 0;
+var SectionType;
+(function (SectionType) {
+    SectionType["Continuous"] = "continuous";
+    SectionType["NextPage"] = "nextPage";
+    SectionType["NextColumn"] = "nextColumn";
+    SectionType["EvenPage"] = "evenPage";
+    SectionType["OddPage"] = "oddPage";
+})(SectionType = exports.SectionType || (exports.SectionType = {}));
+function parseSectionProperties(elem, xml) {
+    var section = {};
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "pgSz":
+                section.pageSize = {
+                    width: xml.lengthAttr(e, "w"),
+                    height: xml.lengthAttr(e, "h"),
+                    orientation: xml.attr(e, "orient")
+                };
+                break;
+            case "type":
+                section.type = xml.attr(e, "val");
+                break;
+            case "pgMar":
+                section.pageMargins = {
+                    left: xml.lengthAttr(e, "left"),
+                    right: xml.lengthAttr(e, "right"),
+                    top: xml.lengthAttr(e, "top"),
+                    bottom: xml.lengthAttr(e, "bottom"),
+                    header: xml.lengthAttr(e, "header"),
+                    footer: xml.lengthAttr(e, "footer"),
+                    gutter: xml.lengthAttr(e, "gutter"),
+                };
+                break;
+            case "cols":
+                section.columns = parseColumns(e, xml);
+                break;
+        }
+    }
+    return section;
+}
+exports.parseSectionProperties = parseSectionProperties;
+function parseColumns(elem, xml) {
+    return {
+        numberOfColumns: xml.intAttr(elem, "num"),
+        space: xml.lengthAttr(elem, "space"),
+        separator: xml.boolAttr(elem, "sep"),
+        equalWidth: xml.boolAttr(elem, "equalWidth", true),
+        columns: xml.elements(elem, "col")
+            .map(function (e) { return ({
+            width: xml.lengthAttr(e, "w"),
+            space: xml.lengthAttr(e, "space")
+        }); })
+    };
+}
 
 
 /***/ }),
@@ -1799,7 +2057,7 @@ var HtmlRenderer = (function () {
             current.elements.push(elem);
             if (elem.type == dom_1.DomType.Paragraph) {
                 var p = elem;
-                var sectProps = p.props.sectionProps;
+                var sectProps = p.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
                 if (this.options.breakPages && p.children) {
@@ -1940,6 +2198,10 @@ var HtmlRenderer = (function () {
         switch (elem.type) {
             case dom_1.DomType.Paragraph:
                 return this.renderParagraph(elem);
+            case dom_1.DomType.BookmarkStart:
+                return this.renderBookmarkStart(elem);
+            case dom_1.DomType.BookmarkEnd:
+                return null;
             case dom_1.DomType.Run:
                 return this.renderRun(elem);
             case dom_1.DomType.Table:
@@ -1983,10 +2245,14 @@ var HtmlRenderer = (function () {
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
-        this.renderCommonProeprties(result, elem.props);
-        if (elem.props.numbering) {
-            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
+        this.renderCommonProeprties(result, elem);
+        if (elem.numbering) {
+            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
             result.className = utils_1.appendClass(result.className, numberingClass);
+        }
+        if (elem.styleName) {
+            var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
+            result.className = utils_1.appendClass(result.className, styleClassName);
         }
         return result;
     };
@@ -2042,14 +2308,19 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if (paragraph.props.tabs == null)
+                if (paragraph.tabs == null)
                     return;
-                paragraph.props.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
+                paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
-                javascript_1.updateTabStop(tabSpan, paragraph.props.tabs);
+                javascript_1.updateTabStop(tabSpan, paragraph.tabs);
             }, 0);
         }
         return tabSpan;
+    };
+    HtmlRenderer.prototype.renderBookmarkStart = function (elem) {
+        var result = this.htmlDocument.createElement("span");
+        result.id = elem.name;
+        return result;
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
         if (elem.break)
@@ -2077,11 +2348,11 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderTable = function (elem) {
         var result = this.htmlDocument.createElement("table");
+        if (elem.columns)
+            result.appendChild(this.renderTableColumns(elem.columns));
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.style, result);
-        if (elem.columns)
-            result.appendChild(this.renderTableColumns(elem.columns));
         return result;
     };
     HtmlRenderer.prototype.renderTableColumns = function (columns) {
@@ -2159,6 +2430,9 @@ var HtmlRenderer = (function () {
             "upperRoman": "upper-roman",
         };
         return mapping[format] || format;
+    };
+    HtmlRenderer.prototype.escapeClassName = function (className) {
+        return className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
     return HtmlRenderer;
 }());
@@ -2279,238 +2553,6 @@ exports.NumberingPart = NumberingPart;
 
 /***/ }),
 
-/***/ "./src/parser/common.ts":
-/*!******************************!*\
-  !*** ./src/parser/common.ts ***!
-  \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBorders = exports.parseBorder = exports.lengthAttr = exports.LengthUsage = exports.boolAttr = exports.colorAttr = exports.intAttr = exports.stringAttr = exports.elements = void 0;
-var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
-function elements(elem, namespaceURI, localName) {
-    if (namespaceURI === void 0) { namespaceURI = null; }
-    if (localName === void 0) { localName = null; }
-    var result = [];
-    for (var i = 0; i < elem.childNodes.length; i++) {
-        var n = elem.childNodes[i];
-        if (n.nodeType == 1
-            && (namespaceURI == null || n.namespaceURI == namespaceURI)
-            && (localName == null || n.localName == localName))
-            result.push(n);
-    }
-    return result;
-}
-exports.elements = elements;
-function stringAttr(elem, namespaceURI, name) {
-    return elem.getAttributeNS(namespaceURI, name);
-}
-exports.stringAttr = stringAttr;
-function intAttr(elem, namespaceURI, name) {
-    var val = elem.getAttributeNS(namespaceURI, name);
-    return val ? parseInt(val) : null;
-}
-exports.intAttr = intAttr;
-function colorAttr(elem, namespaceURI, name) {
-    var val = elem.getAttributeNS(namespaceURI, name);
-    return val ? "#" + val : null;
-}
-exports.colorAttr = colorAttr;
-function boolAttr(elem, namespaceURI, name, defaultValue) {
-    if (defaultValue === void 0) { defaultValue = false; }
-    var val = elem.getAttributeNS(namespaceURI, name);
-    if (val == null)
-        return defaultValue;
-    return val === "true" || val === "1";
-}
-exports.boolAttr = boolAttr;
-exports.LengthUsage = {
-    Dxa: { mul: 0.05, unit: "pt" },
-    Emu: { mul: 1 / 12700, unit: "pt" },
-    FontSize: { mul: 0.5, unit: "pt" },
-    Border: { mul: 0.125, unit: "pt" },
-    Percent: { mul: 0.02, unit: "%" },
-    LineHeight: { mul: 1 / 240, unit: null }
-};
-function lengthAttr(elem, namespaceURI, name, usage) {
-    if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
-    var val = elem.getAttributeNS(namespaceURI, name);
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
-}
-exports.lengthAttr = lengthAttr;
-function parseBorder(elem) {
-    return {
-        type: stringAttr(elem, common_1.ns.wordml, "val"),
-        color: colorAttr(elem, common_1.ns.wordml, "color"),
-        size: lengthAttr(elem, common_1.ns.wordml, "sz", exports.LengthUsage.Border)
-    };
-}
-exports.parseBorder = parseBorder;
-function parseBorders(elem) {
-    var result = {};
-    for (var _i = 0, _a = elements(elem, common_1.ns.wordml); _i < _a.length; _i++) {
-        var e = _a[_i];
-        switch (e.localName) {
-            case "left":
-                result.left = parseBorder(e);
-                break;
-            case "top":
-                result.top = parseBorder(e);
-                break;
-            case "right":
-                result.right = parseBorder(e);
-                break;
-            case "botton":
-                result.botton = parseBorder(e);
-                break;
-        }
-    }
-    return result;
-}
-exports.parseBorders = parseBorders;
-
-
-/***/ }),
-
-/***/ "./src/parser/paragraph.ts":
-/*!*********************************!*\
-  !*** ./src/parser/paragraph.ts ***!
-  \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseParagraphProperties = void 0;
-var xml = __webpack_require__(/*! ./common */ "./src/parser/common.ts");
-var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
-var section_1 = __webpack_require__(/*! ./section */ "./src/parser/section.ts");
-function parseParagraphProperties(elem, props) {
-    if (elem.namespaceURI != common_1.ns.wordml)
-        return false;
-    switch (elem.localName) {
-        case "tabs":
-            props.tabs = parseTabs(elem);
-            break;
-        case "sectPr":
-            props.sectionProps = section_1.parseSectionProperties(elem);
-            break;
-        case "numPr":
-            props.numbering = parseNumbering(elem);
-            break;
-        case "spacing":
-            props.lineSpacing = parseLineSpacing(elem);
-            return false;
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-exports.parseParagraphProperties = parseParagraphProperties;
-function parseTabs(elem) {
-    return xml.elements(elem, common_1.ns.wordml, "tab")
-        .map(function (e) { return ({
-        position: xml.lengthAttr(e, common_1.ns.wordml, "pos"),
-        leader: xml.stringAttr(e, common_1.ns.wordml, "leader"),
-        style: xml.stringAttr(e, common_1.ns.wordml, "val")
-    }); });
-}
-function parseNumbering(elem) {
-    var result = {};
-    for (var _i = 0, _a = xml.elements(elem, common_1.ns.wordml); _i < _a.length; _i++) {
-        var e = _a[_i];
-        switch (e.localName) {
-            case "numId":
-                result.id = xml.stringAttr(e, common_1.ns.wordml, "val");
-                break;
-            case "ilvl":
-                result.level = xml.intAttr(e, common_1.ns.wordml, "val");
-                break;
-        }
-    }
-    return result;
-}
-function parseLineSpacing(elem) {
-    return {
-        before: xml.lengthAttr(elem, common_1.ns.wordml, "before"),
-        after: xml.lengthAttr(elem, common_1.ns.wordml, "after"),
-        line: xml.intAttr(elem, common_1.ns.wordml, "line"),
-        lineRule: xml.stringAttr(elem, common_1.ns.wordml, "lineRule")
-    };
-}
-
-
-/***/ }),
-
-/***/ "./src/parser/section.ts":
-/*!*******************************!*\
-  !*** ./src/parser/section.ts ***!
-  \*******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseSectionProperties = void 0;
-var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
-var xml = __webpack_require__(/*! ./common */ "./src/parser/common.ts");
-function parseSectionProperties(elem) {
-    var section = {};
-    for (var _i = 0, _a = xml.elements(elem, common_1.ns.wordml); _i < _a.length; _i++) {
-        var e = _a[_i];
-        switch (e.localName) {
-            case "pgSz":
-                section.pageSize = {
-                    width: xml.lengthAttr(e, common_1.ns.wordml, "w"),
-                    height: xml.lengthAttr(e, common_1.ns.wordml, "h"),
-                    orientation: xml.stringAttr(e, common_1.ns.wordml, "orient")
-                };
-                break;
-            case "type":
-                section.type = xml.stringAttr(e, common_1.ns.wordml, "val");
-                break;
-            case "pgMar":
-                section.pageMargins = {
-                    left: xml.lengthAttr(e, common_1.ns.wordml, "left"),
-                    right: xml.lengthAttr(e, common_1.ns.wordml, "right"),
-                    top: xml.lengthAttr(e, common_1.ns.wordml, "top"),
-                    bottom: xml.lengthAttr(e, common_1.ns.wordml, "bottom"),
-                    header: xml.lengthAttr(e, common_1.ns.wordml, "header"),
-                    footer: xml.lengthAttr(e, common_1.ns.wordml, "footer"),
-                    gutter: xml.lengthAttr(e, common_1.ns.wordml, "gutter"),
-                };
-                break;
-            case "cols":
-                section.columns = parseColumns(e);
-                break;
-        }
-    }
-    return section;
-}
-exports.parseSectionProperties = parseSectionProperties;
-function parseColumns(elem) {
-    return {
-        numberOfColumns: xml.intAttr(elem, common_1.ns.wordml, "num"),
-        space: xml.lengthAttr(elem, common_1.ns.wordml, "space"),
-        separator: xml.boolAttr(elem, common_1.ns.wordml, "sep"),
-        equalWidth: xml.boolAttr(elem, common_1.ns.wordml, "equalWidth", true),
-        columns: xml.elements(elem, common_1.ns.wordml, "col")
-            .map(function (e) { return ({
-            width: xml.lengthAttr(e, common_1.ns.wordml, "w"),
-            space: xml.lengthAttr(e, common_1.ns.wordml, "space")
-        }); })
-    };
-}
-
-
-/***/ }),
-
 /***/ "./src/parser/xml-parser.ts":
 /*!**********************************!*\
   !*** ./src/parser/xml-parser.ts ***!
@@ -2522,6 +2564,7 @@ function parseColumns(elem) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XmlParser = void 0;
+var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 var XmlParser = (function () {
     function XmlParser() {
     }
@@ -2531,11 +2574,12 @@ var XmlParser = (function () {
             xmlString = xmlString.replace(/<[?].*[?]>/, "");
         return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
     };
-    XmlParser.prototype.elements = function (elem) {
+    XmlParser.prototype.elements = function (elem, localName) {
+        if (localName === void 0) { localName = null; }
         var result = [];
         for (var i = 0, l = elem.childNodes.length; i < l; i++) {
             var c = elem.childNodes.item(i);
-            if (c.nodeType == 1)
+            if (c.nodeType == 1 && (localName == null || c.localName == localName))
                 result.push(c);
         }
         return result;
@@ -2575,9 +2619,15 @@ var XmlParser = (function () {
             default: return defaultValue;
         }
     };
+    XmlParser.prototype.lengthAttr = function (node, attrName, usage) {
+        if (usage === void 0) { usage = common_1.LengthUsage.Dxa; }
+        return common_1.convertLength(this.attr(node, attrName), usage);
+    };
     return XmlParser;
 }());
 exports.XmlParser = XmlParser;
+var globalXmlParser = new XmlParser();
+exports.default = globalXmlParser;
 
 
 /***/ }),

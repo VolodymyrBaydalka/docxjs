@@ -11,7 +11,9 @@ export enum DomType {
     Image = "image",
     Text = "text",
     Tab = "tab",
-    Symbol = "symbol"
+    Symbol = "symbol",
+    BookmarkStart = "bookmarkStart",
+    BookmarkEnd = "bookmarkEnd"
 }
 
 export interface OpenXmlElement {
@@ -38,15 +40,6 @@ export interface TextElement extends OpenXmlElement{
 export interface SymbolElement extends OpenXmlElement {
     font: string;
     char: string;
-}
-
-export interface IDomRun extends OpenXmlElement {
-    id?: string;
-    break?: string;
-    wrapper?: string;
-    href?: string;
-    fldCharType?: "begin" | "end" | "separate" | string;
-    instrText?: string;
 }
 
 export interface IDomTable extends OpenXmlElement {
