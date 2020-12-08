@@ -19,7 +19,7 @@ export enum DomType {
 export interface OpenXmlElement {
     type: DomType;
     children?: OpenXmlElement[];
-    style?: IDomStyleValues;
+    cssStyle?: Record<string, string>;
     className?: string;
     parent?: OpenXmlElement;
 }
@@ -44,7 +44,7 @@ export interface SymbolElement extends OpenXmlElement {
 
 export interface IDomTable extends OpenXmlElement {
     columns?: IDomTableColumn[];
-    cellStyle?: IDomStyleValues;
+    cellStyle?: Record<string, string>;
 }
 
 export interface IDomTableRow extends OpenXmlElement {
@@ -62,26 +62,10 @@ export interface IDomTableColumn {
     width?: string;
 }
 
-export interface IDomStyle {
-    id: string;
-    name?: string;
-    aliases?: string[];
-    target: string;
-    basedOn?: string;
-    isDefault?: boolean;
-    styles: IDomSubStyle[];
-    linked?: string;
-}
-
-export interface IDomSubStyle {
-    target: string;
-    values: IDomStyleValues;
-}
-
 export interface IDomNumbering {
     id: string;
     level: number;
-    style: IDomStyleValues;
+    style: Record<string, string>;
     levelText?: string;
     format?: string;
     bullet?: NumberingPicBullet;
@@ -91,8 +75,4 @@ export interface NumberingPicBullet {
     id: number;
     src: string;
     style?: string;
-}
-
-export interface IDomStyleValues {
-    [name: string]: string;
 }

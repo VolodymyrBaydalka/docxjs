@@ -1,7 +1,7 @@
 import { Package } from "../common/package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { IDomStyle } from "../dom/dom";
+import { IDomStyle } from "../dom/style";
 
 export class StylesPart extends Part {
     styles: IDomStyle[];

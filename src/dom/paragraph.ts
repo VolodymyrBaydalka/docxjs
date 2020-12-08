@@ -15,9 +15,11 @@ export interface ParagraphProperties extends CommonProperties {
     numbering: ParagraphNumbering;
 
     border: Borders;
+    textAlignment: "auto" | "baseline" | "bottom" | "center" | "top" | string;
     lineSpacing: LineSpacing;
     keepLines: boolean;
     keepNext: boolean;
+    pageBreakBefore: boolean;
     outlineLevel: number;
     styleName: string;
 
@@ -33,6 +35,16 @@ export interface ParagraphTab {
 export interface ParagraphNumbering {
     id: string;
     level: number;
+}
+
+export function parseParagraphProperties(elem: Element, xml: XmlParser): ParagraphProperties {
+    let result = <ParagraphProperties>{};
+
+    for(let el of xml.elements(elem)) {
+        parseParagraphProperty(el, result, xml);
+    }
+
+    return result;
 }
 
 export function parseParagraphProperty(elem: Element, props: ParagraphProperties, xml: XmlParser) {
@@ -60,12 +72,21 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             return false; // TODO
             break;
 
+        case "textAlignment":
+            props.textAlignment = xml.attr(elem, "val");
+            return false; //TODO
+            break;
+
         case "keepNext":
             props.keepLines = true;
             break;
     
         case "keepNext":
             props.keepNext = true;
+            break;
+        
+        case "pageBreakBefore":
+            props.pageBreakBefore = true;
             break;
         
         case "outlineLvl":

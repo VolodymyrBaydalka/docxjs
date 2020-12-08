@@ -1,15 +1,16 @@
 import {
-    IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering,
+    DomType, IDomTable, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomSubStyle, IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
+    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
 } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
-import { ParagraphElement, parseParagraphProperty } from './dom/paragraph';
+import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
 import { parseSectionProperties } from './dom/section';
 import globalXmlParser from './parser/xml-parser';
 import { RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
+import { IDomStyle, IDomSubStyle } from './dom/style';
 
 export var autos = {
     shd: "white",
@@ -29,7 +30,7 @@ export class DocumentParser {
         var result: DocumentElement = {
             type: DomType.Document,
             children: [],
-            style: {},
+            cssStyle: {},
             props: null
         };
 
@@ -75,7 +76,7 @@ export class DocumentParser {
     }
 
     parseDefaultStyles(node: Element): IDomStyle {
-        var result = {
+        var result = <IDomStyle>{
             id: null,
             name: null,
             target: null,
@@ -150,6 +151,7 @@ export class DocumentParser {
                         target: "p",
                         values: this.parseDefaultProperties(n, {})
                     });
+                    result.paragraphProps = parseParagraphProperties(n, globalXmlParser);
                     break;
 
                 case "rPr":
@@ -157,6 +159,7 @@ export class DocumentParser {
                         target: "span",
                         values: this.parseDefaultProperties(n, {})
                     });
+                    result.runProps = parseParagraphProperties(n, globalXmlParser);
                     break;
 
                 case "tblPr":
@@ -358,7 +361,7 @@ export class DocumentParser {
     }
 
     parseParagraphProperties(elem: Element, paragraph: ParagraphElement) {
-        this.parseDefaultProperties(elem, paragraph.style = {}, null, c => {
+        this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, c => {
             if(parseParagraphProperty(c, paragraph, globalXmlParser))
                 return true;
 
@@ -391,7 +394,7 @@ export class DocumentParser {
         var dropCap = xml.stringAttr(node, "dropCap");
 
         if (dropCap == "drop")
-            paragraph.style["float"] = "left";
+            paragraph.cssStyle["float"] = "left";
     }
 
     parseHyperlink(node: Element, parent?: OpenXmlElement): IDomHyperlink {
@@ -475,7 +478,7 @@ export class DocumentParser {
     }
 
     parseRunProperties(elem: Element, run: RunElement) {
-        this.parseDefaultProperties(elem, run.style = {}, null, c => {
+        this.parseDefaultProperties(elem, run.cssStyle = {}, null, c => {
             switch (c.localName) {
                 case "rStyle":
                     run.className = xml.className(c, "val");
@@ -507,7 +510,7 @@ export class DocumentParser {
     }
 
     parseDrawingWrapper(node: Element): OpenXmlElement {
-        var result = <OpenXmlElement>{ type: DomType.Drawing, children: [], style: {} };
+        var result = <OpenXmlElement>{ type: DomType.Drawing, children: [], cssStyle: {} };
         var isAnchor = node.localName == "anchor";
 
         //TODO
@@ -532,8 +535,8 @@ export class DocumentParser {
                     break;
 
                 case "extent":
-                    result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
-                    result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                    result.cssStyle["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
+                    result.cssStyle["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
                     break;
 
                 case "positionH":
@@ -569,26 +572,26 @@ export class DocumentParser {
         }
 
         if (wrapType == "wrapTopAndBottom") {
-            result.style['display'] = 'block';
+            result.cssStyle['display'] = 'block';
 
             if (posX.align) {
-                result.style['text-align'] = posX.align;
-                result.style['width'] = "100%";
+                result.cssStyle['text-align'] = posX.align;
+                result.cssStyle['width'] = "100%";
             }
         }
         else if(wrapType == "wrapNone") {
-            result.style['display'] = 'block';
-            result.style['position'] = 'relative';
-            result.style["width"] = "0px";
-            result.style["height"] = "0px";
+            result.cssStyle['display'] = 'block';
+            result.cssStyle['position'] = 'relative';
+            result.cssStyle["width"] = "0px";
+            result.cssStyle["height"] = "0px";
 
             if(posX.offset)
-                result.style["left"] = posX.offset;
+                result.cssStyle["left"] = posX.offset;
             if(posY.offset)
-                result.style["top"] = posY.offset;
+                result.cssStyle["top"] = posY.offset;
         }
         else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
-            result.style["float"] = posX.align;
+            result.cssStyle["float"] = posX.align;
         }
 
         return result;
@@ -608,7 +611,7 @@ export class DocumentParser {
     }
 
     parsePicture(elem: Element): IDomImage {
-        var result = <IDomImage>{ type: DomType.Image, src: "", style: {} };
+        var result = <IDomImage>{ type: DomType.Image, src: "", cssStyle: {} };
         var blipFill = xml.byTagName(elem, "blipFill");
         var blip = xml.byTagName(blipFill, "blip");
 
@@ -617,18 +620,18 @@ export class DocumentParser {
         var spPr = xml.byTagName(elem, "spPr");
         var xfrm = xml.byTagName(spPr, "xfrm");
 
-        result.style["position"] = "relative";
+        result.cssStyle["position"] = "relative";
 
         for (var n of xml.elements(xfrm)) {
             switch (n.localName) {
                 case "ext":
-                    result.style["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
-                    result.style["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                    result.cssStyle["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
+                    result.cssStyle["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
                     break;
 
                 case "off":
-                    result.style["left"] = xml.sizeAttr(n, "x", SizeType.Emu);
-                    result.style["top"] = xml.sizeAttr(n, "y", SizeType.Emu);
+                    result.cssStyle["left"] = xml.sizeAttr(n, "x", SizeType.Emu);
+                    result.cssStyle["top"] = xml.sizeAttr(n, "y", SizeType.Emu);
                     break;
             }
         }
@@ -673,10 +676,10 @@ export class DocumentParser {
     }
 
     parseTableProperties(elem: Element, table: IDomTable) {
-        table.style = {};
+        table.cssStyle = {};
         table.cellStyle = {};
 
-        this.parseDefaultProperties(elem, table.style, table.cellStyle, c => {
+        this.parseDefaultProperties(elem, table.cssStyle, table.cellStyle, c => {
             switch (c.localName) {
                 case "tblStyle":
                     table.className = xml.className(c, "val");
@@ -697,16 +700,16 @@ export class DocumentParser {
             return true;
         });
 
-        switch (table.style["text-align"]) {
+        switch (table.cssStyle["text-align"]) {
             case "center":
-                delete table.style["text-align"];
-                table.style["margin-left"] = "auto";
-                table.style["margin-right"] = "auto";
+                delete table.cssStyle["text-align"];
+                table.cssStyle["margin-left"] = "auto";
+                table.cssStyle["margin-right"] = "auto";
                 break;
 
             case "right":
-                delete table.style["text-align"];
-                table.style["margin-left"] = "auto";
+                delete table.cssStyle["text-align"];
+                table.cssStyle["margin-left"] = "auto";
                 break;
         }
     }
@@ -717,11 +720,11 @@ export class DocumentParser {
         var rightFromText = xml.sizeAttr(node, "rightFromText");
         var leftFromText = xml.sizeAttr(node, "leftFromText");
 
-        table.style["float"] = 'left';
-        table.style["margin-bottom"] = values.addSize(table.style["margin-bottom"], bottomFromText);
-        table.style["margin-left"] = values.addSize(table.style["margin-left"], leftFromText);
-        table.style["margin-right"] = values.addSize(table.style["margin-right"], rightFromText);
-        table.style["margin-top"] = values.addSize(table.style["margin-top"], topFromText);
+        table.cssStyle["float"] = 'left';
+        table.cssStyle["margin-bottom"] = values.addSize(table.cssStyle["margin-bottom"], bottomFromText);
+        table.cssStyle["margin-left"] = values.addSize(table.cssStyle["margin-left"], leftFromText);
+        table.cssStyle["margin-right"] = values.addSize(table.cssStyle["margin-right"], rightFromText);
+        table.cssStyle["margin-top"] = values.addSize(table.cssStyle["margin-top"], topFromText);
     }
 
     parseTableRow(node: Element): IDomTableRow {
@@ -743,7 +746,7 @@ export class DocumentParser {
     }
 
     parseTableRowProperties(elem: Element, row: IDomTableRow) {
-        row.style = this.parseDefaultProperties(elem, {}, null, c => {
+        row.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "cnfStyle":
                     row.className = values.classNameOfCnfStyle(c);
@@ -780,7 +783,7 @@ export class DocumentParser {
     }
 
     parseTableCellProperties(elem: Element, cell: IDomTableCell) {
-        cell.style = this.parseDefaultProperties(elem, {}, null, c => {
+        cell.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "gridSpan":
                     cell.span = xml.intAttr(c, "val", null);
@@ -801,7 +804,7 @@ export class DocumentParser {
         });
     }
 
-    parseDefaultProperties(elem: Element, style: IDomStyleValues = null, childStyle: IDomStyleValues = null, handler: (prop: Element) => boolean = null): IDomStyleValues {
+    parseDefaultProperties(elem: Element, style: Record<string, string> = null, childStyle: Record<string, string> = null, handler: (prop: Element) => boolean = null): Record<string, string> {
         style = style || {};
 
         let spacing = null;
@@ -929,7 +932,7 @@ export class DocumentParser {
         return style;
     }
 
-    parseUnderline(node: Element, style: IDomStyleValues) {
+    parseUnderline(node: Element, style: Record<string, string>) {
         var val = xml.stringAttr(node, "val");
 
         if (val == null || val == "none")
@@ -978,14 +981,14 @@ export class DocumentParser {
             style["text-decoration-color"] = col;
     }
 
-    parseFont(node: Element, style: IDomStyleValues) {
+    parseFont(node: Element, style: Record<string, string>) {
         var ascii = xml.stringAttr(node, "ascii");
 
         if (ascii)
             style["font-family"] = ascii;
     }
 
-    parseIndentation(node: Element, style: IDomStyleValues) {
+    parseIndentation(node: Element, style: Record<string, string>) {
         var firstLine = xml.sizeAttr(node, "firstLine");
         var left = xml.sizeAttr(node, "left");
         var start = xml.sizeAttr(node, "start");
@@ -997,7 +1000,7 @@ export class DocumentParser {
         if (right || end) style["margin-right"] = right || end;
     }
 
-    parseSpacing(node: Element, style: IDomStyleValues) {
+    parseSpacing(node: Element, style: Record<string, string>) {
         var before = xml.sizeAttr(node, "before");
         var after = xml.sizeAttr(node, "after");
         var line = xml.intAttr(node, "line", null);
@@ -1023,7 +1026,7 @@ export class DocumentParser {
         }
     }
 
-    parseMarginProperties(node: Element, output: IDomStyleValues) {
+    parseMarginProperties(node: Element, output: Record<string, string>) {
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "left":
@@ -1045,7 +1048,7 @@ export class DocumentParser {
         });
     }
 
-    parseTrHeight(node: Element, output: IDomStyleValues) {
+    parseTrHeight(node: Element, output: Record<string, string>) {
         switch (xml.stringAttr(node, "hRule")) {
             case "exact":
                 output["height"] = xml.sizeAttr(node, "val");
@@ -1060,7 +1063,7 @@ export class DocumentParser {
         }
     }
 
-    parseBorderProperties(node: Element, output: IDomStyleValues) {
+    parseBorderProperties(node: Element, output: Record<string, string>) {
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "start":

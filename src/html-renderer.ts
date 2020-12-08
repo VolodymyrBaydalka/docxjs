@@ -1,5 +1,5 @@
 import { WordDocument } from './word-document';
-import { IDomStyle, DomType, IDomTable, IDomStyleValues, IDomNumbering, 
+import { DomType, IDomTable, IDomNumbering, 
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
@@ -11,6 +11,7 @@ import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
 import { RunElement } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
+import { IDomStyle } from './dom/style';
 
 export class HtmlRenderer {
 
@@ -128,7 +129,7 @@ export class HtmlRenderer {
     processTable(table: IDomTable) {
         for (var r of table.children) {
             for (var c of r.children) {
-                c.style = this.copyStyleProperties(table.cellStyle, c.style, [
+                c.cssStyle = this.copyStyleProperties(table.cellStyle, c.cssStyle, [
                     "border-left", "border-right", "border-top", "border-bottom",
                     "padding-left", "padding-right", "padding-top", "padding-bottom"
                 ]);
@@ -138,7 +139,7 @@ export class HtmlRenderer {
         }
     }
 
-    copyStyleProperties(input: IDomStyleValues, output: IDomStyleValues, attrs: string[] = null): IDomStyleValues {
+    copyStyleProperties(input: Record<string, string>, output: Record<string, string>, attrs: string[] = null): Record<string, string> {
         if (!input)
             return output;
 
@@ -455,7 +456,7 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         this.renderCommonProeprties(result, elem);
 
@@ -489,7 +490,7 @@ export class HtmlRenderer {
         var result = this.htmlDocument.createElement("a");
 
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         if (elem.href)
             result.href = elem.href
@@ -505,7 +506,7 @@ export class HtmlRenderer {
         result.style.textIndent = "0px";
 
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         return result;
     }
@@ -513,7 +514,7 @@ export class HtmlRenderer {
     renderImage(elem: IDomImage) {
         let result = this.htmlDocument.createElement("img");
 
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         if (this.document) {
             this.document.loadDocumentImage(elem.src).then(x => {
@@ -576,7 +577,7 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         if (elem.href) {
             var link = this.htmlDocument.createElement("a");
@@ -603,7 +604,7 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         return result;
     }
@@ -628,7 +629,7 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         return result;
     }
@@ -638,14 +639,14 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.style, result);
+        this.renderStyleValues(elem.cssStyle, result);
 
         if (elem.span) result.colSpan = elem.span;
 
         return result;
     }
 
-    renderStyleValues(style: IDomStyleValues, ouput: HTMLElement) {
+    renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
         if (style == null)
             return;
 
@@ -665,7 +666,7 @@ export class HtmlRenderer {
         return `${this.className}-num-${id}-${lvl}`;
     }
 
-    styleToString(selectors: string, values: IDomStyleValues, cssText: string = null) {
+    styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
         let result = selectors + " {\r\n";
 
         for (const key in values) {
