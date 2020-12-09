@@ -313,7 +313,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseStyle = function (node) {
         var _this = this;
         var result = {
-            id: xml.className(node, "styleId"),
+            id: xml.stringAttr(node, "styleId"),
             isDefault: xml.boolAttr(node, "default"),
             name: null,
             target: null,
@@ -1638,13 +1638,13 @@ function parseParagraphProperty(elem, props, xml) {
             return false;
             break;
         case "keepNext":
-            props.keepLines = true;
+            props.keepLines = xml.boolAttr(elem, "val", true);
             break;
         case "keepNext":
-            props.keepNext = true;
+            props.keepNext = xml.boolAttr(elem, "val", true);
             break;
         case "pageBreakBefore":
-            props.pageBreakBefore = true;
+            props.pageBreakBefore = xml.boolAttr(elem, "val", true);
             break;
         case "outlineLvl":
             props.outlineLevel = xml.intAttr(elem, "outlineLvl");
@@ -1983,7 +1983,7 @@ var HtmlRenderer = (function () {
         }
         for (var _f = 0, styles_1 = styles; _f < styles_1.length; _f++) {
             var style = styles_1[_f];
-            style.id = this.processClassName(style.id);
+            style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
         return stylesMap;
     };
@@ -2068,10 +2068,22 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.splitBySection = function (elements) {
+        var _a, _b;
         var current = { sectProps: null, elements: [] };
         var result = [current];
+        var styles = (_a = this.document.stylesPart) === null || _a === void 0 ? void 0 : _a.styles;
+        var styleMap = styles ? utils_1.keyBy(styles, function (x) { return x.id; }) : null;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
+            if (elem.type == dom_1.DomType.Paragraph) {
+                var styleName = elem.styleName;
+                var s = styleMap && styleName ? styleMap[styleName] : null;
+                if ((_b = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _b === void 0 ? void 0 : _b.pageBreakBefore) {
+                    current.sectProps = sectProps;
+                    current = { sectProps: null, elements: [] };
+                    result.push(current);
+                }
+            }
             current.elements.push(elem);
             if (elem.type == dom_1.DomType.Paragraph) {
                 var p = elem;
@@ -2200,11 +2212,11 @@ var HtmlRenderer = (function () {
                 var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
-                    selector += style.target + "." + style.id;
+                    selector += style.target + "." + style.cssName;
                 else if (style.target)
-                    selector += style.target + "." + style.id + " " + subStyle.target;
+                    selector += style.target + "." + style.cssName + " " + subStyle.target;
                 else
-                    selector += "." + style.id + " " + subStyle.target;
+                    selector += "." + style.cssName + " " + subStyle.target;
                 if (style.isDefault && style.target)
                     selector = "." + this.className + " " + style.target + ", " + selector;
                 styleText += this.styleToString(selector, subStyle.values);
@@ -2450,7 +2462,7 @@ var HtmlRenderer = (function () {
         return mapping[format] || format;
     };
     HtmlRenderer.prototype.escapeClassName = function (className) {
-        return className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
+        return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
     return HtmlRenderer;
 }());
@@ -2707,7 +2719,7 @@ exports.StylesPart = StylesPart;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -2723,6 +2735,13 @@ function splitPath(path) {
     return [folder, fileName];
 }
 exports.splitPath = splitPath;
+function keyBy(array, by) {
+    return array.reduce(function (a, x) {
+        a[by(x)] = x;
+        return a;
+    }, {});
+}
+exports.keyBy = keyBy;
 
 
 /***/ }),

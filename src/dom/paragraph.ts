@@ -78,15 +78,15 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             break;
 
         case "keepNext":
-            props.keepLines = true;
+            props.keepLines = xml.boolAttr(elem, "val", true);
             break;
     
         case "keepNext":
-            props.keepNext = true;
+            props.keepNext = xml.boolAttr(elem, "val", true);
             break;
         
         case "pageBreakBefore":
-            props.pageBreakBefore = true;
+            props.pageBreakBefore = xml.boolAttr(elem, "val", true);
             break;
         
         case "outlineLvl":

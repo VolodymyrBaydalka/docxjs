@@ -113,7 +113,7 @@ export class DocumentParser {
 
     parseStyle(node: Element): IDomStyle {
         var result = <IDomStyle>{
-            id: xml.className(node, "styleId"),
+            id: xml.stringAttr(node, "styleId"),
             isDefault: xml.boolAttr(node, "default"),
             name: null,
             target: null,

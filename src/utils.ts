@@ -15,3 +15,10 @@ export function splitPath(path: string): [string, string] {
 
     return [folder, fileName];
 }
+
+export function keyBy<T = any>(array: T[], by: (x: T) => any): Record<any, T> {
+    return array.reduce((a, x) => {
+        a[by(x)] = x;
+        return a;
+    }, {});
+}

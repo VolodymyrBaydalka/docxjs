@@ -4,6 +4,7 @@ import { RunProperties } from "./run";
 export interface IDomStyle {
     id: string;
     name?: string;
+    cssName?: string;
     aliases?: string[];
     target: string;
     basedOn?: string;

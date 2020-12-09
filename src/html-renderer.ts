@@ -4,8 +4,8 @@ import { DomType, IDomTable, IDomNumbering,
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './dom/document';
-import { ParagraphElement} from './dom/paragraph';
-import { appendClass } from './utils';
+import { ParagraphElement } from './dom/paragraph';
+import { appendClass, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
@@ -104,7 +104,7 @@ export class HtmlRenderer {
         }
 
         for (let style of styles) {
-            style.id = this.processClassName(style.id);
+            style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
 
         return stylesMap;
@@ -204,13 +204,27 @@ export class HtmlRenderer {
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
         var current = { sectProps: null, elements: [] };
         var result = [current];
+        var styles = this.document.stylesPart?.styles;
+        var styleMap = styles ? keyBy(styles, x => x.id) : null;
 
         for(let elem of elements) {
+            if(elem.type == DomType.Paragraph) {
+                const styleName = (elem as ParagraphElement).styleName;
+                const s = styleMap && styleName ? styleMap[styleName] : null;
+            
+                if(s?.paragraphProps?.pageBreakBefore) {
+                    current.sectProps = sectProps;
+                    current = { sectProps: null, elements: [] };
+                    result.push(current);
+                }
+            }
+
             current.elements.push(elem);
 
             if(elem.type == DomType.Paragraph)
             {
                 const p = elem as ParagraphElement;
+
                 var sectProps = p.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
@@ -373,11 +387,11 @@ export class HtmlRenderer {
                 var selector = "";
 
                 if (style.target == subStyle.target)
-                    selector += `${style.target}.${style.id}`;
+                    selector += `${style.target}.${style.cssName}`;
                 else if (style.target)
-                    selector += `${style.target}.${style.id} ${subStyle.target}`;
+                    selector += `${style.target}.${style.cssName} ${subStyle.target}`;
                 else
-                    selector += `.${style.id} ${subStyle.target}`;
+                    selector += `.${style.cssName} ${subStyle.target}`;
 
                 if (style.isDefault && style.target)
                     selector = `.${this.className} ${style.target}, ` + selector;
@@ -707,7 +721,7 @@ export class HtmlRenderer {
     }
 
     escapeClassName(className: string) {
-        return className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
+        return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
 }
 
