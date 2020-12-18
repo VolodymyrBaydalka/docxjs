@@ -240,10 +240,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseNumberingFile(xmlString: string): IDomNumbering[] {
+    parseNumberingFile(xnums: Element): IDomNumbering[] {
         var result = [];
-        var xnums = xml.parse(xmlString, this.skipDeclaration);
-
         var mapping = {};
         var bullets = [];
 

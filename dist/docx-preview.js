@@ -444,10 +444,9 @@ var DocumentParser = (function () {
         });
         return result;
     };
-    DocumentParser.prototype.parseNumberingFile = function (xmlString) {
+    DocumentParser.prototype.parseNumberingFile = function (xnums) {
         var _this = this;
         var result = [];
-        var xnums = xml.parse(xmlString, this.skipDeclaration);
         var mapping = {};
         var bullets = [];
         xml.foreach(xnums, function (n) {
@@ -1924,7 +1923,7 @@ var HtmlRenderer = (function () {
         }
         if (document.numberingPart) {
             appendComment(styleContainer, "docx document numbering styles");
-            styleContainer.appendChild(this.renderNumbering(document.numberingPart.numberings, styleContainer));
+            styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
         if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
@@ -2561,6 +2560,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NumberingPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
 var NumberingPart = (function (_super) {
     __extends(NumberingPart, _super);
     function NumberingPart(path, parser) {
@@ -2571,14 +2571,167 @@ var NumberingPart = (function (_super) {
     NumberingPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
-            _this.numberings = _this._documentParser.parseNumberingFile(xml);
+            Object.assign(_this, numbering_1.parseNumberingPart(xml, pkg.xmlParser));
+            _this.domNumberings = _this._documentParser.parseNumberingFile(xml);
         });
     };
     return NumberingPart;
 }(part_1.Part));
 exports.NumberingPart = NumberingPart;
+
+
+/***/ }),
+
+/***/ "./src/numbering/numbering.ts":
+/*!************************************!*\
+  !*** ./src/numbering/numbering.ts ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseNumberingBulletPicture = exports.parseNumberingLevelOverrride = exports.parseNumberingLevel = exports.parseAbstractNumbering = exports.parseNumbering = exports.parseNumberingPart = void 0;
+var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
+var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
+function parseNumberingPart(elem, xml) {
+    var result = {
+        numberings: [],
+        abstractNumberings: [],
+        bulletPictures: []
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "num":
+                result.numberings.push(parseNumbering(e, xml));
+                break;
+            case "abstractNum":
+                result.abstractNumberings.push(parseAbstractNumbering(e, xml));
+                break;
+            case "numPicBullet":
+                result.bulletPictures.push(parseNumberingBulletPicture(e, xml));
+                break;
+        }
+    }
+    return result;
+}
+exports.parseNumberingPart = parseNumberingPart;
+function parseNumbering(elem, xml) {
+    var result = {
+        id: xml.attr(elem, 'numId'),
+        overrides: []
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "abstractNumId":
+                result.abstractId = xml.attr(e, "val");
+                break;
+            case "lvlOverride":
+                result.overrides.push(parseNumberingLevelOverrride(e, xml));
+                break;
+        }
+    }
+    return result;
+}
+exports.parseNumbering = parseNumbering;
+function parseAbstractNumbering(elem, xml) {
+    var result = {
+        id: xml.attr(elem, 'abstractNumId'),
+        levels: []
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "name":
+                result.name = xml.attr(e, "val");
+                break;
+            case "multiLevelType":
+                result.multiLevelType = xml.attr(e, "val");
+                break;
+            case "numStyleLink":
+                result.numberingStyleLink = xml.attr(e, "val");
+                break;
+            case "styleLink":
+                result.styleLink = xml.attr(e, "val");
+                break;
+            case "lvl":
+                result.levels.push(parseNumberingLevel(e, xml));
+                break;
+        }
+    }
+    return result;
+}
+exports.parseAbstractNumbering = parseAbstractNumbering;
+function parseNumberingLevel(elem, xml) {
+    var result = {
+        level: xml.intAttr(elem, 'ilvl')
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "start":
+                result.start = xml.attr(e, "val");
+                break;
+            case "lvlRestart":
+                result.restart = xml.intAttr(e, "val");
+                break;
+            case "numFmt":
+                result.format = xml.attr(e, "val");
+                break;
+            case "lvlText":
+                result.text = xml.attr(e, "val");
+                break;
+            case "lvlJc":
+                result.justification = xml.attr(e, "val");
+                break;
+            case "lvlPicBulletId":
+                result.bulletPictureId = xml.attr(e, "val");
+                break;
+            case "pPr":
+                result.paragraphProps = paragraph_1.parseParagraphProperties(e, xml);
+                break;
+            case "rPr":
+                result.runProps = run_1.parseRunProperties(e, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseNumberingLevel = parseNumberingLevel;
+function parseNumberingLevelOverrride(elem, xml) {
+    var result = {
+        level: xml.intAttr(elem, 'ilvl')
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "startOverride":
+                result.start = xml.intAttr(e, "val");
+                break;
+            case "lvl":
+                result.numberingLevel = parseNumberingLevel(e, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseNumberingLevelOverrride = parseNumberingLevelOverrride;
+function parseNumberingBulletPicture(elem, xml) {
+    var pict = xml.element(elem, "pict");
+    var shape = pict && xml.element(pict, "shape");
+    var imagedata = shape && xml.element(shape, "imagedata");
+    return imagedata ? {
+        id: xml.attr(elem, "numPicBulletId"),
+        referenceId: xml.attr(imagedata, "id"),
+        style: xml.attr(shape, "style")
+    } : null;
+}
+exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 
 
 /***/ }),
@@ -2617,7 +2770,7 @@ var XmlParser = (function () {
     XmlParser.prototype.element = function (elem, localName) {
         for (var i = 0, l = elem.childNodes.length; i < l; i++) {
             var c = elem.childNodes.item(i);
-            if (c.nodeType == 1 && c.nodeName == localName)
+            if (c.nodeType == 1 && c.localName == localName)
                 return c;
         }
         return null;

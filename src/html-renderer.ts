@@ -42,7 +42,7 @@ export class HtmlRenderer {
 
         if (document.numberingPart) {
             appendComment(styleContainer, "docx document numbering styles");
-            styleContainer.appendChild(this.renderNumbering(document.numberingPart.numberings, styleContainer));
+            styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
 
         if(!options.ignoreFonts && document.fontTablePart)

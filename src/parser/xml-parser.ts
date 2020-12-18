@@ -25,7 +25,7 @@ export class XmlParser {
         for (let i = 0, l = elem.childNodes.length; i < l; i++) {
             let c = elem.childNodes.item(i);
 
-            if (c.nodeType == 1 && c.nodeName == localName)
+            if (c.nodeType == 1 && (c as Element).localName == localName)
                 return c as Element;
         }
 
