@@ -34,7 +34,7 @@ export class DocumentParser {
             props: null
         };
 
-        var xbody = xml.byTagName(xml.parse(xmlString, this.skipDeclaration), "body");
+        var xbody = globalXmlParser.element(globalXmlParser.parse(xmlString, this.skipDeclaration), "body");
 
         xml.foreach(xbody, elem => {
             switch (elem.localName) {
@@ -58,7 +58,7 @@ export class DocumentParser {
     parseStylesFile(xmlString: string): IDomStyle[] {
         var result = [];
 
-        var xstyles = xml.parse(xmlString, this.skipDeclaration);
+        var xstyles = globalXmlParser.parse(xmlString, this.skipDeclaration);
 
         xml.foreach(xstyles, n => {
             switch (n.localName) {
@@ -87,7 +87,7 @@ export class DocumentParser {
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "rPrDefault":
-                    var rPr = xml.byTagName(c, "rPr");
+                    var rPr = globalXmlParser.element(c, "rPr");
 
                     if (rPr)
                         result.styles.push({
@@ -97,7 +97,7 @@ export class DocumentParser {
                     break;
 
                 case "pPrDefault":
-                    var pPr = xml.byTagName(c, "pPr");
+                    var pPr = globalXmlParser.element(c, "pPr");
 
                     if (pPr)
                         result.styles.push({
@@ -270,9 +270,9 @@ export class DocumentParser {
     }
 
     parseNumberingPicBullet(elem: Element): NumberingPicBullet {
-        var pict = xml.byTagName(elem, "pict");
-        var shape = pict && xml.byTagName(pict, "shape");
-        var imagedata = shape && xml.byTagName(shape, "imagedata");
+        var pict = globalXmlParser.element(elem, "pict");
+        var shape = pict && globalXmlParser.element(pict, "shape");
+        var imagedata = shape && globalXmlParser.element(shape, "imagedata");
 
         return imagedata ? {
             id: xml.intAttr(elem, "numPicBulletId"),
@@ -498,7 +498,7 @@ export class DocumentParser {
     }
 
     parseDrawing(node: Element): OpenXmlElement {
-        for (var n of xml.elements(node)) {
+        for (var n of globalXmlParser.elements(node)) {
             switch (n.localName) {
                 case "inline":
                 case "anchor":
@@ -523,7 +523,7 @@ export class DocumentParser {
         let posX = { relative: "page", align: "left", offset: "0" };
         let posY = { relative: "page", align: "top", offset: "0" };
 
-        for (var n of xml.elements(node)) {
+        for (var n of globalXmlParser.elements(node)) {
             switch (n.localName) {
                 case "simplePos":
                     if (simplePos) {
@@ -541,8 +541,8 @@ export class DocumentParser {
                 case "positionV":
                     if (!simplePos) {
                         let pos = n.localName == "positionH" ? posX : posY;
-                        var alignNode = xml.byTagName(n, "align");
-                        var offsetNode = xml.byTagName(n, "posOffset");
+                        var alignNode = globalXmlParser.element(n, "align");
+                        var offsetNode = globalXmlParser.element(n, "posOffset");
 
                         if (alignNode)
                             pos.align = alignNode.textContent;
@@ -596,9 +596,9 @@ export class DocumentParser {
     }
 
     parseGraphic(elem: Element): OpenXmlElement {
-        var graphicData = xml.byTagName(elem, "graphicData");
+        var graphicData = globalXmlParser.element(elem, "graphicData");
 
-        for (let n of xml.elements(graphicData)) {
+        for (let n of globalXmlParser.elements(graphicData)) {
             switch (n.localName) {
                 case "pic":
                     return this.parsePicture(n);
@@ -610,17 +610,17 @@ export class DocumentParser {
 
     parsePicture(elem: Element): IDomImage {
         var result = <IDomImage>{ type: DomType.Image, src: "", cssStyle: {} };
-        var blipFill = xml.byTagName(elem, "blipFill");
-        var blip = xml.byTagName(blipFill, "blip");
+        var blipFill = globalXmlParser.element(elem, "blipFill");
+        var blip = globalXmlParser.element(blipFill, "blip");
 
         result.src = xml.stringAttr(blip, "embed");
 
-        var spPr = xml.byTagName(elem, "spPr");
-        var xfrm = xml.byTagName(spPr, "xfrm");
+        var spPr = globalXmlParser.element(elem, "spPr");
+        var xfrm = globalXmlParser.element(spPr, "xfrm");
 
         result.cssStyle["position"] = "relative";
 
-        for (var n of xml.elements(xfrm)) {
+        for (var n of globalXmlParser.elements(xfrm)) {
             switch (n.localName) {
                 case "ext":
                     result.cssStyle["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
@@ -1095,25 +1095,6 @@ enum SizeType {
 }
 
 class xml {
-    static parse(xmlString: string, skipDeclaration: boolean = true): Element {
-        if (skipDeclaration)
-            xmlString = xmlString.replace(/<[?].*[?]>/, "");
-
-        return <Element>new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
-    }
-
-    static elements(node: Element, tagName: string = null): Element[] {
-        var result = [];
-
-        for (var i = 0; i < node.childNodes.length; i++) {
-            let n = node.childNodes[i] as Element;
-            if (n.nodeType == 1 && (tagName == null || n.localName == tagName))
-                result.push(n);
-        }
-
-        return result;
-    }
-
     static foreach(node: Element, cb: (n: Element) => void) {
         for (var i = 0; i < node.childNodes.length; i++) {
             let n = node.childNodes[i];
@@ -1123,32 +1104,13 @@ class xml {
         }
     }
 
-    static byTagName(elem: Element, tagName: string): Element {
-        for (var i = 0; i < elem.childNodes.length; i++) {
-            let n = elem.childNodes[i] as Element;
-            if (n.nodeType == 1 && n.localName == tagName)
-                return <Element>elem.childNodes[i];
-        }
-
-        return null;
-    }
-
     static elementStringAttr(elem: Element, nodeName, attrName: string) {
-        var n = xml.byTagName(elem, nodeName)
+        var n = globalXmlParser.element(elem, nodeName)
         return n ? xml.stringAttr(n, attrName) : null;
     }
 
     static stringAttr(node: Element, attrName: string) {
-        var elem = <Element>node;
-
-        for (var i = 0; i < elem.attributes.length; i++) {
-            var attr = elem.attributes.item(i);
-
-            if (attr.localName == attrName)
-                return attr.value;
-        }
-
-        return null;
+        return globalXmlParser.attr(node, attrName);
     }
 
     static colorAttr(node: Element, attrName: string, defValue: string = null, autoColor: string = 'black') {
@@ -1166,14 +1128,7 @@ class xml {
     }
 
     static boolAttr(node: Element, attrName: string, defValue: boolean = false) {
-        var v = xml.stringAttr(node, attrName);
-
-        switch (v) {
-            case "1": return true;
-            case "0": return false;
-        }
-
-        return defValue;
+        return globalXmlParser.boolAttr(node, attrName, defValue);
     }
 
     static intAttr(node: Element, attrName: string, defValue: number = 0) {

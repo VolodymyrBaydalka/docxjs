@@ -9,9 +9,10 @@ import { appendClass, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
-import { RunElement } from './dom/run';
+import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
+import { NumberingPartProperties } from './numbering/numbering';
 
 export class HtmlRenderer {
 
@@ -43,6 +44,7 @@ export class HtmlRenderer {
         if (document.numberingPart) {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
+            //styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
         }
 
         if(!options.ignoreFonts && document.fontTablePart)
@@ -277,7 +279,7 @@ export class HtmlRenderer {
     }
 
     renderLength(l: Length): string {
-        return !l ? null : `${l.value}${l.type}`;
+        return l ? `${l.value}${l.type}` : null;
     }
 
     renderWrapper() {
@@ -299,6 +301,71 @@ export class HtmlRenderer {
 
         return createStyleElement(styleText);
     }
+
+    // renderNumbering2(numberingPart: NumberingPartProperties, container: HTMLElement): HTMLElement {
+    //     let css = "";
+    //     const numberingMap = keyBy(numberingPart.abstractNumberings, x => x.id);
+    //     const bulletMap = keyBy(numberingPart.bulletPictures, x => x.id);
+    //     const topCounters = [];
+
+    //     for(let num of numberingPart.numberings) {
+    //         const absNum = numberingMap[num.abstractId];
+
+    //         for(let lvl of absNum.levels) {
+    //             const className = this.numberingClass(num.id, lvl.level);
+    //             let listStyleType = "none";
+
+    //             if(lvl.text && lvl.format == 'decimal') {
+    //                 const counter = this.numberingCounter(num.id, lvl.level);
+
+    //                 if (lvl.level > 0) {
+    //                     css += this.styleToString(`p.${this.numberingClass(num.id, lvl.level - 1)}`, {
+    //                         "counter-reset": counter
+    //                     });
+    //                 } else {
+    //                     topCounters.push(counter);
+    //                 }
+                    
+    //                 css += this.styleToString(`p.${className}:before`, {
+    //                     "content": this.levelTextToContent(lvl.text, num.id),
+    //                     "counter-increment": counter
+    //                 });
+    //             } else if(lvl.bulletPictureId) {
+    //                 let pict = bulletMap[lvl.bulletPictureId];
+    //                 let variable = `--${this.className}-${pict.referenceId}`.toLowerCase();
+
+    //                 css += this.styleToString(`p.${className}:before`, {
+    //                     "content": "' '",
+    //                     "display": "inline-block",
+    //                     "background": `var(${variable})`
+    //                 }, pict.style);
+    
+    //                 this.document.loadNumberingImage(pict.referenceId).then(data => {
+    //                     var text = `.${this.className}-wrapper { ${variable}: url(${data}) }`;
+    //                     container.appendChild(createStyleElement(text));
+    //                 });
+    //             } else {
+    //                 listStyleType = this.numFormatToCssValue(lvl.format);
+    //             }
+
+    //             css += this.styleToString(`p.${className}`, {
+    //                 "display": "list-item",
+    //                 "list-style-position": "inside",
+    //                 "list-style-type": listStyleType,
+    //                 //TODO
+    //                 //...num.style
+    //             });
+    //         }
+    //     }
+
+    //     if (topCounters.length > 0) {
+    //         css += this.styleToString(`.${this.className}-wrapper`, {
+    //             "counter-reset": topCounters.join(" ")
+    //         });
+    //     }
+
+    //     return createStyleElement(css);
+    // }
 
     renderNumbering(styles: IDomNumbering[], styleContainer: HTMLElement) {
         var styleText = "";
@@ -323,13 +390,6 @@ export class HtmlRenderer {
                 styleText += this.styleToString(`${selector}:before`, {
                     "content": this.levelTextToContent(num.levelText, num.id),
                     "counter-increment": counter
-                });
-
-                styleText += this.styleToString(selector, {
-                    "display": "list-item",
-                    "list-style-position": "inside",
-                    "list-style-type": "none",
-                    ...num.style
                 });
             }
             else if (num.bullet) {
@@ -472,7 +532,7 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        this.renderCommonProeprties(result, elem);
+        this.renderCommonProeprties(result.style, elem);
 
         if (elem.numbering) {
             var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
@@ -487,16 +547,20 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderCommonProeprties(elem: HTMLElement, props: CommonProperties){
+    renderRunProperties(style: any, props: RunProperties) {
+        this.renderCommonProeprties(style, props);
+    }
+
+    renderCommonProeprties(style: any, props: CommonProperties){
         if(props == null)
             return;
 
         if(props.color) {
-            elem.style.color = props.color;
+            style["color"] = props.color;
         }
 
         if (props.fontSize) {
-            elem.style.fontSize = this.renderLength(props.fontSize);
+            style["font-size"] = this.renderLength(props.fontSize);
         }
     }
 
@@ -738,7 +802,6 @@ function removeAllElements(elem: HTMLElement) {
 
 function createStyleElement(cssText: string) {
     var styleElement = document.createElement("style");
-    styleElement.type = "text/css";
     styleElement.innerHTML = cssText;
     return styleElement;
 }
