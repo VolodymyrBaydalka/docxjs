@@ -239,7 +239,7 @@ var DocumentParser = (function () {
         this.ignoreWidth = false;
         this.debug = false;
     }
-    DocumentParser.prototype.parseDocumentFile = function (xmlString) {
+    DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var _this = this;
         var result = {
             type: dom_1.DomType.Document,
@@ -247,7 +247,7 @@ var DocumentParser = (function () {
             cssStyle: {},
             props: null
         };
-        var xbody = xml_parser_1.default.element(xml_parser_1.default.parse(xmlString, this.skipDeclaration), "body");
+        var xbody = xml_parser_1.default.element(xmlDoc, "body");
         xml.foreach(xbody, function (elem) {
             switch (elem.localName) {
                 case "p":
@@ -263,10 +263,9 @@ var DocumentParser = (function () {
         });
         return result;
     };
-    DocumentParser.prototype.parseStylesFile = function (xmlString) {
+    DocumentParser.prototype.parseStylesFile = function (xstyles) {
         var _this = this;
         var result = [];
-        var xstyles = xml_parser_1.default.parse(xmlString, this.skipDeclaration);
         xml.foreach(xstyles, function (n) {
             switch (n.localName) {
                 case "style":
@@ -342,6 +341,9 @@ var DocumentParser = (function () {
                     break;
                 case "link":
                     result.linked = xml.className(n, "val");
+                    break;
+                case "next":
+                    result.next = xml.className(n, "val");
                     break;
                 case "aliases":
                     result.aliases = xml.stringAttr(n, "val").split(",");
@@ -908,7 +910,6 @@ var DocumentParser = (function () {
         if (childStyle === void 0) { childStyle = null; }
         if (handler === void 0) { handler = null; }
         style = style || {};
-        var spacing = null;
         xml.foreach(elem, function (c) {
             switch (c.localName) {
                 case "jc":
@@ -1422,6 +1423,7 @@ exports.LengthUsage = {
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
     Border: { mul: 0.125, unit: "pt" },
+    Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: null }
 };
@@ -1485,7 +1487,7 @@ var DocumentPart = (function (_super) {
     DocumentPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
             _this.body = _this._documentParser.parseDocumentFile(xml);
         });
@@ -1877,14 +1879,16 @@ var HtmlRenderer = (function () {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
+        this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.stylesPart != null) {
+            this.styleMap = this.processStyles(document.stylesPart.domStyles);
             appendComment(styleContainer, "docx document styles");
-            styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
+            styleContainer.appendChild(this.renderStyles(document.stylesPart.domStyles));
         }
         if (document.numberingPart) {
             appendComment(styleContainer, "docx document numbering styles");
@@ -2032,17 +2036,15 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.splitBySection = function (elements) {
-        var _a, _b;
+        var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var styles = (_a = this.document.stylesPart) === null || _a === void 0 ? void 0 : _a.styles;
-        var styleMap = styles ? utils_1.keyBy(styles, function (x) { return x.id; }) : null;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
                 var styleName = elem.styleName;
-                var s = styleMap && styleName ? styleMap[styleName] : null;
-                if ((_b = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _b === void 0 ? void 0 : _b.pageBreakBefore) {
+                var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
@@ -2160,7 +2162,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
-        var stylesMap = this.processStyles(styles);
+        var stylesMap = this.styleMap;
         for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
             var style = styles_3[_i];
             var subStyles = style.styles;
@@ -2781,6 +2783,114 @@ exports.default = globalXmlParser;
 
 /***/ }),
 
+/***/ "./src/styles/document-defaults.ts":
+/*!*****************************************!*\
+  !*** ./src/styles/document-defaults.ts ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseDocumentDefaults = void 0;
+var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
+function parseDocumentDefaults(elem, xml) {
+    var result = {};
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "pPrDefault":
+                var pPrElem = xml.element(e, 'pPr');
+                if (pPrElem)
+                    result.paragraphProps = paragraph_1.parseParagraphProperties(pPrElem, xml);
+                break;
+            case "rPrDefault":
+                var rPrElem = xml.element(e, 'rPr');
+                if (rPrElem)
+                    result.runProps = paragraph_1.parseParagraphProperties(rPrElem, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseDocumentDefaults = parseDocumentDefaults;
+
+
+/***/ }),
+
+/***/ "./src/styles/style.ts":
+/*!*****************************!*\
+  !*** ./src/styles/style.ts ***!
+  \*****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseStyle = void 0;
+var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
+var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
+function parseStyle(elem, xml) {
+    var result = {
+        id: xml.attr(elem, 'styleId'),
+        type: xml.attr(elem, 'type'),
+        customStyle: xml.boolAttr(elem, 'customStyle', false),
+        default: xml.boolAttr(elem, 'default', false),
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "pPr":
+                result.paragraphProps = paragraph_1.parseParagraphProperties(e, xml);
+                break;
+            case "rPr":
+                result.runProps = run_1.parseRunProperties(e, xml);
+                break;
+            case "name":
+                result.name = xml.attr(e, 'val');
+                break;
+            case "name":
+                result.name = xml.attr(e, 'val');
+                break;
+            case "basedOn":
+                result.basedOn = xml.attr(e, 'val');
+                break;
+            case "aliases":
+                result.aliases = xml.attr(e, 'val').split(',');
+                break;
+            case "link":
+                result.link = xml.attr(e, 'val');
+                break;
+            case "next":
+                result.next = xml.attr(e, 'val');
+                break;
+            case "autoRedefine":
+                result.autoRedefine = true;
+                break;
+            case "hidden":
+                result.hidden = true;
+                break;
+            case "semiHidden":
+                result.semiHidden = true;
+                break;
+            case "locked":
+                result.locked = true;
+                break;
+            case "uiPriority":
+                result.uiPriority = xml.intAttr(e, 'val');
+                ;
+                break;
+        }
+    }
+    return result;
+}
+exports.parseStyle = parseStyle;
+
+
+/***/ }),
+
 /***/ "./src/styles/styles-part.ts":
 /*!***********************************!*\
   !*** ./src/styles/styles-part.ts ***!
@@ -2804,8 +2914,10 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StylesPart = void 0;
+exports.parseStylesPart = exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var document_defaults_1 = __webpack_require__(/*! ./document-defaults */ "./src/styles/document-defaults.ts");
+var style_1 = __webpack_require__(/*! ./style */ "./src/styles/style.ts");
 var StylesPart = (function (_super) {
     __extends(StylesPart, _super);
     function StylesPart(path, parser) {
@@ -2816,14 +2928,33 @@ var StylesPart = (function (_super) {
     StylesPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
-            _this.styles = _this._documentParser.parseStylesFile(xml);
+            Object.assign(_this, parseStylesPart(xml, pkg.xmlParser));
+            _this.domStyles = _this._documentParser.parseStylesFile(xml);
         });
     };
     return StylesPart;
 }(part_1.Part));
 exports.StylesPart = StylesPart;
+function parseStylesPart(elem, xml) {
+    var result = {
+        styles: []
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "docDefaults":
+                result.defaults = document_defaults_1.parseDocumentDefaults(e, xml);
+                break;
+            case "style":
+                result.styles.push(style_1.parseStyle(e, xml));
+                break;
+        }
+    }
+    return result;
+}
+exports.parseStylesPart = parseStylesPart;
 
 
 /***/ }),

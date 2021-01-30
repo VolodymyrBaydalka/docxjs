@@ -20,6 +20,8 @@ export class HtmlRenderer {
     className: string = "docx";
     document: WordDocument;
     options: Options;
+    styleMap: any;
+    currentParagrashStyle: any; 
 
     constructor(public htmlDocument: HTMLDocument) {
     }
@@ -27,6 +29,7 @@ export class HtmlRenderer {
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+        this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
 
@@ -37,8 +40,10 @@ export class HtmlRenderer {
         styleContainer.appendChild(this.renderDefaultStyle());
         
         if (document.stylesPart != null) {
+            this.styleMap = this.processStyles(document.stylesPart.domStyles);
+
             appendComment(styleContainer, "docx document styles");
-            styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
+            styleContainer.appendChild(this.renderStyles(document.stylesPart.domStyles));
         }
 
         if (document.numberingPart) {
@@ -206,13 +211,11 @@ export class HtmlRenderer {
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var styles = this.document.stylesPart?.styles;
-        var styleMap = styles ? keyBy(styles, x => x.id) : null;
 
         for(let elem of elements) {
             if(elem.type == DomType.Paragraph) {
                 const styleName = (elem as ParagraphElement).styleName;
-                const s = styleMap && styleName ? styleMap[styleName] : null;
+                const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
             
                 if(s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -429,7 +432,7 @@ export class HtmlRenderer {
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
-        var stylesMap = this.processStyles(styles);
+        var stylesMap = this.styleMap;
 
         for (let style of styles) {
             var subStyles =  style.styles;
@@ -562,7 +565,7 @@ export class HtmlRenderer {
         if (props.fontSize) {
             style["font-size"] = this.renderLength(props.fontSize);
         }
-    }
+ }
 
     renderHyperlink(elem: IDomHyperlink) {
         var result = this.htmlDocument.createElement("a");
