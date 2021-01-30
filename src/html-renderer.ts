@@ -20,6 +20,8 @@ export class HtmlRenderer {
     className: string = "docx";
     document: WordDocument;
     options: Options;
+    styleMap: any;
+    currentParagrashStyle: any; 
 
     constructor(public htmlDocument: HTMLDocument) {
     }
@@ -27,6 +29,7 @@ export class HtmlRenderer {
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+        this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
 
@@ -37,6 +40,8 @@ export class HtmlRenderer {
         styleContainer.appendChild(this.renderDefaultStyle());
         
         if (document.stylesPart != null) {
+            this.styleMap = this.processStyles(document.stylesPart.styles);
+
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
@@ -206,13 +211,11 @@ export class HtmlRenderer {
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var styles = this.document.stylesPart?.styles;
-        var styleMap = styles ? keyBy(styles, x => x.id) : null;
 
         for(let elem of elements) {
             if(elem.type == DomType.Paragraph) {
                 const styleName = (elem as ParagraphElement).styleName;
-                const s = styleMap && styleName ? styleMap[styleName] : null;
+                const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
             
                 if(s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -291,13 +294,14 @@ export class HtmlRenderer {
     }
 
     renderDefaultStyle() {
-        var styleText = `.${this.className}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-                .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-                .${this.className} { color: black; }
-                section.${this.className} { box-sizing: border-box; }
-                .${this.className} table { border-collapse: collapse; }
-                .${this.className} table td, .${this.className} table th { vertical-align: top; }
-                .${this.className} p { margin: 0pt; }`;
+        var c = this.className;
+        var styleText = `.${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+                .${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+                .${c} { color: black; }
+                section.${c} { box-sizing: border-box; }
+                .${c} table { border-collapse: collapse; }
+                .${c} table td, .${c} table th { vertical-align: top; }
+                .${c} p { margin: 0pt; }`;
 
         return createStyleElement(styleText);
     }
@@ -429,7 +433,7 @@ export class HtmlRenderer {
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
-        var stylesMap = this.processStyles(styles);
+        var stylesMap = this.styleMap;
 
         for (let style of styles) {
             var subStyles =  style.styles;
@@ -503,6 +507,9 @@ export class HtmlRenderer {
             
             case DomType.Symbol:
                 return this.renderSymbol(<SymbolElement>elem);
+
+            case DomType.Break:
+                return this.renderBreak(<BreakElement>elem);
         }
 
         return null;
@@ -562,7 +569,7 @@ export class HtmlRenderer {
         if (props.fontSize) {
             style["font-size"] = this.renderLength(props.fontSize);
         }
-    }
+ }
 
     renderHyperlink(elem: IDomHyperlink) {
         var result = this.htmlDocument.createElement("a");
@@ -607,6 +614,14 @@ export class HtmlRenderer {
         return this.htmlDocument.createTextNode(elem.text);
     }
 
+    renderBreak(elem: BreakElement) {
+        if (elem.break == "textWrapping") {
+            return this.htmlDocument.createElement("br");
+        }
+
+        return null;
+    }
+
     renderSymbol(elem: SymbolElement) {
         var span = this.htmlDocument.createElement("span");
         span.style.fontFamily = elem.font;
@@ -642,9 +657,6 @@ export class HtmlRenderer {
     }
 
     renderRun(elem: RunElement) {
-        if (elem.break)
-            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
-        
         if (elem.fldCharType || elem.instrText)
             return null;
 

@@ -8,6 +8,8 @@
     "removeComments": true,
     "preserveConstEnums": true,
     "sourceMap": true,
+    "noEmitHelpers": false,
+    "importHelpers": false,
     "target": "es5",
     "outDir": "dist",
     "lib": [

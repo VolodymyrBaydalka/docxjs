@@ -26,7 +26,7 @@ export class DocumentParser {
     ignoreWidth: boolean = false;
     debug: boolean = false;
 
-    parseDocumentFile(xmlString: string) {
+    parseDocumentFile(xmlDoc: Element) {
         var result: DocumentElement = {
             type: DomType.Document,
             children: [],
@@ -34,7 +34,7 @@ export class DocumentParser {
             props: null
         };
 
-        var xbody = globalXmlParser.element(globalXmlParser.parse(xmlString, this.skipDeclaration), "body");
+        var xbody = globalXmlParser.element(xmlDoc, "body");
 
         xml.foreach(xbody, elem => {
             switch (elem.localName) {
@@ -55,10 +55,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseStylesFile(xmlString: string): IDomStyle[] {
+    parseStylesFile(xstyles: Element): IDomStyle[] {
         var result = [];
-
-        var xstyles = globalXmlParser.parse(xmlString, this.skipDeclaration);
 
         xml.foreach(xstyles, n => {
             switch (n.localName) {
@@ -141,7 +139,11 @@ export class DocumentParser {
                 case "link":
                     result.linked = xml.className(n, "val");
                     break;
-
+                
+                case "next":
+                    result.next = xml.className(n, "val");
+                    break;
+    
                 case "aliases":
                     result.aliases = xml.stringAttr(n, "val").split(",");
                     break;
@@ -805,7 +807,6 @@ export class DocumentParser {
     parseDefaultProperties(elem: Element, style: Record<string, string> = null, childStyle: Record<string, string> = null, handler: (prop: Element) => boolean = null): Record<string, string> {
         style = style || {};
 
-        let spacing = null;
 
         xml.foreach(elem, c => {
             switch (c.localName) {

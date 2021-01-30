@@ -11,6 +11,7 @@ export interface IDomStyle {
     isDefault?: boolean;
     styles: IDomSubStyle[];
     linked?: string;
+    next?: string;
 
     paragraphProps: ParagraphProperties;
     runProps: RunProperties;

@@ -7,105 +7,19 @@
 		exports["docx"] = factory(require("JSZip"));
 	else
 		root["docx"] = factory(root["JSZip"]);
-})(window, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/docx-preview.ts");
-/******/ })
-/************************************************************************/
-/******/ ({
+})(self, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
+return /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
 
 /***/ "./src/common/package.ts":
 /*!*******************************!*\
   !*** ./src/common/package.ts ***!
   \*******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Package = void 0;
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
@@ -132,11 +46,11 @@ var Package = (function () {
         if (path === void 0) { path = null; }
         var relsPath = "_rels/.rels";
         if (path != null) {
-            var _a = utils_1.splitPath(path), f = _a[0], fn = _a[1];
+            var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
             relsPath = f + "_rels/" + fn + ".rels";
         }
         return this.load(relsPath, "xml").then(function (xml) {
-            return xml == null ? null : relationship_1.parseRelationships(xml, _this.xmlParser);
+            return xml == null ? null : (0, relationship_1.parseRelationships)(xml, _this.xmlParser);
         });
     };
     return Package;
@@ -150,12 +64,10 @@ exports.Package = Package;
 /*!****************************!*\
   !*** ./src/common/part.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Part = void 0;
 var Part = (function () {
     function Part(path) {
@@ -178,12 +90,10 @@ exports.Part = Part;
 /*!************************************!*\
   !*** ./src/common/relationship.ts ***!
   \************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRelationships = exports.RelationshipTypes = void 0;
 var RelationshipTypes;
 (function (RelationshipTypes) {
@@ -215,12 +125,10 @@ exports.parseRelationships = parseRelationships;
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
   \********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
@@ -239,7 +147,7 @@ var DocumentParser = (function () {
         this.ignoreWidth = false;
         this.debug = false;
     }
-    DocumentParser.prototype.parseDocumentFile = function (xmlString) {
+    DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var _this = this;
         var result = {
             type: dom_1.DomType.Document,
@@ -247,7 +155,7 @@ var DocumentParser = (function () {
             cssStyle: {},
             props: null
         };
-        var xbody = xml_parser_1.default.element(xml_parser_1.default.parse(xmlString, this.skipDeclaration), "body");
+        var xbody = xml_parser_1.default.element(xmlDoc, "body");
         xml.foreach(xbody, function (elem) {
             switch (elem.localName) {
                 case "p":
@@ -257,16 +165,15 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseTable(elem));
                     break;
                 case "sectPr":
-                    result.props = section_1.parseSectionProperties(elem, xml_parser_1.default);
+                    result.props = (0, section_1.parseSectionProperties)(elem, xml_parser_1.default);
                     break;
             }
         });
         return result;
     };
-    DocumentParser.prototype.parseStylesFile = function (xmlString) {
+    DocumentParser.prototype.parseStylesFile = function (xstyles) {
         var _this = this;
         var result = [];
-        var xstyles = xml_parser_1.default.parse(xmlString, this.skipDeclaration);
         xml.foreach(xstyles, function (n) {
             switch (n.localName) {
                 case "style":
@@ -343,6 +250,9 @@ var DocumentParser = (function () {
                 case "link":
                     result.linked = xml.className(n, "val");
                     break;
+                case "next":
+                    result.next = xml.className(n, "val");
+                    break;
                 case "aliases":
                     result.aliases = xml.stringAttr(n, "val").split(",");
                     break;
@@ -351,14 +261,14 @@ var DocumentParser = (function () {
                         target: "p",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.paragraphProps = paragraph_1.parseParagraphProperties(n, xml_parser_1.default);
+                    result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(n, xml_parser_1.default);
                     break;
                 case "rPr":
                     result.styles.push({
                         target: "span",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = paragraph_1.parseParagraphProperties(n, xml_parser_1.default);
+                    result.runProps = (0, paragraph_1.parseParagraphProperties)(n, xml_parser_1.default);
                     break;
                 case "tblPr":
                 case "tcPr":
@@ -529,10 +439,10 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseHyperlink(c, result));
                     break;
                 case "bookmarkStart":
-                    result.children.push(bookmark_1.parseBookmarkStart(c, xml_parser_1.default));
+                    result.children.push((0, bookmark_1.parseBookmarkStart)(c, xml_parser_1.default));
                     break;
                 case "bookmarkEnd":
-                    result.children.push(bookmark_1.parseBookmarkEnd(c, xml_parser_1.default));
+                    result.children.push((0, bookmark_1.parseBookmarkEnd)(c, xml_parser_1.default));
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
@@ -544,7 +454,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
         var _this = this;
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, function (c) {
-            if (paragraph_1.parseParagraphProperty(c, paragraph, xml_parser_1.default))
+            if ((0, paragraph_1.parseParagraphProperty)(c, paragraph, xml_parser_1.default))
                 return true;
             switch (c.localName) {
                 case "pStyle":
@@ -908,7 +818,6 @@ var DocumentParser = (function () {
         if (childStyle === void 0) { childStyle = null; }
         if (handler === void 0) { handler = null; }
         style = style || {};
-        var spacing = null;
         xml.foreach(elem, function (c) {
             switch (c.localName) {
                 case "jc":
@@ -1329,10 +1238,8 @@ var values = (function () {
 /*!*****************************!*\
   !*** ./src/docx-preview.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -1345,7 +1252,7 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.renderAsync = void 0;
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
@@ -1374,12 +1281,10 @@ exports.renderAsync = renderAsync;
 /*!*****************************!*\
   !*** ./src/dom/bookmark.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseBookmarkEnd = exports.parseBookmarkStart = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 function parseBookmarkStart(elem, xml) {
@@ -1407,12 +1312,10 @@ exports.parseBookmarkEnd = parseBookmarkEnd;
 /*!***************************!*\
   !*** ./src/dom/common.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseCommonProperty = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -1422,6 +1325,7 @@ exports.LengthUsage = {
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
     Border: { mul: 0.125, unit: "pt" },
+    Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: null }
 };
@@ -1454,10 +1358,8 @@ exports.parseCommonProperty = parseCommonProperty;
 /*!**********************************!*\
   !*** ./src/dom/document-part.ts ***!
   \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1467,12 +1369,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
@@ -1485,7 +1389,7 @@ var DocumentPart = (function (_super) {
     DocumentPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
             _this.body = _this._documentParser.parseDocumentFile(xml);
         });
@@ -1501,12 +1405,10 @@ exports.DocumentPart = DocumentPart;
 /*!************************!*\
   !*** ./src/dom/dom.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DomType = void 0;
 var DomType;
 (function (DomType) {
@@ -1534,12 +1436,10 @@ var DomType;
 /*!*********************************!*\
   !*** ./src/dom/line-spacing.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseLineSpacing = void 0;
 function parseLineSpacing(elem, xml) {
     return {
@@ -1558,12 +1458,10 @@ exports.parseLineSpacing = parseLineSpacing;
 /*!******************************!*\
   !*** ./src/dom/paragraph.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = void 0;
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/dom/section.ts");
@@ -1581,20 +1479,20 @@ exports.parseParagraphProperties = parseParagraphProperties;
 function parseParagraphProperty(elem, props, xml) {
     if (elem.namespaceURI != common_1.ns.wordml)
         return false;
-    if (common_1.parseCommonProperty(elem, props, xml))
+    if ((0, common_1.parseCommonProperty)(elem, props, xml))
         return true;
     switch (elem.localName) {
         case "tabs":
             props.tabs = parseTabs(elem, xml);
             break;
         case "sectPr":
-            props.sectionProps = section_1.parseSectionProperties(elem, xml);
+            props.sectionProps = (0, section_1.parseSectionProperties)(elem, xml);
             break;
         case "numPr":
             props.numbering = parseNumbering(elem, xml);
             break;
         case "spacing":
-            props.lineSpacing = line_spacing_1.parseLineSpacing(elem, xml);
+            props.lineSpacing = (0, line_spacing_1.parseLineSpacing)(elem, xml);
             return false;
             break;
         case "textAlignment":
@@ -1617,7 +1515,7 @@ function parseParagraphProperty(elem, props, xml) {
             props.styleName = xml.attr(elem, "val");
             break;
         case "rPr":
-            props.runProps = run_1.parseRunProperties(elem, xml);
+            props.runProps = (0, run_1.parseRunProperties)(elem, xml);
             break;
         default:
             return false;
@@ -1658,12 +1556,10 @@ exports.parseNumbering = parseNumbering;
 /*!************************!*\
   !*** ./src/dom/run.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRunProperty = exports.parseRunProperties = void 0;
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 function parseRunProperties(elem, xml) {
@@ -1676,7 +1572,7 @@ function parseRunProperties(elem, xml) {
 }
 exports.parseRunProperties = parseRunProperties;
 function parseRunProperty(elem, props, xml) {
-    if (common_1.parseCommonProperty(elem, props, xml))
+    if ((0, common_1.parseCommonProperty)(elem, props, xml))
         return true;
     return false;
 }
@@ -1689,12 +1585,10 @@ exports.parseRunProperty = parseRunProperty;
 /*!****************************!*\
   !*** ./src/dom/section.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseSectionProperties = exports.SectionType = void 0;
 var SectionType;
 (function (SectionType) {
@@ -1759,10 +1653,8 @@ function parseColumns(elem, xml) {
 /*!**************************************!*\
   !*** ./src/font-table/font-table.ts ***!
   \**************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1772,12 +1664,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FontTablePart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var fonts_1 = __webpack_require__(/*! ./fonts */ "./src/font-table/fonts.ts");
@@ -1791,7 +1685,7 @@ var FontTablePart = (function (_super) {
         return _super.prototype.load.call(this, pkg)
             .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (el) {
-            _this.fonts = fonts_1.parseFonts(el, pkg.xmlParser);
+            _this.fonts = (0, fonts_1.parseFonts)(el, pkg.xmlParser);
         });
     };
     return FontTablePart;
@@ -1805,12 +1699,10 @@ exports.FontTablePart = FontTablePart;
 /*!*********************************!*\
   !*** ./src/font-table/fonts.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseFont = exports.parseFonts = void 0;
 function parseFonts(root, xmlParser) {
     return xmlParser.elements(root).map(function (el) { return parseFont(el, xmlParser); });
@@ -1846,10 +1738,8 @@ exports.parseFont = parseFont;
 /*!******************************!*\
   !*** ./src/html-renderer.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -1862,7 +1752,7 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HtmlRenderer = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
@@ -1877,12 +1767,14 @@ var HtmlRenderer = (function () {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
+        this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.stylesPart != null) {
+            this.styleMap = this.processStyles(document.stylesPart.styles);
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
@@ -2032,17 +1924,15 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.splitBySection = function (elements) {
-        var _a, _b;
+        var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var styles = (_a = this.document.stylesPart) === null || _a === void 0 ? void 0 : _a.styles;
-        var styleMap = styles ? utils_1.keyBy(styles, function (x) { return x.id; }) : null;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
                 var styleName = elem.styleName;
-                var s = styleMap && styleName ? styleMap[styleName] : null;
-                if ((_b = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _b === void 0 ? void 0 : _b.pageBreakBefore) {
+                var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
@@ -2104,7 +1994,8 @@ var HtmlRenderer = (function () {
         return wrapper;
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
-        var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
+        var c = this.className;
+        var styleText = "." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                ." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                ." + c + " { color: black; }\n                section." + c + " { box-sizing: border-box; }\n                ." + c + " table { border-collapse: collapse; }\n                ." + c + " table td, ." + c + " table th { vertical-align: top; }\n                ." + c + " p { margin: 0pt; }";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (styles, styleContainer) {
@@ -2160,7 +2051,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
-        var stylesMap = this.processStyles(styles);
+        var stylesMap = this.styleMap;
         for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
             var style = styles_3[_i];
             var subStyles = style.styles;
@@ -2215,6 +2106,8 @@ var HtmlRenderer = (function () {
                 return this.renderTab(elem);
             case dom_1.DomType.Symbol:
                 return this.renderSymbol(elem);
+            case dom_1.DomType.Break:
+                return this.renderBreak(elem);
         }
         return null;
     };
@@ -2241,11 +2134,11 @@ var HtmlRenderer = (function () {
         this.renderCommonProeprties(result.style, elem);
         if (elem.numbering) {
             var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
-            result.className = utils_1.appendClass(result.className, numberingClass);
+            result.className = (0, utils_1.appendClass)(result.className, numberingClass);
         }
         if (elem.styleName) {
             var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
-            result.className = utils_1.appendClass(result.className, styleClassName);
+            result.className = (0, utils_1.appendClass)(result.className, styleClassName);
         }
         return result;
     };
@@ -2292,6 +2185,12 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderText = function (elem) {
         return this.htmlDocument.createTextNode(elem.text);
     };
+    HtmlRenderer.prototype.renderBreak = function (elem) {
+        if (elem.break == "textWrapping") {
+            return this.htmlDocument.createElement("br");
+        }
+        return null;
+    };
     HtmlRenderer.prototype.renderSymbol = function (elem) {
         var span = this.htmlDocument.createElement("span");
         span.style.fontFamily = elem.font;
@@ -2308,7 +2207,7 @@ var HtmlRenderer = (function () {
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
-                javascript_1.updateTabStop(tabSpan, paragraph.tabs);
+                (0, javascript_1.updateTabStop)(tabSpan, paragraph.tabs);
             }, 0);
         }
         return tabSpan;
@@ -2319,8 +2218,6 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
-        if (elem.break)
-            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
         if (elem.fldCharType || elem.instrText)
             return null;
         var result = this.htmlDocument.createElement("span");
@@ -2466,12 +2363,10 @@ function findParent(elem, type) {
 /*!***************************!*\
   !*** ./src/javascript.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updateTabStop = void 0;
 function updateTabStop(elem, tabs, pixelToPoint) {
     if (pixelToPoint === void 0) { pixelToPoint = 72 / 96; }
@@ -2505,10 +2400,8 @@ exports.updateTabStop = updateTabStop;
 /*!*****************************************!*\
   !*** ./src/numbering/numbering-part.ts ***!
   \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2518,12 +2411,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NumberingPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
@@ -2539,7 +2434,7 @@ var NumberingPart = (function (_super) {
         return _super.prototype.load.call(this, pkg)
             .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
-            Object.assign(_this, numbering_1.parseNumberingPart(xml, pkg.xmlParser));
+            Object.assign(_this, (0, numbering_1.parseNumberingPart)(xml, pkg.xmlParser));
             _this.domNumberings = _this._documentParser.parseNumberingFile(xml);
         });
     };
@@ -2554,12 +2449,10 @@ exports.NumberingPart = NumberingPart;
 /*!************************************!*\
   !*** ./src/numbering/numbering.ts ***!
   \************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumberingBulletPicture = exports.parseNumberingLevelOverrride = exports.parseNumberingLevel = exports.parseAbstractNumbering = exports.parseNumbering = exports.parseNumberingPart = void 0;
 var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
 var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
@@ -2659,10 +2552,10 @@ function parseNumberingLevel(elem, xml) {
                 result.bulletPictureId = xml.attr(e, "val");
                 break;
             case "pPr":
-                result.paragraphProps = paragraph_1.parseParagraphProperties(e, xml);
+                result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(e, xml);
                 break;
             case "rPr":
-                result.runProps = run_1.parseRunProperties(e, xml);
+                result.runProps = (0, run_1.parseRunProperties)(e, xml);
                 break;
         }
     }
@@ -2706,12 +2599,10 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 /*!**********************************!*\
   !*** ./src/parser/xml-parser.ts ***!
   \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XmlParser = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 var XmlParser = (function () {
@@ -2770,13 +2661,13 @@ var XmlParser = (function () {
     };
     XmlParser.prototype.lengthAttr = function (node, attrName, usage) {
         if (usage === void 0) { usage = common_1.LengthUsage.Dxa; }
-        return common_1.convertLength(this.attr(node, attrName), usage);
+        return (0, common_1.convertLength)(this.attr(node, attrName), usage);
     };
     return XmlParser;
 }());
 exports.XmlParser = XmlParser;
 var globalXmlParser = new XmlParser();
-exports.default = globalXmlParser;
+exports["default"] = globalXmlParser;
 
 
 /***/ }),
@@ -2785,10 +2676,8 @@ exports.default = globalXmlParser;
 /*!***********************************!*\
   !*** ./src/styles/styles-part.ts ***!
   \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2798,12 +2687,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var StylesPart = (function (_super) {
@@ -2816,7 +2707,7 @@ var StylesPart = (function (_super) {
     StylesPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
             _this.styles = _this._documentParser.parseStylesFile(xml);
         });
@@ -2832,12 +2723,10 @@ exports.StylesPart = StylesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
@@ -2869,12 +2758,10 @@ exports.keyBy = keyBy;
 /*!******************************!*\
   !*** ./src/word-document.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deobfuscate = exports.WordDocument = void 0;
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
@@ -2934,7 +2821,7 @@ var WordDocument = (function () {
         return part.load(this._package).then(function () {
             if (part.rels == null || part.rels.length == 0)
                 return part;
-            var folder = utils_1.splitPath(part.path)[0];
+            var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
                 return _this.loadRelationshipPart("" + folder + rel.target, rel.type);
             });
@@ -2957,7 +2844,7 @@ var WordDocument = (function () {
         var rel = part.rels.find(function (x) { return x.id == id; });
         if (rel == null)
             return Promise.resolve(null);
-        var fodler = utils_1.splitPath(part.path)[0];
+        var fodler = (0, utils_1.splitPath)(part.path)[0];
         return this._package.load(fodler + rel.target, outputType);
     };
     return WordDocument;
@@ -2982,13 +2869,47 @@ exports.deobfuscate = deobfuscate;
 /*!************************!*\
   !*** external "JSZip" ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
+/***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 
 /***/ })
 
-/******/ });
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/docx-preview.ts");
+/******/ 	
+/******/ 	return __webpack_exports__;
+/******/ })()
+;
 });
 //# sourceMappingURL=docx-preview.js.map
