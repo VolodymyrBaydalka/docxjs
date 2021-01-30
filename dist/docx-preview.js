@@ -1611,7 +1611,7 @@ function parseParagraphProperty(elem, props, xml) {
             props.pageBreakBefore = xml.boolAttr(elem, "val", true);
             break;
         case "outlineLvl":
-            props.outlineLevel = xml.intAttr(elem, "outlineLvl");
+            props.outlineLevel = xml.intAttr(elem, "val");
             break;
         case "pStyle":
             props.styleName = xml.attr(elem, "val");
@@ -2107,111 +2107,49 @@ var HtmlRenderer = (function () {
         var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderNumbering2 = function (numberingPart, container) {
-        var _this = this;
-        var css = "";
-        var numberingMap = utils_1.keyBy(numberingPart.abstractNumberings, function (x) { return x.id; });
-        var bulletMap = utils_1.keyBy(numberingPart.bulletPictures, function (x) { return x.id; });
-        var topCounters = [];
-        for (var _i = 0, _a = numberingPart.numberings; _i < _a.length; _i++) {
-            var num = _a[_i];
-            var absNum = numberingMap[num.abstractId];
-            var _loop_3 = function (lvl) {
-                var className = this_3.numberingClass(num.id, lvl.level);
-                var listStyleType = "none";
-                if (lvl.text && lvl.format == 'decimal') {
-                    var counter = this_3.numberingCounter(num.id, lvl.level);
-                    if (lvl.level > 0) {
-                        css += this_3.styleToString("p." + this_3.numberingClass(num.id, lvl.level - 1), {
-                            "counter-reset": counter
-                        });
-                    }
-                    else {
-                        topCounters.push(counter);
-                    }
-                    css += this_3.styleToString("p." + className + ":before", {
-                        "content": this_3.levelTextToContent(lvl.text, num.id),
-                        "counter-increment": counter
-                    });
-                }
-                else if (lvl.bulletPictureId) {
-                    var pict = bulletMap[lvl.bulletPictureId];
-                    var variable_1 = ("--" + this_3.className + "-" + pict.referenceId).toLowerCase();
-                    css += this_3.styleToString("p." + className + ":before", {
-                        "content": "' '",
-                        "display": "inline-block",
-                        "background": "var(" + variable_1 + ")"
-                    }, pict.style);
-                    this_3.document.loadNumberingImage(pict.referenceId).then(function (data) {
-                        var text = "." + _this.className + "-wrapper { " + variable_1 + ": url(" + data + ") }";
-                        container.appendChild(createStyleElement(text));
-                    });
-                }
-                else {
-                    listStyleType = this_3.numFormatToCssValue(lvl.format);
-                }
-                css += this_3.styleToString("p." + className, {
-                    "display": "list-item",
-                    "list-style-position": "inside",
-                    "list-style-type": listStyleType,
-                });
-            };
-            var this_3 = this;
-            for (var _b = 0, _c = absNum.levels; _b < _c.length; _b++) {
-                var lvl = _c[_b];
-                _loop_3(lvl);
-            }
-        }
-        if (topCounters.length > 0) {
-            css += this.styleToString("." + this.className + "-wrapper", {
-                "counter-reset": topCounters.join(" ")
-            });
-        }
-        return createStyleElement(css);
-    };
     HtmlRenderer.prototype.renderNumbering = function (styles, styleContainer) {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
-        var _loop_4 = function () {
-            selector = "p." + this_4.numberingClass(num.id, num.level);
+        var _loop_3 = function () {
+            selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
             if (num.levelText && num.format == "decimal") {
-                var counter = this_4.numberingCounter(num.id, num.level);
+                var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_4.styleToString("p." + this_4.numberingClass(num.id, num.level - 1), {
+                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_4.styleToString(selector + ":before", {
-                    "content": this_4.levelTextToContent(num.levelText, num.id),
+                styleText += this_3.styleToString(selector + ":before", {
+                    "content": this_3.levelTextToContent(num.levelText, num.id),
                     "counter-increment": counter
                 });
             }
             else if (num.bullet) {
-                var valiable_1 = ("--" + this_4.className + "-" + num.bullet.src).toLowerCase();
-                styleText += this_4.styleToString(selector + ":before", {
+                var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString(selector + ":before", {
                     "content": "' '",
                     "display": "inline-block",
                     "background": "var(" + valiable_1 + ")"
                 }, num.bullet.style);
-                this_4.document.loadNumberingImage(num.bullet.src).then(function (data) {
+                this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
                     var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else {
-                listStyleType = this_4.numFormatToCssValue(num.format);
+                listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_4.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
+            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
         };
-        var this_4 = this, selector, listStyleType;
+        var this_3 = this, selector, listStyleType;
         for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
             var num = styles_2[_i];
-            _loop_4();
+            _loop_3();
         }
         if (rootCounters.length > 0) {
             styleText += this.styleToString("." + this.className + "-wrapper", {
@@ -2300,7 +2238,7 @@ var HtmlRenderer = (function () {
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        this.renderCommonProeprties(result, elem);
+        this.renderCommonProeprties(result.style, elem);
         if (elem.numbering) {
             var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
             result.className = utils_1.appendClass(result.className, numberingClass);
@@ -2311,14 +2249,17 @@ var HtmlRenderer = (function () {
         }
         return result;
     };
-    HtmlRenderer.prototype.renderCommonProeprties = function (elem, props) {
+    HtmlRenderer.prototype.renderRunProperties = function (style, props) {
+        this.renderCommonProeprties(style, props);
+    };
+    HtmlRenderer.prototype.renderCommonProeprties = function (style, props) {
         if (props == null)
             return;
         if (props.color) {
-            elem.style.color = props.color;
+            style["color"] = props.color;
         }
         if (props.fontSize) {
-            elem.style.fontSize = this.renderLength(props.fontSize);
+            style["font-size"] = this.renderLength(props.fontSize);
         }
     };
     HtmlRenderer.prototype.renderHyperlink = function (elem) {

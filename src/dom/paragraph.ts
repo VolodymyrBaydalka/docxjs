@@ -90,7 +90,7 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             break;
         
         case "outlineLvl":
-            props.outlineLevel = xml.intAttr(elem, "outlineLvl");
+            props.outlineLevel = xml.intAttr(elem, "val");
             break;
 
         case "pStyle":
