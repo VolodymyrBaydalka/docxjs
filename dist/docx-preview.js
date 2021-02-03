@@ -227,6 +227,7 @@ var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragraph.ts");
 var section_1 = __webpack_require__(/*! ./dom/section */ "./src/dom/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
+var run_1 = __webpack_require__(/*! ./dom/run */ "./src/dom/run.ts");
 var bookmark_1 = __webpack_require__(/*! ./dom/bookmark */ "./src/dom/bookmark.ts");
 exports.autos = {
     shd: "white",
@@ -360,7 +361,7 @@ var DocumentParser = (function () {
                         target: "span",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = paragraph_1.parseParagraphProperties(n, xml_parser_1.default);
+                    result.runProps = run_1.parseRunProperties(n, xml_parser_1.default);
                     break;
                 case "tblPr":
                 case "tcPr":
@@ -638,6 +639,7 @@ var DocumentParser = (function () {
         return result;
     };
     DocumentParser.prototype.parseRunProperties = function (elem, run) {
+        Object.assign(run, run_1.parseRunProperties(elem, xml_parser_1.default));
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, function (c) {
             switch (c.localName) {
                 case "rStyle":
@@ -1404,6 +1406,55 @@ exports.parseBookmarkEnd = parseBookmarkEnd;
 
 /***/ }),
 
+/***/ "./src/dom/border.ts":
+/*!***************************!*\
+  !*** ./src/dom/border.ts ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseBorders = exports.parseBorder = void 0;
+var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
+function parseBorder(elem, xml) {
+    return {
+        type: xml.attr(elem, "val"),
+        color: xml.attr(elem, "color"),
+        size: xml.lengthAttr(elem, "sz", common_1.LengthUsage.Border),
+        offset: xml.lengthAttr(elem, "space", common_1.LengthUsage.Point),
+        frame: xml.boolAttr(elem, 'frame'),
+        shadow: xml.boolAttr(elem, 'shadow')
+    };
+}
+exports.parseBorder = parseBorder;
+function parseBorders(elem, xml) {
+    var result = {};
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "left":
+                result.left = parseBorder(e, xml);
+                break;
+            case "top":
+                result.top = parseBorder(e, xml);
+                break;
+            case "right":
+                result.right = parseBorder(e, xml);
+                break;
+            case "bottom":
+                result.bottom = parseBorder(e, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseBorders = parseBorders;
+
+
+/***/ }),
+
 /***/ "./src/dom/common.ts":
 /*!***************************!*\
   !*** ./src/dom/common.ts ***!
@@ -1414,7 +1465,7 @@ exports.parseBookmarkEnd = parseBookmarkEnd;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseCommonProperty = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
+exports.convertPercentage = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 };
@@ -1432,22 +1483,10 @@ function convertLength(val, usage) {
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 exports.convertLength = convertLength;
-function parseCommonProperty(elem, props, xml) {
-    if (elem.namespaceURI != exports.ns.wordml)
-        return false;
-    switch (elem.localName) {
-        case "color":
-            props.color = xml.attr(elem, "val");
-            break;
-        case "sz":
-            props.fontSize = xml.lengthAttr(elem, "val", exports.LengthUsage.FontSize);
-            break;
-        default:
-            return false;
-    }
-    return true;
+function convertPercentage(val) {
+    return val ? parseInt(val) / 100 : null;
 }
-exports.parseCommonProperty = parseCommonProperty;
+exports.convertPercentage = convertPercentage;
 
 
 /***/ }),
@@ -1583,8 +1622,6 @@ exports.parseParagraphProperties = parseParagraphProperties;
 function parseParagraphProperty(elem, props, xml) {
     if (elem.namespaceURI != common_1.ns.wordml)
         return false;
-    if (common_1.parseCommonProperty(elem, props, xml))
-        return true;
     switch (elem.localName) {
         case "tabs":
             props.tabs = parseTabs(elem, xml);
@@ -1666,7 +1703,8 @@ exports.parseNumbering = parseNumbering;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseRunProperty = exports.parseRunProperties = void 0;
+exports.parseShading = exports.parseRunFonts = exports.parseRunProperty = exports.parseRunProperties = void 0;
+var border_1 = __webpack_require__(/*! ./border */ "./src/dom/border.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 function parseRunProperties(elem, xml) {
     var result = {};
@@ -1678,11 +1716,75 @@ function parseRunProperties(elem, xml) {
 }
 exports.parseRunProperties = parseRunProperties;
 function parseRunProperty(elem, props, xml) {
-    if (common_1.parseCommonProperty(elem, props, xml))
-        return true;
-    return false;
+    switch (elem.localName) {
+        case 'bdr':
+            props.border = border_1.parseBorder(elem, xml);
+            break;
+        case 'rFonts':
+            props.fonts = parseRunFonts(elem, xml);
+            break;
+        case 'shd':
+            props.shading = parseShading(elem, xml);
+            break;
+        case 'highlight':
+            props.highlight = xml.attr(elem, 'val');
+            break;
+        case 'spacing':
+            props.spacing = xml.lengthAttr(elem, 'val');
+            break;
+        case 'w':
+            props.stretch = xml.percentageAttr(elem, 'val');
+            break;
+        case "color":
+            props.color = xml.attr(elem, "val");
+            break;
+        case "sz":
+            props.fontSize = xml.lengthAttr(elem, "val", common_1.LengthUsage.FontSize);
+            break;
+        case "b":
+            props.bold = xml.boolAttr(elem, "val", true);
+            break;
+        case "strike":
+            props.strike = xml.boolAttr(elem, "val", true);
+            break;
+        case "dstrike":
+            props.doubleStrike = xml.boolAttr(elem, "val", true);
+            break;
+        case "i":
+            props.italics = xml.boolAttr(elem, "val", true);
+            break;
+        case "u":
+            props.underline = {
+                color: xml.attr(elem, "color"),
+                type: xml.attr(elem, 'val')
+            };
+            break;
+        case 'caps':
+            props.caps = xml.boolAttr(elem, "val", true);
+            break;
+        default:
+            return false;
+    }
+    return true;
 }
 exports.parseRunProperty = parseRunProperty;
+function parseRunFonts(elem, xml) {
+    return {
+        ascii: xml.attr(elem, 'ascii'),
+        hAscii: xml.attr(elem, 'hAscii'),
+        cs: xml.attr(elem, 'cs'),
+        eastAsia: xml.attr(elem, 'eastAsia'),
+    };
+}
+exports.parseRunFonts = parseRunFonts;
+function parseShading(elem, xml) {
+    return {
+        type: xml.attr(elem, 'val'),
+        foreground: xml.attr(elem, 'color'),
+        background: xml.attr(elem, 'fill')
+    };
+}
+exports.parseShading = parseShading;
 
 
 /***/ }),
@@ -1865,10 +1967,16 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HtmlRenderer = void 0;
+exports.HtmlRenderer = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
+var knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
+exports.autos = {
+    shd: "white",
+    color: "black",
+    highlight: "transparent"
+};
 var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
@@ -2100,6 +2208,12 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderLength = function (l) {
         return l ? "" + l.value + l.type : null;
     };
+    HtmlRenderer.prototype.renderColor = function (c, autoColor) {
+        if (autoColor === void 0) { autoColor = 'black'; }
+        if (/\d{6}/.test(c))
+            return "#" + c;
+        return c == 'auto' ? autoColor : c;
+    };
     HtmlRenderer.prototype.renderWrapper = function () {
         var wrapper = document.createElement("div");
         wrapper.className = this.className + "-wrapper";
@@ -2227,7 +2341,12 @@ var HtmlRenderer = (function () {
         var _this = this;
         if (elems == null)
             return null;
-        var result = elems.map(function (e) { return _this.renderElement(e, parent); }).filter(function (e) { return e != null; });
+        var result = elems.map(function (e) {
+            var n = _this.renderElement(e, parent);
+            if (n)
+                n.__docxElement = e;
+            return n;
+        }).filter(function (e) { return e != null; });
         if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var c = result_1[_i];
@@ -2240,7 +2359,6 @@ var HtmlRenderer = (function () {
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        this.renderCommonProeprties(result.style, elem);
         if (elem.numbering) {
             var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
             result.className = utils_1.appendClass(result.className, numberingClass);
@@ -2252,17 +2370,95 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderRunProperties = function (style, props) {
-        this.renderCommonProeprties(style, props);
+        for (var p in props) {
+            var v = props[p];
+            switch (p) {
+                case 'highlight':
+                    style['background'] = this.renderColor(v);
+                    break;
+                case 'shading':
+                    style['background'] = this.renderShading(v);
+                    break;
+                case 'border':
+                    style['border'] = this.renderBorder(v);
+                    break;
+                case 'color':
+                    style["color"] = this.renderColor(v);
+                    break;
+                case 'fontSize':
+                    style["font-size"] = this.renderLength(v);
+                    break;
+                case 'bold':
+                    style["font-weight"] = v ? 'bold' : 'normal';
+                    break;
+                case 'italics':
+                    style["font-style"] = v ? 'italic' : 'normal';
+                    break;
+                case 'caps':
+                    style["text-transform"] = v ? 'uppercase' : 'none';
+                    break;
+                case 'strike':
+                case 'strike':
+                    style["text-decoration"] = v ? 'line-through' : 'none';
+                    break;
+                case 'fonts':
+                    style["font-family"] = this.renderRunFonts(v);
+                    break;
+                case 'underline':
+                    this.renderUnderline(style, v);
+                    break;
+            }
+        }
     };
-    HtmlRenderer.prototype.renderCommonProeprties = function (style, props) {
-        if (props == null)
+    HtmlRenderer.prototype.renderRunFonts = function (fonts) {
+        return [fonts.ascii, fonts.hAscii, fonts.cs, fonts.eastAsia].filter(function (x) { return x; }).map(function (x) { return "'" + x + "'"; }).join(',');
+    };
+    HtmlRenderer.prototype.renderBorder = function (border) {
+        if (border.type == 'nil')
+            return 'none';
+        return this.renderLength(border.size) + " solid " + this.renderColor(border.color);
+    };
+    HtmlRenderer.prototype.renderShading = function (shading) {
+        if (shading.type == 'clear')
+            return this.renderColor(shading.background, exports.autos.shd);
+        return this.renderColor(shading.background, exports.autos.shd);
+    };
+    HtmlRenderer.prototype.renderUnderline = function (style, underline) {
+        if (underline.type == null || underline.type == "none")
             return;
-        if (props.color) {
-            style["color"] = props.color;
+        switch (underline.type) {
+            case "dash":
+            case "dashDotDotHeavy":
+            case "dashDotHeavy":
+            case "dashedHeavy":
+            case "dashLong":
+            case "dashLongHeavy":
+            case "dotDash":
+            case "dotDotDash":
+                style["text-decoration-style"] = "dashed";
+                break;
+            case "dotted":
+            case "dottedHeavy":
+                style["text-decoration-style"] = "dotted";
+                break;
+            case "double":
+                style["text-decoration-style"] = "double";
+                break;
+            case "single":
+            case "thick":
+                style["text-decoration"] = "underline";
+                break;
+            case "wave":
+            case "wavyDouble":
+            case "wavyHeavy":
+                style["text-decoration-style"] = "wavy";
+                break;
+            case "words":
+                style["text-decoration"] = "underline";
+                break;
         }
-        if (props.fontSize) {
-            style["font-size"] = this.renderLength(props.fontSize);
-        }
+        if (underline.color)
+            style["text-decoration-color"] = this.renderColor(underline.color);
     };
     HtmlRenderer.prototype.renderHyperlink = function (elem) {
         var result = this.htmlDocument.createElement("a");
@@ -2330,7 +2526,7 @@ var HtmlRenderer = (function () {
             result.id = elem.id;
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.cssStyle, result);
+        this.renderRunProperties(result.style, elem);
         if (elem.href) {
             var link = this.htmlDocument.createElement("a");
             link.href = elem.href;
@@ -2770,6 +2966,9 @@ var XmlParser = (function () {
             default: return defaultValue;
         }
     };
+    XmlParser.prototype.percentageAttr = function (node, attrName) {
+        return common_1.convertPercentage(this.attr(node, attrName));
+    };
     XmlParser.prototype.lengthAttr = function (node, attrName, usage) {
         if (usage === void 0) { usage = common_1.LengthUsage.Dxa; }
         return common_1.convertLength(this.attr(node, attrName), usage);
@@ -2795,6 +2994,7 @@ exports.default = globalXmlParser;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseDocumentDefaults = void 0;
 var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
+var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
 function parseDocumentDefaults(elem, xml) {
     var result = {};
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
@@ -2808,7 +3008,7 @@ function parseDocumentDefaults(elem, xml) {
             case "rPrDefault":
                 var rPrElem = xml.element(e, 'rPr');
                 if (rPrElem)
-                    result.runProps = paragraph_1.parseParagraphProperties(rPrElem, xml);
+                    result.runProps = run_1.parseRunProperties(rPrElem, xml);
                 break;
         }
     }

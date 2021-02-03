@@ -1,7 +1,7 @@
 import { WordDocument } from './word-document';
 import { DomType, IDomTable, IDomNumbering, 
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
-import { Length, CommonProperties } from './dom/common';
+import { Length, Underline } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './dom/document';
 import { ParagraphElement } from './dom/paragraph';
@@ -9,10 +9,19 @@ import { appendClass, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
-import { RunElement, RunProperties } from './dom/run';
+import { RunElement, RunFonts, RunProperties, Shading } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
 import { NumberingPartProperties } from './numbering/numbering';
+import { Border } from './dom/border';
+
+const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
+
+export var autos = {
+    shd: "white",
+    color: "black",
+    highlight: "transparent"
+};
 
 export class HtmlRenderer {
 
@@ -285,6 +294,13 @@ export class HtmlRenderer {
         return l ? `${l.value}${l.type}` : null;
     }
 
+    renderColor(c: string, autoColor: string = 'black'): string {
+        if (/\d{6}/.test(c))
+            return `#${c}`;
+
+        return c == 'auto' ? autoColor : c;
+    }
+
     renderWrapper() {
         var wrapper = document.createElement("div");
 
@@ -519,7 +535,14 @@ export class HtmlRenderer {
         if(elems == null)
             return null;
 
-        var result = elems.map(e => this.renderElement(e, parent)).filter(e => e != null);
+        var result = elems.map(e => {
+            let n = this.renderElement(e, parent);
+
+            if(n)
+                (n as any).__docxElement = e;
+
+            return n;
+        }).filter(e => e != null);
 
         if(into)
             for(let c of result)
@@ -535,8 +558,6 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        this.renderCommonProeprties(result.style, elem);
-
         if (elem.numbering) {
             var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
             result.className = appendClass(result.className, numberingClass);
@@ -551,21 +572,120 @@ export class HtmlRenderer {
     }
 
     renderRunProperties(style: any, props: RunProperties) {
-        this.renderCommonProeprties(style, props);
+        for (const p in props) {
+            const v = props[p];
+
+            switch (p) {
+                case 'highlight':
+                    style['background'] = this.renderColor(v);
+                    break;
+
+                case 'shading':
+                    style['background'] = this.renderShading(v);
+                    break;
+
+                case 'border':
+                    style['border'] = this.renderBorder(v);
+                    break;
+
+                case 'color':
+                    style["color"] = this.renderColor(v);
+                    break;
+
+                case 'fontSize':
+                    style["font-size"] = this.renderLength(v);
+                    break;
+
+                case 'bold':
+                    style["font-weight"] = v ? 'bold' : 'normal';
+                    break;
+
+                case 'italics':
+                    style["font-style"] = v ? 'italic' : 'normal';
+                    break;
+
+                case 'caps':
+                    style["text-transform"] = v ? 'uppercase' : 'none';
+                    break;
+
+                case 'strike':
+                case 'strike':
+                    style["text-decoration"] = v ? 'line-through' : 'none';
+                    break;
+
+                case 'fonts':
+                    style["font-family"] = this.renderRunFonts(v);
+                    break;
+    
+                case 'underline':
+                    this.renderUnderline(style, v);
+                    break;
+            }
+        }
     }
 
-    renderCommonProeprties(style: any, props: CommonProperties){
-        if(props == null)
+    renderRunFonts(fonts: RunFonts) {
+        return [fonts.ascii, fonts.hAscii, fonts.cs, fonts.eastAsia].filter(x => x).map(x => `'${x}'`).join(',');
+    }
+
+    renderBorder(border: Border) {
+        if (border.type == 'nil')
+            return 'none';
+
+        return `${this.renderLength(border.size)} solid ${this.renderColor(border.color)}`;
+    }
+    
+    renderShading(shading: Shading) {
+        if (shading.type == 'clear')
+            return this.renderColor(shading.background, autos.shd);
+        
+        return this.renderColor(shading.background, autos.shd);
+    }
+    
+    renderUnderline(style: any, underline: Underline) {
+        if (underline.type == null || underline.type == "none")
             return;
 
-        if(props.color) {
-            style["color"] = props.color;
+        switch (underline.type) {
+            case "dash":
+            case "dashDotDotHeavy":
+            case "dashDotHeavy":
+            case "dashedHeavy":
+            case "dashLong":
+            case "dashLongHeavy":
+            case "dotDash":
+            case "dotDotDash":
+                style["text-decoration-style"] = "dashed";
+                break;
+
+            case "dotted":
+            case "dottedHeavy":
+                style["text-decoration-style"] = "dotted";
+                break;
+
+            case "double":
+                style["text-decoration-style"] = "double";
+                break;
+
+            case "single":
+            case "thick":
+                style["text-decoration"] = "underline";
+                break;
+
+            case "wave":
+            case "wavyDouble":
+            case "wavyHeavy":
+                style["text-decoration-style"] = "wavy";
+                break;
+
+            case "words":
+                style["text-decoration"] = "underline";
+                break;
         }
 
-        if (props.fontSize) {
-            style["font-size"] = this.renderLength(props.fontSize);
-        }
- }
+        if (underline.color)
+            style["text-decoration-color"] = this.renderColor(underline.color);
+    }
 
     renderHyperlink(elem: IDomHyperlink) {
         var result = this.htmlDocument.createElement("a");
@@ -658,7 +778,8 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderStyleValues(elem.cssStyle, result);
+        //this.renderStyleValues(elem.cssStyle, result);
+        this.renderRunProperties(result.style, elem);
 
         if (elem.href) {
             var link = this.htmlDocument.createElement("a");

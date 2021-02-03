@@ -1,5 +1,5 @@
 import { ParagraphProperties, parseParagraphProperties } from "../dom/paragraph";
-import { RunProperties } from "../dom/run";
+import { parseRunProperties, RunProperties } from "../dom/run";
 import { XmlParser } from "../parser/xml-parser";
 
 export interface DocumentDefaults {
@@ -26,7 +26,7 @@ export function parseDocumentDefaults(elem: Element, xml: XmlParser) {
                 let rPrElem = xml.element(e, 'rPr');
                 
                 if (rPrElem)
-                    result.runProps = parseParagraphProperties(rPrElem, xml);
+                    result.runProps = parseRunProperties(rPrElem, xml);
                 break;
         }
     }

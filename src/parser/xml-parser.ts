@@ -1,4 +1,4 @@
-import { Length,  LengthUsage, LengthUsageType, convertLength  } from "../dom/common";
+import { Length,  LengthUsage, LengthUsageType, convertLength, convertPercentage  } from "../dom/common";
 
 export class XmlParser {
     parse(xmlString: string, skipDeclaration: boolean = true): Element {
@@ -61,6 +61,10 @@ export class XmlParser {
             case "0": return false;
             default: return defaultValue;
         }
+    }
+
+    percentageAttr(node: Element, attrName: string): number {
+        return convertPercentage(this.attr(node, attrName));
     }
 
     lengthAttr(node: Element, attrName: string, usage: LengthUsageType = LengthUsage.Dxa): Length {

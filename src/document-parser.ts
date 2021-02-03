@@ -8,7 +8,7 @@ import { DocumentElement } from './dom/document';
 import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
 import { parseSectionProperties } from './dom/section';
 import globalXmlParser from './parser/xml-parser';
-import { RunElement } from './dom/run';
+import { parseRunProperties, parseRunProperty, RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
 
@@ -161,7 +161,7 @@ export class DocumentParser {
                         target: "span",
                         values: this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = parseParagraphProperties(n, globalXmlParser);
+                    result.runProps = parseRunProperties(n, globalXmlParser);
                     break;
 
                 case "tblPr":
@@ -478,6 +478,9 @@ export class DocumentParser {
     }
 
     parseRunProperties(elem: Element, run: RunElement) {
+
+        Object.assign(run, parseRunProperties(elem, globalXmlParser));
+
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, c => {
             switch (c.localName) {
                 case "rStyle":

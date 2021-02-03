@@ -1,5 +1,5 @@
 import { OpenXmlElement } from "./dom";
-import { CommonProperties, Length, ns, parseCommonProperty } from "./common";
+import { Length, ns } from "./common";
 import { Borders } from "./border";
 import { parseSectionProperties, SectionProperties } from "./section";
 import { LineSpacing, parseLineSpacing } from "./line-spacing";
@@ -9,7 +9,7 @@ import { parseRunProperties, RunProperties } from "./run";
 export interface ParagraphElement extends OpenXmlElement, ParagraphProperties {
 }
 
-export interface ParagraphProperties extends CommonProperties {
+export interface ParagraphProperties {
     sectionProps: SectionProperties;
     tabs: ParagraphTab[];
     numbering: ParagraphNumbering;
@@ -50,9 +50,6 @@ export function parseParagraphProperties(elem: Element, xml: XmlParser): Paragra
 export function parseParagraphProperty(elem: Element, props: ParagraphProperties, xml: XmlParser) {
     if (elem.namespaceURI != ns.wordml)
         return false;
-
-    if(parseCommonProperty(elem, props, xml))
-        return true;
 
     switch (elem.localName) {
         case "tabs":

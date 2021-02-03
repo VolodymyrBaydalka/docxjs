@@ -16,9 +16,9 @@ export interface Font {
     family: string;
 }
 
-export interface CommonProperties {
-    fontSize: Length;
+export interface Underline {
     color: string;
+    type: string;
 }
 
 export type LengthUsageType = { mul: number, unit: LengthType };
@@ -37,22 +37,6 @@ export function convertLength(val: string, usage: LengthUsageType = LengthUsage.
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 
-export function parseCommonProperty(elem: Element, props: CommonProperties, xml: XmlParser): boolean {
-    if(elem.namespaceURI != ns.wordml)
-        return false;
-
-    switch(elem.localName) {
-        case "color": 
-            props.color = xml.attr(elem, "val");
-            break;
-
-        case "sz":
-            props.fontSize = xml.lengthAttr(elem, "val", LengthUsage.FontSize);
-            break;
-
-        default:
-            return false;
-    }
-
-    return true;
+export function convertPercentage(val: string): number {
+    return val ? parseInt(val) / 100 : null;
 }
