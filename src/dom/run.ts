@@ -10,16 +10,21 @@ export interface RunElement extends OpenXmlElement, RunProperties {
     href?: string;
     fldCharType?: "begin" | "end" | "separate" | string;
     instrText?: string;
+    styleName: string;
 }
 
 export interface RunProperties {
+    styleName: string;
     fontSize: Length;
     color: string;
     bold: boolean;
     italics: boolean;
     caps: boolean;
+    smallCaps: boolean;
     strike: boolean;
     doubleStrike: boolean;
+    outline: boolean;
+    imprint: boolean;
     underline: Underline;
     border: Border;
     fonts: RunFonts;
@@ -27,6 +32,7 @@ export interface RunProperties {
     highlight: string;
     spacing: Length;
     stretch: number;
+    verticalAlignment: 'baseline' | 'superscript' | 'subscript' | string;
 }
 
 export interface Shading {
@@ -54,6 +60,10 @@ export function parseRunProperties(elem: Element, xml: XmlParser): RunProperties
 
 export function parseRunProperty(elem: Element, props: RunProperties, xml: XmlParser) {
     switch (elem.localName) {
+        case 'rStyle': 
+            props.styleName = xml.attr(elem, 'val');
+            break;
+
         case 'bdr': 
             props.border = parseBorder(elem, xml);
             break;
@@ -113,6 +123,25 @@ export function parseRunProperty(elem: Element, props: RunProperties, xml: XmlPa
             props.caps = xml.boolAttr(elem, "val", true);
             break;
 
+        case 'smallCaps':
+            props.smallCaps = xml.boolAttr(elem, "val", true);
+            break;
+
+        case 'imprint':
+            props.imprint = xml.boolAttr(elem, "val", true);
+            break;
+
+        case 'outline':
+            props.outline = xml.boolAttr(elem, "val", true);
+            break;
+
+        case 'vertAlign':
+            props.verticalAlignment = xml.attr(elem, 'val');
+            break;
+        
+        case 'emboss':
+        case 'shadow':
+        case 'vanish':
         default:
             return false;
     }

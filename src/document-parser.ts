@@ -487,13 +487,6 @@ export class DocumentParser {
                     run.className = xml.className(c, "val");
                     break;
 
-                case "vertAlign":
-                    switch (xml.stringAttr(c, "val")) {
-                        case "subscript": run.wrapper = "sub"; break;
-                        case "superscript": run.wrapper = "sup"; break;
-                    }
-                    break;
-
                 default:
                     return false;
             }

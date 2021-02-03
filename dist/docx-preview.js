@@ -645,16 +645,6 @@ var DocumentParser = (function () {
                 case "rStyle":
                     run.className = xml.className(c, "val");
                     break;
-                case "vertAlign":
-                    switch (xml.stringAttr(c, "val")) {
-                        case "subscript":
-                            run.wrapper = "sub";
-                            break;
-                        case "superscript":
-                            run.wrapper = "sup";
-                            break;
-                    }
-                    break;
                 default:
                     return false;
             }
@@ -1717,6 +1707,9 @@ function parseRunProperties(elem, xml) {
 exports.parseRunProperties = parseRunProperties;
 function parseRunProperty(elem, props, xml) {
     switch (elem.localName) {
+        case 'rStyle':
+            props.styleName = xml.attr(elem, 'val');
+            break;
         case 'bdr':
             props.border = border_1.parseBorder(elem, xml);
             break;
@@ -1762,6 +1755,21 @@ function parseRunProperty(elem, props, xml) {
         case 'caps':
             props.caps = xml.boolAttr(elem, "val", true);
             break;
+        case 'smallCaps':
+            props.smallCaps = xml.boolAttr(elem, "val", true);
+            break;
+        case 'imprint':
+            props.imprint = xml.boolAttr(elem, "val", true);
+            break;
+        case 'outline':
+            props.outline = xml.boolAttr(elem, "val", true);
+            break;
+        case 'vertAlign':
+            props.verticalAlignment = xml.attr(elem, 'val');
+            break;
+        case 'emboss':
+        case 'shadow':
+        case 'vanish':
         default:
             return false;
     }
@@ -2394,6 +2402,8 @@ var HtmlRenderer = (function () {
                 case 'italics':
                     style["font-style"] = v ? 'italic' : 'normal';
                     break;
+                case 'smallCaps':
+                    style["font-size"] = v ? 'smaller' : 'none';
                 case 'caps':
                     style["text-transform"] = v ? 'uppercase' : 'none';
                     break;
@@ -2407,7 +2417,22 @@ var HtmlRenderer = (function () {
                 case 'underline':
                     this.renderUnderline(style, v);
                     break;
+                case 'verticalAlignment':
+                    this.renderRunVerticalAlignment(style, v);
+                    break;
             }
+        }
+    };
+    HtmlRenderer.prototype.renderRunVerticalAlignment = function (style, align) {
+        switch (align) {
+            case 'subscript':
+                style['vertical-align'] = 'sub';
+                style['font-size'] = 'small';
+                break;
+            case 'superscript':
+                style['vertical-align'] = 'super';
+                style['font-size'] = 'small';
+                break;
         }
     };
     HtmlRenderer.prototype.renderRunFonts = function (fonts) {

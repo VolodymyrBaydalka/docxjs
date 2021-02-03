@@ -575,7 +575,7 @@ export class HtmlRenderer {
         for (const p in props) {
             const v = props[p];
 
-            switch (p) {
+            switch (p as keyof(RunProperties)) {
                 case 'highlight':
                     style['background'] = this.renderColor(v);
                     break;
@@ -604,6 +604,8 @@ export class HtmlRenderer {
                     style["font-style"] = v ? 'italic' : 'normal';
                     break;
 
+                case 'smallCaps':
+                    style["font-size"] = v ? 'smaller' : 'none';
                 case 'caps':
                     style["text-transform"] = v ? 'uppercase' : 'none';
                     break;
@@ -620,7 +622,25 @@ export class HtmlRenderer {
                 case 'underline':
                     this.renderUnderline(style, v);
                     break;
+                
+                case 'verticalAlignment':
+                    this.renderRunVerticalAlignment(style, v);
+                    break;
             }
+        }
+    }
+
+    renderRunVerticalAlignment(style: any, align: string) {
+        switch(align) {
+            case 'subscript': 
+                style['vertical-align'] = 'sub';
+                style['font-size'] = 'small';
+                break;
+
+            case 'superscript': 
+                style['vertical-align'] = 'super';
+                style['font-size'] = 'small';
+                break;
         }
     }
 
