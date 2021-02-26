@@ -1,6 +1,6 @@
-import { OpenXmlElement } from "./dom";
-import { SectionProperties } from "./section";
+import { BodyElement } from "./body";
+import { DocxElement } from "./dom";
 
-export interface DocumentElement extends OpenXmlElement {
-    props: SectionProperties;
+export class DocumentElement extends DocxElement {
+    body: BodyElement;
 }

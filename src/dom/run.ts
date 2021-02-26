@@ -1,9 +1,9 @@
 import { XmlParser } from "../parser/xml-parser";
 import { Border, parseBorder } from "./border";
 import { Length, LengthUsage, Underline } from "./common";
-import { OpenXmlElement } from "./dom";
+import { DocxContainer } from "./dom";
 
-export interface RunElement extends OpenXmlElement, RunProperties {
+export class RunElement extends DocxContainer {
     id?: string;
     break?: string;
     wrapper?: string;
@@ -11,6 +11,8 @@ export interface RunElement extends OpenXmlElement, RunProperties {
     fldCharType?: "begin" | "end" | "separate" | string;
     instrText?: string;
     styleName: string;
+
+    props: RunProperties = <RunProperties>{};
 }
 
 export interface RunProperties {

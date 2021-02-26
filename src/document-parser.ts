@@ -1,16 +1,23 @@
-import {
-    DomType, IDomTable, IDomNumbering,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
-} from './dom/dom';
+import { DocxElement, IDomNumbering, NumberingPicBullet } from './dom/dom';
 import * as utils from './utils';
 import { DocumentElement } from './dom/document';
 import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
 import { parseSectionProperties } from './dom/section';
 import globalXmlParser from './parser/xml-parser';
 import { parseRunProperties, parseRunProperty, RunElement } from './dom/run';
-import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
+import { BookmarkEndElement, BookmarkStartElement} from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
+import { BodyElement } from './dom/body';
+import { TextElement } from './dom/text';
+import { BreakElement } from './dom/break';
+import { SymbolElement } from './dom/symbol';
+import { TabElement } from './dom/tab';
+import { HyperlinkElement } from './dom/hyperlink';
+import { TableCellElement } from './dom/table-cell';
+import { TableColumn, TableElement } from './dom/table';
+import { DrawingElement } from './dom/drawing';
+import { TableRowElement } from './dom/table-row';
+import { ImageElement } from './dom/image';
 
 export var autos = {
     shd: "white",
@@ -26,28 +33,25 @@ export class DocumentParser {
     ignoreWidth: boolean = false;
     debug: boolean = false;
 
-    parseDocumentFile(xmlDoc: Element) {
-        var result: DocumentElement = {
-            type: DomType.Document,
-            children: [],
-            cssStyle: {},
-            props: null
-        };
+    parseDocumentFile(xmlDoc: Element): DocumentElement {
+        const result = new DocumentElement();
+
+        result.body = new BodyElement();
 
         var xbody = globalXmlParser.element(xmlDoc, "body");
 
         xml.foreach(xbody, elem => {
             switch (elem.localName) {
                 case "p":
-                    result.children.push(this.parseParagraph(elem));
+                    result.body.children.push(this.parseParagraph(elem));
                     break;
 
                 case "tbl":
-                    result.children.push(this.parseTable(elem));
+                    result.body.children.push(this.parseTable(elem));
                     break;
 
                 case "sectPr":
-                    result.props = parseSectionProperties(elem, globalXmlParser);
+                    result.body.sectionProps = parseSectionProperties(elem, globalXmlParser);
                     break;
             }
         });
@@ -330,8 +334,8 @@ export class DocumentParser {
     }
 
 
-    parseParagraph(node: Element): OpenXmlElement {
-        var result = <ParagraphElement>{ type: DomType.Paragraph, children: [] };
+    parseParagraph(node: Element): ParagraphElement {
+        const result =  new ParagraphElement(node);
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -344,11 +348,11 @@ export class DocumentParser {
                     break;
 
                 case "bookmarkStart":
-                    result.children.push(parseBookmarkStart(c, globalXmlParser));
+                    result.children.push(new BookmarkStartElement(c));
                     break;               
 
-                    case "bookmarkEnd":
-                    result.children.push(parseBookmarkEnd(c, globalXmlParser));
+                case "bookmarkEnd":
+                    result.children.push(new BookmarkEndElement(c));
                     break;
 
                 case "pPr":
@@ -362,7 +366,7 @@ export class DocumentParser {
 
     parseParagraphProperties(elem: Element, paragraph: ParagraphElement) {
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, c => {
-            if(parseParagraphProperty(c, paragraph, globalXmlParser))
+            if(parseParagraphProperty(c, paragraph.props, globalXmlParser))
                 return true;
 
             switch (c.localName) {
@@ -397,12 +401,8 @@ export class DocumentParser {
             paragraph.cssStyle["float"] = "left";
     }
 
-    parseHyperlink(node: Element, parent?: OpenXmlElement): IDomHyperlink {
-        var result: IDomHyperlink = <IDomHyperlink>{ type: DomType.Hyperlink, parent: parent, children: [] };
-        var anchor = xml.stringAttr(node, "anchor");
-
-        if (anchor)
-            result.href = "#" + anchor;
+    parseHyperlink(node: Element, parent?: DocxElement): HyperlinkElement {
+        var result = new HyperlinkElement(node);
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -415,16 +415,13 @@ export class DocumentParser {
         return result;
     }
 
-    parseRun(node: Element, parent?: OpenXmlElement): RunElement {
-        var result: RunElement = <RunElement>{ type: DomType.Run, parent: parent, children: [] };
+    parseRun(node: Element, parent?: DocxElement): RunElement {
+        var result: RunElement = new RunElement(node);
 
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "t":
-                    result.children.push(<TextElement>{ 
-                        type: DomType.Text, 
-                        text: c.textContent 
-                    });//.replace(" ", "\u00A0"); // TODO
+                    result.children.push(new TextElement(c));//.replace(" ", "\u00A0"); // TODO
                     break;
                 
                 case "fldChar":
@@ -432,29 +429,16 @@ export class DocumentParser {
                     break;
 
                 case "br":
-                    result.children.push(<BreakElement>{ 
-                        type: DomType.Break, 
-                        break: xml.stringAttr(c, "type") || "textWrapping"
-                    });
-                    break;
-
                 case "lastRenderedPageBreak":
-                    result.children.push(<BreakElement>{ 
-                        type: DomType.Break, 
-                        break: "page"
-                    });
+                    result.children.push(new BreakElement(c));
                     break;
                 
                 case "sym":
-                    result.children.push(<SymbolElement>{ 
-                        type: DomType.Symbol, 
-                        font: xml.stringAttr(c, "font"),
-                        char: xml.stringAttr(c, "char")
-                    });
+                    result.children.push(new SymbolElement(c));
                     break;
 
                 case "tab":
-                    result.children.push({ type: DomType.Tab });
+                    result.children.push(new TabElement(c));
                     break;
 
                 case "instrText":
@@ -479,7 +463,7 @@ export class DocumentParser {
 
     parseRunProperties(elem: Element, run: RunElement) {
 
-        Object.assign(run, parseRunProperties(elem, globalXmlParser));
+        Object.assign(run.props, parseRunProperties(elem, globalXmlParser));
 
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, c => {
             switch (c.localName) {
@@ -495,7 +479,7 @@ export class DocumentParser {
         });
     }
 
-    parseDrawing(node: Element): OpenXmlElement {
+    parseDrawing(node: Element): DocxElement {
         for (var n of globalXmlParser.elements(node)) {
             switch (n.localName) {
                 case "inline":
@@ -505,8 +489,8 @@ export class DocumentParser {
         }
     }
 
-    parseDrawingWrapper(node: Element): OpenXmlElement {
-        var result = <OpenXmlElement>{ type: DomType.Drawing, children: [], cssStyle: {} };
+    parseDrawingWrapper(node: Element): DocxElement {
+        var result = new DrawingElement(node);
         var isAnchor = node.localName == "anchor";
 
         //TODO
@@ -593,7 +577,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseGraphic(elem: Element): OpenXmlElement {
+    parseGraphic(elem: Element): DocxElement {
         var graphicData = globalXmlParser.element(elem, "graphicData");
 
         for (let n of globalXmlParser.elements(graphicData)) {
@@ -606,8 +590,8 @@ export class DocumentParser {
         return null;
     }
 
-    parsePicture(elem: Element): IDomImage {
-        var result = <IDomImage>{ type: DomType.Image, src: "", cssStyle: {} };
+    parsePicture(elem: Element): ImageElement {
+        var result = new ImageElement(elem);
         var blipFill = globalXmlParser.element(elem, "blipFill");
         var blip = globalXmlParser.element(blipFill, "blip");
 
@@ -635,8 +619,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseTable(node: Element): IDomTable {
-        var result: IDomTable = { type: DomType.Table, children: [] };
+    parseTable(node: Element): TableElement {
+        var result = new TableElement(node);
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -657,7 +641,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableColumns(node: Element): IDomTableColumn[] {
+    parseTableColumns(node: Element): TableColumn[] {
         var result = [];
 
         xml.foreach(node, n => {
@@ -671,7 +655,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableProperties(elem: Element, table: IDomTable) {
+    parseTableProperties(elem: Element, table: TableElement) {
         table.cssStyle = {};
         table.cellStyle = {};
 
@@ -710,7 +694,7 @@ export class DocumentParser {
         }
     }
 
-    parseTablePosition(node: Element, table: IDomTable) {
+    parseTablePosition(node: Element, table: TableElement) {
         var topFromText = xml.sizeAttr(node, "topFromText");
         var bottomFromText = xml.sizeAttr(node, "bottomFromText");
         var rightFromText = xml.sizeAttr(node, "rightFromText");
@@ -723,8 +707,8 @@ export class DocumentParser {
         table.cssStyle["margin-top"] = values.addSize(table.cssStyle["margin-top"], topFromText);
     }
 
-    parseTableRow(node: Element): IDomTableRow {
-        var result: IDomTableRow = { type: DomType.Row, children: [] };
+    parseTableRow(node: Element): TableRowElement {
+        var result = new TableRowElement(node);
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -741,7 +725,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableRowProperties(elem: Element, row: IDomTableRow) {
+    parseTableRowProperties(elem: Element, row: TableRowElement) {
         row.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "cnfStyle":
@@ -756,8 +740,8 @@ export class DocumentParser {
         });
     }
 
-    parseTableCell(node: Element): OpenXmlElement {
-        var result: IDomTableCell = { type: DomType.Cell, children: [] };
+    parseTableCell(node: Element): TableCellElement {
+        var result = new TableCellElement(node);
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -778,7 +762,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableCellProperties(elem: Element, cell: IDomTableCell) {
+    parseTableCellProperties(elem: Element, cell: TableCellElement) {
         cell.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "gridSpan":

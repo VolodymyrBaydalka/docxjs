@@ -1,30 +1,26 @@
-import { XmlParser } from "../parser/xml-parser";
-import { DomType, OpenXmlElement } from "./dom";
+import globalXmlParser, { XmlParser } from "../parser/xml-parser";
+import { DocxElement } from "./dom";
 
-export interface BookmarkStartElement extends OpenXmlElement {
+export class BookmarkStartElement extends DocxElement {
     id: string;
     name: string;
     colFirst: number;
     colLast: number;
-}
 
-export interface BookmarkEndElement extends OpenXmlElement {
-    id: string;
-}
-
-export function parseBookmarkStart(elem: Element, xml: XmlParser): BookmarkStartElement {
-    return {
-        type: DomType.BookmarkStart,
-        id: xml.attr(elem, "id"),
-        name: xml.attr(elem, "name"),
-        colFirst: xml.intAttr(elem, "colFirst"),
-        colLast: xml.intAttr(elem, "colLast")
+    protected parse(elem: Element) {
+        super.parse(elem);
+        this.id = globalXmlParser.attr(elem, "id");
+        this.name = globalXmlParser.attr(elem, "name");
+        this.colFirst = globalXmlParser.intAttr(elem, "colFirst"),
+        this.colLast = globalXmlParser.intAttr(elem, "colLast")
     }
 }
 
-export function parseBookmarkEnd(elem: Element, xml: XmlParser): BookmarkEndElement {
-    return {
-        type: DomType.BookmarkEnd,
-        id: xml.attr(elem, "id")
+export class BookmarkEndElement extends DocxElement {
+    id: string;
+
+    protected parse(elem: Element) {
+        super.parse(elem);
+        this.id = globalXmlParser.attr(elem, "id");
     }
 }

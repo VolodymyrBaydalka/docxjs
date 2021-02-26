@@ -1,9 +1,7 @@
 import { WordDocument } from './word-document';
-import { DomType, IDomTable, IDomNumbering, 
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
+import { IDomNumbering, DocxContainer, DocxElement } from './dom/dom';
 import { Length, Underline } from './dom/common';
 import { Options } from './docx-preview';
-import { DocumentElement } from './dom/document';
 import { ParagraphElement } from './dom/paragraph';
 import { appendClass, keyBy } from './utils';
 import { updateTabStop } from './javascript';
@@ -14,6 +12,17 @@ import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
 import { NumberingPartProperties } from './numbering/numbering';
 import { Border } from './dom/border';
+import { BodyElement } from './dom/body';
+import { TableColumn, TableElement } from './dom/table';
+import { TableRowElement } from './dom/table-row';
+import { TableCellElement } from './dom/table-cell';
+import { HyperlinkElement } from './dom/hyperlink';
+import { DrawingElement } from './dom/drawing';
+import { ImageElement } from './dom/image';
+import { BreakElement } from './dom/break';
+import { TabElement } from './dom/tab';
+import { SymbolElement } from './dom/symbol';
+import { TextElement } from './dom/text';
 
 const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
 
@@ -64,7 +73,7 @@ export class HtmlRenderer {
         if(!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
 
-        var sectionElements = this.renderSections(document.documentPart.body);
+        var sectionElements = this.renderSections(document.documentPart.documentElement.body);
 
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
@@ -126,13 +135,13 @@ export class HtmlRenderer {
         return stylesMap;
     }
 
-    processElement(element: OpenXmlElement) {
-        if (element.children) {
-            for (var e of element.children) {
+    processElement(element: DocxElement) {
+        if ("children" in element) {
+            for (var e of (element as DocxContainer).children) {
                 e.className = this.processClassName(e.className);
                 e.parent = element;
 
-                if (e.type == DomType.Table) {
+                if (e instanceof TableElement) {
                     this.processTable(e);
                 }
                 else {
@@ -142,9 +151,9 @@ export class HtmlRenderer {
         }
     }
 
-    processTable(table: IDomTable) {
+    processTable(table: TableElement) {
         for (var r of table.children) {
-            for (var c of r.children) {
+            for (var c of (r as DocxContainer).children) {
                 c.cssStyle = this.copyStyleProperties(table.cellStyle, c.cssStyle, [
                     "border-left", "border-right", "border-top", "border-bottom",
                     "padding-left", "padding-right", "padding-top", "padding-bottom"
@@ -203,13 +212,13 @@ export class HtmlRenderer {
         return elem;
     }
 
-    renderSections(document: DocumentElement): HTMLElement[] {
+    renderSections(document: BodyElement): HTMLElement[] {
         var result = [];
 
         this.processElement(document);
 
         for(let section of this.splitBySection(document.children)) {
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            var sectionElement = this.createSection(this.className, section.sectProps || document.sectionProps);
             this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
         }
@@ -217,13 +226,13 @@ export class HtmlRenderer {
         return result;
     }
 
-    splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
+    splitBySection(elements: DocxElement[]): { sectProps: SectionProperties, elements: DocxElement[] }[] {
         var current = { sectProps: null, elements: [] };
         var result = [current];
 
         for(let elem of elements) {
-            if(elem.type == DomType.Paragraph) {
-                const styleName = (elem as ParagraphElement).styleName;
+            if (elem instanceof ParagraphElement) {
+                const styleName = elem.props.styleName;
                 const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
             
                 if(s?.paragraphProps?.pageBreakBefore) {
@@ -235,17 +244,17 @@ export class HtmlRenderer {
 
             current.elements.push(elem);
 
-            if(elem.type == DomType.Paragraph)
+            if(elem instanceof ParagraphElement)
             {
                 const p = elem as ParagraphElement;
 
-                var sectProps = p.sectionProps;
+                var sectProps = p.props.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
                 
                 if(this.options.breakPages && p.children) {
-                    pBreakIndex = p.children.findIndex(r => {
-                        rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
+                    pBreakIndex = p.children.findIndex((r: DocxContainer) => {
+                        rBreakIndex = r.children?.findIndex((t: BreakElement) => t instanceof BreakElement && t.type == "page") ?? -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -257,18 +266,18 @@ export class HtmlRenderer {
                 }
 
                 if(pBreakIndex != -1) {
-                    let breakRun = p.children[pBreakIndex];
+                    let breakRun = p.children[pBreakIndex] as RunElement;
                     let splitRun = rBreakIndex < breakRun.children.length - 1;
 
                     if(pBreakIndex < p.children.length - 1 || splitRun) {
                         var children = elem.children;
-                        var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
+                        var newParagraph = Object.assign(new ParagraphElement(), elem, { children: children.slice(pBreakIndex) });
                         elem.children = children.slice(0, pBreakIndex);
                         current.elements.push(newParagraph);
 
                         if(splitRun) {
                             let runChildren = breakRun.children;
-                            let newRun =  { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
+                            let newRun =  Object.assign(new RunElement(), breakRun, { children: runChildren.slice(0, rBreakIndex) });
                             elem.children.push(newRun);
                             breakRun.children = runChildren.slice(rBreakIndex);
                         }
@@ -482,56 +491,41 @@ export class HtmlRenderer {
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): Node {
-        switch (elem.type) {
-            case DomType.Paragraph:
-                return this.renderParagraph(<ParagraphElement>elem);
-
-            case DomType.BookmarkStart:
-                return this.renderBookmarkStart(<BookmarkStartElement>elem);
-
-            case DomType.BookmarkEnd:
-                return null;
-    
-            case DomType.Run:
-                return this.renderRun(<RunElement>elem);
-
-            case DomType.Table:
-                return this.renderTable(elem);
-
-            case DomType.Row:
-                return this.renderTableRow(elem);
-
-            case DomType.Cell:
-                return this.renderTableCell(elem);
-
-            case DomType.Hyperlink:
-                return this.renderHyperlink(elem);
-
-            case DomType.Drawing:
-                return this.renderDrawing(<IDomImage>elem);
-
-            case DomType.Image:
-                return this.renderImage(<IDomImage>elem);
-            
-            case DomType.Text:
-                return this.renderText(<TextElement>elem);
-
-            case DomType.Tab:
-                return this.renderTab(elem);
-            
-            case DomType.Symbol:
-                return this.renderSymbol(<SymbolElement>elem);
+    renderElement(elem: DocxElement, parent: DocxElement): Node {
+        if (elem instanceof ParagraphElement) {
+            return this.renderParagraph(elem);
+        } else if (elem instanceof BookmarkStartElement) {
+            return this.renderBookmarkStart(elem);
+        } else if (elem instanceof RunElement) {
+            return this.renderRun(elem);
+        } else if (elem instanceof TextElement) {
+            return this.renderText(elem);
+        } else if (elem instanceof SymbolElement) {
+            return this.renderSymbol(elem);
+        } else if (elem instanceof TabElement) {
+            return this.renderTab(elem);
+        } else if (elem instanceof TableElement) {
+            return this.renderTable(elem);
+        } else if (elem instanceof TableRowElement) {
+            return this.renderTableRow(elem);
+        } else if (elem instanceof TableCellElement) {
+            return this.renderTableCell(elem);
+        } else if (elem instanceof HyperlinkElement) {
+            return this.renderHyperlink(elem);
+        } else if (elem instanceof DrawingElement) {
+            return this.renderDrawing(elem);
+        }else if (elem instanceof ImageElement) {
+            return this.renderImage(elem);
         }
 
         return null;
     }
 
-    renderChildren(elem: OpenXmlElement, into?: HTMLElement): Node[] {
+    renderChildren(elem: DocxContainer, into?: HTMLElement): Node[] {
         return this.renderElements(elem.children, elem, into);
     }
 
-    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): Node[] {
+    renderElements(elems: DocxElement[], parent: DocxElement, into?: HTMLElement): Node[] {
         if(elems == null)
             return null;
 
@@ -558,13 +552,13 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        if (elem.numbering) {
-            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
+        if (elem.props.numbering) {
+            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
             result.className = appendClass(result.className, numberingClass);
         }
 
-        if (elem.styleName) {
-            var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
+        if (elem.props.styleName) {
+            var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleName));
             result.className = appendClass(result.className, styleClassName);
         }
 
@@ -707,7 +701,7 @@ export class HtmlRenderer {
             style["text-decoration-color"] = this.renderColor(underline.color);
     }
 
-    renderHyperlink(elem: IDomHyperlink) {
+    renderHyperlink(elem: HyperlinkElement) {
         var result = this.htmlDocument.createElement("a");
 
         this.renderChildren(elem, result);
@@ -719,7 +713,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderDrawing(elem: IDomImage) {
+    renderDrawing(elem: DrawingElement) {
         var result = this.htmlDocument.createElement("div");
 
         result.style.display = "inline-block";
@@ -732,7 +726,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderImage(elem: IDomImage) {
+    renderImage(elem: ImageElement) {
         let result = this.htmlDocument.createElement("img");
 
         this.renderStyleValues(elem.cssStyle, result);
@@ -757,21 +751,21 @@ export class HtmlRenderer {
         return span;
     }
 
-    renderTab(elem: OpenXmlElement) {
+    renderTab(elem: TabElement) {
         var tabSpan = this.htmlDocument.createElement("span");
      
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
         if(this.options.experimental) {
             setTimeout(() => {
-                var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
+                var paragraph = findParent<ParagraphElement>(elem, ParagraphElement);
                 
-                if(paragraph.tabs == null)
+                if(paragraph.props.tabs == null)
                     return;
 
-                paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
+                paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
                 tabSpan.style.display = "inline-block";
-                updateTabStop(tabSpan, paragraph.tabs);
+                updateTabStop(tabSpan, paragraph.props.tabs);
             }, 0);
         }
 
@@ -799,7 +793,7 @@ export class HtmlRenderer {
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         //this.renderStyleValues(elem.cssStyle, result);
-        this.renderRunProperties(result.style, elem);
+        this.renderRunProperties(result.style, elem.props);
 
         if (elem.href) {
             var link = this.htmlDocument.createElement("a");
@@ -818,7 +812,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTable(elem: IDomTable) {
+    renderTable(elem: TableElement) {
         let result = this.htmlDocument.createElement("table");
 
         if (elem.columns)
@@ -831,7 +825,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTableColumns(columns: IDomTableColumn[]) {
+    renderTableColumns(columns: TableColumn[]) {
         let result = this.htmlDocument.createElement("colGroup");
 
         for (let col of columns) {
@@ -846,7 +840,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTableRow(elem: OpenXmlElement) {
+    renderTableRow(elem: TableRowElement) {
         let result = this.htmlDocument.createElement("tr");
 
         this.renderClass(elem, result);
@@ -856,7 +850,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTableCell(elem: IDomTableCell) {
+    renderTableCell(elem: TableCellElement) {
         let result = this.htmlDocument.createElement("td");
 
         this.renderClass(elem, result);
@@ -879,7 +873,7 @@ export class HtmlRenderer {
         }
     }
 
-    renderClass(input: OpenXmlElement, ouput: HTMLElement) {
+    renderClass(input: DocxElement, ouput: HTMLElement) {
         if (input.className)
             ouput.className = input.className;
     }
@@ -954,10 +948,10 @@ function appendComment(elem: HTMLElement, comment: string) {
     elem.appendChild(document.createComment(comment));
 }
 
-function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomType): T {
+function findParent<T extends DocxElement>(elem: DocxElement, type: any): T {
     var parent = elem.parent;
 
-    while (parent != null && parent.type != type)
+    while (parent != null && !(parent instanceof type))
         parent = parent.parent;
     
     return <T>parent;

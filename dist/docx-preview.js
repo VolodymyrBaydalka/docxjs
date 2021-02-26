@@ -107,6 +107,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Package = void 0;
+var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var relationship_1 = __webpack_require__(/*! ./relationship */ "./src/common/relationship.ts");
@@ -117,6 +118,13 @@ var Package = (function () {
     }
     Package.prototype.exists = function (path) {
         return this._zip.files[path] != null;
+    };
+    Package.load = function (input) {
+        return JSZip.loadAsync(input).then(function (zip) { return new Package(zip); });
+    };
+    Package.prototype.save = function (type) {
+        if (type === void 0) { type = "blob"; }
+        return this._zip.generateAsync({ type: type });
     };
     Package.prototype.load = function (path, type) {
         var _this = this;
@@ -222,13 +230,24 @@ exports.parseRelationships = parseRelationships;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentParser = exports.autos = void 0;
-var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
+var document_1 = __webpack_require__(/*! ./dom/document */ "./src/dom/document.ts");
 var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragraph.ts");
 var section_1 = __webpack_require__(/*! ./dom/section */ "./src/dom/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
 var run_1 = __webpack_require__(/*! ./dom/run */ "./src/dom/run.ts");
 var bookmark_1 = __webpack_require__(/*! ./dom/bookmark */ "./src/dom/bookmark.ts");
+var body_1 = __webpack_require__(/*! ./dom/body */ "./src/dom/body.ts");
+var text_1 = __webpack_require__(/*! ./dom/text */ "./src/dom/text.ts");
+var break_1 = __webpack_require__(/*! ./dom/break */ "./src/dom/break.ts");
+var symbol_1 = __webpack_require__(/*! ./dom/symbol */ "./src/dom/symbol.ts");
+var tab_1 = __webpack_require__(/*! ./dom/tab */ "./src/dom/tab.ts");
+var hyperlink_1 = __webpack_require__(/*! ./dom/hyperlink */ "./src/dom/hyperlink.ts");
+var table_cell_1 = __webpack_require__(/*! ./dom/table-cell */ "./src/dom/table-cell.ts");
+var table_1 = __webpack_require__(/*! ./dom/table */ "./src/dom/table.ts");
+var drawing_1 = __webpack_require__(/*! ./dom/drawing */ "./src/dom/drawing.ts");
+var table_row_1 = __webpack_require__(/*! ./dom/table-row */ "./src/dom/table-row.ts");
+var image_1 = __webpack_require__(/*! ./dom/image */ "./src/dom/image.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -242,23 +261,19 @@ var DocumentParser = (function () {
     }
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var _this = this;
-        var result = {
-            type: dom_1.DomType.Document,
-            children: [],
-            cssStyle: {},
-            props: null
-        };
+        var result = new document_1.DocumentElement();
+        result.body = new body_1.BodyElement();
         var xbody = xml_parser_1.default.element(xmlDoc, "body");
         xml.foreach(xbody, function (elem) {
             switch (elem.localName) {
                 case "p":
-                    result.children.push(_this.parseParagraph(elem));
+                    result.body.children.push(_this.parseParagraph(elem));
                     break;
                 case "tbl":
-                    result.children.push(_this.parseTable(elem));
+                    result.body.children.push(_this.parseTable(elem));
                     break;
                 case "sectPr":
-                    result.props = section_1.parseSectionProperties(elem, xml_parser_1.default);
+                    result.body.sectionProps = section_1.parseSectionProperties(elem, xml_parser_1.default);
                     break;
             }
         });
@@ -522,7 +537,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
-        var result = { type: dom_1.DomType.Paragraph, children: [] };
+        var result = new paragraph_1.ParagraphElement(node);
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -532,10 +547,10 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseHyperlink(c, result));
                     break;
                 case "bookmarkStart":
-                    result.children.push(bookmark_1.parseBookmarkStart(c, xml_parser_1.default));
+                    result.children.push(new bookmark_1.BookmarkStartElement(c));
                     break;
                 case "bookmarkEnd":
-                    result.children.push(bookmark_1.parseBookmarkEnd(c, xml_parser_1.default));
+                    result.children.push(new bookmark_1.BookmarkEndElement(c));
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
@@ -547,7 +562,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
         var _this = this;
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, function (c) {
-            if (paragraph_1.parseParagraphProperty(c, paragraph, xml_parser_1.default))
+            if (paragraph_1.parseParagraphProperty(c, paragraph.props, xml_parser_1.default))
                 return true;
             switch (c.localName) {
                 case "pStyle":
@@ -574,10 +589,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseHyperlink = function (node, parent) {
         var _this = this;
-        var result = { type: dom_1.DomType.Hyperlink, parent: parent, children: [] };
-        var anchor = xml.stringAttr(node, "anchor");
-        if (anchor)
-            result.href = "#" + anchor;
+        var result = new hyperlink_1.HyperlinkElement(node);
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -589,39 +601,24 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseRun = function (node, parent) {
         var _this = this;
-        var result = { type: dom_1.DomType.Run, parent: parent, children: [] };
+        var result = new run_1.RunElement(node);
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "t":
-                    result.children.push({
-                        type: dom_1.DomType.Text,
-                        text: c.textContent
-                    });
+                    result.children.push(new text_1.TextElement(c));
                     break;
                 case "fldChar":
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
                 case "br":
-                    result.children.push({
-                        type: dom_1.DomType.Break,
-                        break: xml.stringAttr(c, "type") || "textWrapping"
-                    });
-                    break;
                 case "lastRenderedPageBreak":
-                    result.children.push({
-                        type: dom_1.DomType.Break,
-                        break: "page"
-                    });
+                    result.children.push(new break_1.BreakElement(c));
                     break;
                 case "sym":
-                    result.children.push({
-                        type: dom_1.DomType.Symbol,
-                        font: xml.stringAttr(c, "font"),
-                        char: xml.stringAttr(c, "char")
-                    });
+                    result.children.push(new symbol_1.SymbolElement(c));
                     break;
                 case "tab":
-                    result.children.push({ type: dom_1.DomType.Tab });
+                    result.children.push(new tab_1.TabElement(c));
                     break;
                 case "instrText":
                     result.instrText = c.textContent;
@@ -639,7 +636,7 @@ var DocumentParser = (function () {
         return result;
     };
     DocumentParser.prototype.parseRunProperties = function (elem, run) {
-        Object.assign(run, run_1.parseRunProperties(elem, xml_parser_1.default));
+        Object.assign(run.props, run_1.parseRunProperties(elem, xml_parser_1.default));
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, function (c) {
             switch (c.localName) {
                 case "rStyle":
@@ -662,7 +659,7 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseDrawingWrapper = function (node) {
-        var result = { type: dom_1.DomType.Drawing, children: [], cssStyle: {} };
+        var result = new drawing_1.DrawingElement(node);
         var isAnchor = node.localName == "anchor";
         var wrapType = null;
         var simplePos = xml.boolAttr(node, "simplePos");
@@ -740,7 +737,7 @@ var DocumentParser = (function () {
         return null;
     };
     DocumentParser.prototype.parsePicture = function (elem) {
-        var result = { type: dom_1.DomType.Image, src: "", cssStyle: {} };
+        var result = new image_1.ImageElement(elem);
         var blipFill = xml_parser_1.default.element(elem, "blipFill");
         var blip = xml_parser_1.default.element(blipFill, "blip");
         result.src = xml.stringAttr(blip, "embed");
@@ -764,7 +761,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTable = function (node) {
         var _this = this;
-        var result = { type: dom_1.DomType.Table, children: [] };
+        var result = new table_1.TableElement(node);
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tr":
@@ -836,7 +833,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableRow = function (node) {
         var _this = this;
-        var result = { type: dom_1.DomType.Row, children: [] };
+        var result = new table_row_1.TableRowElement(node);
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tc":
@@ -863,7 +860,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableCell = function (node) {
         var _this = this;
-        var result = { type: dom_1.DomType.Cell, children: [] };
+        var result = new table_cell_1.TableCellElement(node);
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tbl":
@@ -1363,6 +1360,43 @@ exports.renderAsync = renderAsync;
 
 /***/ }),
 
+/***/ "./src/dom/body.ts":
+/*!*************************!*\
+  !*** ./src/dom/body.ts ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BodyElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var BodyElement = (function (_super) {
+    __extends(BodyElement, _super);
+    function BodyElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return BodyElement;
+}(dom_1.DocxContainer));
+exports.BodyElement = BodyElement;
+
+
+/***/ }),
+
 /***/ "./src/dom/bookmark.ts":
 /*!*****************************!*\
   !*** ./src/dom/bookmark.ts ***!
@@ -1372,26 +1406,50 @@ exports.renderAsync = renderAsync;
 
 "use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBookmarkEnd = exports.parseBookmarkStart = void 0;
+exports.BookmarkEndElement = exports.BookmarkStartElement = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
-function parseBookmarkStart(elem, xml) {
-    return {
-        type: dom_1.DomType.BookmarkStart,
-        id: xml.attr(elem, "id"),
-        name: xml.attr(elem, "name"),
-        colFirst: xml.intAttr(elem, "colFirst"),
-        colLast: xml.intAttr(elem, "colLast")
+var BookmarkStartElement = (function (_super) {
+    __extends(BookmarkStartElement, _super);
+    function BookmarkStartElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    BookmarkStartElement.prototype.parse = function (elem) {
+        _super.prototype.parse.call(this, elem);
+        this.id = xml_parser_1.default.attr(elem, "id");
+        this.name = xml_parser_1.default.attr(elem, "name");
+        this.colFirst = xml_parser_1.default.intAttr(elem, "colFirst"),
+            this.colLast = xml_parser_1.default.intAttr(elem, "colLast");
     };
-}
-exports.parseBookmarkStart = parseBookmarkStart;
-function parseBookmarkEnd(elem, xml) {
-    return {
-        type: dom_1.DomType.BookmarkEnd,
-        id: xml.attr(elem, "id")
+    return BookmarkStartElement;
+}(dom_1.DocxElement));
+exports.BookmarkStartElement = BookmarkStartElement;
+var BookmarkEndElement = (function (_super) {
+    __extends(BookmarkEndElement, _super);
+    function BookmarkEndElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    BookmarkEndElement.prototype.parse = function (elem) {
+        _super.prototype.parse.call(this, elem);
+        this.id = xml_parser_1.default.attr(elem, "id");
     };
-}
-exports.parseBookmarkEnd = parseBookmarkEnd;
+    return BookmarkEndElement;
+}(dom_1.DocxElement));
+exports.BookmarkEndElement = BookmarkEndElement;
 
 
 /***/ }),
@@ -1441,6 +1499,54 @@ function parseBorders(elem, xml) {
     return result;
 }
 exports.parseBorders = parseBorders;
+
+
+/***/ }),
+
+/***/ "./src/dom/break.ts":
+/*!**************************!*\
+  !*** ./src/dom/break.ts ***!
+  \**************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BreakElement = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var BreakElement = (function (_super) {
+    __extends(BreakElement, _super);
+    function BreakElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    BreakElement.prototype.parse = function (elem) {
+        var _a;
+        _super.prototype.parse.call(this, elem);
+        if (elem.localName === "lastRenderedPageBreak") {
+            this.type = "page";
+        }
+        else {
+            this.type = (_a = xml_parser_1.default.attr(elem, "type")) !== null && _a !== void 0 ? _a : "textWrapping";
+        }
+    };
+    return BreakElement;
+}(dom_1.DocxElement));
+exports.BreakElement = BreakElement;
 
 
 /***/ }),
@@ -1518,12 +1624,49 @@ var DocumentPart = (function (_super) {
         return _super.prototype.load.call(this, pkg)
             .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
-            _this.body = _this._documentParser.parseDocumentFile(xml);
+            _this.documentElement = _this._documentParser.parseDocumentFile(xml);
         });
     };
     return DocumentPart;
 }(part_1.Part));
 exports.DocumentPart = DocumentPart;
+
+
+/***/ }),
+
+/***/ "./src/dom/document.ts":
+/*!*****************************!*\
+  !*** ./src/dom/document.ts ***!
+  \*****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DocumentElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var DocumentElement = (function (_super) {
+    __extends(DocumentElement, _super);
+    function DocumentElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return DocumentElement;
+}(dom_1.DocxElement));
+exports.DocumentElement = DocumentElement;
 
 
 /***/ }),
@@ -1537,26 +1680,164 @@ exports.DocumentPart = DocumentPart;
 
 "use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DomType = void 0;
-var DomType;
-(function (DomType) {
-    DomType["Document"] = "document";
-    DomType["Paragraph"] = "paragraph";
-    DomType["Run"] = "run";
-    DomType["Break"] = "break";
-    DomType["Table"] = "table";
-    DomType["Row"] = "row";
-    DomType["Cell"] = "cell";
-    DomType["Hyperlink"] = "hyperlink";
-    DomType["Drawing"] = "drawing";
-    DomType["Image"] = "image";
-    DomType["Text"] = "text";
-    DomType["Tab"] = "tab";
-    DomType["Symbol"] = "symbol";
-    DomType["BookmarkStart"] = "bookmarkStart";
-    DomType["BookmarkEnd"] = "bookmarkEnd";
-})(DomType = exports.DomType || (exports.DomType = {}));
+exports.DocxContainer = exports.DocxElement = void 0;
+var DocxElement = (function () {
+    function DocxElement(elem) {
+        this.className = null;
+        this.cssStyle = {};
+        this.parent = null;
+        this.init();
+        if (elem) {
+            this.parse(elem);
+        }
+    }
+    DocxElement.prototype.init = function () {
+    };
+    DocxElement.prototype.parse = function (elem) {
+    };
+    return DocxElement;
+}());
+exports.DocxElement = DocxElement;
+var DocxContainer = (function (_super) {
+    __extends(DocxContainer, _super);
+    function DocxContainer() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    DocxContainer.prototype.init = function () {
+        this.children = [];
+    };
+    return DocxContainer;
+}(DocxElement));
+exports.DocxContainer = DocxContainer;
+
+
+/***/ }),
+
+/***/ "./src/dom/drawing.ts":
+/*!****************************!*\
+  !*** ./src/dom/drawing.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DrawingElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var DrawingElement = (function (_super) {
+    __extends(DrawingElement, _super);
+    function DrawingElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return DrawingElement;
+}(dom_1.DocxContainer));
+exports.DrawingElement = DrawingElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/hyperlink.ts":
+/*!******************************!*\
+  !*** ./src/dom/hyperlink.ts ***!
+  \******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HyperlinkElement = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var HyperlinkElement = (function (_super) {
+    __extends(HyperlinkElement, _super);
+    function HyperlinkElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    HyperlinkElement.prototype.parse = function (elem) {
+        this.href = xml_parser_1.default.attr(elem, "anchor");
+    };
+    return HyperlinkElement;
+}(dom_1.DocxContainer));
+exports.HyperlinkElement = HyperlinkElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/image.ts":
+/*!**************************!*\
+  !*** ./src/dom/image.ts ***!
+  \**************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ImageElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var ImageElement = (function (_super) {
+    __extends(ImageElement, _super);
+    function ImageElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return ImageElement;
+}(dom_1.DocxContainer));
+exports.ImageElement = ImageElement;
 
 
 /***/ }),
@@ -1594,12 +1875,36 @@ exports.parseLineSpacing = parseLineSpacing;
 
 "use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = void 0;
+exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = exports.ParagraphElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/dom/section.ts");
 var line_spacing_1 = __webpack_require__(/*! ./line-spacing */ "./src/dom/line-spacing.ts");
 var run_1 = __webpack_require__(/*! ./run */ "./src/dom/run.ts");
+var ParagraphElement = (function (_super) {
+    __extends(ParagraphElement, _super);
+    function ParagraphElement() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.props = {};
+        return _this;
+    }
+    return ParagraphElement;
+}(dom_1.DocxContainer));
+exports.ParagraphElement = ParagraphElement;
 function parseParagraphProperties(elem, xml) {
     var result = {};
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
@@ -1692,10 +1997,34 @@ exports.parseNumbering = parseNumbering;
 
 "use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseShading = exports.parseRunFonts = exports.parseRunProperty = exports.parseRunProperties = void 0;
+exports.parseShading = exports.parseRunFonts = exports.parseRunProperty = exports.parseRunProperties = exports.RunElement = void 0;
 var border_1 = __webpack_require__(/*! ./border */ "./src/dom/border.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var RunElement = (function (_super) {
+    __extends(RunElement, _super);
+    function RunElement() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.props = {};
+        return _this;
+    }
+    return RunElement;
+}(dom_1.DocxContainer));
+exports.RunElement = RunElement;
 function parseRunProperties(elem, xml) {
     var result = {};
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
@@ -1867,6 +2196,238 @@ function parseColumns(elem, xml) {
 
 /***/ }),
 
+/***/ "./src/dom/symbol.ts":
+/*!***************************!*\
+  !*** ./src/dom/symbol.ts ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SymbolElement = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var SymbolElement = (function (_super) {
+    __extends(SymbolElement, _super);
+    function SymbolElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    SymbolElement.prototype.parse = function (elem) {
+        _super.prototype.parse.call(this, elem);
+        this.font = xml_parser_1.default.attr(elem, "font");
+        this.char = xml_parser_1.default.attr(elem, "char");
+    };
+    return SymbolElement;
+}(dom_1.DocxElement));
+exports.SymbolElement = SymbolElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/tab.ts":
+/*!************************!*\
+  !*** ./src/dom/tab.ts ***!
+  \************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TabElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var TabElement = (function (_super) {
+    __extends(TabElement, _super);
+    function TabElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return TabElement;
+}(dom_1.DocxElement));
+exports.TabElement = TabElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/table-cell.ts":
+/*!*******************************!*\
+  !*** ./src/dom/table-cell.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TableCellElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var TableCellElement = (function (_super) {
+    __extends(TableCellElement, _super);
+    function TableCellElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return TableCellElement;
+}(dom_1.DocxContainer));
+exports.TableCellElement = TableCellElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/table-row.ts":
+/*!******************************!*\
+  !*** ./src/dom/table-row.ts ***!
+  \******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TableRowElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var TableRowElement = (function (_super) {
+    __extends(TableRowElement, _super);
+    function TableRowElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return TableRowElement;
+}(dom_1.DocxContainer));
+exports.TableRowElement = TableRowElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/table.ts":
+/*!**************************!*\
+  !*** ./src/dom/table.ts ***!
+  \**************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TableElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var TableElement = (function (_super) {
+    __extends(TableElement, _super);
+    function TableElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return TableElement;
+}(dom_1.DocxContainer));
+exports.TableElement = TableElement;
+
+
+/***/ }),
+
+/***/ "./src/dom/text.ts":
+/*!*************************!*\
+  !*** ./src/dom/text.ts ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TextElement = void 0;
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var TextElement = (function (_super) {
+    __extends(TextElement, _super);
+    function TextElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    TextElement.prototype.parse = function (elem) {
+        _super.prototype.parse.call(this, elem);
+        this.text = elem.textContent;
+    };
+    return TextElement;
+}(dom_1.DocxElement));
+exports.TextElement = TextElement;
+
+
+/***/ }),
+
 /***/ "./src/font-table/font-table.ts":
 /*!**************************************!*\
   !*** ./src/font-table/font-table.ts ***!
@@ -1976,9 +2537,21 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HtmlRenderer = exports.autos = void 0;
-var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
+var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragraph.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
+var run_1 = __webpack_require__(/*! ./dom/run */ "./src/dom/run.ts");
+var bookmark_1 = __webpack_require__(/*! ./dom/bookmark */ "./src/dom/bookmark.ts");
+var table_1 = __webpack_require__(/*! ./dom/table */ "./src/dom/table.ts");
+var table_row_1 = __webpack_require__(/*! ./dom/table-row */ "./src/dom/table-row.ts");
+var table_cell_1 = __webpack_require__(/*! ./dom/table-cell */ "./src/dom/table-cell.ts");
+var hyperlink_1 = __webpack_require__(/*! ./dom/hyperlink */ "./src/dom/hyperlink.ts");
+var drawing_1 = __webpack_require__(/*! ./dom/drawing */ "./src/dom/drawing.ts");
+var image_1 = __webpack_require__(/*! ./dom/image */ "./src/dom/image.ts");
+var break_1 = __webpack_require__(/*! ./dom/break */ "./src/dom/break.ts");
+var tab_1 = __webpack_require__(/*! ./dom/tab */ "./src/dom/tab.ts");
+var symbol_1 = __webpack_require__(/*! ./dom/symbol */ "./src/dom/symbol.ts");
+var text_1 = __webpack_require__(/*! ./dom/text */ "./src/dom/text.ts");
 var knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
 exports.autos = {
     shd: "white",
@@ -2012,7 +2585,7 @@ var HtmlRenderer = (function () {
         }
         if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
-        var sectionElements = this.renderSections(document.documentPart.body);
+        var sectionElements = this.renderSections(document.documentPart.documentElement.body);
         if (this.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
@@ -2072,12 +2645,12 @@ var HtmlRenderer = (function () {
         return stylesMap;
     };
     HtmlRenderer.prototype.processElement = function (element) {
-        if (element.children) {
+        if ("children" in element) {
             for (var _i = 0, _a = element.children; _i < _a.length; _i++) {
                 var e = _a[_i];
                 e.className = this.processClassName(e.className);
                 e.parent = element;
-                if (e.type == dom_1.DomType.Table) {
+                if (e instanceof table_1.TableElement) {
                     this.processTable(e);
                 }
                 else {
@@ -2145,7 +2718,7 @@ var HtmlRenderer = (function () {
         this.processElement(document);
         for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            var sectionElement = this.createSection(this.className, section.sectProps || document.sectionProps);
             this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
         }
@@ -2157,8 +2730,8 @@ var HtmlRenderer = (function () {
         var result = [current];
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
-            if (elem.type == dom_1.DomType.Paragraph) {
-                var styleName = elem.styleName;
+            if (elem instanceof paragraph_1.ParagraphElement) {
+                var styleName = elem.props.styleName;
                 var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -2167,15 +2740,15 @@ var HtmlRenderer = (function () {
                 }
             }
             current.elements.push(elem);
-            if (elem.type == dom_1.DomType.Paragraph) {
+            if (elem instanceof paragraph_1.ParagraphElement) {
                 var p = elem;
-                var sectProps = p.sectionProps;
+                var sectProps = p.props.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
                 if (this.options.breakPages && p.children) {
                     pBreakIndex = p.children.findIndex(function (r) {
                         var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; })) !== null && _b !== void 0 ? _b : -1;
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t instanceof break_1.BreakElement && t.type == "page"; })) !== null && _b !== void 0 ? _b : -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -2189,12 +2762,12 @@ var HtmlRenderer = (function () {
                     var splitRun = rBreakIndex < breakRun.children.length - 1;
                     if (pBreakIndex < p.children.length - 1 || splitRun) {
                         var children = elem.children;
-                        var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
+                        var newParagraph = Object.assign(new paragraph_1.ParagraphElement(), elem, { children: children.slice(pBreakIndex) });
                         elem.children = children.slice(0, pBreakIndex);
                         current.elements.push(newParagraph);
                         if (splitRun) {
                             var runChildren = breakRun.children;
-                            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
+                            var newRun = Object.assign(new run_1.RunElement(), breakRun, { children: runChildren.slice(0, rBreakIndex) });
                             elem.children.push(newRun);
                             breakRun.children = runChildren.slice(rBreakIndex);
                         }
@@ -2312,33 +2885,41 @@ var HtmlRenderer = (function () {
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderElement = function (elem, parent) {
-        switch (elem.type) {
-            case dom_1.DomType.Paragraph:
-                return this.renderParagraph(elem);
-            case dom_1.DomType.BookmarkStart:
-                return this.renderBookmarkStart(elem);
-            case dom_1.DomType.BookmarkEnd:
-                return null;
-            case dom_1.DomType.Run:
-                return this.renderRun(elem);
-            case dom_1.DomType.Table:
-                return this.renderTable(elem);
-            case dom_1.DomType.Row:
-                return this.renderTableRow(elem);
-            case dom_1.DomType.Cell:
-                return this.renderTableCell(elem);
-            case dom_1.DomType.Hyperlink:
-                return this.renderHyperlink(elem);
-            case dom_1.DomType.Drawing:
-                return this.renderDrawing(elem);
-            case dom_1.DomType.Image:
-                return this.renderImage(elem);
-            case dom_1.DomType.Text:
-                return this.renderText(elem);
-            case dom_1.DomType.Tab:
-                return this.renderTab(elem);
-            case dom_1.DomType.Symbol:
-                return this.renderSymbol(elem);
+        if (elem instanceof paragraph_1.ParagraphElement) {
+            return this.renderParagraph(elem);
+        }
+        else if (elem instanceof bookmark_1.BookmarkStartElement) {
+            return this.renderBookmarkStart(elem);
+        }
+        else if (elem instanceof run_1.RunElement) {
+            return this.renderRun(elem);
+        }
+        else if (elem instanceof text_1.TextElement) {
+            return this.renderText(elem);
+        }
+        else if (elem instanceof symbol_1.SymbolElement) {
+            return this.renderSymbol(elem);
+        }
+        else if (elem instanceof tab_1.TabElement) {
+            return this.renderTab(elem);
+        }
+        else if (elem instanceof table_1.TableElement) {
+            return this.renderTable(elem);
+        }
+        else if (elem instanceof table_row_1.TableRowElement) {
+            return this.renderTableRow(elem);
+        }
+        else if (elem instanceof table_cell_1.TableCellElement) {
+            return this.renderTableCell(elem);
+        }
+        else if (elem instanceof hyperlink_1.HyperlinkElement) {
+            return this.renderHyperlink(elem);
+        }
+        else if (elem instanceof drawing_1.DrawingElement) {
+            return this.renderDrawing(elem);
+        }
+        else if (elem instanceof image_1.ImageElement) {
+            return this.renderImage(elem);
         }
         return null;
     };
@@ -2367,12 +2948,12 @@ var HtmlRenderer = (function () {
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        if (elem.numbering) {
-            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
+        if (elem.props.numbering) {
+            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
             result.className = utils_1.appendClass(result.className, numberingClass);
         }
-        if (elem.styleName) {
-            var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
+        if (elem.props.styleName) {
+            var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleName));
             result.className = utils_1.appendClass(result.className, styleClassName);
         }
         return result;
@@ -2526,12 +3107,12 @@ var HtmlRenderer = (function () {
         tabSpan.innerHTML = "&emsp;";
         if (this.options.experimental) {
             setTimeout(function () {
-                var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if (paragraph.tabs == null)
+                var paragraph = findParent(elem, paragraph_1.ParagraphElement);
+                if (paragraph.props.tabs == null)
                     return;
-                paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
+                paragraph.props.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
-                javascript_1.updateTabStop(tabSpan, paragraph.tabs);
+                javascript_1.updateTabStop(tabSpan, paragraph.props.tabs);
             }, 0);
         }
         return tabSpan;
@@ -2551,7 +3132,7 @@ var HtmlRenderer = (function () {
             result.id = elem.id;
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
-        this.renderRunProperties(result.style, elem);
+        this.renderRunProperties(result.style, elem.props);
         if (elem.href) {
             var link = this.htmlDocument.createElement("a");
             link.href = elem.href;
@@ -2677,7 +3258,7 @@ function appendComment(elem, comment) {
 }
 function findParent(elem, type) {
     var parent = elem.parent;
-    while (parent != null && parent.type != type)
+    while (parent != null && !(parent instanceof type))
         parent = parent.parent;
     return parent;
 }

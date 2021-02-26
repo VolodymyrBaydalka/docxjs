@@ -13,6 +13,14 @@ export class Package {
         return this._zip.files[path] != null;
     }
 
+    static load(input): Promise<Package> {
+        return JSZip.loadAsync(input).then(zip => new Package(zip));
+    }
+
+    save(type: any = "blob"): Promise<any>  {
+        return this._zip.generateAsync({ type });
+    }
+
     load(path: string, type: "xml" | JSZip.OutputType): Promise<any> {
         let file = this._zip.files[path];
 

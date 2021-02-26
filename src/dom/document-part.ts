@@ -11,13 +11,13 @@ export class DocumentPart extends Part {
         this._documentParser = parser;
     }
     
-    body: DocumentElement
+    documentElement: DocumentElement
 
     load(pkg: Package) {
         return super.load(pkg)
             .then(() => pkg.load(this.path, "xml"))
             .then(xml => {
-                this.body = this._documentParser.parseDocumentFile(xml);
+                this.documentElement = this._documentParser.parseDocumentFile(xml);
             });
     }
 }

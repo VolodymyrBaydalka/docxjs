@@ -1,6 +1,6 @@
-import { OpenXmlElement } from "./dom/dom";
+import { DocxElement } from "./dom/dom";
 
-export function addElementClass(element: OpenXmlElement, className: string): string {
+export function addElementClass(element: DocxElement, className: string): string {
     return element.className = appendClass(element.className, className);
 }
 

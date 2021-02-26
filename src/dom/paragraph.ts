@@ -1,4 +1,4 @@
-import { OpenXmlElement } from "./dom";
+import { DocxContainer } from "./dom";
 import { Length, ns } from "./common";
 import { Borders } from "./border";
 import { parseSectionProperties, SectionProperties } from "./section";
@@ -6,7 +6,8 @@ import { LineSpacing, parseLineSpacing } from "./line-spacing";
 import { XmlParser } from "../parser/xml-parser";
 import { parseRunProperties, RunProperties } from "./run";
 
-export interface ParagraphElement extends OpenXmlElement, ParagraphProperties {
+export class ParagraphElement extends DocxContainer {
+    props: ParagraphProperties = {} as ParagraphProperties;
 }
 
 export interface ParagraphProperties {
