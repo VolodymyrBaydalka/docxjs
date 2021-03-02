@@ -1,26 +1,20 @@
-import globalXmlParser, { XmlParser } from "../parser/xml-parser";
+import { element, fromAttribute } from "../parser/xml-serialize";
 import { DocxElement } from "./dom";
 
+@element("bookmarkStart")
 export class BookmarkStartElement extends DocxElement {
+    @fromAttribute("id")
     id: string;
+    @fromAttribute("name")
     name: string;
+    @fromAttribute("colFirst")
     colFirst: number;
+    @fromAttribute("colLast")
     colLast: number;
-
-    protected parse(elem: Element) {
-        super.parse(elem);
-        this.id = globalXmlParser.attr(elem, "id");
-        this.name = globalXmlParser.attr(elem, "name");
-        this.colFirst = globalXmlParser.intAttr(elem, "colFirst"),
-        this.colLast = globalXmlParser.intAttr(elem, "colLast")
-    }
 }
 
+@element("bookmarkEnd")
 export class BookmarkEndElement extends DocxElement {
+    @fromAttribute("id")
     id: string;
-
-    protected parse(elem: Element) {
-        super.parse(elem);
-        this.id = globalXmlParser.attr(elem, "id");
-    }
 }

@@ -707,8 +707,8 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        if (elem.href)
-            result.href = elem.href
+        if (elem.anchor)
+            result.href = elem.anchor;
 
         return result;
     }
@@ -779,12 +779,6 @@ export class HtmlRenderer {
     }
 
     renderRun(elem: RunElement) {
-        if (elem.break)
-            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
-        
-        if (elem.fldCharType || elem.instrText)
-            return null;
-
         var result = this.htmlDocument.createElement("span");
 
         if(elem.id)
@@ -794,20 +788,6 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         //this.renderStyleValues(elem.cssStyle, result);
         this.renderRunProperties(result.style, elem.props);
-
-        if (elem.href) {
-            var link = this.htmlDocument.createElement("a");
-
-            link.href = elem.href;
-            link.appendChild(result);
-
-            return link;
-        }
-        else if (elem.wrapper) {
-            var wrapper = this.htmlDocument.createElement(elem.wrapper);
-            wrapper.appendChild(result);
-            return wrapper;
-        }
 
         return result;
     }

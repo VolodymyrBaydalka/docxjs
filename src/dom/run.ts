@@ -1,17 +1,20 @@
 import { XmlParser } from "../parser/xml-parser";
+import { children, element } from "../parser/xml-serialize";
 import { Border, parseBorder } from "./border";
+import { BreakElement } from "./break";
 import { Length, LengthUsage, Underline } from "./common";
 import { DocxContainer } from "./dom";
+import { FieldCharElement } from "./fieldChar";
+import { InstructionTextElement } from "./instructions";
+import { SymbolElement } from "./symbol";
+import { TabElement } from "./tab";
+import { TextElement } from "./text";
 
+@element('r')
+@children(TextElement, SymbolElement, TabElement, BreakElement, InstructionTextElement, FieldCharElement)
 export class RunElement extends DocxContainer {
     id?: string;
-    break?: string;
-    wrapper?: string;
-    href?: string;
-    fldCharType?: "begin" | "end" | "separate" | string;
-    instrText?: string;
     styleName: string;
-
     props: RunProperties = <RunProperties>{};
 }
 

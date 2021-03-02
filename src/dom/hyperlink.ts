@@ -1,10 +1,13 @@
 import globalXmlParser from "../parser/xml-parser";
+import { element, fromAttribute } from "../parser/xml-serialize";
 import { DocxContainer } from "./dom";
 
+@element('hyperlink')
 export class HyperlinkElement extends DocxContainer {
-    href?: string;
+    @fromAttribute('anchor')
+    anchor?: string;
 
     protected parse(elem: Element) {
-        this.href = globalXmlParser.attr(elem, "anchor");
+        this.anchor = globalXmlParser.attr(elem, "anchor");
     }
 }

@@ -4,20 +4,17 @@ import { DocumentElement } from './dom/document';
 import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
 import { parseSectionProperties } from './dom/section';
 import globalXmlParser from './parser/xml-parser';
-import { parseRunProperties, parseRunProperty, RunElement } from './dom/run';
-import { BookmarkEndElement, BookmarkStartElement} from './dom/bookmark';
+import { parseRunProperties, RunElement } from './dom/run';
 import { IDomStyle, IDomSubStyle } from './dom/style';
 import { BodyElement } from './dom/body';
-import { TextElement } from './dom/text';
 import { BreakElement } from './dom/break';
-import { SymbolElement } from './dom/symbol';
-import { TabElement } from './dom/tab';
 import { HyperlinkElement } from './dom/hyperlink';
 import { TableCellElement } from './dom/table-cell';
 import { TableColumn, TableElement } from './dom/table';
 import { DrawingElement } from './dom/drawing';
 import { TableRowElement } from './dom/table-row';
 import { ImageElement } from './dom/image';
+import { deserializeElement } from './parser/xml-serialize';
 
 export var autos = {
     shd: "white",
@@ -335,7 +332,7 @@ export class DocumentParser {
 
 
     parseParagraph(node: Element): ParagraphElement {
-        const result =  new ParagraphElement(node);
+        const result = deserializeElement(node, new ParagraphElement());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -345,14 +342,6 @@ export class DocumentParser {
 
                 case "hyperlink":
                     result.children.push(this.parseHyperlink(c, result));
-                    break;
-
-                case "bookmarkStart":
-                    result.children.push(new BookmarkStartElement(c));
-                    break;               
-
-                case "bookmarkEnd":
-                    result.children.push(new BookmarkEndElement(c));
                     break;
 
                 case "pPr":
@@ -402,7 +391,7 @@ export class DocumentParser {
     }
 
     parseHyperlink(node: Element, parent?: DocxElement): HyperlinkElement {
-        var result = new HyperlinkElement(node);
+        var result = deserializeElement(node, new HyperlinkElement(parent));
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -416,33 +405,12 @@ export class DocumentParser {
     }
 
     parseRun(node: Element, parent?: DocxElement): RunElement {
-        var result: RunElement = new RunElement(node);
+        var result = deserializeElement(node, new RunElement(parent));
 
         xml.foreach(node, c => {
             switch (c.localName) {
-                case "t":
-                    result.children.push(new TextElement(c));//.replace(" ", "\u00A0"); // TODO
-                    break;
-                
-                case "fldChar":
-                    result.fldCharType = xml.stringAttr(c, "fldCharType");
-                    break;
-
-                case "br":
                 case "lastRenderedPageBreak":
-                    result.children.push(new BreakElement(c));
-                    break;
-                
-                case "sym":
-                    result.children.push(new SymbolElement(c));
-                    break;
-
-                case "tab":
-                    result.children.push(new TabElement(c));
-                    break;
-
-                case "instrText":
-                    result.instrText = c.textContent;
+                    result.children.push(deserializeElement(c, new BreakElement()));
                     break;
 
                 case "drawing":
@@ -490,7 +458,7 @@ export class DocumentParser {
     }
 
     parseDrawingWrapper(node: Element): DocxElement {
-        var result = new DrawingElement(node);
+        var result = new DrawingElement();
         var isAnchor = node.localName == "anchor";
 
         //TODO
@@ -591,7 +559,7 @@ export class DocumentParser {
     }
 
     parsePicture(elem: Element): ImageElement {
-        var result = new ImageElement(elem);
+        var result = new ImageElement();
         var blipFill = globalXmlParser.element(elem, "blipFill");
         var blip = globalXmlParser.element(blipFill, "blip");
 
@@ -620,7 +588,7 @@ export class DocumentParser {
     }
 
     parseTable(node: Element): TableElement {
-        var result = new TableElement(node);
+        var result = new TableElement();
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -708,7 +676,7 @@ export class DocumentParser {
     }
 
     parseTableRow(node: Element): TableRowElement {
-        var result = new TableRowElement(node);
+        var result = new TableRowElement();
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -741,7 +709,7 @@ export class DocumentParser {
     }
 
     parseTableCell(node: Element): TableCellElement {
-        var result = new TableCellElement(node);
+        var result = new TableCellElement();
 
         xml.foreach(node, c => {
             switch (c.localName) {

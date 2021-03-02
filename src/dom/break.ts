@@ -1,16 +1,11 @@
-import globalXmlParser from "../parser/xml-parser";
+import { element, fromAttribute } from "../parser/xml-serialize";
 import { DocxElement } from "./dom";
 
+@element('br')
 export class BreakElement extends DocxElement {
-    type: "page" | "lastRenderedPageBreak" | "textWrapping";
-
-    protected parse(elem: Element) {
-        super.parse(elem);
-        
-        if (elem.localName === "lastRenderedPageBreak") {
-            this.type = "page";
-        } else {
-            this.type = <any>globalXmlParser.attr(elem, "type") ?? "textWrapping";
-        }
-    }
+    @fromAttribute("type")
+    type: "page" | "column" | "textWrapping";
+    
+    @fromAttribute("clear")
+    clear: "all" | "left" | "right" | "none";
 }

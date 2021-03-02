@@ -1,10 +1,8 @@
+import { element, fromText } from "../parser/xml-serialize";
 import { DocxElement } from "./dom";
 
+@element('t')
 export class TextElement extends DocxElement {
+    @fromText()
     text: string;
-
-    protected parse(elem: Element) {
-        super.parse(elem);
-        this.text = elem.textContent;
-    }
 }

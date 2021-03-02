@@ -1,29 +1,13 @@
 export class DocxElement {
     className: string = null;
     cssStyle: Record<string, string> = {};
-    parent: DocxElement = null;
 
-    constructor(elem?: Element) {
-        this.init();
-        
-        if (elem) {
-            this.parse(elem);
-        }
-    }
-
-    protected init() {
-    }
-
-    protected parse(elem: Element) {
+    constructor(public parent?: DocxElement) {
     }
 }
 
 export class DocxContainer extends DocxElement {
-    children: DocxElement[];
-
-    protected init() {
-        this.children = [];
-    }
+    children: DocxElement[] = [];
 }
 
 export interface IDomNumbering {
