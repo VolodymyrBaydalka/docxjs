@@ -2949,9 +2949,9 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderColor = function (c, autoColor) {
         if (autoColor === void 0) { autoColor = 'black'; }
-        if (/\d{6}/.test(c))
+        if (/[a-f0-9]{6}/i.test(c))
             return "#" + c;
-        return c == 'auto' ? autoColor : c;
+        return c === 'auto' ? autoColor : c;
     };
     HtmlRenderer.prototype.renderWrapper = function () {
         var wrapper = document.createElement("div");

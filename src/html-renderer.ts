@@ -304,10 +304,10 @@ export class HtmlRenderer {
     }
 
     renderColor(c: string, autoColor: string = 'black'): string {
-        if (/\d{6}/.test(c))
+        if (/[a-f0-9]{6}/i.test(c))
             return `#${c}`;
 
-        return c == 'auto' ? autoColor : c;
+        return c === 'auto' ? autoColor : c;
     }
 
     renderWrapper() {
