@@ -4,14 +4,14 @@ import { DocumentParser } from './document-parser';
 import { Relationship, RelationshipTypes } from './common/relationship';
 import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
-import { Package } from './common/package';
+import { OpenXmlPackage } from './common/open-xml-package';
 import { DocumentPart } from './dom/document-part';
 import { splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
 
 export class WordDocument {
-    private _package: Package;
+    private _package: OpenXmlPackage;
     private _parser: DocumentParser;
     
     rels: Relationship[];
@@ -30,7 +30,7 @@ export class WordDocument {
 
         return JSZip.loadAsync(blob)
             .then(zip => {
-                d._package = new Package(zip);
+                d._package = new OpenXmlPackage(zip);
 
                 return d._package.loadRelationships();
             }).then(rels => {

@@ -1,4 +1,4 @@
-import { Package } from "./package";
+import { OpenXmlPackage } from "./open-xml-package";
 import { Relationship } from "./relationship";
 
 export class Part {
@@ -7,7 +7,7 @@ export class Part {
     constructor(public path: string) {
     }
 
-    load(pkg: Package): Promise<any> {
+    load(pkg: OpenXmlPackage): Promise<any> {
         return pkg.loadRelationships(this.path).then(rels => {
             this.rels = rels;
         })

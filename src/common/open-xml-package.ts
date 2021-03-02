@@ -3,7 +3,7 @@ import { XmlParser } from "../parser/xml-parser";
 import { splitPath } from "../utils";
 import { parseRelationships, Relationship } from "./relationship";
 
-export class Package {
+export class OpenXmlPackage {
     xmlParser: XmlParser = new XmlParser();
 
     constructor(private _zip: JSZip) {
@@ -13,8 +13,8 @@ export class Package {
         return this._zip.files[path] != null;
     }
 
-    static load(input): Promise<Package> {
-        return JSZip.loadAsync(input).then(zip => new Package(zip));
+    static load(input): Promise<OpenXmlPackage> {
+        return JSZip.loadAsync(input).then(zip => new OpenXmlPackage(zip));
     }
 
     save(type: any = "blob"): Promise<any>  {

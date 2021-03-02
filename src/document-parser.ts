@@ -1218,10 +1218,6 @@ class values {
         return `calc(${a} + ${b})`; //TODO
     }
 
-    static checkMask(num: number, mask: number) {
-        return (num & mask) == mask;
-    }
-
     static classNameOftblLook(c: Element) {
         let className = "";
 

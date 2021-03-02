@@ -532,8 +532,8 @@ export class HtmlRenderer {
         var result = elems.map(e => {
             let n = this.renderElement(e, parent);
 
-            if(n)
-                (n as any).__docxElement = e;
+            if(n && this.options.debug)
+                (n as any).$$docxElement = e;
 
             return n;
         }).filter(e => e != null);

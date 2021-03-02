@@ -96,37 +96,37 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/common/package.ts":
-/*!*******************************!*\
-  !*** ./src/common/package.ts ***!
-  \*******************************/
+/***/ "./src/common/open-xml-package.ts":
+/*!****************************************!*\
+  !*** ./src/common/open-xml-package.ts ***!
+  \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Package = void 0;
+exports.OpenXmlPackage = void 0;
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var relationship_1 = __webpack_require__(/*! ./relationship */ "./src/common/relationship.ts");
-var Package = (function () {
-    function Package(_zip) {
+var OpenXmlPackage = (function () {
+    function OpenXmlPackage(_zip) {
         this._zip = _zip;
         this.xmlParser = new xml_parser_1.XmlParser();
     }
-    Package.prototype.exists = function (path) {
+    OpenXmlPackage.prototype.exists = function (path) {
         return this._zip.files[path] != null;
     };
-    Package.load = function (input) {
-        return JSZip.loadAsync(input).then(function (zip) { return new Package(zip); });
+    OpenXmlPackage.load = function (input) {
+        return JSZip.loadAsync(input).then(function (zip) { return new OpenXmlPackage(zip); });
     };
-    Package.prototype.save = function (type) {
+    OpenXmlPackage.prototype.save = function (type) {
         if (type === void 0) { type = "blob"; }
         return this._zip.generateAsync({ type: type });
     };
-    Package.prototype.load = function (path, type) {
+    OpenXmlPackage.prototype.load = function (path, type) {
         var _this = this;
         var file = this._zip.files[path];
         if (file == null)
@@ -135,7 +135,7 @@ var Package = (function () {
             return file.async("string").then(function (t) { return _this.xmlParser.parse(t); });
         return file.async(type);
     };
-    Package.prototype.loadRelationships = function (path) {
+    OpenXmlPackage.prototype.loadRelationships = function (path) {
         var _this = this;
         if (path === void 0) { path = null; }
         var relsPath = "_rels/.rels";
@@ -147,9 +147,9 @@ var Package = (function () {
             return xml == null ? null : relationship_1.parseRelationships(xml, _this.xmlParser);
         });
     };
-    return Package;
+    return OpenXmlPackage;
 }());
-exports.Package = Package;
+exports.OpenXmlPackage = OpenXmlPackage;
 
 
 /***/ }),
@@ -596,7 +596,11 @@ var DocumentParser = (function () {
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "lastRenderedPageBreak":
-                    result.children.push(xml_serialize_1.deserializeElement(c, new break_1.BreakElement()));
+                    {
+                        var breakElem = new break_1.BreakElement();
+                        breakElem.type = 'page';
+                        result.children.push(breakElem);
+                    }
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
@@ -1264,9 +1268,6 @@ var values = (function () {
         if (b == null)
             return a;
         return "calc(" + a + " + " + b + ")";
-    };
-    values.checkMask = function (num, mask) {
-        return (num & mask) == mask;
     };
     values.classNameOftblLook = function (c) {
         var className = "";
@@ -3090,8 +3091,8 @@ var HtmlRenderer = (function () {
             return null;
         var result = elems.map(function (e) {
             var n = _this.renderElement(e, parent);
-            if (n)
-                n.__docxElement = e;
+            if (n && _this.options.debug)
+                n.$$docxElement = e;
             return n;
         }).filter(function (e) { return e != null; });
         if (into)
@@ -4073,7 +4074,7 @@ exports.deobfuscate = exports.WordDocument = void 0;
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
 var font_table_1 = __webpack_require__(/*! ./font-table/font-table */ "./src/font-table/font-table.ts");
-var package_1 = __webpack_require__(/*! ./common/package */ "./src/common/package.ts");
+var open_xml_package_1 = __webpack_require__(/*! ./common/open-xml-package */ "./src/common/open-xml-package.ts");
 var document_part_1 = __webpack_require__(/*! ./dom/document-part */ "./src/dom/document-part.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
@@ -4088,7 +4089,7 @@ var WordDocument = (function () {
         d._parser = parser;
         return JSZip.loadAsync(blob)
             .then(function (zip) {
-            d._package = new package_1.Package(zip);
+            d._package = new open_xml_package_1.OpenXmlPackage(zip);
             return d._package.loadRelationships();
         }).then(function (rels) {
             var _a;
