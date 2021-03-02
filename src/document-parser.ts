@@ -409,8 +409,11 @@ export class DocumentParser {
 
         xml.foreach(node, c => {
             switch (c.localName) {
-                case "lastRenderedPageBreak":
-                    result.children.push(deserializeElement(c, new BreakElement()));
+                case "lastRenderedPageBreak": {
+                    const breakElem = new BreakElement();
+                    breakElem.type = 'page';
+                    result.children.push(breakElem);
+                }
                     break;
 
                 case "drawing":
