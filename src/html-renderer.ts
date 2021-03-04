@@ -41,7 +41,7 @@ export class HtmlRenderer {
     styleMap: any;
     currentParagrashStyle: any; 
 
-    constructor(public htmlDocument: HTMLDocument) {
+    constructor(private htmlDocument: HTMLDocument) {
     }
 
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {

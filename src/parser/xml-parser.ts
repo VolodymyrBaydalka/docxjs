@@ -1,13 +1,18 @@
 import { Length,  LengthUsage, LengthUsageType, convertLength, convertPercentage  } from "../dom/common";
+import config from '../config';
+
+export function parseXmlString(xmlString: string): Document {
+    if (config.trimXmlDeclaration)
+        xmlString = xmlString.replace(/<[?].*[?]>/, "");
+
+    return new DOMParser().parseFromString(xmlString, "application/xml");
+}
+
+export function serializeXmlString(elem: Node): string {
+    return new XMLSerializer().serializeToString(elem);
+}
 
 export class XmlParser {
-    parse(xmlString: string, skipDeclaration: boolean = true): Element {
-        if (skipDeclaration)
-            xmlString = xmlString.replace(/<[?].*[?]>/, "");
-
-        return <Element>new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
-    }
-
     elements(elem: Element, localName: string = null): Element[] {
         const result = [];
 

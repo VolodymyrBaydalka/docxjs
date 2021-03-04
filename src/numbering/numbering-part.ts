@@ -7,8 +7,8 @@ import { AbstractNumbering, Numbering, NumberingBulletPicture, NumberingPartProp
 export class NumberingPart extends Part implements NumberingPartProperties {
     private _documentParser: DocumentParser;
 
-    constructor(path: string, parser: DocumentParser) {
-        super(path);
+    constructor(pkg: OpenXmlPackage, path: string, parser: DocumentParser) {
+        super(pkg, path);
         this._documentParser = parser;
     }
 
@@ -18,12 +18,8 @@ export class NumberingPart extends Part implements NumberingPartProperties {
     
     domNumberings: IDomNumbering[];
 
-    load(pkg: OpenXmlPackage) {
-        return super.load(pkg)
-            .then(() => pkg.load(this.path, "xml"))
-            .then(xml => {
-                Object.assign(this, parseNumberingPart(xml, pkg.xmlParser));
-                this.domNumberings = this._documentParser.parseNumberingFile(xml);
-            })
+    parseXml(root: Element) {
+        Object.assign(this, parseNumberingPart(root, this._package.xmlParser));
+        this.domNumberings = this._documentParser.parseNumberingFile(root);  
     }
 }

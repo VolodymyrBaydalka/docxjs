@@ -21,7 +21,7 @@ var config = {
     rules: [
       {
         test: /\.ts$/,
-        loader: 'awesome-typescript-loader'
+        use: 'ts-loader'
       }
     ]
   },

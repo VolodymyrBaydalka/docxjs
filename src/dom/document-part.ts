@@ -6,18 +6,14 @@ import { DocumentElement } from "./document";
 export class DocumentPart extends Part {
     private _documentParser: DocumentParser;
 
-    constructor(path: string, parser: DocumentParser) {
-        super(path);
+    constructor(pkg: OpenXmlPackage, path: string, parser: DocumentParser) {
+        super(pkg, path);
         this._documentParser = parser;
     }
     
     documentElement: DocumentElement
 
-    load(pkg: OpenXmlPackage) {
-        return super.load(pkg)
-            .then(() => pkg.load(this.path, "xml"))
-            .then(xml => {
-                this.documentElement = this._documentParser.parseDocumentFile(xml);
-            });
+    parseXml(root: Element) {
+        this.documentElement = this._documentParser.parseDocumentFile(root);
     }
 }

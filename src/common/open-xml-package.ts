@@ -1,5 +1,5 @@
-import JSZip = require("jszip");
-import { XmlParser } from "../parser/xml-parser";
+import * as JSZip from "jszip";
+import { parseXmlString, XmlParser } from "../parser/xml-parser";
 import { splitPath } from "../utils";
 import { parseRelationships, Relationship } from "./relationship";
 
@@ -13,7 +13,11 @@ export class OpenXmlPackage {
         return this._zip.files[path] != null;
     }
 
-    static load(input): Promise<OpenXmlPackage> {
+    update(path: string, content: any) {
+        this._zip.file(path, content);
+    }
+
+    static load(input: Blob | any): Promise<OpenXmlPackage> {
         return JSZip.loadAsync(input).then(zip => new OpenXmlPackage(zip));
     }
 
@@ -21,16 +25,8 @@ export class OpenXmlPackage {
         return this._zip.generateAsync({ type });
     }
 
-    load(path: string, type: "xml" | JSZip.OutputType): Promise<any> {
-        let file = this._zip.files[path];
-
-        if (file == null)
-            return Promise.resolve(null);
-
-        if (type == "xml")
-            return file.async("string").then(t => this.xmlParser.parse(t));
-
-        return file.async(type);
+    load(path: string, type: JSZip.OutputType): Promise<any> {
+        return this._zip.files[path]?.async(type) ?? Promise.resolve(null);
     }
 
     loadRelationships(path: string = null): Promise<Relationship[]> {
@@ -41,8 +37,11 @@ export class OpenXmlPackage {
             relsPath = `${f}_rels/${fn}.rels`;
         }
 
-        return this.load(relsPath, "xml").then(xml => {
-            return xml == null ? null : parseRelationships(xml, this.xmlParser);
+        return this.load(relsPath, "string").then(text => {
+            if (!text)
+                return;
+
+            return parseRelationships(parseXmlString(text).firstElementChild, this.xmlParser);
         })
     }
 }

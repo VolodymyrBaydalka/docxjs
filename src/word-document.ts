@@ -1,4 +1,4 @@
-import * as JSZip from 'jszip';
+import { OutputType } from "jszip";
 
 import { DocumentParser } from './document-parser';
 import { Relationship, RelationshipTypes } from './common/relationship';
@@ -28,9 +28,9 @@ export class WordDocument {
 
         d._parser = parser;
 
-        return JSZip.loadAsync(blob)
-            .then(zip => {
-                d._package = new OpenXmlPackage(zip);
+        return OpenXmlPackage.load(blob)
+            .then(pkg => {
+                d._package = pkg;
 
                 return d._package.loadRelationships();
             }).then(rels => {
@@ -45,6 +45,10 @@ export class WordDocument {
             });
     }
 
+    save(type = "blob"): Promise<any> {
+        return this._package.save(type);
+    }
+
     private loadRelationshipPart(path: string, type: string): Promise<Part> {
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
@@ -56,19 +60,19 @@ export class WordDocument {
 
         switch(type) {
             case RelationshipTypes.OfficeDocument:
-                this.documentPart = part = new DocumentPart(path, this._parser);
+                this.documentPart = part = new DocumentPart(this._package, path, this._parser);
                 break;
 
             case RelationshipTypes.FontTable:
-                this.fontTablePart = part = new FontTablePart(path);
+                this.fontTablePart = part = new FontTablePart(this._package, path);
                 break;
 
             case RelationshipTypes.Numbering:
-                this.numberingPart = part = new NumberingPart(path, this._parser);
+                this.numberingPart = part = new NumberingPart(this._package, path, this._parser);
                 break;
 
             case RelationshipTypes.Styles:
-                this.stylesPart = part = new StylesPart(path, this._parser);
+                this.stylesPart = part = new StylesPart(this._package, path, this._parser);
                 break;
         }
 
@@ -78,7 +82,7 @@ export class WordDocument {
         this.partsMap[path] = part;
         this.parts.push(part);
 
-        return part.load(this._package).then(() => {
+        return part.load().then(() => {
             if (part.rels == null || part.rels.length == 0)
                 return part;
 
@@ -106,7 +110,7 @@ export class WordDocument {
             .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
     }
 
-    private loadResource(part: Part, id: string, outputType: JSZip.OutputType) {
+    private loadResource(part: Part, id: string, outputType: OutputType) {
         let rel = part.rels.find(x => x.id == id);
 
         if (rel == null)

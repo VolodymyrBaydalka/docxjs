@@ -7,105 +7,19 @@
 		exports["docx"] = factory(require("JSZip"));
 	else
 		root["docx"] = factory(root["JSZip"]);
-})(window, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/docx-preview.ts");
-/******/ })
-/************************************************************************/
-/******/ ({
+})(self, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
+return /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
 
 /***/ "./src/common/open-xml-package.ts":
 /*!****************************************!*\
   !*** ./src/common/open-xml-package.ts ***!
   \****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OpenXmlPackage = void 0;
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
@@ -119,6 +33,9 @@ var OpenXmlPackage = (function () {
     OpenXmlPackage.prototype.exists = function (path) {
         return this._zip.files[path] != null;
     };
+    OpenXmlPackage.prototype.update = function (path, content) {
+        this._zip.file(path, content);
+    };
     OpenXmlPackage.load = function (input) {
         return JSZip.loadAsync(input).then(function (zip) { return new OpenXmlPackage(zip); });
     };
@@ -127,13 +44,8 @@ var OpenXmlPackage = (function () {
         return this._zip.generateAsync({ type: type });
     };
     OpenXmlPackage.prototype.load = function (path, type) {
-        var _this = this;
-        var file = this._zip.files[path];
-        if (file == null)
-            return Promise.resolve(null);
-        if (type == "xml")
-            return file.async("string").then(function (t) { return _this.xmlParser.parse(t); });
-        return file.async(type);
+        var _a, _b;
+        return (_b = (_a = this._zip.files[path]) === null || _a === void 0 ? void 0 : _a.async(type)) !== null && _b !== void 0 ? _b : Promise.resolve(null);
     };
     OpenXmlPackage.prototype.loadRelationships = function (path) {
         var _this = this;
@@ -143,8 +55,10 @@ var OpenXmlPackage = (function () {
             var _a = utils_1.splitPath(path), f = _a[0], fn = _a[1];
             relsPath = f + "_rels/" + fn + ".rels";
         }
-        return this.load(relsPath, "xml").then(function (xml) {
-            return xml == null ? null : relationship_1.parseRelationships(xml, _this.xmlParser);
+        return this.load(relsPath, "string").then(function (text) {
+            if (!text)
+                return;
+            return relationship_1.parseRelationships(xml_parser_1.parseXmlString(text).firstElementChild, _this.xmlParser);
         });
     };
     return OpenXmlPackage;
@@ -158,22 +72,33 @@ exports.OpenXmlPackage = OpenXmlPackage;
 /*!****************************!*\
   !*** ./src/common/part.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Part = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var Part = (function () {
-    function Part(path) {
+    function Part(_package, path) {
+        this._package = _package;
         this.path = path;
     }
-    Part.prototype.load = function (pkg) {
+    Part.prototype.load = function () {
         var _this = this;
-        return pkg.loadRelationships(this.path).then(function (rels) {
-            _this.rels = rels;
-        });
+        return Promise.all([
+            this._package.loadRelationships(this.path).then(function (rels) {
+                _this.rels = rels;
+            }),
+            this._package.load(this.path, 'string').then(function (text) {
+                _this._xmlDocument = xml_parser_1.parseXmlString(text);
+                _this.parseXml(_this._xmlDocument.firstElementChild);
+            })
+        ]);
+    };
+    Part.prototype.save = function () {
+        this._package.update(this.path, xml_parser_1.serializeXmlString(this._xmlDocument));
+    };
+    Part.prototype.parseXml = function (root) {
     };
     return Part;
 }());
@@ -186,12 +111,10 @@ exports.Part = Part;
 /*!************************************!*\
   !*** ./src/common/relationship.ts ***!
   \************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRelationships = exports.RelationshipTypes = void 0;
 var RelationshipTypes;
 (function (RelationshipTypes) {
@@ -219,16 +142,29 @@ exports.parseRelationships = parseRelationships;
 
 /***/ }),
 
+/***/ "./src/config.ts":
+/*!***********************!*\
+  !*** ./src/config.ts ***!
+  \***********************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.default = {
+    trimXmlDeclaration: false
+};
+
+
+/***/ }),
+
 /***/ "./src/document-parser.ts":
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
   \********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var document_1 = __webpack_require__(/*! ./dom/document */ "./src/dom/document.ts");
@@ -1295,10 +1231,8 @@ var values = (function () {
 /*!*****************************!*\
   !*** ./src/docx-preview.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -1311,11 +1245,13 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.renderAsync = void 0;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.renderAsync = exports.config = void 0;
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
+var config_1 = __webpack_require__(/*! ./config */ "./src/config.ts");
+Object.defineProperty(exports, "config", ({ enumerable: true, get: function () { return config_1.default; } }));
 function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (styleContainer === void 0) { styleContainer = null; }
     if (userOptions === void 0) { userOptions = null; }
@@ -1340,10 +1276,8 @@ exports.renderAsync = renderAsync;
 /*!*************************!*\
   !*** ./src/dom/body.ts ***!
   \*************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1353,12 +1287,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BodyElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var BodyElement = (function (_super) {
@@ -1377,10 +1313,8 @@ exports.BodyElement = BodyElement;
 /*!*****************************!*\
   !*** ./src/dom/bookmark.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1390,6 +1324,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -1401,7 +1337,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BookmarkEndElement = exports.BookmarkStartElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -1450,12 +1386,10 @@ exports.BookmarkEndElement = BookmarkEndElement;
 /*!***************************!*\
   !*** ./src/dom/border.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseBorders = exports.parseBorder = void 0;
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 function parseBorder(elem, xml) {
@@ -1499,10 +1433,8 @@ exports.parseBorders = parseBorders;
 /*!**************************!*\
   !*** ./src/dom/break.ts ***!
   \**************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1512,6 +1444,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -1523,7 +1457,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BreakElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -1552,12 +1486,10 @@ exports.BreakElement = BreakElement;
 /*!***************************!*\
   !*** ./src/dom/common.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertPercentage = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -1588,10 +1520,8 @@ exports.convertPercentage = convertPercentage;
 /*!**********************************!*\
   !*** ./src/dom/document-part.ts ***!
   \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1601,28 +1531,25 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
     __extends(DocumentPart, _super);
-    function DocumentPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function DocumentPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    DocumentPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            _this.documentElement = _this._documentParser.parseDocumentFile(xml);
-        });
+    DocumentPart.prototype.parseXml = function (root) {
+        this.documentElement = this._documentParser.parseDocumentFile(root);
     };
     return DocumentPart;
 }(part_1.Part));
@@ -1635,10 +1562,8 @@ exports.DocumentPart = DocumentPart;
 /*!*****************************!*\
   !*** ./src/dom/document.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1648,12 +1573,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var DocumentElement = (function (_super) {
@@ -1672,10 +1599,8 @@ exports.DocumentElement = DocumentElement;
 /*!************************!*\
   !*** ./src/dom/dom.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1685,12 +1610,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocxContainer = exports.DocxElement = void 0;
 var DocxElement = (function () {
     function DocxElement(parent) {
@@ -1719,10 +1646,8 @@ exports.DocxContainer = DocxContainer;
 /*!****************************!*\
   !*** ./src/dom/drawing.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1732,12 +1657,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DrawingElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var DrawingElement = (function (_super) {
@@ -1756,10 +1683,8 @@ exports.DrawingElement = DrawingElement;
 /*!******************************!*\
   !*** ./src/dom/fieldChar.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1769,6 +1694,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -1780,7 +1707,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FieldCharElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -1806,10 +1733,8 @@ exports.FieldCharElement = FieldCharElement;
 /*!******************************!*\
   !*** ./src/dom/hyperlink.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1819,6 +1744,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -1830,7 +1757,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HyperlinkElement = void 0;
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
@@ -1860,10 +1787,8 @@ exports.HyperlinkElement = HyperlinkElement;
 /*!**************************!*\
   !*** ./src/dom/image.ts ***!
   \**************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1873,12 +1798,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ImageElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var ImageElement = (function (_super) {
@@ -1897,10 +1824,8 @@ exports.ImageElement = ImageElement;
 /*!*********************************!*\
   !*** ./src/dom/instructions.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1910,6 +1835,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -1921,7 +1848,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.InstructionTextElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -1947,12 +1874,10 @@ exports.InstructionTextElement = InstructionTextElement;
 /*!*********************************!*\
   !*** ./src/dom/line-spacing.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseLineSpacing = void 0;
 function parseLineSpacing(elem, xml) {
     return {
@@ -1971,10 +1896,8 @@ exports.parseLineSpacing = parseLineSpacing;
 /*!******************************!*\
   !*** ./src/dom/paragraph.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1984,6 +1907,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -1995,7 +1920,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = exports.ParagraphElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
@@ -2105,10 +2030,8 @@ exports.parseNumbering = parseNumbering;
 /*!************************!*\
   !*** ./src/dom/run.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2118,6 +2041,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -2129,7 +2054,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseShading = exports.parseRunFonts = exports.parseRunProperty = exports.parseRunProperties = exports.RunElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var border_1 = __webpack_require__(/*! ./border */ "./src/dom/border.ts");
@@ -2260,12 +2185,10 @@ exports.parseShading = parseShading;
 /*!****************************!*\
   !*** ./src/dom/section.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseSectionProperties = exports.SectionType = void 0;
 var SectionType;
 (function (SectionType) {
@@ -2330,10 +2253,8 @@ function parseColumns(elem, xml) {
 /*!***************************!*\
   !*** ./src/dom/symbol.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2343,6 +2264,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -2354,7 +2277,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SymbolElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -2383,10 +2306,8 @@ exports.SymbolElement = SymbolElement;
 /*!************************!*\
   !*** ./src/dom/tab.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2396,6 +2317,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -2407,7 +2330,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TabElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -2430,10 +2353,8 @@ exports.TabElement = TabElement;
 /*!*******************************!*\
   !*** ./src/dom/table-cell.ts ***!
   \*******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2443,12 +2364,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TableCellElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var TableCellElement = (function (_super) {
@@ -2467,10 +2390,8 @@ exports.TableCellElement = TableCellElement;
 /*!******************************!*\
   !*** ./src/dom/table-row.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2480,12 +2401,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TableRowElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var TableRowElement = (function (_super) {
@@ -2504,10 +2427,8 @@ exports.TableRowElement = TableRowElement;
 /*!**************************!*\
   !*** ./src/dom/table.ts ***!
   \**************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2517,12 +2438,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TableElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var TableElement = (function (_super) {
@@ -2541,10 +2464,8 @@ exports.TableElement = TableElement;
 /*!*************************!*\
   !*** ./src/dom/text.ts ***!
   \*************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2554,6 +2475,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -2565,7 +2488,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TextElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
@@ -2591,10 +2514,8 @@ exports.TextElement = TextElement;
 /*!**************************************!*\
   !*** ./src/font-table/font-table.ts ***!
   \**************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2604,12 +2525,14 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FontTablePart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var fonts_1 = __webpack_require__(/*! ./fonts */ "./src/font-table/fonts.ts");
@@ -2618,13 +2541,8 @@ var FontTablePart = (function (_super) {
     function FontTablePart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    FontTablePart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (el) {
-            _this.fonts = fonts_1.parseFonts(el, pkg.xmlParser);
-        });
+    FontTablePart.prototype.parseXml = function (root) {
+        this.fonts = fonts_1.parseFonts(root, this._package.xmlParser);
     };
     return FontTablePart;
 }(part_1.Part));
@@ -2637,12 +2555,10 @@ exports.FontTablePart = FontTablePart;
 /*!*********************************!*\
   !*** ./src/font-table/fonts.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseFont = exports.parseFonts = void 0;
 function parseFonts(root, xmlParser) {
     return xmlParser.elements(root).map(function (el) { return parseFont(el, xmlParser); });
@@ -2678,10 +2594,8 @@ exports.parseFont = parseFont;
 /*!******************************!*\
   !*** ./src/html-renderer.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -2694,7 +2608,7 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HtmlRenderer = exports.autos = void 0;
 var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragraph.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
@@ -3414,12 +3328,10 @@ function findParent(elem, type) {
 /*!***************************!*\
   !*** ./src/javascript.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updateTabStop = void 0;
 function updateTabStop(elem, tabs, pixelToPoint) {
     if (pixelToPoint === void 0) { pixelToPoint = 72 / 96; }
@@ -3453,10 +3365,8 @@ exports.updateTabStop = updateTabStop;
 /*!*****************************************!*\
   !*** ./src/numbering/numbering-part.ts ***!
   \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -3466,30 +3376,27 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NumberingPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
 var NumberingPart = (function (_super) {
     __extends(NumberingPart, _super);
-    function NumberingPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function NumberingPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    NumberingPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            Object.assign(_this, numbering_1.parseNumberingPart(xml, pkg.xmlParser));
-            _this.domNumberings = _this._documentParser.parseNumberingFile(xml);
-        });
+    NumberingPart.prototype.parseXml = function (root) {
+        Object.assign(this, numbering_1.parseNumberingPart(root, this._package.xmlParser));
+        this.domNumberings = this._documentParser.parseNumberingFile(root);
     };
     return NumberingPart;
 }(part_1.Part));
@@ -3502,12 +3409,10 @@ exports.NumberingPart = NumberingPart;
 /*!************************************!*\
   !*** ./src/numbering/numbering.ts ***!
   \************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumberingBulletPicture = exports.parseNumberingLevelOverrride = exports.parseNumberingLevel = exports.parseAbstractNumbering = exports.parseNumbering = exports.parseNumberingPart = void 0;
 var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
 var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
@@ -3654,23 +3559,26 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 /*!**********************************!*\
   !*** ./src/parser/xml-parser.ts ***!
   \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.XmlParser = void 0;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.XmlParser = exports.serializeXmlString = exports.parseXmlString = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
+var config_1 = __webpack_require__(/*! ../config */ "./src/config.ts");
+function parseXmlString(xmlString) {
+    if (config_1.default.trimXmlDeclaration)
+        xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    return new DOMParser().parseFromString(xmlString, "application/xml");
+}
+exports.parseXmlString = parseXmlString;
+function serializeXmlString(elem) {
+    return new XMLSerializer().serializeToString(elem);
+}
+exports.serializeXmlString = serializeXmlString;
 var XmlParser = (function () {
     function XmlParser() {
     }
-    XmlParser.prototype.parse = function (xmlString, skipDeclaration) {
-        if (skipDeclaration === void 0) { skipDeclaration = true; }
-        if (skipDeclaration)
-            xmlString = xmlString.replace(/<[?].*[?]>/, "");
-        return new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
-    };
     XmlParser.prototype.elements = function (elem, localName) {
         if (localName === void 0) { localName = null; }
         var result = [];
@@ -3736,12 +3644,10 @@ exports.default = globalXmlParser;
 /*!*************************************!*\
   !*** ./src/parser/xml-serialize.ts ***!
   \*************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deserializeSchema = exports.deserializeElement = exports.buildXmlSchema = exports.fromAttribute = exports.fromText = exports.children = exports.element = void 0;
 var schemaSymbol = Symbol("open-xml-schema");
 function element(name) {
@@ -3850,12 +3756,10 @@ function getPrototypeXmlSchema(proto) {
 /*!*****************************************!*\
   !*** ./src/styles/document-defaults.ts ***!
   \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseDocumentDefaults = void 0;
 var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
 var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
@@ -3887,12 +3791,10 @@ exports.parseDocumentDefaults = parseDocumentDefaults;
 /*!*****************************!*\
   !*** ./src/styles/style.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStyle = void 0;
 var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
 var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
@@ -3959,10 +3861,8 @@ exports.parseStyle = parseStyle;
 /*!***********************************!*\
   !*** ./src/styles/styles-part.ts ***!
   \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -3972,31 +3872,28 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStylesPart = exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var document_defaults_1 = __webpack_require__(/*! ./document-defaults */ "./src/styles/document-defaults.ts");
 var style_1 = __webpack_require__(/*! ./style */ "./src/styles/style.ts");
 var StylesPart = (function (_super) {
     __extends(StylesPart, _super);
-    function StylesPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function StylesPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    StylesPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            Object.assign(_this, parseStylesPart(xml, pkg.xmlParser));
-            _this.domStyles = _this._documentParser.parseStylesFile(xml);
-        });
+    StylesPart.prototype.parseXml = function (root) {
+        Object.assign(this, parseStylesPart(root, this._package.xmlParser));
+        this.domStyles = this._documentParser.parseStylesFile(root);
     };
     return StylesPart;
 }(part_1.Part));
@@ -4027,12 +3924,10 @@ exports.parseStylesPart = parseStylesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
@@ -4064,14 +3959,11 @@ exports.keyBy = keyBy;
 /*!******************************!*\
   !*** ./src/word-document.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deobfuscate = exports.WordDocument = void 0;
-var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
 var font_table_1 = __webpack_require__(/*! ./font-table/font-table */ "./src/font-table/font-table.ts");
 var open_xml_package_1 = __webpack_require__(/*! ./common/open-xml-package */ "./src/common/open-xml-package.ts");
@@ -4087,9 +3979,9 @@ var WordDocument = (function () {
     WordDocument.load = function (blob, parser) {
         var d = new WordDocument();
         d._parser = parser;
-        return JSZip.loadAsync(blob)
-            .then(function (zip) {
-            d._package = new open_xml_package_1.OpenXmlPackage(zip);
+        return open_xml_package_1.OpenXmlPackage.load(blob)
+            .then(function (pkg) {
+            d._package = pkg;
             return d._package.loadRelationships();
         }).then(function (rels) {
             var _a;
@@ -4101,6 +3993,10 @@ var WordDocument = (function () {
             return d.loadRelationshipPart(target, type).then(function () { return d; });
         });
     };
+    WordDocument.prototype.save = function (type) {
+        if (type === void 0) { type = "blob"; }
+        return this._package.save(type);
+    };
     WordDocument.prototype.loadRelationshipPart = function (path, type) {
         var _this = this;
         if (this.partsMap[path])
@@ -4110,23 +4006,23 @@ var WordDocument = (function () {
         var part = null;
         switch (type) {
             case relationship_1.RelationshipTypes.OfficeDocument:
-                this.documentPart = part = new document_part_1.DocumentPart(path, this._parser);
+                this.documentPart = part = new document_part_1.DocumentPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.FontTable:
-                this.fontTablePart = part = new font_table_1.FontTablePart(path);
+                this.fontTablePart = part = new font_table_1.FontTablePart(this._package, path);
                 break;
             case relationship_1.RelationshipTypes.Numbering:
-                this.numberingPart = part = new numbering_part_1.NumberingPart(path, this._parser);
+                this.numberingPart = part = new numbering_part_1.NumberingPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Styles:
-                this.stylesPart = part = new styles_part_1.StylesPart(path, this._parser);
+                this.stylesPart = part = new styles_part_1.StylesPart(this._package, path, this._parser);
                 break;
         }
         if (part == null)
             return Promise.resolve(null);
         this.partsMap[path] = part;
         this.parts.push(part);
-        return part.load(this._package).then(function () {
+        return part.load().then(function () {
             if (part.rels == null || part.rels.length == 0)
                 return part;
             var folder = utils_1.splitPath(part.path)[0];
@@ -4177,13 +4073,46 @@ exports.deobfuscate = deobfuscate;
 /*!************************!*\
   !*** external "JSZip" ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
+/***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 
 /***/ })
 
-/******/ });
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		if(__webpack_module_cache__[moduleId]) {
+/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/docx-preview.ts");
+/******/ 	
+/******/ 	return __webpack_exports__;
+/******/ })()
+;
 });
 //# sourceMappingURL=docx-preview.js.map

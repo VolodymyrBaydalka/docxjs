@@ -13,18 +13,14 @@ export class StylesPart extends Part implements StylesPartProperties {
 
     private _documentParser: DocumentParser;
 
-    constructor(path: string, parser: DocumentParser) {
-        super(path);
+    constructor(pkg: OpenXmlPackage, path: string, parser: DocumentParser) {
+        super(pkg, path);
         this._documentParser = parser;
     }
 
-    load(pkg: OpenXmlPackage) {
-        return super.load(pkg)
-            .then(() => pkg.load(this.path, "xml"))
-            .then(xml => {
-                Object.assign(this, parseStylesPart(xml, pkg.xmlParser));
-                this.domStyles = this._documentParser.parseStylesFile(xml);
-            })
+    parseXml(root: Element) {
+        Object.assign(this, parseStylesPart(root, this._package.xmlParser));
+        this.domStyles = this._documentParser.parseStylesFile(root);     
     }
 }
 

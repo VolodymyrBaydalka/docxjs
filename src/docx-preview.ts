@@ -2,6 +2,8 @@ import { WordDocument } from './word-document';
 import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
 
+export { default as config } from './config';
+
 export interface Options {
     inWrapper: boolean;
     ignoreWidth: boolean;
