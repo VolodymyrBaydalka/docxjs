@@ -56,9 +56,13 @@ export function buildXmlSchema(schemaObj: any): OpenXmlSchema {
     return schema;
 }
 
-export function deserializeElement<T = any>(n: Element, output: T): T {
+export function deserializeElement<T = any>(n: Element, output: T, ops: DeserializeOptions): T {
     var proto = Object.getPrototypeOf(output);
     var schema = proto[schemaSymbol];
+
+    if (ops?.keepOrigin) {
+        (output as any).$$xmlElement = n;
+    }  
 
     if (schema == null)
         return output;
@@ -71,7 +75,7 @@ export function deserializeElement<T = any>(n: Element, output: T): T {
 
         if (child) {
             let obj = Object.create(child.proto);
-            deserializeElement(elem, obj);
+            deserializeElement(elem, obj, ops);
             (output as any).children.push(obj);
         }
     }
@@ -96,6 +100,10 @@ export function deserializeSchema(n: Element, output: any, schema: OpenXmlSchema
     }
 
     return output;
+}
+
+export interface DeserializeOptions {
+    keepOrigin: boolean
 }
 
 export interface OpenXmlSchema {

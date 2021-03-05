@@ -29,6 +29,11 @@ export class DocumentParser {
     // ignores page and table sizes
     ignoreWidth: boolean = false;
     debug: boolean = false;
+    keepOrigin: boolean = false;
+
+    private deserialize<T>(elem: Element, output: T): T {
+        return deserializeElement(elem, output, { keepOrigin: this.keepOrigin });
+    }
 
     parseDocumentFile(xmlDoc: Element): DocumentElement {
         const result = new DocumentElement();
@@ -332,7 +337,7 @@ export class DocumentParser {
 
 
     parseParagraph(node: Element): ParagraphElement {
-        const result = deserializeElement(node, new ParagraphElement());
+        const result = this.deserialize(node, new ParagraphElement());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -391,7 +396,7 @@ export class DocumentParser {
     }
 
     parseHyperlink(node: Element, parent?: DocxElement): HyperlinkElement {
-        var result = deserializeElement(node, new HyperlinkElement(parent));
+        var result = this.deserialize(node, new HyperlinkElement(parent));
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -405,7 +410,7 @@ export class DocumentParser {
     }
 
     parseRun(node: Element, parent?: DocxElement): RunElement {
-        var result = deserializeElement(node, new RunElement(parent));
+        var result = this.deserialize(node, new RunElement(parent));
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -591,7 +596,7 @@ export class DocumentParser {
     }
 
     parseTable(node: Element): TableElement {
-        var result = new TableElement();
+        var result = this.deserialize(node, new TableElement());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -679,7 +684,7 @@ export class DocumentParser {
     }
 
     parseTableRow(node: Element): TableRowElement {
-        var result = new TableRowElement();
+        var result = this.deserialize(node, new TableRowElement());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -712,7 +717,7 @@ export class DocumentParser {
     }
 
     parseTableCell(node: Element): TableCellElement {
-        var result = new TableCellElement();
+        var result = this.deserialize(node, new TableCellElement());
 
         xml.foreach(node, c => {
             switch (c.localName) {

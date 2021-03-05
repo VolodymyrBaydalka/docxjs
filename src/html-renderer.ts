@@ -42,6 +42,7 @@ export class HtmlRenderer {
     options: Options;
     domStyleMap: Record<string, IDomStyle>;
     styleMap: Record<string, Style>;
+    keepOrigin: boolean = false;
 
     constructor(private htmlDocument: HTMLDocument) {
     }
@@ -560,7 +561,7 @@ export class HtmlRenderer {
         var result = elems.map(e => {
             let n = this.renderElement(e, parent);
 
-            if(n && this.options.debug)
+            if(n && this.keepOrigin)
                 (n as any).$$docxElement = e;
 
             return n;

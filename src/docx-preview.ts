@@ -13,13 +13,14 @@ export interface Options {
     debug: boolean;
     experimental: boolean;
     className: string;
+    keepOrigin: boolean;
 }
 
 export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null) {
     var parser = new DocumentParser();
     var renderer = new HtmlRenderer(window.document);
 
-    var options = { 
+    var options: Options = { 
         ignoreHeight: false,
         ignoreWidth: false,
         ignoreFonts: false,
@@ -28,14 +29,17 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
         experimental: false,
         className: "docx",
         inWrapper: true,
+        keepOrigin: false,
         ... userOptions
     };
 
     parser.ignoreWidth = options.ignoreWidth;
-    parser.debug = options.debug || parser.debug;
+    parser.debug = options.debug;
+    parser.keepOrigin = options.keepOrigin;
 
-    renderer.className = options.className || "docx";
+    renderer.className = options.className;
     renderer.inWrapper = options.inWrapper;
+    renderer.keepOrigin = options.keepOrigin;
 
     return WordDocument.load(data, parser).then(doc => {
         renderer.render(doc, bodyContainer, styleContainer, options);

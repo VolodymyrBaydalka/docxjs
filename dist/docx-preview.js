@@ -191,7 +191,11 @@ var DocumentParser = (function () {
         this.skipDeclaration = true;
         this.ignoreWidth = false;
         this.debug = false;
+        this.keepOrigin = false;
     }
+    DocumentParser.prototype.deserialize = function (elem, output) {
+        return xml_serialize_1.deserializeElement(elem, output, { keepOrigin: this.keepOrigin });
+    };
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var _this = this;
         var result = new document_1.DocumentElement();
@@ -470,7 +474,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
-        var result = xml_serialize_1.deserializeElement(node, new paragraph_1.ParagraphElement());
+        var result = this.deserialize(node, new paragraph_1.ParagraphElement());
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -516,7 +520,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseHyperlink = function (node, parent) {
         var _this = this;
-        var result = xml_serialize_1.deserializeElement(node, new hyperlink_1.HyperlinkElement(parent));
+        var result = this.deserialize(node, new hyperlink_1.HyperlinkElement(parent));
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
@@ -528,7 +532,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseRun = function (node, parent) {
         var _this = this;
-        var result = xml_serialize_1.deserializeElement(node, new run_1.RunElement(parent));
+        var result = this.deserialize(node, new run_1.RunElement(parent));
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "lastRenderedPageBreak":
@@ -676,7 +680,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTable = function (node) {
         var _this = this;
-        var result = new table_1.TableElement();
+        var result = this.deserialize(node, new table_1.TableElement());
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tr":
@@ -748,7 +752,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableRow = function (node) {
         var _this = this;
-        var result = new table_row_1.TableRowElement();
+        var result = this.deserialize(node, new table_row_1.TableRowElement());
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tc":
@@ -775,7 +779,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableCell = function (node) {
         var _this = this;
-        var result = new table_cell_1.TableCellElement();
+        var result = this.deserialize(node, new table_cell_1.TableCellElement());
         xml.foreach(node, function (c) {
             switch (c.localName) {
                 case "tbl":
@@ -1257,11 +1261,13 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true }, userOptions);
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, keepOrigin: false }, userOptions);
     parser.ignoreWidth = options.ignoreWidth;
-    parser.debug = options.debug || parser.debug;
-    renderer.className = options.className || "docx";
+    parser.debug = options.debug;
+    parser.keepOrigin = options.keepOrigin;
+    renderer.className = options.className;
     renderer.inWrapper = options.inWrapper;
+    renderer.keepOrigin = options.keepOrigin;
     return word_document_1.WordDocument.load(data, parser).then(function (doc) {
         renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
@@ -2371,14 +2377,24 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TableCellElement = void 0;
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var TableCellElement = (function (_super) {
     __extends(TableCellElement, _super);
     function TableCellElement() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    TableCellElement = __decorate([
+        xml_serialize_1.element("tc")
+    ], TableCellElement);
     return TableCellElement;
 }(dom_1.DocxContainer));
 exports.TableCellElement = TableCellElement;
@@ -2408,14 +2424,24 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TableRowElement = void 0;
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var TableRowElement = (function (_super) {
     __extends(TableRowElement, _super);
     function TableRowElement() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    TableRowElement = __decorate([
+        xml_serialize_1.element("tr")
+    ], TableRowElement);
     return TableRowElement;
 }(dom_1.DocxContainer));
 exports.TableRowElement = TableRowElement;
@@ -2445,14 +2471,24 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TableElement = void 0;
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 var TableElement = (function (_super) {
     __extends(TableElement, _super);
     function TableElement() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    TableElement = __decorate([
+        xml_serialize_1.element("table")
+    ], TableElement);
     return TableElement;
 }(dom_1.DocxContainer));
 exports.TableElement = TableElement;
@@ -2636,6 +2672,7 @@ var HtmlRenderer = (function () {
         this.htmlDocument = htmlDocument;
         this.inWrapper = true;
         this.className = "docx";
+        this.keepOrigin = false;
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
@@ -3027,7 +3064,7 @@ var HtmlRenderer = (function () {
             return null;
         var result = elems.map(function (e) {
             var n = _this.renderElement(e, parent);
-            if (n && _this.options.debug)
+            if (n && _this.keepOrigin)
                 n.$$docxElement = e;
             return n;
         }).filter(function (e) { return e != null; });
@@ -3745,9 +3782,12 @@ function buildXmlSchema(schemaObj) {
     return schema;
 }
 exports.buildXmlSchema = buildXmlSchema;
-function deserializeElement(n, output) {
+function deserializeElement(n, output, ops) {
     var proto = Object.getPrototypeOf(output);
     var schema = proto[schemaSymbol];
+    if (ops === null || ops === void 0 ? void 0 : ops.keepOrigin) {
+        output.$$xmlElement = n;
+    }
     if (schema == null)
         return output;
     deserializeSchema(n, output, schema);
@@ -3756,7 +3796,7 @@ function deserializeElement(n, output) {
         var child = schema.children[elem.localName];
         if (child) {
             var obj = Object.create(child.proto);
-            deserializeElement(elem, obj);
+            deserializeElement(elem, obj, ops);
             output.children.push(obj);
         }
     }

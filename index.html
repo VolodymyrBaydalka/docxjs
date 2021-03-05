@@ -22,7 +22,8 @@
             
             docx.renderAsync(file, container, null, { 
                 debug: true,
-                experimental: true 
+                experimental: true,
+                keepOrigin: true
             }).then(function(x){ console.log(x); });
         }
     </script>
