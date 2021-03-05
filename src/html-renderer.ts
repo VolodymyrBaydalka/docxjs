@@ -2,7 +2,7 @@ import { WordDocument } from './word-document';
 import { IDomNumbering, DocxContainer, DocxElement } from './dom/dom';
 import { Length, Underline } from './dom/common';
 import { Options } from './docx-preview';
-import { ParagraphElement } from './dom/paragraph';
+import { ParagraphElement, ParagraphProperties } from './dom/paragraph';
 import { appendClass, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
@@ -23,6 +23,8 @@ import { BreakElement } from './dom/break';
 import { TabElement } from './dom/tab';
 import { SymbolElement } from './dom/symbol';
 import { TextElement } from './dom/text';
+import { LineSpacing } from './dom/line-spacing';
+import { Style } from './styles/style';
 
 const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
 
@@ -38,7 +40,8 @@ export class HtmlRenderer {
     className: string = "docx";
     document: WordDocument;
     options: Options;
-    styleMap: any;
+    domStyleMap: Record<string, IDomStyle>;
+    styleMap: Record<string, Style>;
     currentParagrashStyle: any; 
 
     constructor(private htmlDocument: HTMLDocument) {
@@ -47,7 +50,7 @@ export class HtmlRenderer {
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
-        this.styleMap = null;
+        this.domStyleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
 
@@ -58,7 +61,8 @@ export class HtmlRenderer {
         styleContainer.appendChild(this.renderDefaultStyle());
         
         if (document.stylesPart != null) {
-            this.styleMap = this.processStyles(document.stylesPart.domStyles);
+            this.domStyleMap = this.processStyles(document.stylesPart.domStyles);
+            this.styleMap = document.stylesPart.styleMap;
 
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.domStyles));
@@ -233,7 +237,7 @@ export class HtmlRenderer {
         for(let elem of elements) {
             if (elem instanceof ParagraphElement) {
                 const styleName = elem.props.styleName;
-                const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                const s = this.domStyleMap && styleName ? this.domStyleMap[styleName] : null;
             
                 if(s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -457,7 +461,7 @@ export class HtmlRenderer {
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
-        var stylesMap = this.styleMap;
+        var stylesMap = this.domStyleMap;
 
         for (let style of styles) {
             var subStyles =  style.styles;
@@ -483,6 +487,10 @@ export class HtmlRenderer {
 
                 if (style.isDefault && style.target)
                     selector = `.${this.className} ${style.target}, ` + selector;
+
+                if (style.paragraphProps && subStyle.target == "p") {
+                    this.renderParagraphProperties(subStyle.values, style.paragraphProps);
+                }
 
                 styleText += this.styleToString(selector, subStyle.values);
             }
@@ -552,8 +560,11 @@ export class HtmlRenderer {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        if (elem.props.numbering) {
-            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
+        const style = elem.props.styleName && this.styleMap?.[elem.props.styleName]; 
+        const numbering = elem.props.numbering ?? style?.paragraphProps?.numbering;
+
+        if (numbering) {
+            var numberingClass = this.numberingClass(numbering.id, numbering.level ?? 0);
             result.className = appendClass(result.className, numberingClass);
         }
 
@@ -563,6 +574,22 @@ export class HtmlRenderer {
         }
 
         return result;
+    }
+
+    renderParagraphProperties(style: any, props: ParagraphProperties) {
+        for (const p in props) {
+            const v = props[p];
+
+            switch(p as keyof(ParagraphProperties)) {
+                case "lineSpacing":
+                    this.renderLineSpacing(style, v);
+                    break;
+            }
+        }
+    }
+
+    renderLineSpacing(style: any, spacing: LineSpacing) {   
+        //TODO
     }
 
     renderRunProperties(style: any, props: RunProperties) {

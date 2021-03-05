@@ -3,12 +3,15 @@ import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
 import { IDomStyle } from "../dom/style";
 import { XmlParser } from "../parser/xml-parser";
+import { keyBy } from "../utils";
 import { DocumentDefaults, parseDocumentDefaults } from "./document-defaults";
 import { parseStyle, Style, StyleType } from "./style";
 
 export class StylesPart extends Part implements StylesPartProperties {
     defaults: DocumentDefaults;
     styles: Style[];
+    styleMap: Record<string, Style>;
+    
     domStyles: IDomStyle[];
 
     private _documentParser: DocumentParser;
@@ -20,6 +23,7 @@ export class StylesPart extends Part implements StylesPartProperties {
 
     parseXml(root: Element) {
         Object.assign(this, parseStylesPart(root, this._package.xmlParser));
+        this.styleMap = keyBy(this.styles, s => s.id);
         this.domStyles = this._documentParser.parseStylesFile(root);     
     }
 }

@@ -2641,14 +2641,15 @@ var HtmlRenderer = (function () {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
-        this.styleMap = null;
+        this.domStyleMap = null;
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.stylesPart != null) {
-            this.styleMap = this.processStyles(document.stylesPart.domStyles);
+            this.domStyleMap = this.processStyles(document.stylesPart.domStyles);
+            this.styleMap = document.stylesPart.styleMap;
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.domStyles));
         }
@@ -2805,7 +2806,7 @@ var HtmlRenderer = (function () {
             var elem = elements_1[_i];
             if (elem instanceof paragraph_1.ParagraphElement) {
                 var styleName = elem.props.styleName;
-                var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                var s = this.domStyleMap && styleName ? this.domStyleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
@@ -2930,7 +2931,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
-        var stylesMap = this.styleMap;
+        var stylesMap = this.domStyleMap;
         for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
             var style = styles_3[_i];
             var subStyles = style.styles;
@@ -2952,6 +2953,9 @@ var HtmlRenderer = (function () {
                     selector += "." + style.cssName + " " + subStyle.target;
                 if (style.isDefault && style.target)
                     selector = "." + this.className + " " + style.target + ", " + selector;
+                if (style.paragraphProps && subStyle.target == "p") {
+                    this.renderParagraphProperties(subStyle.values, style.paragraphProps);
+                }
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
@@ -3017,12 +3021,15 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
+        var _a, _b, _c, _d;
         var result = this.htmlDocument.createElement("p");
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        if (elem.props.numbering) {
-            var numberingClass = this.numberingClass(elem.props.numbering.id, elem.props.numbering.level);
+        var style = elem.props.styleName && ((_a = this.styleMap) === null || _a === void 0 ? void 0 : _a[elem.props.styleName]);
+        var numbering = (_b = elem.props.numbering) !== null && _b !== void 0 ? _b : (_c = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _c === void 0 ? void 0 : _c.numbering;
+        if (numbering) {
+            var numberingClass = this.numberingClass(numbering.id, (_d = numbering.level) !== null && _d !== void 0 ? _d : 0);
             result.className = utils_1.appendClass(result.className, numberingClass);
         }
         if (elem.props.styleName) {
@@ -3030,6 +3037,18 @@ var HtmlRenderer = (function () {
             result.className = utils_1.appendClass(result.className, styleClassName);
         }
         return result;
+    };
+    HtmlRenderer.prototype.renderParagraphProperties = function (style, props) {
+        for (var p in props) {
+            var v = props[p];
+            switch (p) {
+                case "lineSpacing":
+                    this.renderLineSpacing(style, v);
+                    break;
+            }
+        }
+    };
+    HtmlRenderer.prototype.renderLineSpacing = function (style, spacing) {
     };
     HtmlRenderer.prototype.renderRunProperties = function (style, props) {
         for (var p in props) {
@@ -3882,6 +3901,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStylesPart = exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var document_defaults_1 = __webpack_require__(/*! ./document-defaults */ "./src/styles/document-defaults.ts");
 var style_1 = __webpack_require__(/*! ./style */ "./src/styles/style.ts");
 var StylesPart = (function (_super) {
@@ -3893,6 +3913,7 @@ var StylesPart = (function (_super) {
     }
     StylesPart.prototype.parseXml = function (root) {
         Object.assign(this, parseStylesPart(root, this._package.xmlParser));
+        this.styleMap = utils_1.keyBy(this.styles, function (s) { return s.id; });
         this.domStyles = this._documentParser.parseStylesFile(root);
     };
     return StylesPart;
