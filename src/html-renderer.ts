@@ -3,7 +3,7 @@ import { IDomNumbering, DocxContainer, DocxElement } from './dom/dom';
 import { Length, Underline } from './dom/common';
 import { Options } from './docx-preview';
 import { ParagraphElement, ParagraphProperties } from './dom/paragraph';
-import { appendClass, keyBy } from './utils';
+import { appendClass, keyBy, mergeDeep } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
@@ -42,7 +42,6 @@ export class HtmlRenderer {
     options: Options;
     domStyleMap: Record<string, IDomStyle>;
     styleMap: Record<string, Style>;
-    currentParagrashStyle: any; 
 
     constructor(private htmlDocument: HTMLDocument) {
     }
@@ -61,8 +60,8 @@ export class HtmlRenderer {
         styleContainer.appendChild(this.renderDefaultStyle());
         
         if (document.stylesPart != null) {
-            this.domStyleMap = this.processStyles(document.stylesPart.domStyles);
-            this.styleMap = document.stylesPart.styleMap;
+            this.domStyleMap = this.processDomStyles(document.stylesPart.domStyles);
+            this.styleMap = this.processStyles(document.stylesPart.styles);
 
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.domStyles));
@@ -110,15 +109,32 @@ export class HtmlRenderer {
         return `${this.className}_${className}`;
     }
 
-    processStyles(styles: IDomStyle[]) {
-        var stylesMap: Record<string, IDomStyle> = {};
+    processStyles(styles: Style[]) {
+        const styleMap = keyBy(styles, s => s.id);
+
+        for(let style of styles.filter(s => s.basedOn)) {
+            const baseStyle = styleMap[style.basedOn];
+        
+            if(baseStyle) {
+                style.paragraphProps = mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = mergeDeep(style.runProps, baseStyle.runProps);
+            } else if (this.options.debug) {
+                console.warn(`Can't find base style ${style.basedOn}`);
+            }
+        }
+
+        return styleMap;
+    }
+
+    processDomStyles(styles: IDomStyle[]) {
+        var domStylesMap: Record<string, IDomStyle> = {};
 
         for (let style of styles.filter(x => x.id != null)) {
-            stylesMap[style.id] = style;
+            domStylesMap[style.id] = style;
         }
 
         for (let style of styles.filter(x => x.basedOn)) {
-            var baseStyle = stylesMap[style.basedOn];
+            var baseStyle = domStylesMap[style.basedOn];
 
             if (baseStyle) {
                 for (let styleValues of style.styles) {
@@ -136,7 +152,7 @@ export class HtmlRenderer {
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
 
-        return stylesMap;
+        return domStylesMap;
     }
 
     processElement(element: DocxElement) {
@@ -183,8 +199,12 @@ export class HtmlRenderer {
         return output;
     }
 
+    private createElement(tagName) {
+        return this.htmlDocument.createElement(tagName);
+    }
+
     createSection(className: string, props: SectionProperties) {
-        var elem = this.htmlDocument.createElement("section");
+        var elem = this.createElement("section");
         
         elem.className = className;
 
@@ -236,8 +256,8 @@ export class HtmlRenderer {
 
         for(let elem of elements) {
             if (elem instanceof ParagraphElement) {
-                const styleName = elem.props.styleName;
-                const s = this.domStyleMap && styleName ? this.domStyleMap[styleName] : null;
+                const styleName = elem.props.styleId;
+                const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
             
                 if(s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -407,7 +427,7 @@ export class HtmlRenderer {
             var selector = `p.${this.numberingClass(num.id, num.level)}`;
             var listStyleType = "none";
 
-            if (num.levelText && num.format == "decimal") {
+            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter")) {
                 let counter = this.numberingCounter(num.id, num.level);
 
                 if (num.level > 0) {
@@ -420,7 +440,7 @@ export class HtmlRenderer {
                 }
 
                 styleText += this.styleToString(`${selector}:before`, {
-                    "content": this.levelTextToContent(num.levelText, num.id),
+                    "content": this.levelTextToContent(num.levelText, num.id, this.numFormatToCssValue(num.format)),
                     "counter-increment": counter
                 });
             }
@@ -554,13 +574,13 @@ export class HtmlRenderer {
     }
 
     renderParagraph(elem: ParagraphElement) {
-        var result = this.htmlDocument.createElement("p");
+        var result = this.createElement("p");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        const style = elem.props.styleName && this.styleMap?.[elem.props.styleName]; 
+        const style = elem.props.styleId && this.styleMap?.[elem.props.styleId]; 
         const numbering = elem.props.numbering ?? style?.paragraphProps?.numbering;
 
         if (numbering) {
@@ -568,8 +588,8 @@ export class HtmlRenderer {
             result.className = appendClass(result.className, numberingClass);
         }
 
-        if (elem.props.styleName) {
-            var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleName));
+        if (elem.props.styleId) {
+            var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleId));
             result.className = appendClass(result.className, styleClassName);
         }
 
@@ -729,7 +749,7 @@ export class HtmlRenderer {
     }
 
     renderHyperlink(elem: HyperlinkElement) {
-        var result = this.htmlDocument.createElement("a");
+        var result = this.createElement("a");
 
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
@@ -741,7 +761,7 @@ export class HtmlRenderer {
     }
 
     renderDrawing(elem: DrawingElement) {
-        var result = this.htmlDocument.createElement("div");
+        var result = this.createElement("div");
 
         result.style.display = "inline-block";
         result.style.position = "relative";
@@ -754,7 +774,7 @@ export class HtmlRenderer {
     }
 
     renderImage(elem: ImageElement) {
-        let result = this.htmlDocument.createElement("img");
+        let result = this.createElement("img");
 
         this.renderStyleValues(elem.cssStyle, result);
 
@@ -772,14 +792,14 @@ export class HtmlRenderer {
     }
 
     renderSymbol(elem: SymbolElement) {
-        var span = this.htmlDocument.createElement("span");
+        var span = this.createElement("span");
         span.style.fontFamily = elem.font;
         span.innerHTML = `&#x${elem.char};`
         return span;
     }
 
     renderTab(elem: TabElement) {
-        var tabSpan = this.htmlDocument.createElement("span");
+        var tabSpan = this.createElement("span");
      
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
@@ -800,13 +820,13 @@ export class HtmlRenderer {
     }
 
     renderBookmarkStart(elem: BookmarkStartElement): HTMLElement {
-        var result = this.htmlDocument.createElement("span");
+        var result = this.createElement("span");
         result.id = elem.name;
         return result;
     }
 
     renderRun(elem: RunElement) {
-        var result = this.htmlDocument.createElement("span");
+        var result = this.createElement("span");
 
         if(elem.id)
             result.id = elem.id;
@@ -820,7 +840,7 @@ export class HtmlRenderer {
     }
 
     renderTable(elem: TableElement) {
-        let result = this.htmlDocument.createElement("table");
+        let result = this.createElement("table");
 
         if (elem.columns)
             result.appendChild(this.renderTableColumns(elem.columns));
@@ -833,10 +853,10 @@ export class HtmlRenderer {
     }
 
     renderTableColumns(columns: TableColumn[]) {
-        let result = this.htmlDocument.createElement("colGroup");
+        let result = this.createElement("colGroup");
 
         for (let col of columns) {
-            let colElem = this.htmlDocument.createElement("col");
+            let colElem = this.createElement("col");
 
             if (col.width)
                 colElem.style.width = `${col.width}px`;
@@ -848,7 +868,7 @@ export class HtmlRenderer {
     }
 
     renderTableRow(elem: TableRowElement) {
-        let result = this.htmlDocument.createElement("tr");
+        let result = this.createElement("tr");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -858,7 +878,7 @@ export class HtmlRenderer {
     }
 
     renderTableCell(elem: TableCellElement) {
-        let result = this.htmlDocument.createElement("td");
+        let result = this.createElement("td");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -890,14 +910,14 @@ export class HtmlRenderer {
     }
 
     styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
-        let result = selectors + " {\r\n";
+        let result = `${selectors} {\r\n`;
 
         for (const key in values) {
             result += `  ${key}: ${values[key]};\r\n`;
         }
 
-        if (cssText)
-            result += ";" + cssText;
+        if (cssText) 
+            result += cssText;
 
         return result + "}\r\n";
     }
@@ -906,10 +926,10 @@ export class HtmlRenderer {
         return `${this.className}-num-${id}-${lvl}`;
     }
 
-    levelTextToContent(text: string, id: string) {
+    levelTextToContent(text: string, id: string, numformat: string) {
         var result = text.replace(/%\d*/g, s => {
             let lvl = parseInt(s.substring(1), 10) - 1;
-            return `"counter(${this.numberingCounter(id, lvl)})"`;
+            return `"counter(${this.numberingCounter(id, lvl)}, ${numformat})"`;
         });
 
         return '"' + result + '"';

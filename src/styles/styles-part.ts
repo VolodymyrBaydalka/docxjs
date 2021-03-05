@@ -10,7 +10,6 @@ import { parseStyle, Style, StyleType } from "./style";
 export class StylesPart extends Part implements StylesPartProperties {
     defaults: DocumentDefaults;
     styles: Style[];
-    styleMap: Record<string, Style>;
     
     domStyles: IDomStyle[];
 
@@ -23,7 +22,6 @@ export class StylesPart extends Part implements StylesPartProperties {
 
     parseXml(root: Element) {
         Object.assign(this, parseStylesPart(root, this._package.xmlParser));
-        this.styleMap = keyBy(this.styles, s => s.id);
         this.domStyles = this._documentParser.parseStylesFile(root);     
     }
 }

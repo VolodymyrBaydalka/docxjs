@@ -22,3 +22,27 @@ export function keyBy<T = any>(array: T[], by: (x: T) => any): Record<any, T> {
         return a;
     }, {});
 }
+
+export function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+export function mergeDeep(target, ...sources) {
+    if (!sources.length) 
+        return target;
+    
+    const source = sources.shift();
+
+    if (isObject(target) && isObject(source)) {
+        for (const key in source) {
+            if (isObject(source[key])) {
+                const val = target[key] ?? (target[key] = {});
+                mergeDeep(val, source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        }
+    }
+
+    return mergeDeep(target, ...sources);
+}

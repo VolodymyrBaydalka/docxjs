@@ -1986,7 +1986,7 @@ function parseParagraphProperty(elem, props, xml) {
             props.outlineLevel = xml.intAttr(elem, "val");
             break;
         case "pStyle":
-            props.styleName = xml.attr(elem, "val");
+            props.styleId = xml.attr(elem, "val");
             break;
         case "rPr":
             props.runProps = run_1.parseRunProperties(elem, xml);
@@ -2648,8 +2648,8 @@ var HtmlRenderer = (function () {
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.stylesPart != null) {
-            this.domStyleMap = this.processStyles(document.stylesPart.domStyles);
-            this.styleMap = document.stylesPart.styleMap;
+            this.domStyleMap = this.processDomStyles(document.stylesPart.domStyles);
+            this.styleMap = this.processStyles(document.stylesPart.styles);
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.domStyles));
         }
@@ -2689,14 +2689,29 @@ var HtmlRenderer = (function () {
         return this.className + "_" + className;
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
-        var stylesMap = {};
+        var styleMap = utils_1.keyBy(styles, function (s) { return s.id; });
+        for (var _i = 0, _a = styles.filter(function (s) { return s.basedOn; }); _i < _a.length; _i++) {
+            var style = _a[_i];
+            var baseStyle = styleMap[style.basedOn];
+            if (baseStyle) {
+                style.paragraphProps = utils_1.mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = utils_1.mergeDeep(style.runProps, baseStyle.runProps);
+            }
+            else if (this.options.debug) {
+                console.warn("Can't find base style " + style.basedOn);
+            }
+        }
+        return styleMap;
+    };
+    HtmlRenderer.prototype.processDomStyles = function (styles) {
+        var domStylesMap = {};
         for (var _i = 0, _a = styles.filter(function (x) { return x.id != null; }); _i < _a.length; _i++) {
             var style = _a[_i];
-            stylesMap[style.id] = style;
+            domStylesMap[style.id] = style;
         }
         for (var _b = 0, _c = styles.filter(function (x) { return x.basedOn; }); _b < _c.length; _b++) {
             var style = _c[_b];
-            var baseStyle = stylesMap[style.basedOn];
+            var baseStyle = domStylesMap[style.basedOn];
             if (baseStyle) {
                 var _loop_2 = function (styleValues) {
                     baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
@@ -2716,7 +2731,7 @@ var HtmlRenderer = (function () {
             var style = styles_1[_f];
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
-        return stylesMap;
+        return domStylesMap;
     };
     HtmlRenderer.prototype.processElement = function (element) {
         if ("children" in element) {
@@ -2761,8 +2776,11 @@ var HtmlRenderer = (function () {
         }
         return output;
     };
+    HtmlRenderer.prototype.createElement = function (tagName) {
+        return this.htmlDocument.createElement(tagName);
+    };
     HtmlRenderer.prototype.createSection = function (className, props) {
-        var elem = this.htmlDocument.createElement("section");
+        var elem = this.createElement("section");
         elem.className = className;
         if (props) {
             if (props.pageMargins) {
@@ -2805,8 +2823,8 @@ var HtmlRenderer = (function () {
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem instanceof paragraph_1.ParagraphElement) {
-                var styleName = elem.props.styleName;
-                var s = this.domStyleMap && styleName ? this.domStyleMap[styleName] : null;
+                var styleName = elem.props.styleId;
+                var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
@@ -2885,7 +2903,7 @@ var HtmlRenderer = (function () {
         var _loop_3 = function () {
             selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
-            if (num.levelText && num.format == "decimal") {
+            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter")) {
                 var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
                     styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
@@ -2896,7 +2914,7 @@ var HtmlRenderer = (function () {
                     rootCounters.push(counter);
                 }
                 styleText += this_3.styleToString(selector + ":before", {
-                    "content": this_3.levelTextToContent(num.levelText, num.id),
+                    "content": this_3.levelTextToContent(num.levelText, num.id, this_3.numFormatToCssValue(num.format)),
                     "counter-increment": counter
                 });
             }
@@ -3022,18 +3040,18 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
         var _a, _b, _c, _d;
-        var result = this.htmlDocument.createElement("p");
+        var result = this.createElement("p");
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        var style = elem.props.styleName && ((_a = this.styleMap) === null || _a === void 0 ? void 0 : _a[elem.props.styleName]);
+        var style = elem.props.styleId && ((_a = this.styleMap) === null || _a === void 0 ? void 0 : _a[elem.props.styleId]);
         var numbering = (_b = elem.props.numbering) !== null && _b !== void 0 ? _b : (_c = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _c === void 0 ? void 0 : _c.numbering;
         if (numbering) {
             var numberingClass = this.numberingClass(numbering.id, (_d = numbering.level) !== null && _d !== void 0 ? _d : 0);
             result.className = utils_1.appendClass(result.className, numberingClass);
         }
-        if (elem.props.styleName) {
-            var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleName));
+        if (elem.props.styleId) {
+            var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleId));
             result.className = utils_1.appendClass(result.className, styleClassName);
         }
         return result;
@@ -3159,7 +3177,7 @@ var HtmlRenderer = (function () {
             style["text-decoration-color"] = this.renderColor(underline.color);
     };
     HtmlRenderer.prototype.renderHyperlink = function (elem) {
-        var result = this.htmlDocument.createElement("a");
+        var result = this.createElement("a");
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         if (elem.anchor)
@@ -3167,7 +3185,7 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderDrawing = function (elem) {
-        var result = this.htmlDocument.createElement("div");
+        var result = this.createElement("div");
         result.style.display = "inline-block";
         result.style.position = "relative";
         result.style.textIndent = "0px";
@@ -3176,7 +3194,7 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderImage = function (elem) {
-        var result = this.htmlDocument.createElement("img");
+        var result = this.createElement("img");
         this.renderStyleValues(elem.cssStyle, result);
         if (this.document) {
             this.document.loadDocumentImage(elem.src).then(function (x) {
@@ -3189,13 +3207,13 @@ var HtmlRenderer = (function () {
         return this.htmlDocument.createTextNode(elem.text);
     };
     HtmlRenderer.prototype.renderSymbol = function (elem) {
-        var span = this.htmlDocument.createElement("span");
+        var span = this.createElement("span");
         span.style.fontFamily = elem.font;
         span.innerHTML = "&#x" + elem.char + ";";
         return span;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
-        var tabSpan = this.htmlDocument.createElement("span");
+        var tabSpan = this.createElement("span");
         tabSpan.innerHTML = "&emsp;";
         if (this.options.experimental) {
             setTimeout(function () {
@@ -3210,12 +3228,12 @@ var HtmlRenderer = (function () {
         return tabSpan;
     };
     HtmlRenderer.prototype.renderBookmarkStart = function (elem) {
-        var result = this.htmlDocument.createElement("span");
+        var result = this.createElement("span");
         result.id = elem.name;
         return result;
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
-        var result = this.htmlDocument.createElement("span");
+        var result = this.createElement("span");
         if (elem.id)
             result.id = elem.id;
         this.renderClass(elem, result);
@@ -3224,7 +3242,7 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderTable = function (elem) {
-        var result = this.htmlDocument.createElement("table");
+        var result = this.createElement("table");
         if (elem.columns)
             result.appendChild(this.renderTableColumns(elem.columns));
         this.renderClass(elem, result);
@@ -3233,10 +3251,10 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderTableColumns = function (columns) {
-        var result = this.htmlDocument.createElement("colGroup");
+        var result = this.createElement("colGroup");
         for (var _i = 0, columns_1 = columns; _i < columns_1.length; _i++) {
             var col = columns_1[_i];
-            var colElem = this.htmlDocument.createElement("col");
+            var colElem = this.createElement("col");
             if (col.width)
                 colElem.style.width = col.width + "px";
             result.appendChild(colElem);
@@ -3244,14 +3262,14 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderTableRow = function (elem) {
-        var result = this.htmlDocument.createElement("tr");
+        var result = this.createElement("tr");
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         return result;
     };
     HtmlRenderer.prototype.renderTableCell = function (elem) {
-        var result = this.htmlDocument.createElement("td");
+        var result = this.createElement("td");
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
@@ -3282,17 +3300,17 @@ var HtmlRenderer = (function () {
             result += "  " + key + ": " + values[key] + ";\r\n";
         }
         if (cssText)
-            result += ";" + cssText;
+            result += cssText;
         return result + "}\r\n";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
         return this.className + "-num-" + id + "-" + lvl;
     };
-    HtmlRenderer.prototype.levelTextToContent = function (text, id) {
+    HtmlRenderer.prototype.levelTextToContent = function (text, id, numformat) {
         var _this = this;
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(" + _this.numberingCounter(id, lvl) + ")\"";
+            return "\"counter(" + _this.numberingCounter(id, lvl) + ", " + numformat + ")\"";
         });
         return '"' + result + '"';
     };
@@ -3901,7 +3919,6 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStylesPart = exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
-var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var document_defaults_1 = __webpack_require__(/*! ./document-defaults */ "./src/styles/document-defaults.ts");
 var style_1 = __webpack_require__(/*! ./style */ "./src/styles/style.ts");
 var StylesPart = (function (_super) {
@@ -3913,7 +3930,6 @@ var StylesPart = (function (_super) {
     }
     StylesPart.prototype.parseXml = function (root) {
         Object.assign(this, parseStylesPart(root, this._package.xmlParser));
-        this.styleMap = utils_1.keyBy(this.styles, function (s) { return s.id; });
         this.domStyles = this._documentParser.parseStylesFile(root);
     };
     return StylesPart;
@@ -3945,11 +3961,16 @@ exports.parseStylesPart = parseStylesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports) {
 
 
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.mergeDeep = exports.isObject = exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -3972,6 +3993,33 @@ function keyBy(array, by) {
     }, {});
 }
 exports.keyBy = keyBy;
+function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+exports.isObject = isObject;
+function mergeDeep(target) {
+    var _a;
+    var sources = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        sources[_i - 1] = arguments[_i];
+    }
+    if (!sources.length)
+        return target;
+    var source = sources.shift();
+    if (isObject(target) && isObject(source)) {
+        for (var key in source) {
+            if (isObject(source[key])) {
+                var val = (_a = target[key]) !== null && _a !== void 0 ? _a : (target[key] = {});
+                mergeDeep(val, source[key]);
+            }
+            else {
+                target[key] = source[key];
+            }
+        }
+    }
+    return mergeDeep.apply(void 0, __spreadArray([target], sources));
+}
+exports.mergeDeep = mergeDeep;
 
 
 /***/ }),

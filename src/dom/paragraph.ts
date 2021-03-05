@@ -26,7 +26,7 @@ export interface ParagraphProperties {
     keepNext: boolean;
     pageBreakBefore: boolean;
     outlineLevel: number;
-    styleName: string;
+    styleId: string;
 
     runProps: RunProperties;
 }
@@ -96,7 +96,7 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             break;
 
         case "pStyle":
-            props.styleName = xml.attr(elem, "val");
+            props.styleId = xml.attr(elem, "val");
             break;
 
         case "rPr":
