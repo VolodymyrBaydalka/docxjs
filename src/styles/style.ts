@@ -1,5 +1,5 @@
-import { ParagraphProperties, parseParagraphProperties } from "../dom/paragraph";
-import { parseRunProperties, RunProperties } from "../dom/run";
+import { ParagraphProperties, parseParagraphProperties } from "../document/paragraph";
+import { parseRunProperties, RunProperties } from "../document/run";
 import { XmlParser } from "../parser/xml-parser";
 
 export type StyleType = 'character' | 'numbering' | 'paragraph' | 'table';

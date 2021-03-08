@@ -1,4 +1,4 @@
-import { DocxElement } from "./dom/dom";
+import { DocxElement } from "./document/dom";
 
 export function addElementClass(element: DocxElement, className: string): string {
     return element.className = appendClass(element.className, className);

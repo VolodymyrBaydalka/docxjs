@@ -5,10 +5,12 @@ import { Relationship, RelationshipTypes } from './common/relationship';
 import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
 import { OpenXmlPackage } from './common/open-xml-package';
-import { DocumentPart } from './dom/document-part';
+import { DocumentPart } from './document/document-part';
 import { splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
+import { FooterPart } from "./footer/footer-part";
+import { HeaderPart } from "./header/header-part";
 
 export class WordDocument {
     private _package: OpenXmlPackage;
@@ -74,6 +76,14 @@ export class WordDocument {
             case RelationshipTypes.Styles:
                 this.stylesPart = part = new StylesPart(this._package, path, this._parser);
                 break;
+
+            case RelationshipTypes.Footer:
+                part = new FooterPart(this._package, path, this._parser);
+                break;
+    
+            case RelationshipTypes.Header:
+                part = new HeaderPart(this._package, path, this._parser);
+                break;
         }
 
         if (part == null)
@@ -110,15 +120,14 @@ export class WordDocument {
             .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
     }
 
+    getPathById(part: Part, id: string): string {
+        const rel = part.rels.find(x => x.id == id);
+        return rel ? splitPath(part.path)[0] + rel.target : null;
+    }
+
     private loadResource(part: Part, id: string, outputType: OutputType) {
-        let rel = part.rels.find(x => x.id == id);
-
-        if (rel == null)
-            return Promise.resolve(null);
-
-        let [fodler] = splitPath(part.path);
-
-        return this._package.load(fodler + rel.target, outputType);
+        const path = this.getPathById(part, id);
+        return path ? this._package.load(path, outputType) : Promise.resolve(null);
     }
 }
 

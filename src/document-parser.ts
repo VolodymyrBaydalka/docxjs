@@ -1,20 +1,22 @@
-import { DocxElement, IDomNumbering, NumberingPicBullet } from './dom/dom';
+import { DocxElement, IDomNumbering, NumberingPicBullet } from './document/dom';
 import * as utils from './utils';
-import { DocumentElement } from './dom/document';
-import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
-import { parseSectionProperties } from './dom/section';
+import { DocumentElement } from './document/document';
+import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
+import { parseSectionProperties } from './document/section';
 import globalXmlParser from './parser/xml-parser';
-import { parseRunProperties, RunElement } from './dom/run';
-import { IDomStyle, IDomSubStyle } from './dom/style';
-import { BodyElement } from './dom/body';
-import { BreakElement } from './dom/break';
-import { HyperlinkElement } from './dom/hyperlink';
-import { TableCellElement } from './dom/table-cell';
-import { TableColumn, TableElement } from './dom/table';
-import { DrawingElement } from './dom/drawing';
-import { TableRowElement } from './dom/table-row';
-import { ImageElement } from './dom/image';
+import { parseRunProperties, RunElement } from './document/run';
+import { IDomStyle, IDomSubStyle } from './document/style';
+import { BodyElement } from './document/body';
+import { BreakElement } from './document/break';
+import { HyperlinkElement } from './document/hyperlink';
+import { TableCellElement } from './document/table-cell';
+import { TableColumn, TableElement } from './document/table';
+import { DrawingElement } from './document/drawing';
+import { TableRowElement } from './document/table-row';
+import { ImageElement } from './document/image';
 import { deserializeElement } from './parser/xml-serialize';
+import { FooterElement } from './footer/footer';
+import { HeaderElement } from './header/header';
 
 export var autos = {
     shd: "white",
@@ -54,6 +56,42 @@ export class DocumentParser {
 
                 case "sectPr":
                     result.body.sectionProps = parseSectionProperties(elem, globalXmlParser);
+                    break;
+            }
+        });
+
+        return result;
+    }
+
+    parseFooter(xmlDoc: Element): FooterElement {
+        const result = new FooterElement();
+    
+        xml.foreach(xmlDoc, elem => {
+            switch (elem.localName) {
+                case "p":
+                    result.children.push(this.parseParagraph(elem));
+                    break;
+
+                case "tbl":
+                    result.children.push(this.parseTable(elem));
+                    break;
+            }
+        });
+
+        return result;
+    }
+
+    parseHeader(xmlDoc: Element): HeaderElement {
+        const result = new HeaderElement();
+    
+        xml.foreach(xmlDoc, elem => {
+            switch (elem.localName) {
+                case "p":
+                    result.children.push(this.parseParagraph(elem));
+                    break;
+
+                case "tbl":
+                    result.children.push(this.parseTable(elem));
                     break;
             }
         });
@@ -604,10 +642,6 @@ export class DocumentParser {
                     result.children.push(this.parseTableRow(c));
                     break;
 
-                case "tblGrid":
-                    result.columns = this.parseTableColumns(c);
-                    break;
-
                 case "tblPr":
                     this.parseTableProperties(c, result);
                     break;
@@ -746,6 +780,7 @@ export class DocumentParser {
                     break;
 
                 case "vMerge": //TODO
+                    cell.verticalMerge = xml.sizeAttr(c, "val");
                     break;
 
                 case "cnfStyle":

@@ -1,7 +1,7 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { IDomStyle } from "../dom/style";
+import { IDomStyle } from "../document/style";
 import { XmlParser } from "../parser/xml-parser";
 import { keyBy } from "../utils";
 import { DocumentDefaults, parseDocumentDefaults } from "./document-defaults";

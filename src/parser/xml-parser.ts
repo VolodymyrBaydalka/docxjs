@@ -1,4 +1,4 @@
-import { Length,  LengthUsage, LengthUsageType, convertLength, convertPercentage  } from "../dom/common";
+import { Length,  LengthUsage, LengthUsageType, convertLength, convertPercentage  } from "../document/common";
 import config from '../config';
 
 export function parseXmlString(xmlString: string): Document {

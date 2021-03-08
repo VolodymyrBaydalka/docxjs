@@ -1,30 +1,33 @@
 import { WordDocument } from './word-document';
-import { IDomNumbering, DocxContainer, DocxElement } from './dom/dom';
-import { Length, Underline } from './dom/common';
+import { IDomNumbering, DocxContainer, DocxElement } from './document/dom';
+import { Length, Underline } from './document/common';
 import { Options } from './docx-preview';
-import { ParagraphElement, ParagraphProperties } from './dom/paragraph';
+import { ParagraphElement, ParagraphProperties } from './document/paragraph';
 import { appendClass, keyBy, mergeDeep } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { SectionProperties } from './dom/section';
-import { RunElement, RunFonts, RunProperties, Shading } from './dom/run';
-import { BookmarkStartElement } from './dom/bookmark';
-import { IDomStyle } from './dom/style';
+import { SectionProperties } from './document/section';
+import { RunElement, RunFonts, RunProperties, Shading } from './document/run';
+import { BookmarkStartElement } from './document/bookmark';
+import { IDomStyle } from './document/style';
 import { NumberingPartProperties } from './numbering/numbering';
-import { Border } from './dom/border';
-import { BodyElement } from './dom/body';
-import { TableColumn, TableElement } from './dom/table';
-import { TableRowElement } from './dom/table-row';
-import { TableCellElement } from './dom/table-cell';
-import { HyperlinkElement } from './dom/hyperlink';
-import { DrawingElement } from './dom/drawing';
-import { ImageElement } from './dom/image';
-import { BreakElement } from './dom/break';
-import { TabElement } from './dom/tab';
-import { SymbolElement } from './dom/symbol';
-import { TextElement } from './dom/text';
-import { LineSpacing } from './dom/line-spacing';
+import { Border } from './document/border';
+import { BodyElement } from './document/body';
+import { TableColumn, TableElement } from './document/table';
+import { TableRowElement } from './document/table-row';
+import { TableCellElement } from './document/table-cell';
+import { HyperlinkElement } from './document/hyperlink';
+import { DrawingElement } from './document/drawing';
+import { ImageElement } from './document/image';
+import { BreakElement } from './document/break';
+import { TabElement } from './document/tab';
+import { SymbolElement } from './document/symbol';
+import { TextElement } from './document/text';
+import { LineSpacing } from './document/line-spacing';
 import { Style } from './styles/style';
+import { HeaderElement } from './header/header';
+import { FooterElement } from './footer/footer';
+import { FooterPart } from './footer/footer-part';
 
 const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
 
@@ -43,6 +46,8 @@ export class HtmlRenderer {
     domStyleMap: Record<string, IDomStyle>;
     styleMap: Record<string, Style>;
     keepOrigin: boolean = false;
+    renderHeaders: boolean = true;
+    renderFooters: boolean = true;
 
     constructor(private htmlDocument: HTMLDocument) {
     }
@@ -204,6 +209,12 @@ export class HtmlRenderer {
         return this.htmlDocument.createElement(tagName);
     }
 
+    private renderContainer(elem: DocxContainer, tagName: string): HTMLElement {
+        const result = this.createElement(tagName);
+        this.renderElements(elem.children, elem, result);
+        return result;
+    }
+
     createSection(className: string, props: SectionProperties) {
         var elem = this.createElement("section");
         
@@ -238,13 +249,31 @@ export class HtmlRenderer {
     }
 
     renderSections(document: BodyElement): HTMLElement[] {
-        var result = [];
+        const result = [];
 
         this.processElement(document);
 
         for(let section of this.splitBySection(document.children)) {
-            var sectionElement = this.createSection(this.className, section.sectProps || document.sectionProps);
+            const sectionProps = section.sectProps || document.sectionProps;
+            var sectionElement = this.createSection(this.className, sectionProps);
+
+            // if(this.renderHeaders && sectionProps.headerRefs) {
+            //     for(const headerRef of sectionProps.headerRefs) {
+            //     }
+            // }
+
             this.renderElements(section.elements, document, sectionElement);
+
+            // if(this.renderFooters && sectionProps.footerRefs) {
+            //     for(const headerRef of sectionProps.footerRefs) {
+            //         const partPath = this.document.getPathById(this.document.documentPart, headerRef.id);
+            //         const part = this.document.partsMap[partPath] as FooterPart;
+
+            //         this.processElement(part.footerElement);
+            //         sectionElement.appendChild(this.renderElement(part.footerElement, null))
+            //     }
+            // }
+
             result.push(sectionElement);
         }
 
@@ -543,8 +572,12 @@ export class HtmlRenderer {
             return this.renderHyperlink(elem);
         } else if (elem instanceof DrawingElement) {
             return this.renderDrawing(elem);
-        }else if (elem instanceof ImageElement) {
+        } else if (elem instanceof ImageElement) {
             return this.renderImage(elem);
+        } else if (elem instanceof HeaderElement) {
+            return this.renderHeader(elem);
+        } else if (elem instanceof FooterElement) {
+            return this.renderFooter(elem);
         }
 
         return null;
@@ -788,6 +821,14 @@ export class HtmlRenderer {
         return result;
     }
 
+    renderHeader(elem: HeaderElement) {
+        return this.renderContainer(elem, "header");
+    }
+
+    renderFooter(elem: HeaderElement) {
+        return this.renderContainer(elem, "footer");
+    }
+
     renderText(elem: TextElement) {
         return this.htmlDocument.createTextNode(elem.text);
     }
@@ -854,14 +895,11 @@ export class HtmlRenderer {
     }
 
     renderTableColumns(columns: TableColumn[]) {
-        let result = this.createElement("colGroup");
+        const result = this.createElement("colGroup");
 
         for (let col of columns) {
             let colElem = this.createElement("col");
-
-            if (col.width)
-                colElem.style.width = `${col.width}px`;
-
+            colElem.style.width = this.renderLength(col.width);
             result.appendChild(colElem);
         }
 
@@ -894,10 +932,8 @@ export class HtmlRenderer {
         if (style == null)
             return;
 
-        for (let key in style) {
-            if (style.hasOwnProperty(key)) {
-                ouput.style[key] = style[key];
-            }
+        for (let key of Object.getOwnPropertyNames(style)) {
+            ouput.style[key] = style[key];
         }
     }
 
@@ -961,9 +997,7 @@ function appentElements(container: HTMLElement, children: HTMLElement[]) {
 }
 
 function removeAllElements(elem: HTMLElement) {
-    while (elem.firstChild) {
-        elem.removeChild(elem.firstChild);
-    }
+    elem.innerHTML = '';
 }
 
 function createStyleElement(cssText: string) {

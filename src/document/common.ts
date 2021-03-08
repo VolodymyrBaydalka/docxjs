@@ -1,5 +1,3 @@
-import { XmlParser } from "../parser/xml-parser";
-
 export const ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 }

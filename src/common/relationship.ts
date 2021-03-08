@@ -17,7 +17,9 @@ export enum RelationshipTypes {
     Theme = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme",
     Settings = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings",
     WebSettings = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings",
-    Hyperlink = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+    Hyperlink = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+    Footer = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+    Header = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
 }
 
 export function parseRelationships(root: Element, xmlParser: XmlParser): Relationship[] {

@@ -4,7 +4,7 @@ import { Border, parseBorder } from "./border";
 import { BreakElement } from "./break";
 import { Length, LengthUsage, Underline } from "./common";
 import { DocxContainer } from "./dom";
-import { FieldCharElement } from "./fieldChar";
+import { FieldCharElement } from "./field-char";
 import { InstructionTextElement } from "./instructions";
 import { SymbolElement } from "./symbol";
 import { TabElement } from "./tab";

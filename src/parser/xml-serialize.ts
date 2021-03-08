@@ -1,6 +1,8 @@
 const schemaSymbol = Symbol("open-xml-schema");
 
-export type Converter = (val: string) => any;
+export type ValueConverter = (val: string) => any;
+
+export type ElementConverter = (val: Element) => any;
 
 export function element(name: string) {
     return function(target: any) {
@@ -20,24 +22,32 @@ export function children(...elements: any[]) {
     }
 }
 
-export function fromText(convert: Converter = null) {
+export function fromText(convert: ValueConverter = null) {
     return function (target: any, prop: string) {
         var schema = getPrototypeXmlSchema(target);
         schema.text = { prop, convert };
     }
 }
 
-export function fromAttribute(attrName: string, convert: Converter = null) {
+export function fromAttribute(attrName: string, convert: ValueConverter = null) {
     return function (target: any, prop: string) {
         var schema = getPrototypeXmlSchema(target);
         schema.attrs[attrName] = { prop, convert };
     }
 }
 
+export function fromElement(elemName: string, convert: ElementConverter) {
+    return function (target: any, prop: string) {
+        var schema = getPrototypeXmlSchema(target);
+        schema.elements[elemName] = { prop, convert };
+    }   
+}
+
 export function buildXmlSchema(schemaObj: any): OpenXmlSchema {
     var schema: OpenXmlSchema = {
         text: null,
         attrs: {},
+        elements: {},
         elemName: null,
         children: null
     };
@@ -90,13 +100,23 @@ export function deserializeSchema(n: Element, output: any, schema: OpenXmlSchema
     }
 
     for (let i = 0, l = n.attributes.length; i < l; i++) {
-        let attr = n.attributes.item(i);
-        let prop = schema.attrs[attr.localName];
+        const attr = n.attributes.item(i);
+        const prop = schema.attrs[attr.localName];
 
         if(prop == null)
             continue;
 
         output[prop.prop] = prop.convert ? prop.convert(attr.value) : attr.value; 
+    }
+
+    for (let i = 0, l = n.childNodes.length; i < l; i ++) {
+        const elem = n.childNodes.item(i) as Element;
+        const prop = elem.nodeType === 1 ? schema.elements[elem.localName] : null;
+
+        if (prop == null)
+            continue;
+
+        output[prop.prop] = prop.convert(elem); 
     }
 
     return output;
@@ -110,18 +130,20 @@ export interface OpenXmlSchema {
     elemName: string;
     text: OpenXmlSchemaProperty;
     attrs: Record<string, OpenXmlSchemaProperty>;
+    elements: Record<string, any>;
     children: Record<string, any>;
 }
 
 export interface OpenXmlSchemaProperty {
     prop: string;
-    convert: Converter;
+    convert: ValueConverter;
 }
 
 function getPrototypeXmlSchema(proto: any): OpenXmlSchema {
     return proto[schemaSymbol] || (proto[schemaSymbol] = {
         text: null,
         attrs: {},
-        children: {}
+        children: {},
+        elements: {}
     });
 }
