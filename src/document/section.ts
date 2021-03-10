@@ -1,4 +1,4 @@
-import { XmlParser } from "../parser/xml-parser";
+import globalXmlParser, { XmlParser } from "../parser/xml-parser";
 import { Length } from "./common";
 
 export interface Column {
@@ -52,7 +52,7 @@ export interface SectionProperties {
     headerRefs: FooterHeaderReference[];
 }
 
-export function parseSectionProperties(elem: Element, xml: XmlParser): SectionProperties {
+export function parseSectionProperties(elem: Element, xml: XmlParser = globalXmlParser): SectionProperties {
     var section = <SectionProperties>{};
 
     for (let e of xml.elements(elem)) {

@@ -47,10 +47,6 @@ export function parseStyle(elem: Element, xml: XmlParser): Style {
             case "name":
                 result.name = xml.attr(e, 'val');
                 break;
-    
-            case "name":
-                result.name = xml.attr(e, 'val');
-                break;
 
             case "basedOn":
                 result.basedOn = xml.attr(e, 'val');

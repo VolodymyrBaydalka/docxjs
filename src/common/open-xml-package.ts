@@ -39,7 +39,7 @@ export class OpenXmlPackage {
 
         return this.load(relsPath, "string").then(text => {
             if (!text)
-                return;
+                return null;
 
             return parseRelationships(parseXmlString(text).firstElementChild, this.xmlParser);
         })

@@ -1,19 +1,15 @@
-import { DocxElement, IDomNumbering, NumberingPicBullet } from './document/dom';
+import { DocxContainer, DocxElement, IDomNumbering, NumberingPicBullet } from './document/dom';
 import * as utils from './utils';
-import { DocumentElement } from './document/document';
+import { BodyElement, DocumentElement } from './document/document';
 import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
-import { parseSectionProperties } from './document/section';
 import globalXmlParser from './parser/xml-parser';
 import { parseRunProperties, RunElement } from './document/run';
 import { IDomStyle, IDomSubStyle } from './document/style';
-import { BodyElement } from './document/body';
-import { BreakElement } from './document/break';
 import { HyperlinkElement } from './document/hyperlink';
 import { TableCellElement } from './document/table-cell';
 import { TableColumn, TableElement } from './document/table';
-import { DrawingElement } from './document/drawing';
+import { DrawingElement, ImageElement } from './document/drawing';
 import { TableRowElement } from './document/table-row';
-import { ImageElement } from './document/image';
 import { deserializeElement } from './parser/xml-serialize';
 import { FooterElement } from './footer/footer';
 import { HeaderElement } from './header/header';
@@ -38,65 +34,36 @@ export class DocumentParser {
     }
 
     parseDocumentFile(xmlDoc: Element): DocumentElement {
-        const result = new DocumentElement();
-
-        result.body = new BodyElement();
-
         var xbody = globalXmlParser.element(xmlDoc, "body");
 
-        xml.foreach(xbody, elem => {
-            switch (elem.localName) {
-                case "p":
-                    result.body.children.push(this.parseParagraph(elem));
-                    break;
-
-                case "tbl":
-                    result.body.children.push(this.parseTable(elem));
-                    break;
-
-                case "sectPr":
-                    result.body.sectionProps = parseSectionProperties(elem, globalXmlParser);
-                    break;
-            }
-        });
-
+        const result = new DocumentElement();
+        result.body = this.deserialize(xbody, new BodyElement());
+        this.parseBodyElements(xmlDoc, result.body);
         return result;
     }
 
     parseFooter(xmlDoc: Element): FooterElement {
-        const result = new FooterElement();
-    
-        xml.foreach(xmlDoc, elem => {
-            switch (elem.localName) {
-                case "p":
-                    result.children.push(this.parseParagraph(elem));
-                    break;
-
-                case "tbl":
-                    result.children.push(this.parseTable(elem));
-                    break;
-            }
-        });
-
-        return result;
+        return this.parseBodyElements(xmlDoc, new FooterElement());
     }
 
     parseHeader(xmlDoc: Element): HeaderElement {
-        const result = new HeaderElement();
-    
-        xml.foreach(xmlDoc, elem => {
-            switch (elem.localName) {
+        return this.parseBodyElements(xmlDoc, new HeaderElement());
+    }
+
+    parseBodyElements<T extends DocxContainer>(elem: Element, output: T): T {
+        for(let e of globalXmlParser.elements(elem)) {
+            switch (e.localName) {
                 case "p":
-                    result.children.push(this.parseParagraph(elem));
+                    output.children.push(this.parseParagraph(e));
                     break;
 
                 case "tbl":
-                    result.children.push(this.parseTable(elem));
+                    output.children.push(this.parseTable(e));
                     break;
-            }
-        });
+            }   
+        }
 
-        return result;
+        return output;
     }
 
     parseStylesFile(xstyles: Element): IDomStyle[] {
@@ -452,13 +419,6 @@ export class DocumentParser {
 
         xml.foreach(node, c => {
             switch (c.localName) {
-                case "lastRenderedPageBreak": {
-                    const breakElem = new BreakElement();
-                    breakElem.type = 'page';
-                    result.children.push(breakElem);
-                }
-                    break;
-
                 case "drawing":
                     let d = this.parseDrawing(c);
 

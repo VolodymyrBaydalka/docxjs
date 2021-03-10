@@ -3,5 +3,4 @@ import { DocxContainer } from "./dom";
 
 @element("tr")
 export class TableRowElement extends DocxContainer {
-
 }

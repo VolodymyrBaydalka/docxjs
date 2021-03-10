@@ -9,3 +9,7 @@ export class BreakElement extends DocxElement {
     @fromAttribute("clear")
     clear: "all" | "left" | "right" | "none";
 }
+
+@element('lastRenderedPageBreak')
+export class LastRenderedPageBreakElement extends DocxElement {
+}

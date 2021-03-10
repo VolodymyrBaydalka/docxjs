@@ -8,26 +8,22 @@ import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './document/section';
 import { RunElement, RunFonts, RunProperties, Shading } from './document/run';
-import { BookmarkStartElement } from './document/bookmark';
+import { BookmarkStartElement } from './document/bookmarks';
 import { IDomStyle } from './document/style';
 import { NumberingPartProperties } from './numbering/numbering';
 import { Border } from './document/border';
-import { BodyElement } from './document/body';
 import { TableColumn, TableElement } from './document/table';
 import { TableRowElement } from './document/table-row';
 import { TableCellElement } from './document/table-cell';
 import { HyperlinkElement } from './document/hyperlink';
-import { DrawingElement } from './document/drawing';
-import { ImageElement } from './document/image';
-import { BreakElement } from './document/break';
-import { TabElement } from './document/tab';
-import { SymbolElement } from './document/symbol';
-import { TextElement } from './document/text';
+import { DrawingElement, ImageElement } from './document/drawing';
+import { BreakElement, LastRenderedPageBreakElement } from './document/breaks';
+import { SymbolElement, TabElement, TextElement } from './document/text';
 import { LineSpacing } from './document/line-spacing';
 import { Style } from './styles/style';
 import { HeaderElement } from './header/header';
 import { FooterElement } from './footer/footer';
-import { FooterPart } from './footer/footer-part';
+import { BodyElement } from './document/document';
 
 const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
 
@@ -280,6 +276,13 @@ export class HtmlRenderer {
         return result;
     }
 
+    isPageBreakElement(elem: DocxElement): boolean {
+        if (elem instanceof LastRenderedPageBreakElement)
+            return !this.options.ignoreLastRenderedPageBreak;
+
+        return elem instanceof BreakElement && elem.type === "page";  
+    }
+
     splitBySection(elements: DocxElement[]): { sectProps: SectionProperties, elements: DocxElement[] }[] {
         var current = { sectProps: null, elements: [] };
         var result = [current];
@@ -306,9 +309,9 @@ export class HtmlRenderer {
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
                 
-                if(this.options.breakPages && p.children) {
+                if(this.options.breakPages && p.children.length > 0) {
                     pBreakIndex = p.children.findIndex((r: DocxContainer) => {
-                        rBreakIndex = r.children?.findIndex((t: BreakElement) => t instanceof BreakElement && t.type == "page") ?? -1;
+                        rBreakIndex = r.children?.findIndex(this.isPageBreakElement.bind(this)) ?? -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -608,10 +611,9 @@ export class HtmlRenderer {
     }
 
     renderParagraph(elem: ParagraphElement) {
-        var result = this.createElement("p");
+        var result = this.renderContainer(elem, "p");
 
         this.renderClass(elem, result);
-        this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
         const style = elem.props.styleId && this.styleMap?.[elem.props.styleId]; 
@@ -684,8 +686,7 @@ export class HtmlRenderer {
                 case 'caps':
                     style["text-transform"] = v ? 'uppercase' : 'none';
                     break;
-
-                case 'strike':
+                    
                 case 'strike':
                     style["text-decoration"] = v ? 'line-through' : 'none';
                     break;

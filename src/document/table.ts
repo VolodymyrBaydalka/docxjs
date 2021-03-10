@@ -15,8 +15,8 @@ export interface TableColumn {
     width?: Length;
 }
 
-export function parseTableColumns(elem: Element): TableColumn[] {
-    return globalXmlParser.elements(elem, 'gridCol').map(e => (<TableColumn>{
-        width: globalXmlParser.lengthAttr(e, "w")
+export function parseTableColumns(elem: Element, xml: XmlParser = globalXmlParser): TableColumn[] {
+    return xml.elements(elem, 'gridCol').map(e => (<TableColumn>{
+        width: xml.lengthAttr(e, "w")
     }));
 }

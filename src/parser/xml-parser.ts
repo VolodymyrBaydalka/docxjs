@@ -1,4 +1,4 @@
-import { Length,  LengthUsage, LengthUsageType, convertLength, convertPercentage  } from "../document/common";
+import { Length, LengthUsage, LengthUsageType, convertLength, convertPercentage, convertBoolean  } from "../document/common";
 import config from '../config';
 
 export function parseXmlString(xmlString: string): Document {
@@ -12,19 +12,32 @@ export function serializeXmlString(elem: Node): string {
     return new XMLSerializer().serializeToString(elem);
 }
 
-export class XmlParser {
-    elements(elem: Element, localName: string = null): Element[] {
-        const result = [];
+export function elements(elem: Element, localName: string = null): Element[] {
+    const result = [];
 
-        for (let i = 0, l = elem.childNodes.length; i < l; i++) {
-            let c = elem.childNodes.item(i);
+    for (let i = 0, l = elem.childNodes.length; i < l; i++) {
+        let c = elem.childNodes.item(i);
 
-            if (c.nodeType == 1 && (localName == null || (c as Element).localName == localName))
-                result.push(c);
-        }
-
-        return result;
+        if (c.nodeType == Node.ELEMENT_NODE && (localName == null || (c as Element).localName == localName))
+            result.push(c);
     }
+
+    return result;
+}
+
+export function attr(elem: Element, localName: string): string {
+    for (let i = 0, l = elem.attributes.length; i < l; i++) {
+        let a = elem.attributes.item(i);
+
+        if (a.localName == localName)
+            return a.value;
+    }
+
+    return null;
+}
+
+export class XmlParser {
+    elements = elements;
 
     element(elem: Element, localName: string): Element {
         for (let i = 0, l = elem.childNodes.length; i < l; i++) {
@@ -37,16 +50,7 @@ export class XmlParser {
         return null;
     }
 
-    attr(elem: Element, localName: string): string {
-        for (let i = 0, l = elem.attributes.length; i < l; i++) {
-            let a = elem.attributes.item(i);
-
-            if (a.localName == localName)
-                return a.value;
-        }
-
-        return null;
-    }
+    attr = attr;
 
     intAttr(node: Element, attrName: string, defaultValue: number = null): number {
         var val = this.attr(node, attrName);
@@ -59,13 +63,7 @@ export class XmlParser {
     }
 
     boolAttr(node: Element, attrName: string, defaultValue: boolean = null) {
-        var v = this.attr(node, attrName);
-
-        switch (v) {
-            case "1": return true;
-            case "0": return false;
-            default: return defaultValue;
-        }
+        return convertBoolean(this.attr(node, attrName), defaultValue);
     }
 
     percentageAttr(node: Element, attrName: string): number {

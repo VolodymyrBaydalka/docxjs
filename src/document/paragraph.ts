@@ -6,10 +6,11 @@ import { LineSpacing, parseLineSpacing } from "./line-spacing";
 import { XmlParser } from "../parser/xml-parser";
 import { parseRunProperties, RunProperties } from "./run";
 import { children, element } from "../parser/xml-serialize";
-import { BookmarkEndElement, BookmarkStartElement } from "./bookmark";
+import { BookmarkEndElement, BookmarkStartElement } from "./bookmarks";
+import { FieldSimpleElement } from "./fields";
 
 @element("p")
-@children(BookmarkStartElement, BookmarkEndElement)
+@children(BookmarkStartElement, BookmarkEndElement, FieldSimpleElement)
 export class ParagraphElement extends DocxContainer {
     props: ParagraphProperties = {} as ParagraphProperties;
 }

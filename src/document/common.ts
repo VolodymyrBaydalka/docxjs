@@ -1,3 +1,5 @@
+import { attr } from "../parser/xml-parser";
+
 export const ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 }
@@ -35,6 +37,18 @@ export function convertLength(val: string, usage: LengthUsageType = LengthUsage.
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 
+export function convertBoolean(v: string, defaultValue = false): boolean {
+    switch (v) {
+        case "1": return true;
+        case "0": return false;
+        default: return defaultValue;
+    }
+}
+
 export function convertPercentage(val: string): number {
     return val ? parseInt(val) / 100 : null;
+}
+
+export function parseElementValue(elem: Element): string {
+    return attr(elem, "val");
 }

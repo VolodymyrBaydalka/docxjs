@@ -1,17 +1,14 @@
 import { XmlParser } from "../parser/xml-parser";
 import { children, element } from "../parser/xml-serialize";
 import { Border, parseBorder } from "./border";
-import { BreakElement } from "./break";
+import { BreakElement, LastRenderedPageBreakElement } from "./breaks";
 import { Length, LengthUsage, Underline } from "./common";
 import { DocxContainer } from "./dom";
-import { FieldCharElement } from "./field-char";
-import { InstructionTextElement } from "./instructions";
-import { SymbolElement } from "./symbol";
-import { TabElement } from "./tab";
-import { TextElement } from "./text";
+import { FieldCharElement } from "./fields";
+import { InstructionTextElement, SymbolElement, TabElement, TextElement } from "./text";
 
 @element('r')
-@children(TextElement, SymbolElement, TabElement, BreakElement, InstructionTextElement, FieldCharElement)
+@children(TextElement, SymbolElement, TabElement, BreakElement, InstructionTextElement, FieldCharElement, LastRenderedPageBreakElement)
 export class RunElement extends DocxContainer {
     id?: string;
     styleName: string;

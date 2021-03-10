@@ -111,7 +111,7 @@ export function deserializeSchema(n: Element, output: any, schema: OpenXmlSchema
 
     for (let i = 0, l = n.childNodes.length; i < l; i ++) {
         const elem = n.childNodes.item(i) as Element;
-        const prop = elem.nodeType === 1 ? schema.elements[elem.localName] : null;
+        const prop = elem.nodeType === Node.ELEMENT_NODE ? schema.elements[elem.localName] : null;
 
         if (prop == null)
             continue;

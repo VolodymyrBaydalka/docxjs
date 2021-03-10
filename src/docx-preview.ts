@@ -10,6 +10,7 @@ export interface Options {
     ignoreHeight: boolean;
     ignoreFonts: boolean;
     breakPages: boolean;
+    ignoreLastRenderedPageBreak: boolean;
     debug: boolean;
     experimental: boolean;
     className: string;
@@ -25,6 +26,7 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
         ignoreWidth: false,
         ignoreFonts: false,
         breakPages: true,
+        ignoreLastRenderedPageBreak: true,
         debug: false,
         experimental: false,
         className: "docx",

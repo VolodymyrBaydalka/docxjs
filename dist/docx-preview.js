@@ -57,7 +57,7 @@ var OpenXmlPackage = (function () {
         }
         return this.load(relsPath, "string").then(function (text) {
             if (!text)
-                return;
+                return null;
             return relationship_1.parseRelationships(xml_parser_1.parseXmlString(text).firstElementChild, _this.xmlParser);
         });
     };
@@ -171,17 +171,13 @@ exports.DocumentParser = exports.autos = void 0;
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var document_1 = __webpack_require__(/*! ./document/document */ "./src/document/document.ts");
 var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/document/paragraph.ts");
-var section_1 = __webpack_require__(/*! ./document/section */ "./src/document/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
 var run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts");
-var body_1 = __webpack_require__(/*! ./document/body */ "./src/document/body.ts");
-var break_1 = __webpack_require__(/*! ./document/break */ "./src/document/break.ts");
 var hyperlink_1 = __webpack_require__(/*! ./document/hyperlink */ "./src/document/hyperlink.ts");
 var table_cell_1 = __webpack_require__(/*! ./document/table-cell */ "./src/document/table-cell.ts");
 var table_1 = __webpack_require__(/*! ./document/table */ "./src/document/table.ts");
 var drawing_1 = __webpack_require__(/*! ./document/drawing */ "./src/document/drawing.ts");
 var table_row_1 = __webpack_require__(/*! ./document/table-row */ "./src/document/table-row.ts");
-var image_1 = __webpack_require__(/*! ./document/image */ "./src/document/image.ts");
 var xml_serialize_1 = __webpack_require__(/*! ./parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
@@ -201,54 +197,31 @@ var DocumentParser = (function () {
         return xml_serialize_1.deserializeElement(elem, output, { keepOrigin: this.keepOrigin });
     };
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
-        var _this = this;
-        var result = new document_1.DocumentElement();
-        result.body = new body_1.BodyElement();
         var xbody = xml_parser_1.default.element(xmlDoc, "body");
-        xml.foreach(xbody, function (elem) {
-            switch (elem.localName) {
-                case "p":
-                    result.body.children.push(_this.parseParagraph(elem));
-                    break;
-                case "tbl":
-                    result.body.children.push(_this.parseTable(elem));
-                    break;
-                case "sectPr":
-                    result.body.sectionProps = section_1.parseSectionProperties(elem, xml_parser_1.default);
-                    break;
-            }
-        });
+        var result = new document_1.DocumentElement();
+        result.body = this.deserialize(xbody, new document_1.BodyElement());
+        this.parseBodyElements(xmlDoc, result.body);
         return result;
     };
     DocumentParser.prototype.parseFooter = function (xmlDoc) {
-        var _this = this;
-        var result = new footer_1.FooterElement();
-        xml.foreach(xmlDoc, function (elem) {
-            switch (elem.localName) {
-                case "p":
-                    result.children.push(_this.parseParagraph(elem));
-                    break;
-                case "tbl":
-                    result.children.push(_this.parseTable(elem));
-                    break;
-            }
-        });
-        return result;
+        return this.parseBodyElements(xmlDoc, new footer_1.FooterElement());
     };
     DocumentParser.prototype.parseHeader = function (xmlDoc) {
-        var _this = this;
-        var result = new header_1.HeaderElement();
-        xml.foreach(xmlDoc, function (elem) {
-            switch (elem.localName) {
+        return this.parseBodyElements(xmlDoc, new header_1.HeaderElement());
+    };
+    DocumentParser.prototype.parseBodyElements = function (elem, output) {
+        for (var _i = 0, _a = xml_parser_1.default.elements(elem); _i < _a.length; _i++) {
+            var e = _a[_i];
+            switch (e.localName) {
                 case "p":
-                    result.children.push(_this.parseParagraph(elem));
+                    output.children.push(this.parseParagraph(e));
                     break;
                 case "tbl":
-                    result.children.push(_this.parseTable(elem));
+                    output.children.push(this.parseTable(e));
                     break;
             }
-        });
-        return result;
+        }
+        return output;
     };
     DocumentParser.prototype.parseStylesFile = function (xstyles) {
         var _this = this;
@@ -569,13 +542,6 @@ var DocumentParser = (function () {
         var result = this.deserialize(node, new run_1.RunElement(parent));
         xml.foreach(node, function (c) {
             switch (c.localName) {
-                case "lastRenderedPageBreak":
-                    {
-                        var breakElem = new break_1.BreakElement();
-                        breakElem.type = 'page';
-                        result.children.push(breakElem);
-                    }
-                    break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
                     if (d)
@@ -690,7 +656,7 @@ var DocumentParser = (function () {
         return null;
     };
     DocumentParser.prototype.parsePicture = function (elem) {
-        var result = new image_1.ImageElement();
+        var result = new drawing_1.ImageElement();
         var blipFill = xml_parser_1.default.element(elem, "blipFill");
         var blip = xml_parser_1.default.element(blipFill, "blip");
         result.src = xml.stringAttr(blip, "embed");
@@ -1263,47 +1229,10 @@ var values = (function () {
 
 /***/ }),
 
-/***/ "./src/document/body.ts":
-/*!******************************!*\
-  !*** ./src/document/body.ts ***!
-  \******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BodyElement = void 0;
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
-var BodyElement = (function (_super) {
-    __extends(BodyElement, _super);
-    function BodyElement() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    return BodyElement;
-}(dom_1.DocxContainer));
-exports.BodyElement = BodyElement;
-
-
-/***/ }),
-
-/***/ "./src/document/bookmark.ts":
-/*!**********************************!*\
-  !*** ./src/document/bookmark.ts ***!
-  \**********************************/
+/***/ "./src/document/bookmarks.ts":
+/*!***********************************!*\
+  !*** ./src/document/bookmarks.ts ***!
+  \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1420,10 +1349,10 @@ exports.parseBorders = parseBorders;
 
 /***/ }),
 
-/***/ "./src/document/break.ts":
-/*!*******************************!*\
-  !*** ./src/document/break.ts ***!
-  \*******************************/
+/***/ "./src/document/breaks.ts":
+/*!********************************!*\
+  !*** ./src/document/breaks.ts ***!
+  \********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1449,7 +1378,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BreakElement = void 0;
+exports.LastRenderedPageBreakElement = exports.BreakElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var BreakElement = (function (_super) {
@@ -1469,6 +1398,17 @@ var BreakElement = (function (_super) {
     return BreakElement;
 }(dom_1.DocxElement));
 exports.BreakElement = BreakElement;
+var LastRenderedPageBreakElement = (function (_super) {
+    __extends(LastRenderedPageBreakElement, _super);
+    function LastRenderedPageBreakElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    LastRenderedPageBreakElement = __decorate([
+        xml_serialize_1.element('lastRenderedPageBreak')
+    ], LastRenderedPageBreakElement);
+    return LastRenderedPageBreakElement;
+}(dom_1.DocxElement));
+exports.LastRenderedPageBreakElement = LastRenderedPageBreakElement;
 
 
 /***/ }),
@@ -1477,11 +1417,12 @@ exports.BreakElement = BreakElement;
 /*!********************************!*\
   !*** ./src/document/common.ts ***!
   \********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.convertPercentage = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
+exports.parseElementValue = exports.convertPercentage = exports.convertBoolean = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 };
@@ -1499,10 +1440,23 @@ function convertLength(val, usage) {
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 exports.convertLength = convertLength;
+function convertBoolean(v, defaultValue) {
+    if (defaultValue === void 0) { defaultValue = false; }
+    switch (v) {
+        case "1": return true;
+        case "0": return false;
+        default: return defaultValue;
+    }
+}
+exports.convertBoolean = convertBoolean;
 function convertPercentage(val) {
     return val ? parseInt(val) / 100 : null;
 }
 exports.convertPercentage = convertPercentage;
+function parseElementValue(elem) {
+    return xml_parser_1.attr(elem, "val");
+}
+exports.parseElementValue = parseElementValue;
 
 
 /***/ }),
@@ -1571,17 +1525,42 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DocumentElement = void 0;
+exports.BodyElement = exports.DocumentElement = void 0;
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
+var section_1 = __webpack_require__(/*! ./section */ "./src/document/section.ts");
 var DocumentElement = (function (_super) {
     __extends(DocumentElement, _super);
     function DocumentElement() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    DocumentElement = __decorate([
+        xml_serialize_1.element("document")
+    ], DocumentElement);
     return DocumentElement;
 }(dom_1.DocxElement));
 exports.DocumentElement = DocumentElement;
+var BodyElement = (function (_super) {
+    __extends(BodyElement, _super);
+    function BodyElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    __decorate([
+        xml_serialize_1.fromElement("sectPr", section_1.parseSectionProperties)
+    ], BodyElement.prototype, "sectionProps", void 0);
+    BodyElement = __decorate([
+        xml_serialize_1.element("body")
+    ], BodyElement);
+    return BodyElement;
+}(dom_1.DocxContainer));
+exports.BodyElement = BodyElement;
 
 
 /***/ }),
@@ -1656,7 +1635,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DrawingElement = void 0;
+exports.ImageElement = exports.DrawingElement = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var DrawingElement = (function (_super) {
     __extends(DrawingElement, _super);
@@ -1666,14 +1645,22 @@ var DrawingElement = (function (_super) {
     return DrawingElement;
 }(dom_1.DocxContainer));
 exports.DrawingElement = DrawingElement;
+var ImageElement = (function (_super) {
+    __extends(ImageElement, _super);
+    function ImageElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return ImageElement;
+}(dom_1.DocxContainer));
+exports.ImageElement = ImageElement;
 
 
 /***/ }),
 
-/***/ "./src/document/field-char.ts":
-/*!************************************!*\
-  !*** ./src/document/field-char.ts ***!
-  \************************************/
+/***/ "./src/document/fields.ts":
+/*!********************************!*\
+  !*** ./src/document/fields.ts ***!
+  \********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1699,8 +1686,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FieldCharElement = void 0;
+exports.FieldSimpleElement = exports.FieldCharElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
+var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var FieldCharElement = (function (_super) {
     __extends(FieldCharElement, _super);
@@ -1716,6 +1704,26 @@ var FieldCharElement = (function (_super) {
     return FieldCharElement;
 }(dom_1.DocxElement));
 exports.FieldCharElement = FieldCharElement;
+var FieldSimpleElement = (function (_super) {
+    __extends(FieldSimpleElement, _super);
+    function FieldSimpleElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    __decorate([
+        xml_serialize_1.fromAttribute("dirty", common_1.convertBoolean)
+    ], FieldSimpleElement.prototype, "dirty", void 0);
+    __decorate([
+        xml_serialize_1.fromAttribute("fldLock", common_1.convertBoolean)
+    ], FieldSimpleElement.prototype, "lock", void 0);
+    __decorate([
+        xml_serialize_1.fromAttribute("instr")
+    ], FieldSimpleElement.prototype, "instruction", void 0);
+    FieldSimpleElement = __decorate([
+        xml_serialize_1.element('fldSimple')
+    ], FieldSimpleElement);
+    return FieldSimpleElement;
+}(dom_1.DocxContainer));
+exports.FieldSimpleElement = FieldSimpleElement;
 
 
 /***/ }),
@@ -1770,93 +1778,6 @@ var HyperlinkElement = (function (_super) {
     return HyperlinkElement;
 }(dom_1.DocxContainer));
 exports.HyperlinkElement = HyperlinkElement;
-
-
-/***/ }),
-
-/***/ "./src/document/image.ts":
-/*!*******************************!*\
-  !*** ./src/document/image.ts ***!
-  \*******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ImageElement = void 0;
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
-var ImageElement = (function (_super) {
-    __extends(ImageElement, _super);
-    function ImageElement() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    return ImageElement;
-}(dom_1.DocxContainer));
-exports.ImageElement = ImageElement;
-
-
-/***/ }),
-
-/***/ "./src/document/instructions.ts":
-/*!**************************************!*\
-  !*** ./src/document/instructions.ts ***!
-  \**************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.InstructionTextElement = void 0;
-var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
-var InstructionTextElement = (function (_super) {
-    __extends(InstructionTextElement, _super);
-    function InstructionTextElement() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    __decorate([
-        xml_serialize_1.fromText()
-    ], InstructionTextElement.prototype, "text", void 0);
-    InstructionTextElement = __decorate([
-        xml_serialize_1.element("instrText")
-    ], InstructionTextElement);
-    return InstructionTextElement;
-}(dom_1.DocxElement));
-exports.InstructionTextElement = InstructionTextElement;
 
 
 /***/ }),
@@ -1919,7 +1840,8 @@ var section_1 = __webpack_require__(/*! ./section */ "./src/document/section.ts"
 var line_spacing_1 = __webpack_require__(/*! ./line-spacing */ "./src/document/line-spacing.ts");
 var run_1 = __webpack_require__(/*! ./run */ "./src/document/run.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
-var bookmark_1 = __webpack_require__(/*! ./bookmark */ "./src/document/bookmark.ts");
+var bookmarks_1 = __webpack_require__(/*! ./bookmarks */ "./src/document/bookmarks.ts");
+var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
 var ParagraphElement = (function (_super) {
     __extends(ParagraphElement, _super);
     function ParagraphElement() {
@@ -1929,7 +1851,7 @@ var ParagraphElement = (function (_super) {
     }
     ParagraphElement = __decorate([
         xml_serialize_1.element("p"),
-        xml_serialize_1.children(bookmark_1.BookmarkStartElement, bookmark_1.BookmarkEndElement)
+        xml_serialize_1.children(bookmarks_1.BookmarkStartElement, bookmarks_1.BookmarkEndElement, fields_1.FieldSimpleElement)
     ], ParagraphElement);
     return ParagraphElement;
 }(dom_1.DocxContainer));
@@ -2049,13 +1971,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseShading = exports.parseRunFonts = exports.parseRunProperty = exports.parseRunProperties = exports.RunElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var border_1 = __webpack_require__(/*! ./border */ "./src/document/border.ts");
-var break_1 = __webpack_require__(/*! ./break */ "./src/document/break.ts");
+var breaks_1 = __webpack_require__(/*! ./breaks */ "./src/document/breaks.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
-var field_char_1 = __webpack_require__(/*! ./field-char */ "./src/document/field-char.ts");
-var instructions_1 = __webpack_require__(/*! ./instructions */ "./src/document/instructions.ts");
-var symbol_1 = __webpack_require__(/*! ./symbol */ "./src/document/symbol.ts");
-var tab_1 = __webpack_require__(/*! ./tab */ "./src/document/tab.ts");
+var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
 var text_1 = __webpack_require__(/*! ./text */ "./src/document/text.ts");
 var RunElement = (function (_super) {
     __extends(RunElement, _super);
@@ -2066,7 +1985,7 @@ var RunElement = (function (_super) {
     }
     RunElement = __decorate([
         xml_serialize_1.element('r'),
-        xml_serialize_1.children(text_1.TextElement, symbol_1.SymbolElement, tab_1.TabElement, break_1.BreakElement, instructions_1.InstructionTextElement, field_char_1.FieldCharElement)
+        xml_serialize_1.children(text_1.TextElement, text_1.SymbolElement, text_1.TabElement, breaks_1.BreakElement, text_1.InstructionTextElement, fields_1.FieldCharElement, breaks_1.LastRenderedPageBreakElement)
     ], RunElement);
     return RunElement;
 }(dom_1.DocxContainer));
@@ -2176,11 +2095,12 @@ exports.parseShading = parseShading;
 /*!*********************************!*\
   !*** ./src/document/section.ts ***!
   \*********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseSectionProperties = exports.SectionType = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var SectionType;
 (function (SectionType) {
     SectionType["Continuous"] = "continuous";
@@ -2191,6 +2111,7 @@ var SectionType;
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
     var _a, _b;
+    if (xml === void 0) { xml = xml_parser_1.default; }
     var section = {};
     for (var _i = 0, _c = xml.elements(elem); _i < _c.length; _i++) {
         var e = _c[_i];
@@ -2249,106 +2170,6 @@ function parseFooterHeaderReference(elem, xml) {
         type: xml.attr(elem, "type"),
     };
 }
-
-
-/***/ }),
-
-/***/ "./src/document/symbol.ts":
-/*!********************************!*\
-  !*** ./src/document/symbol.ts ***!
-  \********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SymbolElement = void 0;
-var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
-var SymbolElement = (function (_super) {
-    __extends(SymbolElement, _super);
-    function SymbolElement() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    __decorate([
-        xml_serialize_1.fromAttribute('font')
-    ], SymbolElement.prototype, "font", void 0);
-    __decorate([
-        xml_serialize_1.fromAttribute('char')
-    ], SymbolElement.prototype, "char", void 0);
-    SymbolElement = __decorate([
-        xml_serialize_1.element('sym')
-    ], SymbolElement);
-    return SymbolElement;
-}(dom_1.DocxElement));
-exports.SymbolElement = SymbolElement;
-
-
-/***/ }),
-
-/***/ "./src/document/tab.ts":
-/*!*****************************!*\
-  !*** ./src/document/tab.ts ***!
-  \*****************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TabElement = void 0;
-var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
-var TabElement = (function (_super) {
-    __extends(TabElement, _super);
-    function TabElement() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    TabElement = __decorate([
-        xml_serialize_1.element('tab')
-    ], TabElement);
-    return TabElement;
-}(dom_1.DocxElement));
-exports.TabElement = TabElement;
 
 
 /***/ }),
@@ -2494,9 +2315,10 @@ var TableElement = (function (_super) {
     return TableElement;
 }(dom_1.DocxContainer));
 exports.TableElement = TableElement;
-function parseTableColumns(elem) {
-    return xml_parser_1.default.elements(elem, 'gridCol').map(function (e) { return ({
-        width: xml_parser_1.default.lengthAttr(e, "w")
+function parseTableColumns(elem, xml) {
+    if (xml === void 0) { xml = xml_parser_1.default; }
+    return xml.elements(elem, 'gridCol').map(function (e) { return ({
+        width: xml.lengthAttr(e, "w")
     }); });
 }
 exports.parseTableColumns = parseTableColumns;
@@ -2533,7 +2355,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TextElement = void 0;
+exports.InstructionTextElement = exports.TabElement = exports.SymbolElement = exports.TextElement = void 0;
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var TextElement = (function (_super) {
@@ -2550,6 +2372,48 @@ var TextElement = (function (_super) {
     return TextElement;
 }(dom_1.DocxElement));
 exports.TextElement = TextElement;
+var SymbolElement = (function (_super) {
+    __extends(SymbolElement, _super);
+    function SymbolElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    __decorate([
+        xml_serialize_1.fromAttribute('font')
+    ], SymbolElement.prototype, "font", void 0);
+    __decorate([
+        xml_serialize_1.fromAttribute('char')
+    ], SymbolElement.prototype, "char", void 0);
+    SymbolElement = __decorate([
+        xml_serialize_1.element('sym')
+    ], SymbolElement);
+    return SymbolElement;
+}(dom_1.DocxElement));
+exports.SymbolElement = SymbolElement;
+var TabElement = (function (_super) {
+    __extends(TabElement, _super);
+    function TabElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    TabElement = __decorate([
+        xml_serialize_1.element('tab')
+    ], TabElement);
+    return TabElement;
+}(dom_1.DocxElement));
+exports.TabElement = TabElement;
+var InstructionTextElement = (function (_super) {
+    __extends(InstructionTextElement, _super);
+    function InstructionTextElement() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    __decorate([
+        xml_serialize_1.fromText()
+    ], InstructionTextElement.prototype, "text", void 0);
+    InstructionTextElement = __decorate([
+        xml_serialize_1.element("instrText")
+    ], InstructionTextElement);
+    return InstructionTextElement;
+}(dom_1.DocxElement));
+exports.InstructionTextElement = InstructionTextElement;
 
 
 /***/ }),
@@ -2584,7 +2448,7 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, keepOrigin: false }, userOptions);
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, ignoreLastRenderedPageBreak: true, debug: false, experimental: false, className: "docx", inWrapper: true, keepOrigin: false }, userOptions);
     parser.ignoreWidth = options.ignoreWidth;
     parser.debug = options.debug;
     parser.keepOrigin = options.keepOrigin;
@@ -2883,16 +2747,13 @@ var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/documen
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
 var run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts");
-var bookmark_1 = __webpack_require__(/*! ./document/bookmark */ "./src/document/bookmark.ts");
+var bookmarks_1 = __webpack_require__(/*! ./document/bookmarks */ "./src/document/bookmarks.ts");
 var table_1 = __webpack_require__(/*! ./document/table */ "./src/document/table.ts");
 var table_row_1 = __webpack_require__(/*! ./document/table-row */ "./src/document/table-row.ts");
 var table_cell_1 = __webpack_require__(/*! ./document/table-cell */ "./src/document/table-cell.ts");
 var hyperlink_1 = __webpack_require__(/*! ./document/hyperlink */ "./src/document/hyperlink.ts");
 var drawing_1 = __webpack_require__(/*! ./document/drawing */ "./src/document/drawing.ts");
-var image_1 = __webpack_require__(/*! ./document/image */ "./src/document/image.ts");
-var break_1 = __webpack_require__(/*! ./document/break */ "./src/document/break.ts");
-var tab_1 = __webpack_require__(/*! ./document/tab */ "./src/document/tab.ts");
-var symbol_1 = __webpack_require__(/*! ./document/symbol */ "./src/document/symbol.ts");
+var breaks_1 = __webpack_require__(/*! ./document/breaks */ "./src/document/breaks.ts");
 var text_1 = __webpack_require__(/*! ./document/text */ "./src/document/text.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
@@ -3096,7 +2957,13 @@ var HtmlRenderer = (function () {
         }
         return result;
     };
+    HtmlRenderer.prototype.isPageBreakElement = function (elem) {
+        if (elem instanceof breaks_1.LastRenderedPageBreakElement)
+            return !this.options.ignoreLastRenderedPageBreak;
+        return elem instanceof breaks_1.BreakElement && elem.type === "page";
+    };
     HtmlRenderer.prototype.splitBySection = function (elements) {
+        var _this = this;
         var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
@@ -3117,10 +2984,10 @@ var HtmlRenderer = (function () {
                 var sectProps = p.props.sectionProps;
                 var pBreakIndex = -1;
                 var rBreakIndex = -1;
-                if (this.options.breakPages && p.children) {
+                if (this.options.breakPages && p.children.length > 0) {
                     pBreakIndex = p.children.findIndex(function (r) {
                         var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t instanceof break_1.BreakElement && t.type == "page"; })) !== null && _b !== void 0 ? _b : -1;
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -3263,7 +3130,7 @@ var HtmlRenderer = (function () {
         if (elem instanceof paragraph_1.ParagraphElement) {
             return this.renderParagraph(elem);
         }
-        else if (elem instanceof bookmark_1.BookmarkStartElement) {
+        else if (elem instanceof bookmarks_1.BookmarkStartElement) {
             return this.renderBookmarkStart(elem);
         }
         else if (elem instanceof run_1.RunElement) {
@@ -3272,10 +3139,10 @@ var HtmlRenderer = (function () {
         else if (elem instanceof text_1.TextElement) {
             return this.renderText(elem);
         }
-        else if (elem instanceof symbol_1.SymbolElement) {
+        else if (elem instanceof text_1.SymbolElement) {
             return this.renderSymbol(elem);
         }
-        else if (elem instanceof tab_1.TabElement) {
+        else if (elem instanceof text_1.TabElement) {
             return this.renderTab(elem);
         }
         else if (elem instanceof table_1.TableElement) {
@@ -3293,7 +3160,7 @@ var HtmlRenderer = (function () {
         else if (elem instanceof drawing_1.DrawingElement) {
             return this.renderDrawing(elem);
         }
-        else if (elem instanceof image_1.ImageElement) {
+        else if (elem instanceof drawing_1.ImageElement) {
             return this.renderImage(elem);
         }
         else if (elem instanceof header_1.HeaderElement) {
@@ -3326,9 +3193,8 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
         var _a, _b, _c, _d;
-        var result = this.createElement("p");
+        var result = this.renderContainer(elem, "p");
         this.renderClass(elem, result);
-        this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         var style = elem.props.styleId && ((_a = this.styleMap) === null || _a === void 0 ? void 0 : _a[elem.props.styleId]);
         var numbering = (_b = elem.props.numbering) !== null && _b !== void 0 ? _b : (_c = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _c === void 0 ? void 0 : _c.numbering;
@@ -3384,7 +3250,6 @@ var HtmlRenderer = (function () {
                 case 'caps':
                     style["text-transform"] = v ? 'uppercase' : 'none';
                     break;
-                case 'strike':
                 case 'strike':
                     style["text-decoration"] = v ? 'line-through' : 'none';
                     break;
@@ -3888,7 +3753,7 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.XmlParser = exports.serializeXmlString = exports.parseXmlString = void 0;
+exports.XmlParser = exports.attr = exports.elements = exports.serializeXmlString = exports.parseXmlString = void 0;
 var common_1 = __webpack_require__(/*! ../document/common */ "./src/document/common.ts");
 var config_1 = __webpack_require__(/*! ../config */ "./src/config.ts");
 function parseXmlString(xmlString) {
@@ -3901,32 +3766,36 @@ function serializeXmlString(elem) {
     return new XMLSerializer().serializeToString(elem);
 }
 exports.serializeXmlString = serializeXmlString;
+function elements(elem, localName) {
+    if (localName === void 0) { localName = null; }
+    var result = [];
+    for (var i = 0, l = elem.childNodes.length; i < l; i++) {
+        var c = elem.childNodes.item(i);
+        if (c.nodeType == Node.ELEMENT_NODE && (localName == null || c.localName == localName))
+            result.push(c);
+    }
+    return result;
+}
+exports.elements = elements;
+function attr(elem, localName) {
+    for (var i = 0, l = elem.attributes.length; i < l; i++) {
+        var a = elem.attributes.item(i);
+        if (a.localName == localName)
+            return a.value;
+    }
+    return null;
+}
+exports.attr = attr;
 var XmlParser = (function () {
     function XmlParser() {
+        this.elements = elements;
+        this.attr = attr;
     }
-    XmlParser.prototype.elements = function (elem, localName) {
-        if (localName === void 0) { localName = null; }
-        var result = [];
-        for (var i = 0, l = elem.childNodes.length; i < l; i++) {
-            var c = elem.childNodes.item(i);
-            if (c.nodeType == 1 && (localName == null || c.localName == localName))
-                result.push(c);
-        }
-        return result;
-    };
     XmlParser.prototype.element = function (elem, localName) {
         for (var i = 0, l = elem.childNodes.length; i < l; i++) {
             var c = elem.childNodes.item(i);
             if (c.nodeType == 1 && c.localName == localName)
                 return c;
-        }
-        return null;
-    };
-    XmlParser.prototype.attr = function (elem, localName) {
-        for (var i = 0, l = elem.attributes.length; i < l; i++) {
-            var a = elem.attributes.item(i);
-            if (a.localName == localName)
-                return a.value;
         }
         return null;
     };
@@ -3942,12 +3811,7 @@ var XmlParser = (function () {
     };
     XmlParser.prototype.boolAttr = function (node, attrName, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }
-        var v = this.attr(node, attrName);
-        switch (v) {
-            case "1": return true;
-            case "0": return false;
-            default: return defaultValue;
-        }
+        return common_1.convertBoolean(this.attr(node, attrName), defaultValue);
     };
     XmlParser.prototype.percentageAttr = function (node, attrName) {
         return common_1.convertPercentage(this.attr(node, attrName));
@@ -4076,7 +3940,7 @@ function deserializeSchema(n, output, schema) {
     }
     for (var i = 0, l = n.childNodes.length; i < l; i++) {
         var elem = n.childNodes.item(i);
-        var prop = elem.nodeType === 1 ? schema.elements[elem.localName] : null;
+        var prop = elem.nodeType === Node.ELEMENT_NODE ? schema.elements[elem.localName] : null;
         if (prop == null)
             continue;
         output[prop.prop] = prop.convert(elem);
@@ -4157,9 +4021,6 @@ function parseStyle(elem, xml) {
                 break;
             case "rPr":
                 result.runProps = run_1.parseRunProperties(e, xml);
-                break;
-            case "name":
-                result.name = xml.attr(e, 'val');
                 break;
             case "name":
                 result.name = xml.attr(e, 'val');

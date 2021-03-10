@@ -5,9 +5,6 @@ import { XmlParser } from "../parser/xml-parser";
 export interface DocumentDefaults {
     paragraphProps: ParagraphProperties;
     runProps: RunProperties;
-
-    paragraphStyle: any;
-    runStyle: any;
 }
 
 export function parseDocumentDefaults(elem: Element, xml: XmlParser) {
