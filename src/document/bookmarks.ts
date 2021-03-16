@@ -2,7 +2,7 @@ import { element, fromAttribute } from "../parser/xml-serialize";
 import { DocxElement } from "./dom";
 
 @element("bookmarkStart")
-export class BookmarkStartElement extends DocxElement {
+export class WmlBookmarkStart extends DocxElement {
     @fromAttribute("id")
     id: string;
     @fromAttribute("name")
@@ -14,7 +14,7 @@ export class BookmarkStartElement extends DocxElement {
 }
 
 @element("bookmarkEnd")
-export class BookmarkEndElement extends DocxElement {
+export class WmlBookmarkEnd extends DocxElement {
     @fromAttribute("id")
     id: string;
 }

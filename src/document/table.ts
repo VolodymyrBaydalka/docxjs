@@ -4,7 +4,7 @@ import { Length } from "./common";
 import { DocxContainer } from "./dom";
 
 @element("tbl")
-export class TableElement extends DocxContainer {
+export class WmlTable extends DocxContainer {
     @fromElement("tblGrid", parseTableColumns)
     columns?: TableColumn[];
 

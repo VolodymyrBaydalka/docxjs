@@ -2,28 +2,28 @@ import { WordDocument } from './word-document';
 import { IDomNumbering, DocxContainer, DocxElement } from './document/dom';
 import { Length, Underline } from './document/common';
 import { Options } from './docx-preview';
-import { ParagraphElement, ParagraphProperties } from './document/paragraph';
+import { WmlParagraph, ParagraphProperties } from './document/paragraph';
 import { appendClass, keyBy, mergeDeep } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './document/section';
-import { RunElement, RunFonts, RunProperties, Shading } from './document/run';
-import { BookmarkStartElement } from './document/bookmarks';
+import { WmlRun, RunFonts, RunProperties, Shading } from './document/run';
+import { WmlBookmarkStart } from './document/bookmarks';
 import { IDomStyle } from './document/style';
 import { NumberingPartProperties } from './numbering/numbering';
 import { Border } from './document/border';
-import { TableColumn, TableElement } from './document/table';
-import { TableRowElement } from './document/table-row';
-import { TableCellElement } from './document/table-cell';
-import { HyperlinkElement } from './document/hyperlink';
-import { DrawingElement, ImageElement } from './document/drawing';
-import { BreakElement, LastRenderedPageBreakElement } from './document/breaks';
-import { SymbolElement, TabElement, TextElement } from './document/text';
+import { TableColumn, WmlTable } from './document/table';
+import { WmlTableRow } from './document/table-row';
+import { WmlTableCell } from './document/table-cell';
+import { WmlHyperlink } from './document/hyperlink';
+import { WmlDrawing, DmlPicture } from './document/drawing';
+import { WmlBreak, WmlLastRenderedPageBreak } from './document/breaks';
+import { WmlSymbol, WmlTab, WmlText } from './document/text';
 import { LineSpacing } from './document/line-spacing';
-import { Style } from './styles/style';
-import { HeaderElement } from './header/header';
-import { FooterElement } from './footer/footer';
-import { BodyElement } from './document/document';
+import { WmlStyle } from './styles/style';
+import { WmlHeader } from './header/header';
+import { WmlFooter } from './footer/footer';
+import { WmlBody } from './document/document';
 
 const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
 
@@ -40,7 +40,7 @@ export class HtmlRenderer {
     document: WordDocument;
     options: Options;
     domStyleMap: Record<string, IDomStyle>;
-    styleMap: Record<string, Style>;
+    styleMap: Record<string, WmlStyle>;
     keepOrigin: boolean = false;
     renderHeaders: boolean = true;
     renderFooters: boolean = true;
@@ -111,7 +111,7 @@ export class HtmlRenderer {
         return `${this.className}_${className}`;
     }
 
-    processStyles(styles: Style[]) {
+    processStyles(styles: WmlStyle[]) {
         const styleMap = keyBy(styles, s => s.id);
 
         for(let style of styles.filter(s => s.basedOn)) {
@@ -163,7 +163,7 @@ export class HtmlRenderer {
                 e.className = this.processClassName(e.className);
                 e.parent = element;
 
-                if (e instanceof TableElement) {
+                if (e instanceof WmlTable) {
                     this.processTable(e);
                 }
                 else {
@@ -173,7 +173,7 @@ export class HtmlRenderer {
         }
     }
 
-    processTable(table: TableElement) {
+    processTable(table: WmlTable) {
         for (var r of table.children) {
             for (var c of (r as DocxContainer).children) {
                 c.cssStyle = this.copyStyleProperties(table.cellStyle, c.cssStyle, [
@@ -244,7 +244,7 @@ export class HtmlRenderer {
         return elem;
     }
 
-    renderSections(document: BodyElement): HTMLElement[] {
+    renderSections(document: WmlBody): HTMLElement[] {
         const result = [];
 
         this.processElement(document);
@@ -277,10 +277,10 @@ export class HtmlRenderer {
     }
 
     isPageBreakElement(elem: DocxElement): boolean {
-        if (elem instanceof LastRenderedPageBreakElement)
+        if (elem instanceof WmlLastRenderedPageBreak)
             return !this.options.ignoreLastRenderedPageBreak;
 
-        return elem instanceof BreakElement && elem.type === "page";  
+        return elem instanceof WmlBreak && elem.type === "page";  
     }
 
     splitBySection(elements: DocxElement[]): { sectProps: SectionProperties, elements: DocxElement[] }[] {
@@ -288,7 +288,7 @@ export class HtmlRenderer {
         var result = [current];
 
         for(let elem of elements) {
-            if (elem instanceof ParagraphElement) {
+            if (elem instanceof WmlParagraph) {
                 const styleName = elem.props.styleId;
                 const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
             
@@ -301,9 +301,9 @@ export class HtmlRenderer {
 
             current.elements.push(elem);
 
-            if(elem instanceof ParagraphElement)
+            if(elem instanceof WmlParagraph)
             {
-                const p = elem as ParagraphElement;
+                const p = elem as WmlParagraph;
 
                 var sectProps = p.props.sectionProps;
                 var pBreakIndex = -1;
@@ -323,18 +323,18 @@ export class HtmlRenderer {
                 }
 
                 if(pBreakIndex != -1) {
-                    let breakRun = p.children[pBreakIndex] as RunElement;
+                    let breakRun = p.children[pBreakIndex] as WmlRun;
                     let splitRun = rBreakIndex < breakRun.children.length - 1;
 
                     if(pBreakIndex < p.children.length - 1 || splitRun) {
                         var children = elem.children;
-                        var newParagraph = Object.assign(new ParagraphElement(), elem, { children: children.slice(pBreakIndex) });
+                        var newParagraph = Object.assign(new WmlParagraph(), elem, { children: children.slice(pBreakIndex) });
                         elem.children = children.slice(0, pBreakIndex);
                         current.elements.push(newParagraph);
 
                         if(splitRun) {
                             let runChildren = breakRun.children;
-                            let newRun =  Object.assign(new RunElement(), breakRun, { children: runChildren.slice(0, rBreakIndex) });
+                            let newRun =  Object.assign(new WmlRun(), breakRun, { children: runChildren.slice(0, rBreakIndex) });
                             elem.children.push(newRun);
                             breakRun.children = runChildren.slice(rBreakIndex);
                         }
@@ -553,33 +553,33 @@ export class HtmlRenderer {
     }
 
     renderElement(elem: DocxElement, parent: DocxElement): Node {
-        if (elem instanceof ParagraphElement) {
+        if (elem instanceof WmlParagraph) {
             return this.renderParagraph(elem);
-        } else if (elem instanceof BookmarkStartElement) {
+        } else if (elem instanceof WmlBookmarkStart) {
             return this.renderBookmarkStart(elem);
-        } else if (elem instanceof RunElement) {
+        } else if (elem instanceof WmlRun) {
             return this.renderRun(elem);
-        } else if (elem instanceof TextElement) {
+        } else if (elem instanceof WmlText) {
             return this.renderText(elem);
-        } else if (elem instanceof SymbolElement) {
+        } else if (elem instanceof WmlSymbol) {
             return this.renderSymbol(elem);
-        } else if (elem instanceof TabElement) {
+        } else if (elem instanceof WmlTab) {
             return this.renderTab(elem);
-        } else if (elem instanceof TableElement) {
+        } else if (elem instanceof WmlTable) {
             return this.renderTable(elem);
-        } else if (elem instanceof TableRowElement) {
+        } else if (elem instanceof WmlTableRow) {
             return this.renderTableRow(elem);
-        } else if (elem instanceof TableCellElement) {
+        } else if (elem instanceof WmlTableCell) {
             return this.renderTableCell(elem);
-        } else if (elem instanceof HyperlinkElement) {
+        } else if (elem instanceof WmlHyperlink) {
             return this.renderHyperlink(elem);
-        } else if (elem instanceof DrawingElement) {
+        } else if (elem instanceof WmlDrawing) {
             return this.renderDrawing(elem);
-        } else if (elem instanceof ImageElement) {
+        } else if (elem instanceof DmlPicture) {
             return this.renderImage(elem);
-        } else if (elem instanceof HeaderElement) {
+        } else if (elem instanceof WmlHeader) {
             return this.renderHeader(elem);
-        } else if (elem instanceof FooterElement) {
+        } else if (elem instanceof WmlFooter) {
             return this.renderFooter(elem);
         }
 
@@ -610,7 +610,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderParagraph(elem: ParagraphElement) {
+    renderParagraph(elem: WmlParagraph) {
         var result = this.renderContainer(elem, "p");
 
         this.renderClass(elem, result);
@@ -783,7 +783,7 @@ export class HtmlRenderer {
             style["text-decoration-color"] = this.renderColor(underline.color);
     }
 
-    renderHyperlink(elem: HyperlinkElement) {
+    renderHyperlink(elem: WmlHyperlink) {
         var result = this.createElement("a");
 
         this.renderChildren(elem, result);
@@ -795,7 +795,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderDrawing(elem: DrawingElement) {
+    renderDrawing(elem: WmlDrawing) {
         var result = this.createElement("div");
 
         result.style.display = "inline-block";
@@ -808,13 +808,13 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderImage(elem: ImageElement) {
+    renderImage(elem: DmlPicture) {
         let result = this.createElement("img");
 
         this.renderStyleValues(elem.cssStyle, result);
 
         if (this.document) {
-            this.document.loadDocumentImage(elem.src).then(x => {
+            this.document.loadDocumentImage(elem.resourceId).then(x => {
                 result.src = x;
             });
         }
@@ -822,33 +822,33 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderHeader(elem: HeaderElement) {
+    renderHeader(elem: WmlHeader) {
         return this.renderContainer(elem, "header");
     }
 
-    renderFooter(elem: HeaderElement) {
+    renderFooter(elem: WmlHeader) {
         return this.renderContainer(elem, "footer");
     }
 
-    renderText(elem: TextElement) {
+    renderText(elem: WmlText) {
         return this.htmlDocument.createTextNode(elem.text);
     }
 
-    renderSymbol(elem: SymbolElement) {
+    renderSymbol(elem: WmlSymbol) {
         var span = this.createElement("span");
         span.style.fontFamily = elem.font;
         span.innerHTML = `&#x${elem.char};`
         return span;
     }
 
-    renderTab(elem: TabElement) {
+    renderTab(elem: WmlTab) {
         var tabSpan = this.createElement("span");
      
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
         if(this.options.experimental) {
             setTimeout(() => {
-                var paragraph = findParent<ParagraphElement>(elem, ParagraphElement);
+                var paragraph = findParent<WmlParagraph>(elem, WmlParagraph);
                 
                 if(paragraph.props.tabs == null)
                     return;
@@ -862,13 +862,13 @@ export class HtmlRenderer {
         return tabSpan;
     }
 
-    renderBookmarkStart(elem: BookmarkStartElement): HTMLElement {
+    renderBookmarkStart(elem: WmlBookmarkStart): HTMLElement {
         var result = this.createElement("span");
         result.id = elem.name;
         return result;
     }
 
-    renderRun(elem: RunElement) {
+    renderRun(elem: WmlRun) {
         var result = this.createElement("span");
 
         if(elem.id)
@@ -882,7 +882,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTable(elem: TableElement) {
+    renderTable(elem: WmlTable) {
         let result = this.createElement("table");
 
         if (elem.columns)
@@ -907,7 +907,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTableRow(elem: TableRowElement) {
+    renderTableRow(elem: WmlTableRow) {
         let result = this.createElement("tr");
 
         this.renderClass(elem, result);
@@ -917,7 +917,7 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderTableCell(elem: TableCellElement) {
+    renderTableCell(elem: WmlTableCell) {
         let result = this.createElement("td");
 
         this.renderClass(elem, result);

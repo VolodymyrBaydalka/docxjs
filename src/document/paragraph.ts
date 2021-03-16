@@ -6,12 +6,12 @@ import { LineSpacing, parseLineSpacing } from "./line-spacing";
 import { XmlParser } from "../parser/xml-parser";
 import { parseRunProperties, RunProperties } from "./run";
 import { children, element } from "../parser/xml-serialize";
-import { BookmarkEndElement, BookmarkStartElement } from "./bookmarks";
-import { FieldSimpleElement } from "./fields";
+import { WmlBookmarkEnd, WmlBookmarkStart } from "./bookmarks";
+import { WmlFieldSimple } from "./fields";
 
 @element("p")
-@children(BookmarkStartElement, BookmarkEndElement, FieldSimpleElement)
-export class ParagraphElement extends DocxContainer {
+@children(WmlBookmarkStart, WmlBookmarkEnd, WmlFieldSimple)
+export class WmlParagraph extends DocxContainer {
     props: ParagraphProperties = {} as ParagraphProperties;
 }
 

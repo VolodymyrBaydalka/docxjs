@@ -5,11 +5,11 @@ import { IDomStyle } from "../document/style";
 import { XmlParser } from "../parser/xml-parser";
 import { keyBy } from "../utils";
 import { DocumentDefaults, parseDocumentDefaults } from "./document-defaults";
-import { parseStyle, Style, StyleType } from "./style";
+import { parseStyle, WmlStyle, StyleType } from "./style";
 
 export class StylesPart extends Part implements StylesPartProperties {
     defaults: DocumentDefaults;
-    styles: Style[];
+    styles: WmlStyle[];
     
     domStyles: IDomStyle[];
 
@@ -28,7 +28,7 @@ export class StylesPart extends Part implements StylesPartProperties {
 
 export interface StylesPartProperties {
     defaults: DocumentDefaults;
-    styles: Style[];
+    styles: WmlStyle[];
 }
 
 export function parseStylesPart(elem: Element, xml: XmlParser): StylesPartProperties {

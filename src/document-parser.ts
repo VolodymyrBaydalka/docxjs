@@ -1,18 +1,18 @@
 import { DocxContainer, DocxElement, IDomNumbering, NumberingPicBullet } from './document/dom';
 import * as utils from './utils';
-import { BodyElement, DocumentElement } from './document/document';
-import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
+import { WmlBody, WmlDocument } from './document/document';
+import { WmlParagraph, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
 import globalXmlParser from './parser/xml-parser';
-import { parseRunProperties, RunElement } from './document/run';
+import { parseRunProperties, WmlRun } from './document/run';
 import { IDomStyle, IDomSubStyle } from './document/style';
-import { HyperlinkElement } from './document/hyperlink';
-import { TableCellElement } from './document/table-cell';
-import { TableColumn, TableElement } from './document/table';
-import { DrawingElement, ImageElement } from './document/drawing';
-import { TableRowElement } from './document/table-row';
+import { WmlHyperlink } from './document/hyperlink';
+import { WmlTableCell } from './document/table-cell';
+import { TableColumn, WmlTable } from './document/table';
+import { WmlDrawing, DmlPicture } from './document/drawing';
+import { WmlTableRow } from './document/table-row';
 import { deserializeElement } from './parser/xml-serialize';
-import { FooterElement } from './footer/footer';
-import { HeaderElement } from './header/header';
+import { WmlFooter } from './footer/footer';
+import { WmlHeader } from './header/header';
 
 export var autos = {
     shd: "white",
@@ -33,21 +33,21 @@ export class DocumentParser {
         return deserializeElement(elem, output, { keepOrigin: this.keepOrigin });
     }
 
-    parseDocumentFile(xmlDoc: Element): DocumentElement {
+    parseDocumentFile(xmlDoc: Element): WmlDocument {
         var xbody = globalXmlParser.element(xmlDoc, "body");
 
-        const result = new DocumentElement();
-        result.body = this.deserialize(xbody, new BodyElement());
+        const result = new WmlDocument();
+        result.body = this.deserialize(xbody, new WmlBody());
         this.parseBodyElements(xmlDoc, result.body);
         return result;
     }
 
-    parseFooter(xmlDoc: Element): FooterElement {
-        return this.parseBodyElements(xmlDoc, new FooterElement());
+    parseFooter(xmlDoc: Element): WmlFooter {
+        return this.parseBodyElements(xmlDoc, new WmlFooter());
     }
 
-    parseHeader(xmlDoc: Element): HeaderElement {
-        return this.parseBodyElements(xmlDoc, new HeaderElement());
+    parseHeader(xmlDoc: Element): WmlHeader {
+        return this.parseBodyElements(xmlDoc, new WmlHeader());
     }
 
     parseBodyElements<T extends DocxContainer>(elem: Element, output: T): T {
@@ -341,8 +341,8 @@ export class DocumentParser {
     }
 
 
-    parseParagraph(node: Element): ParagraphElement {
-        const result = this.deserialize(node, new ParagraphElement());
+    parseParagraph(node: Element): WmlParagraph {
+        const result = this.deserialize(node, new WmlParagraph());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -363,7 +363,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseParagraphProperties(elem: Element, paragraph: ParagraphElement) {
+    parseParagraphProperties(elem: Element, paragraph: WmlParagraph) {
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, c => {
             if(parseParagraphProperty(c, paragraph.props, globalXmlParser))
                 return true;
@@ -393,15 +393,15 @@ export class DocumentParser {
         });
     }
 
-    parseFrame(node: Element, paragraph: ParagraphElement) {
+    parseFrame(node: Element, paragraph: WmlParagraph) {
         var dropCap = xml.stringAttr(node, "dropCap");
 
         if (dropCap == "drop")
             paragraph.cssStyle["float"] = "left";
     }
 
-    parseHyperlink(node: Element, parent?: DocxElement): HyperlinkElement {
-        var result = this.deserialize(node, new HyperlinkElement(parent));
+    parseHyperlink(node: Element, parent?: DocxElement): WmlHyperlink {
+        var result = this.deserialize(node, new WmlHyperlink(parent));
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -414,8 +414,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseRun(node: Element, parent?: DocxElement): RunElement {
-        var result = this.deserialize(node, new RunElement(parent));
+    parseRun(node: Element, parent?: DocxElement): WmlRun {
+        var result = this.deserialize(node, new WmlRun(parent));
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -435,7 +435,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseRunProperties(elem: Element, run: RunElement) {
+    parseRunProperties(elem: Element, run: WmlRun) {
 
         Object.assign(run.props, parseRunProperties(elem, globalXmlParser));
 
@@ -464,7 +464,7 @@ export class DocumentParser {
     }
 
     parseDrawingWrapper(node: Element): DocxElement {
-        var result = new DrawingElement();
+        var result = new WmlDrawing();
         var isAnchor = node.localName == "anchor";
 
         //TODO
@@ -564,12 +564,12 @@ export class DocumentParser {
         return null;
     }
 
-    parsePicture(elem: Element): ImageElement {
-        var result = new ImageElement();
+    parsePicture(elem: Element): DmlPicture {
+        var result = new DmlPicture();
         var blipFill = globalXmlParser.element(elem, "blipFill");
         var blip = globalXmlParser.element(blipFill, "blip");
 
-        result.src = xml.stringAttr(blip, "embed");
+        result.resourceId = xml.stringAttr(blip, "embed");
 
         var spPr = globalXmlParser.element(elem, "spPr");
         var xfrm = globalXmlParser.element(spPr, "xfrm");
@@ -593,8 +593,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseTable(node: Element): TableElement {
-        var result = this.deserialize(node, new TableElement());
+    parseTable(node: Element): WmlTable {
+        var result = this.deserialize(node, new WmlTable());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -625,7 +625,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableProperties(elem: Element, table: TableElement) {
+    parseTableProperties(elem: Element, table: WmlTable) {
         table.cssStyle = {};
         table.cellStyle = {};
 
@@ -664,7 +664,7 @@ export class DocumentParser {
         }
     }
 
-    parseTablePosition(node: Element, table: TableElement) {
+    parseTablePosition(node: Element, table: WmlTable) {
         var topFromText = xml.sizeAttr(node, "topFromText");
         var bottomFromText = xml.sizeAttr(node, "bottomFromText");
         var rightFromText = xml.sizeAttr(node, "rightFromText");
@@ -677,8 +677,8 @@ export class DocumentParser {
         table.cssStyle["margin-top"] = values.addSize(table.cssStyle["margin-top"], topFromText);
     }
 
-    parseTableRow(node: Element): TableRowElement {
-        var result = this.deserialize(node, new TableRowElement());
+    parseTableRow(node: Element): WmlTableRow {
+        var result = this.deserialize(node, new WmlTableRow());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -695,7 +695,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableRowProperties(elem: Element, row: TableRowElement) {
+    parseTableRowProperties(elem: Element, row: WmlTableRow) {
         row.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "cnfStyle":
@@ -710,8 +710,8 @@ export class DocumentParser {
         });
     }
 
-    parseTableCell(node: Element): TableCellElement {
-        var result = this.deserialize(node, new TableCellElement());
+    parseTableCell(node: Element): WmlTableCell {
+        var result = this.deserialize(node, new WmlTableCell());
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -732,7 +732,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseTableCellProperties(elem: Element, cell: TableCellElement) {
+    parseTableCellProperties(elem: Element, cell: WmlTableCell) {
         cell.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
             switch (c.localName) {
                 case "gridSpan":

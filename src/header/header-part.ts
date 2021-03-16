@@ -1,10 +1,10 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { HeaderElement } from "./header";
+import { WmlHeader } from "./header";
 
 export class HeaderPart extends Part {
-    headerElement: HeaderElement;
+    headerElement: WmlHeader;
 
     private _documentParser: DocumentParser;
 

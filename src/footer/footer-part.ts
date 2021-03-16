@@ -1,10 +1,10 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { FooterElement } from "./footer";
+import { WmlFooter } from "./footer";
 
 export class FooterPart extends Part {
-    footerElement: FooterElement;
+    footerElement: WmlFooter;
     
     private _documentParser: DocumentParser;
 

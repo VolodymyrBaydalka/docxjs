@@ -2,13 +2,13 @@ import { element, fromAttribute, fromText } from "../parser/xml-serialize";
 import { DocxElement } from "./dom";
 
 @element('t')
-export class TextElement extends DocxElement {
+export class WmlText extends DocxElement {
     @fromText()
     text: string;
 }
 
 @element('sym')
-export class SymbolElement extends DocxElement {
+export class WmlSymbol extends DocxElement {
     @fromAttribute('font')
     font: string;
     @fromAttribute('char')
@@ -16,11 +16,11 @@ export class SymbolElement extends DocxElement {
 }
 
 @element('tab')
-export class TabElement extends DocxElement {
+export class WmlTab extends DocxElement {
 }
 
 @element("instrText")
-export class InstructionTextElement extends DocxElement {
+export class WmlInstructionText extends DocxElement {
     @fromText()
     text: string;
 }

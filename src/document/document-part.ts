@@ -1,7 +1,7 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { DocumentElement } from "./document";
+import { WmlDocument } from "./document";
 
 export class DocumentPart extends Part {
     private _documentParser: DocumentParser;
@@ -11,7 +11,7 @@ export class DocumentPart extends Part {
         this._documentParser = parser;
     }
     
-    documentElement: DocumentElement
+    documentElement: WmlDocument
 
     parseXml(root: Element) {
         this.documentElement = this._documentParser.parseDocumentFile(root);

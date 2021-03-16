@@ -3,13 +3,13 @@ import { convertBoolean, convertLength } from "./common";
 import { DocxContainer, DocxElement } from "./dom";
 
 @element('fldChar')
-export class FieldCharElement extends DocxElement {
+export class WmlFieldChar extends DocxElement {
     @fromAttribute('fldCharType')
     type: 'begin' | 'end' | 'separate'; 
 }
 
 @element('fldSimple')
-export class FieldSimpleElement extends DocxContainer {
+export class WmlFieldSimple extends DocxContainer {
     @fromAttribute("dirty", convertBoolean)
     dirty: boolean;
 

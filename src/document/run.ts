@@ -1,15 +1,15 @@
 import { XmlParser } from "../parser/xml-parser";
 import { children, element } from "../parser/xml-serialize";
 import { Border, parseBorder } from "./border";
-import { BreakElement, LastRenderedPageBreakElement } from "./breaks";
+import { WmlBreak, WmlLastRenderedPageBreak } from "./breaks";
 import { Length, LengthUsage, Underline } from "./common";
 import { DocxContainer } from "./dom";
-import { FieldCharElement } from "./fields";
-import { InstructionTextElement, SymbolElement, TabElement, TextElement } from "./text";
+import { WmlFieldChar } from "./fields";
+import { WmlInstructionText, WmlSymbol, WmlTab, WmlText } from "./text";
 
 @element('r')
-@children(TextElement, SymbolElement, TabElement, BreakElement, InstructionTextElement, FieldCharElement, LastRenderedPageBreakElement)
-export class RunElement extends DocxContainer {
+@children(WmlText, WmlSymbol, WmlTab, WmlBreak, WmlInstructionText, WmlFieldChar, WmlLastRenderedPageBreak)
+export class WmlRun extends DocxContainer {
     id?: string;
     styleName: string;
     props: RunProperties = <RunProperties>{};

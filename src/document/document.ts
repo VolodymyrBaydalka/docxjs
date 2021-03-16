@@ -3,12 +3,12 @@ import { DocxContainer, DocxElement } from "./dom";
 import { parseSectionProperties, SectionProperties } from "./section";
 
 @element("document")
-export class DocumentElement extends DocxElement {
-    body: BodyElement;
+export class WmlDocument extends DocxElement {
+    body: WmlBody;
 }
 
 @element("body")
-export class BodyElement extends DocxContainer {
+export class WmlBody extends DocxContainer {
     @fromElement("sectPr", parseSectionProperties)
     sectionProps: SectionProperties;
 }

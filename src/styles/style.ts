@@ -1,13 +1,20 @@
+import { convertBoolean } from "../document/common";
 import { ParagraphProperties, parseParagraphProperties } from "../document/paragraph";
 import { parseRunProperties, RunProperties } from "../document/run";
 import { XmlParser } from "../parser/xml-parser";
+import { deserializeElement, element, fromAttribute } from "../parser/xml-serialize";
 
 export type StyleType = 'character' | 'numbering' | 'paragraph' | 'table';
 
-export interface Style {
+@element("style")
+export class WmlStyle {
+    @fromAttribute("styleId")
     id: string;
+    @fromAttribute("type")
     type: StyleType;
+    @fromAttribute("customStyle", convertBoolean)
     customStyle: boolean
+    @fromAttribute("default", convertBoolean)
     default: boolean;
 
     name: string;
@@ -26,13 +33,8 @@ export interface Style {
     runProps: RunProperties;
 }
 
-export function parseStyle(elem: Element, xml: XmlParser): Style {
-    let result = {
-        id: xml.attr(elem, 'styleId'),
-        type: xml.attr(elem, 'type'),
-        customStyle: xml.boolAttr(elem, 'customStyle', false),
-        default: xml.boolAttr(elem, 'default', false),
-    } as Style;
+export function parseStyle(elem: Element, xml: XmlParser): WmlStyle {
+    let result = deserializeElement(elem, new WmlStyle(), null);
 
     for (let e of xml.elements(elem)) {
         switch (e.localName) {

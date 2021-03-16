@@ -2,6 +2,5 @@ import { DocxContainer } from "../document/dom";
 import { element } from "../parser/xml-serialize";
 
 @element("hdr")
-export class HeaderElement extends DocxContainer {
-
+export class WmlHeader extends DocxContainer {
 }

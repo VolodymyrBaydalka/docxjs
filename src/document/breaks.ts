@@ -2,7 +2,7 @@ import { element, fromAttribute } from "../parser/xml-serialize";
 import { DocxElement } from "./dom";
 
 @element('br')
-export class BreakElement extends DocxElement {
+export class WmlBreak extends DocxElement {
     @fromAttribute("type")
     type: "page" | "column" | "textWrapping";
     
@@ -11,5 +11,5 @@ export class BreakElement extends DocxElement {
 }
 
 @element('lastRenderedPageBreak')
-export class LastRenderedPageBreakElement extends DocxElement {
+export class WmlLastRenderedPageBreak extends DocxElement {
 }
