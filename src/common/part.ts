@@ -1,4 +1,4 @@
-import { parseXmlString, serializeXmlString } from "../parser/xml-parser";
+import { serializeXmlString } from "../parser/xml-parser";
 import { OpenXmlPackage } from "./open-xml-package";
 import { Relationship } from "./relationship";
 
@@ -15,9 +15,14 @@ export class Part {
             this._package.loadRelationships(this.path).then(rels => {
                 this.rels = rels;
             }),
-            this._package.load(this.path, 'string').then(text => {
-                this._xmlDocument = parseXmlString(text);
-                this.parseXml(this._xmlDocument.firstElementChild);
+            this._package.load(this.path).then(text => {
+                const xmlDoc = this._package.parseXmlDocument(text); 
+
+                if (this._package.options.keepOrigin) {
+                    this._xmlDocument = xmlDoc;
+                }
+
+                this.parseXml(xmlDoc.firstElementChild);
             })
         ]);
     }

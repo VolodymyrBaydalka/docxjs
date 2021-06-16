@@ -25,12 +25,12 @@ export class WordDocument {
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
 
-    static load(blob, parser: DocumentParser): Promise<WordDocument> {
+    static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
         var d = new WordDocument();
 
         d._parser = parser;
 
-        return OpenXmlPackage.load(blob)
+        return OpenXmlPackage.load(blob, options)
             .then(pkg => {
                 d._package = pkg;
 
@@ -55,7 +55,7 @@ export class WordDocument {
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
 
-        if (!this._package.exists(path))
+        if (!this._package.get(path))
             return Promise.resolve(null);
 
         let part: Part = null;

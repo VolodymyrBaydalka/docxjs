@@ -201,8 +201,8 @@ export class HtmlRenderer {
         return output;
     }
 
-    private createElement(tagName) {
-        return this.htmlDocument.createElement(tagName);
+    private createElement(tagName, props = undefined) {
+        return Object.assign(this.htmlDocument.createElement(tagName), props);
     }
 
     private renderContainer(elem: DocxContainer, tagName: string): HTMLElement {
@@ -212,10 +212,8 @@ export class HtmlRenderer {
     }
 
     createSection(className: string, props: SectionProperties) {
-        var elem = this.createElement("section");
+        var elem = this.createElement("section", { className });
         
-        elem.className = className;
-
         if (props) {
             if (props.pageMargins) {
                 elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
@@ -887,6 +885,10 @@ export class HtmlRenderer {
 
         if (elem.columns)
             result.appendChild(this.renderTableColumns(elem.columns));
+
+        if (elem.props?.caption) {
+            result.appendChild(this.createElement("caption", { textContent: elem.props?.caption }));
+        }
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);

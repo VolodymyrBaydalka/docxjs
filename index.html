@@ -19,6 +19,8 @@
         function loadDocx() {
             var file = document.getElementById("files").files[0];
             var container = document.getElementById("doc");
+
+            docx.defaults.trimXmlDeclaration = true;
             
             docx.renderAsync(file, container, null, { 
                 debug: true,

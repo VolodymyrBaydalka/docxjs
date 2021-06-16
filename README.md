@@ -16,6 +16,9 @@ Usage
 <script>
     var docData = <document Blob>;
 
+    //some XMLs could have issue with XML declaration
+    docx.defaults.trimXmlDeclaration = true;
+
     docx.renderAsync(docData, document.getElementById("container"))
         .then(x => console.log("docx: finished"));
 </script>

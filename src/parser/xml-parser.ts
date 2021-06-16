@@ -1,11 +1,20 @@
 import { Length, LengthUsage, LengthUsageType, convertLength, convertPercentage, convertBoolean  } from "../document/common";
-import config from '../config';
 
-export function parseXmlString(xmlString: string): Document {
-    if (config.trimXmlDeclaration)
+export function parseXmlString(xmlString: string, trimXmlDeclaration: boolean = false): Document {
+    if (trimXmlDeclaration)
         xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    
+    const result = new DOMParser().parseFromString(xmlString, "application/xml");  
+    const errorText = hasXmlParserError(result);
 
-    return new DOMParser().parseFromString(xmlString, "application/xml");
+    if (errorText)
+        throw new Error(errorText);
+
+    return result;
+}
+
+function hasXmlParserError(doc: Document) {
+    return doc.getElementsByTagName("parsererror")[0]?.textContent;
 }
 
 export function serializeXmlString(elem: Node): string {

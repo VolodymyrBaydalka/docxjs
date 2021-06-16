@@ -7,7 +7,7 @@ import { parseRunProperties, WmlRun } from './document/run';
 import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlHyperlink } from './document/hyperlink';
 import { WmlTableCell } from './document/table-cell';
-import { TableColumn, WmlTable } from './document/table';
+import { WmlTable } from './document/table';
 import { WmlDrawing, DmlPicture } from './document/drawing';
 import { WmlTableRow } from './document/table-row';
 import { deserializeElement } from './parser/xml-serialize';
@@ -38,7 +38,7 @@ export class DocumentParser {
 
         const result = new WmlDocument();
         result.body = this.deserialize(xbody, new WmlBody());
-        this.parseBodyElements(xmlDoc, result.body);
+        this.parseBodyElements(xbody, result.body);
         return result;
     }
 
@@ -604,20 +604,6 @@ export class DocumentParser {
 
                 case "tblPr":
                     this.parseTableProperties(c, result);
-                    break;
-            }
-        });
-
-        return result;
-    }
-
-    parseTableColumns(node: Element): TableColumn[] {
-        var result = [];
-
-        xml.foreach(node, n => {
-            switch (n.localName) {
-                case "gridCol":
-                    result.push({ width: xml.sizeAttr(n, "w") });
                     break;
             }
         });
