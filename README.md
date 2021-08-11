@@ -24,3 +24,7 @@ Usage
     <div id="container"></div>
     ...
 </body>
+```
+Status and stability
+------
+So far I can't come up with final approach of parsing documents and final structure of API. Main development is moved to **next** branch. Only **renderAsync** function is stable and definition shouldn't be changed in future. Inner implementation of parsing and rendering may be changed at any point of time.
