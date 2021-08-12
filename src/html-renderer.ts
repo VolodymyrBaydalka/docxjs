@@ -458,7 +458,7 @@ export class HtmlRenderer {
             var selector = `p.${this.numberingClass(num.id, num.level)}`;
             var listStyleType = "none";
 
-            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter")) {
+            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter" || num.format == "lowerRoman")) {
                 let counter = this.numberingCounter(num.id, num.level);
 
                 if (num.level > 0) {
