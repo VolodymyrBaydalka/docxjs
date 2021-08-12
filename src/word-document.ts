@@ -11,11 +11,12 @@ import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
 import { FooterPart } from "./footer/footer-part";
 import { HeaderPart } from "./header/header-part";
+import { ExtendedPropsPart } from "./document-props/extended-props-part";
 
 export class WordDocument {
     private _package: OpenXmlPackage;
     private _parser: DocumentParser;
-    
+
     rels: Relationship[];
     parts: Part[] = [];
     partsMap: Record<string, Part> = {};
@@ -24,6 +25,7 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
+    extendedPropsPart: ExtendedPropsPart;
 
     static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
         var d = new WordDocument();
@@ -37,13 +39,21 @@ export class WordDocument {
                 return d._package.loadRelationships();
             }).then(rels => {
                 d.rels = rels;
-
                 let { target, type } = rels.find(x => x.type == RelationshipTypes.OfficeDocument) ?? {
                     target: "word/document.xml",
                     type: RelationshipTypes.OfficeDocument
                 }; //fallback
 
-                return d.loadRelationshipPart(target, type).then(() => d);
+                return d.loadRelationshipPart(target, type)
+                    .then(() => {
+                        let { target, type } = rels.find(x => x.type == RelationshipTypes.ExtendedProperties) ?? {
+                            target: "docProps/app.xml",
+                            type: RelationshipTypes.ExtendedProperties
+                        }; // fallback again
+
+                        return d.loadRelationshipPart(target, type);
+                    })
+                    .then(() => d);
             });
     }
 
@@ -60,7 +70,7 @@ export class WordDocument {
 
         let part: Part = null;
 
-        switch(type) {
+        switch (type) {
             case RelationshipTypes.OfficeDocument:
                 this.documentPart = part = new DocumentPart(this._package, path, this._parser);
                 break;
@@ -80,9 +90,13 @@ export class WordDocument {
             case RelationshipTypes.Footer:
                 part = new FooterPart(this._package, path, this._parser);
                 break;
-    
+
             case RelationshipTypes.Header:
                 part = new HeaderPart(this._package, path, this._parser);
+                break;
+
+            case RelationshipTypes.ExtendedProperties:
+                this.extendedPropsPart = part = new ExtendedPropsPart(this._package, path);
                 break;
         }
 
@@ -135,8 +149,8 @@ export function deobfuscate(data: Uint8Array, guidKey: string): Uint8Array {
     const len = 16;
     const trimmed = guidKey.replace(/{|}|-/g, "");
     const numbers = new Array(len);
-    
-    for(let i = 0; i < len; i ++)
+
+    for (let i = 0; i < len; i++)
         numbers[len - i - 1] = parseInt(trimmed.substr(i * 2, 2), 16);
 
     for (let i = 0; i < 32; i++)

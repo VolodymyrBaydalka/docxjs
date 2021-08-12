@@ -9,7 +9,6 @@
 		root["docx"] = factory(root["JSZip"]);
 })(self, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
 return /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
 /***/ "./src/common/open-xml-package.ts":
@@ -18,6 +17,7 @@ return /******/ (() => { // webpackBootstrap
   \****************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OpenXmlPackage = void 0;
@@ -79,6 +79,7 @@ function normalizePath(path) {
   \****************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Part = void 0;
@@ -121,6 +122,7 @@ exports.Part = Part;
   \************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRelationships = exports.RelationshipTypes = void 0;
@@ -138,6 +140,8 @@ var RelationshipTypes;
     RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
     RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
     RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
+    RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
+    RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 })(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
 function parseRelationships(root, xmlParser) {
     return xmlParser.elements(root).map(function (e) { return ({
@@ -158,6 +162,7 @@ exports.parseRelationships = parseRelationships;
   \********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
@@ -1211,12 +1216,23 @@ var values = (function () {
 
 /***/ }),
 
+/***/ "./src/document-props/extended-props-part.ts":
+/*!***************************************************!*\
+  !*** ./src/document-props/extended-props-part.ts ***!
+  \***************************************************/
+/***/ (() => {
+
+throw new Error("Module build failed (from ./node_modules/ts-loader/index.js):\nError: TypeScript emitted no output for C:\\code\\docxjs\\src\\document-props\\extended-props-part.ts.\n    at makeSourceMapAndFinish (C:\\code\\docxjs\\node_modules\\ts-loader\\dist\\index.js:53:18)\n    at successLoader (C:\\code\\docxjs\\node_modules\\ts-loader\\dist\\index.js:40:5)\n    at Object.loader (C:\\code\\docxjs\\node_modules\\ts-loader\\dist\\index.js:23:5)");
+
+/***/ }),
+
 /***/ "./src/document/bookmarks.ts":
 /*!***********************************!*\
   !*** ./src/document/bookmarks.ts ***!
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1290,6 +1306,7 @@ exports.WmlBookmarkEnd = WmlBookmarkEnd;
   \********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseBorders = exports.parseBorder = void 0;
@@ -1337,6 +1354,7 @@ exports.parseBorders = parseBorders;
   \********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1401,6 +1419,7 @@ exports.WmlLastRenderedPageBreak = WmlLastRenderedPageBreak;
   \********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseElementValue = exports.convertPercentage = exports.convertBoolean = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
@@ -1451,6 +1470,7 @@ exports.parseElementValue = parseElementValue;
   \***************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1493,6 +1513,7 @@ exports.DocumentPart = DocumentPart;
   \**********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1555,6 +1576,7 @@ exports.WmlBody = WmlBody;
   \*****************************/
 /***/ (function(__unused_webpack_module, exports) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1602,6 +1624,7 @@ exports.DocxContainer = DocxContainer;
   \*********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1655,6 +1678,7 @@ exports.parseDmlPicture = parseDmlPicture;
   \********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1726,6 +1750,7 @@ exports.WmlFieldSimple = WmlFieldSimple;
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1780,6 +1805,7 @@ exports.WmlHyperlink = WmlHyperlink;
   \**************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseLineSpacing = void 0;
@@ -1802,6 +1828,7 @@ exports.parseLineSpacing = parseLineSpacing;
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1937,6 +1964,7 @@ exports.parseNumbering = parseNumbering;
   \*****************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2089,6 +2117,7 @@ exports.parseShading = parseShading;
   \*********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseSectionProperties = exports.SectionType = void 0;
@@ -2172,6 +2201,7 @@ function parseFooterHeaderReference(elem, xml) {
   \************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2219,6 +2249,7 @@ exports.WmlTableCell = WmlTableCell;
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2266,6 +2297,7 @@ exports.WmlTableRow = WmlTableRow;
   \*******************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2359,6 +2391,7 @@ exports.parseTableColumns = parseTableColumns;
   \******************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2451,6 +2484,7 @@ exports.WmlInstructionText = WmlInstructionText;
   \*****************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -2505,6 +2539,7 @@ exports.renderAsync = renderAsync;
   \**************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2546,6 +2581,7 @@ exports.FontTablePart = FontTablePart;
   \*********************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseFont = exports.parseFonts = void 0;
@@ -2585,6 +2621,7 @@ exports.parseFont = parseFont;
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2627,6 +2664,7 @@ exports.FooterPart = FooterPart;
   \******************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2674,6 +2712,7 @@ exports.WmlFooter = WmlFooter;
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2716,6 +2755,7 @@ exports.HeaderPart = HeaderPart;
   \******************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2763,6 +2803,7 @@ exports.WmlHeader = WmlHeader;
   \******************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -3558,6 +3599,7 @@ function findParent(elem, type) {
   \***************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updateTabStop = void 0;
@@ -3595,6 +3637,7 @@ exports.updateTabStop = updateTabStop;
   \*****************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -3639,6 +3682,7 @@ exports.NumberingPart = NumberingPart;
   \************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumberingBulletPicture = exports.parseNumberingLevelOverrride = exports.parseNumberingLevel = exports.parseAbstractNumbering = exports.parseNumbering = exports.parseNumberingPart = void 0;
@@ -3789,6 +3833,7 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
   \**********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XmlParser = exports.attr = exports.elements = exports.serializeXmlString = exports.parseXmlString = void 0;
@@ -3881,6 +3926,7 @@ exports.default = globalXmlParser;
   \*************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deserializeSchema = exports.deserializeElement = exports.buildXmlSchema = exports.fromElement = exports.fromAttribute = exports.fromText = exports.children = exports.element = void 0;
@@ -4012,6 +4058,7 @@ function getPrototypeXmlSchema(proto) {
   \*****************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseDocumentDefaults = void 0;
@@ -4047,6 +4094,7 @@ exports.parseDocumentDefaults = parseDocumentDefaults;
   \*****************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -4138,6 +4186,7 @@ exports.parseStyle = parseStyle;
   \***********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -4201,6 +4250,7 @@ exports.parseStylesPart = parseStylesPart;
   \**********************/
 /***/ (function(__unused_webpack_module, exports) {
 
+"use strict";
 
 var __spreadArray = (this && this.__spreadArray) || function (to, from) {
     for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
@@ -4268,6 +4318,7 @@ exports.mergeDeep = mergeDeep;
   \******************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deobfuscate = exports.WordDocument = void 0;
@@ -4280,6 +4331,7 @@ var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
 var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/footer/footer-part.ts");
 var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/header/header-part.ts");
+var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
@@ -4299,7 +4351,16 @@ var WordDocument = (function () {
                 target: "word/document.xml",
                 type: relationship_1.RelationshipTypes.OfficeDocument
             }, target = _b.target, type = _b.type;
-            return d.loadRelationshipPart(target, type).then(function () { return d; });
+            return d.loadRelationshipPart(target, type)
+                .then(function () {
+                var _a;
+                var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.ExtendedProperties; })) !== null && _a !== void 0 ? _a : {
+                    target: "docProps/app.xml",
+                    type: relationship_1.RelationshipTypes.ExtendedProperties
+                }, target = _b.target, type = _b.type;
+                return d.loadRelationshipPart(target, type);
+            })
+                .then(function () { return d; });
         });
     };
     WordDocument.prototype.save = function (type) {
@@ -4331,6 +4392,9 @@ var WordDocument = (function () {
                 break;
             case relationship_1.RelationshipTypes.Header:
                 part = new header_part_1.HeaderPart(this._package, path, this._parser);
+                break;
+            case relationship_1.RelationshipTypes.ExtendedProperties:
+                this.extendedPropsPart = part = new extended_props_part_1.ExtendedPropsPart(this._package, path);
                 break;
         }
         if (part == null)
@@ -4391,6 +4455,7 @@ exports.deobfuscate = deobfuscate;
   \************************/
 /***/ ((module) => {
 
+"use strict";
 module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 
 /***/ })
@@ -4403,8 +4468,9 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
