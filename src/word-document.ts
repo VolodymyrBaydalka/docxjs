@@ -13,6 +13,11 @@ import { FooterPart } from "./footer/footer-part";
 import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
 
+const topLevelRels = [
+    { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
+    { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+]
+
 export class WordDocument {
     private _package: OpenXmlPackage;
     private _parser: DocumentParser;
@@ -39,22 +44,14 @@ export class WordDocument {
                 return d._package.loadRelationships();
             }).then(rels => {
                 d.rels = rels;
-                let { target, type } = rels.find(x => x.type == RelationshipTypes.OfficeDocument) ?? {
-                    target: "word/document.xml",
-                    type: RelationshipTypes.OfficeDocument
-                }; //fallback
 
-                return d.loadRelationshipPart(target, type)
-                    .then(() => {
-                        let { target, type } = rels.find(x => x.type == RelationshipTypes.ExtendedProperties) ?? {
-                            target: "docProps/app.xml",
-                            type: RelationshipTypes.ExtendedProperties
-                        }; // fallback again
+                const tasks = topLevelRels.map(rel => {
+                    const r = rels.find(x => x.type === rel.type) ?? rel; //fallback                    
+                    return d.loadRelationshipPart(r.target, r.type);
+                });
 
-                        return d.loadRelationshipPart(target, type);
-                    })
-                    .then(() => d);
-            });
+                return Promise.all(tasks);
+            }).then(() => d);
     }
 
     save(type = "blob"): Promise<any> {

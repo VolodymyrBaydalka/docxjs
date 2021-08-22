@@ -38,7 +38,7 @@ export class OpenXmlPackage {
         let relsPath = `_rels/.rels`;
 
         if (path != null) {
-            let [f, fn] = splitPath(path);
+            const [f, fn] = splitPath(path);
             relsPath = `${f}_rels/${fn}.rels`;
         }
 

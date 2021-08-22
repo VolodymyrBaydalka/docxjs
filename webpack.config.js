@@ -26,7 +26,6 @@ var config = {
     ]
   },
   resolve: {
-    // you can now require('file') instead of require('file.js')
     extensions: ['.ts', '.js']
   },
   externals: {

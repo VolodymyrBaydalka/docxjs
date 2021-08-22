@@ -3182,7 +3182,7 @@ var HtmlRenderer = (function () {
         var _loop_3 = function () {
             selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
-            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter")) {
+            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter" || num.format == "lowerRoman")) {
                 var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
                     styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
@@ -4379,6 +4379,10 @@ var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/style
 var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/footer/footer-part.ts");
 var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/header/header-part.ts");
 var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
+var topLevelRels = [
+    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
+    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+];
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
@@ -4392,23 +4396,14 @@ var WordDocument = (function () {
             d._package = pkg;
             return d._package.loadRelationships();
         }).then(function (rels) {
-            var _a;
             d.rels = rels;
-            var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.OfficeDocument; })) !== null && _a !== void 0 ? _a : {
-                target: "word/document.xml",
-                type: relationship_1.RelationshipTypes.OfficeDocument
-            }, target = _b.target, type = _b.type;
-            return d.loadRelationshipPart(target, type)
-                .then(function () {
+            var tasks = topLevelRels.map(function (rel) {
                 var _a;
-                var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.ExtendedProperties; })) !== null && _a !== void 0 ? _a : {
-                    target: "docProps/app.xml",
-                    type: relationship_1.RelationshipTypes.ExtendedProperties
-                }, target = _b.target, type = _b.type;
-                return d.loadRelationshipPart(target, type);
-            })
-                .then(function () { return d; });
-        });
+                var r = (_a = rels.find(function (x) { return x.type === rel.type; })) !== null && _a !== void 0 ? _a : rel;
+                return d.loadRelationshipPart(r.target, r.type);
+            });
+            return Promise.all(tasks);
+        }).then(function () { return d; });
     };
     WordDocument.prototype.save = function (type) {
         if (type === void 0) { type = "blob"; }
@@ -4514,9 +4509,8 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
+/******/ 		if(__webpack_module_cache__[moduleId]) {
+/******/ 			return __webpack_module_cache__[moduleId].exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
