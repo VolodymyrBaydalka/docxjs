@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Docx Editor Demo</title>
+    <script crossorigin src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script crossorigin src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  </head>
+
+  <body>
+    <div class="toolbar">
+      <input id="fileInput" type="file" accept=".docx"/>
+      <button id="loadBtn" type="button">Load</button>
+      <button id="saveBtn" type="button">Save</button>
+    </div>
+    <div id="root"></div>
+    <script src="./build/index.js"></script>
+  </body>
+</html>
