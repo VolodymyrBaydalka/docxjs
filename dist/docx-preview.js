@@ -138,6 +138,8 @@ var RelationshipTypes;
     RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
     RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
     RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
+    RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
+    RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 })(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
 function parseRelationships(root, xmlParser) {
     return xmlParser.elements(root).map(function (e) { return ({
@@ -1207,6 +1209,102 @@ var values = (function () {
     };
     return values;
 }());
+
+
+/***/ }),
+
+/***/ "./src/document-props/extended-props-part.ts":
+/*!***************************************************!*\
+  !*** ./src/document-props/extended-props-part.ts ***!
+  \***************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ExtendedPropsPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var props_1 = __webpack_require__(/*! ./props */ "./src/document-props/props.ts");
+var ExtendedPropsPart = (function (_super) {
+    __extends(ExtendedPropsPart, _super);
+    function ExtendedPropsPart() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    ExtendedPropsPart.prototype.parseXml = function (root) {
+        this.props = props_1.parseExtendedProps(root, this._package.xmlParser);
+    };
+    return ExtendedPropsPart;
+}(part_1.Part));
+exports.ExtendedPropsPart = ExtendedPropsPart;
+
+
+/***/ }),
+
+/***/ "./src/document-props/props.ts":
+/*!*************************************!*\
+  !*** ./src/document-props/props.ts ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseExtendedProps = void 0;
+function parseExtendedProps(root, xmlParser) {
+    var result = {};
+    for (var _i = 0, _a = xmlParser.elements(root); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "Template":
+                result.template = el.textContent;
+                break;
+            case "Pages":
+                result.pages = safeParseToInt(el.textContent);
+                break;
+            case "Words":
+                result.words = safeParseToInt(el.textContent);
+                break;
+            case "Characters":
+                result.characters = safeParseToInt(el.textContent);
+                break;
+            case "Application":
+                result.application = el.textContent;
+                break;
+            case "Lines":
+                result.lines = safeParseToInt(el.textContent);
+                break;
+            case "Paragraphs":
+                result.paragraphs = safeParseToInt(el.textContent);
+                break;
+            case "Company":
+                result.company = el.textContent;
+                break;
+            case "AppVersion":
+                result.appVersion = el.textContent;
+                break;
+        }
+    }
+    return result;
+}
+exports.parseExtendedProps = parseExtendedProps;
+function safeParseToInt(value) {
+    if (typeof value === 'undefined')
+        return;
+    return parseInt(value);
+}
 
 
 /***/ }),
@@ -4280,6 +4378,7 @@ var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
 var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/footer/footer-part.ts");
 var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/header/header-part.ts");
+var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
@@ -4299,7 +4398,16 @@ var WordDocument = (function () {
                 target: "word/document.xml",
                 type: relationship_1.RelationshipTypes.OfficeDocument
             }, target = _b.target, type = _b.type;
-            return d.loadRelationshipPart(target, type).then(function () { return d; });
+            return d.loadRelationshipPart(target, type)
+                .then(function () {
+                var _a;
+                var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.ExtendedProperties; })) !== null && _a !== void 0 ? _a : {
+                    target: "docProps/app.xml",
+                    type: relationship_1.RelationshipTypes.ExtendedProperties
+                }, target = _b.target, type = _b.type;
+                return d.loadRelationshipPart(target, type);
+            })
+                .then(function () { return d; });
         });
     };
     WordDocument.prototype.save = function (type) {
@@ -4331,6 +4439,9 @@ var WordDocument = (function () {
                 break;
             case relationship_1.RelationshipTypes.Header:
                 part = new header_part_1.HeaderPart(this._package, path, this._parser);
+                break;
+            case relationship_1.RelationshipTypes.ExtendedProperties:
+                this.extendedPropsPart = part = new extended_props_part_1.ExtendedPropsPart(this._package, path);
                 break;
         }
         if (part == null)
@@ -4403,8 +4514,9 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
