@@ -108,11 +108,13 @@ export class DocumentParser {
                 case "pPrDefault":
                     var pPr = globalXmlParser.element(c, "pPr");
 
-                    if (pPr)
+                    if (pPr) {
                         result.styles.push({
                             target: "p",
                             values: this.parseDefaultProperties(pPr, {})
                         });
+                        result.paragraphProps = parseParagraphProperties(pPr, globalXmlParser);
+                    }
                     break;
             }
         });
@@ -751,10 +753,6 @@ export class DocumentParser {
                     style["text-align"] = values.valueOfJc(c);
                     break;
 
-                case "textAlignment":
-                    style["vertical-align"] = values.valueOfTextAlignment(c);
-                    break;
-
                 case "color":
                     style["color"] = xml.colorAttr(c, "val", null, autos.color);
                     break;
@@ -847,11 +845,6 @@ export class DocumentParser {
                     style["vertical-align"] = xml.stringAttr(c, "val");
                     break;
 
-                case "spacing":
-                    if (elem.localName == "pPr")
-                        this.parseSpacing(c, style);
-                    break;
-
                 case "lang":
                 case "noProof": //ignore spellcheck
                 case "webHidden": // maybe web-hidden should be implemented
@@ -934,32 +927,6 @@ export class DocumentParser {
         if (firstLine) style["text-indent"] = firstLine;
         if (left || start) style["margin-left"] = left || start;
         if (right || end) style["margin-right"] = right || end;
-    }
-
-    parseSpacing(node: Element, style: Record<string, string>) {
-        var before = xml.sizeAttr(node, "before");
-        var after = xml.sizeAttr(node, "after");
-        var line = xml.intAttr(node, "line", null);
-        var lineRule = xml.stringAttr(node, "lineRule");
-
-        if (before) style["margin-top"] = before;
-        if (after) style["margin-bottom"] = after;
-        
-        if (line !== null) {
-            switch(lineRule) {
-                case "auto": 
-                    style["line-height"] = `${(line / 240).toFixed(2)}`;
-                    break;
-
-                case "atLeast":
-                    style["line-height"] = `calc(100% + ${line / 20}pt)`;
-                    break;
-
-                default:
-                    style["line-height"] = style["min-height"] = `${line / 20}pt`
-                    break;
-            }
-        }
     }
 
     parseMarginProperties(node: Element, output: Record<string, string>) {
@@ -1178,20 +1145,6 @@ class values {
             case "end":
             case "right": return "right";
             case "both": return "justify";
-        }
-
-        return type;
-    }
-
-    static valueOfTextAlignment(c: Element) {
-        var type = xml.stringAttr(c, "val");
-
-        switch (type) {
-            case "auto":
-            case "baseline": return "baseline";
-            case "top": return "top";
-            case "center": return "middle";
-            case "bottom": return "bottom";
         }
 
         return type;

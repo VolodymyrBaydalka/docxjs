@@ -8,6 +8,7 @@ import { parseRunProperties, RunProperties } from "./run";
 import { children, element } from "../parser/xml-serialize";
 import { WmlBookmarkEnd, WmlBookmarkStart } from "./bookmarks";
 import { WmlFieldSimple } from "./fields";
+import { Indentation, parseIndentation } from "./indentation";
 
 @element("p")
 @children(WmlBookmarkStart, WmlBookmarkEnd, WmlFieldSimple)
@@ -23,6 +24,7 @@ export interface ParagraphProperties {
     border: Borders;
     textAlignment: "auto" | "baseline" | "bottom" | "center" | "top" | string;
     lineSpacing: LineSpacing;
+    indentation: Indentation;
     keepLines: boolean;
     keepNext: boolean;
     pageBreakBefore: boolean;
@@ -72,12 +74,15 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
         
         case "spacing":
             props.lineSpacing = parseLineSpacing(elem, xml);
-            return false; // TODO
+            break;
+
+        case "ind":
+            props.indentation = parseIndentation(elem, xml);
+            return false;
             break;
 
         case "textAlignment":
             props.textAlignment = xml.attr(elem, "val");
-            return false; //TODO
             break;
 
         case "keepNext":

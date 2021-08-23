@@ -36,12 +36,20 @@ export const LengthUsage: Record<string, LengthUsageType> = {
 }
 
 export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
+    if (!val) {
+        return null;
+    }
+
     //"simplified" docx documents use pt's as units
-    if (val && val.endsWith('pt')) {
+    if (val.endsWith('pt')) {
         return { value: parseFloat(val), type: 'pt' };
     }
 
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+    if (val.endsWith('%')) {
+        return { value: parseFloat(val), type: '%' };
+    }
+
+    return { value: parseInt(val) * usage.mul, type: usage.unit };
 }
 
 export function convertBoolean(v: string, defaultValue = false): boolean {

@@ -254,11 +254,13 @@ var DocumentParser = (function () {
                     break;
                 case "pPrDefault":
                     var pPr = xml_parser_1.default.element(c, "pPr");
-                    if (pPr)
+                    if (pPr) {
                         result.styles.push({
                             target: "p",
                             values: _this.parseDefaultProperties(pPr, {})
                         });
+                        result.paragraphProps = paragraph_1.parseParagraphProperties(pPr, xml_parser_1.default);
+                    }
                     break;
             }
         });
@@ -805,9 +807,6 @@ var DocumentParser = (function () {
                 case "jc":
                     style["text-align"] = values.valueOfJc(c);
                     break;
-                case "textAlignment":
-                    style["vertical-align"] = values.valueOfTextAlignment(c);
-                    break;
                 case "color":
                     style["color"] = xml.colorAttr(c, "val", null, exports.autos.color);
                     break;
@@ -875,10 +874,6 @@ var DocumentParser = (function () {
                     break;
                 case "vAlign":
                     style["vertical-align"] = xml.stringAttr(c, "val");
-                    break;
-                case "spacing":
-                    if (elem.localName == "pPr")
-                        _this.parseSpacing(c, style);
                     break;
                 case "lang":
                 case "noProof":
@@ -948,29 +943,6 @@ var DocumentParser = (function () {
             style["margin-left"] = left || start;
         if (right || end)
             style["margin-right"] = right || end;
-    };
-    DocumentParser.prototype.parseSpacing = function (node, style) {
-        var before = xml.sizeAttr(node, "before");
-        var after = xml.sizeAttr(node, "after");
-        var line = xml.intAttr(node, "line", null);
-        var lineRule = xml.stringAttr(node, "lineRule");
-        if (before)
-            style["margin-top"] = before;
-        if (after)
-            style["margin-bottom"] = after;
-        if (line !== null) {
-            switch (lineRule) {
-                case "auto":
-                    style["line-height"] = "" + (line / 240).toFixed(2);
-                    break;
-                case "atLeast":
-                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
-                    break;
-                default:
-                    style["line-height"] = style["min-height"] = line / 20 + "pt";
-                    break;
-            }
-        }
     };
     DocumentParser.prototype.parseMarginProperties = function (node, output) {
         xml.foreach(node, function (c) {
@@ -1170,17 +1142,6 @@ var values = (function () {
             case "end":
             case "right": return "right";
             case "both": return "justify";
-        }
-        return type;
-    };
-    values.valueOfTextAlignment = function (c) {
-        var type = xml.stringAttr(c, "val");
-        switch (type) {
-            case "auto":
-            case "baseline": return "baseline";
-            case "top": return "top";
-            case "center": return "middle";
-            case "bottom": return "bottom";
         }
         return type;
     };
@@ -1519,7 +1480,16 @@ exports.LengthUsage = {
 };
 function convertLength(val, usage) {
     if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+    if (!val) {
+        return null;
+    }
+    if (val.endsWith('pt')) {
+        return { value: parseFloat(val), type: 'pt' };
+    }
+    if (val.endsWith('%')) {
+        return { value: parseFloat(val), type: '%' };
+    }
+    return { value: parseInt(val) * usage.mul, type: usage.unit };
 }
 exports.convertLength = convertLength;
 function convertBoolean(v, defaultValue) {
@@ -1872,21 +1842,45 @@ exports.WmlHyperlink = WmlHyperlink;
 
 /***/ }),
 
-/***/ "./src/document/line-spacing.ts":
-/*!**************************************!*\
-  !*** ./src/document/line-spacing.ts ***!
-  \**************************************/
+/***/ "./src/document/indentation.ts":
+/*!*************************************!*\
+  !*** ./src/document/indentation.ts ***!
+  \*************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseIndentation = void 0;
+function parseIndentation(elem, xml) {
+    return {
+        start: xml.lengthAttr(elem, "start"),
+        end: xml.lengthAttr(elem, "end"),
+        hanging: xml.lengthAttr(elem, "hanging"),
+        firstLine: xml.lengthAttr(elem, "firstLine"),
+    };
+}
+exports.parseIndentation = parseIndentation;
+
+
+/***/ }),
+
+/***/ "./src/document/line-spacing.ts":
+/*!**************************************!*\
+  !*** ./src/document/line-spacing.ts ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseLineSpacing = void 0;
+var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 function parseLineSpacing(elem, xml) {
+    var lineRule = xml.attr(elem, "lineRule");
     return {
         before: xml.lengthAttr(elem, "before"),
         after: xml.lengthAttr(elem, "after"),
-        line: xml.intAttr(elem, "line"),
-        lineRule: xml.attr(elem, "lineRule")
+        line: xml.lengthAttr(elem, "line", lineRule === 'auto' ? common_1.LengthUsage.LineHeight : common_1.LengthUsage.Dxa),
+        lineRule: lineRule
     };
 }
 exports.parseLineSpacing = parseLineSpacing;
@@ -1932,6 +1926,7 @@ var run_1 = __webpack_require__(/*! ./run */ "./src/document/run.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var bookmarks_1 = __webpack_require__(/*! ./bookmarks */ "./src/document/bookmarks.ts");
 var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
+var indentation_1 = __webpack_require__(/*! ./indentation */ "./src/document/indentation.ts");
 var WmlParagraph = (function (_super) {
     __extends(WmlParagraph, _super);
     function WmlParagraph() {
@@ -1970,11 +1965,13 @@ function parseParagraphProperty(elem, props, xml) {
             break;
         case "spacing":
             props.lineSpacing = line_spacing_1.parseLineSpacing(elem, xml);
+            break;
+        case "ind":
+            props.indentation = indentation_1.parseIndentation(elem, xml);
             return false;
             break;
         case "textAlignment":
             props.textAlignment = xml.attr(elem, "val");
-            return false;
             break;
         case "keepNext":
             props.keepLines = xml.boolAttr(elem, "val", true);
@@ -3158,7 +3155,8 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderLength = function (l) {
-        return l ? "" + l.value + l.type : null;
+        var _a;
+        return l ? "" + l.value.toFixed(2) + ((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
     };
     HtmlRenderer.prototype.renderColor = function (c, autoColor) {
         if (autoColor === void 0) { autoColor = 'black'; }
@@ -3328,6 +3326,7 @@ var HtmlRenderer = (function () {
         var result = this.renderContainer(elem, "p");
         this.renderClass(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+        this.renderParagraphProperties(result.style, elem.props);
         var style = elem.props.styleId && ((_a = this.styleMap) === null || _a === void 0 ? void 0 : _a[elem.props.styleId]);
         var numbering = (_b = elem.props.numbering) !== null && _b !== void 0 ? _b : (_c = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _c === void 0 ? void 0 : _c.numbering;
         if (numbering) {
@@ -3347,10 +3346,41 @@ var HtmlRenderer = (function () {
                 case "lineSpacing":
                     this.renderLineSpacing(style, v);
                     break;
+                case "textAlignment":
+                    this.renderTextAligment(style, v);
+                    break;
             }
         }
     };
+    HtmlRenderer.prototype.renderTextAligment = function (style, v) {
+        var valuesMap = {
+            "auto": "baseline",
+            "baseline": "baseline",
+            "top": "top",
+            "center": "middle",
+            "bottom": "bottom"
+        };
+        if (v in valuesMap)
+            style['vertical-align'] = valuesMap[v];
+    };
     HtmlRenderer.prototype.renderLineSpacing = function (style, spacing) {
+        if (spacing.after) {
+            style["margin-bottom"] = this.renderLength(spacing.after);
+        }
+        if (spacing.before) {
+            style["margin-top"] = this.renderLength(spacing.before);
+        }
+        switch (spacing.lineRule) {
+            case 'atLeast':
+                style['line-height'] = "calc(100% - " + this.renderLength(spacing.line) + ")";
+                break;
+            case 'auto':
+                style['line-height'] = this.renderLength(spacing.line);
+                break;
+            case 'exactly':
+                style['line-height'] = style['min-height'] = this.renderLength(spacing.line);
+                break;
+        }
     };
     HtmlRenderer.prototype.renderRunProperties = function (style, props) {
         for (var p in props) {

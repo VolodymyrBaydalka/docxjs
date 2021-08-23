@@ -355,7 +355,7 @@ export class HtmlRenderer {
     }
 
     renderLength(l: Length): string {
-        return l ? `${l.value}${l.type}` : null;
+        return l ? `${l.value.toFixed(2)}${l.type ?? ''}` : null;
     }
 
     renderColor(c: string, autoColor: string = 'black'): string {
@@ -613,6 +613,7 @@ export class HtmlRenderer {
 
         this.renderClass(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+        this.renderParagraphProperties(result.style, elem.props);
 
         const style = elem.props.styleId && this.styleMap?.[elem.props.styleId]; 
         const numbering = elem.props.numbering ?? style?.paragraphProps?.numbering;
@@ -638,12 +639,48 @@ export class HtmlRenderer {
                 case "lineSpacing":
                     this.renderLineSpacing(style, v);
                     break;
+
+                case "textAlignment":
+                    this.renderTextAligment(style, v);
+                    break;
             }
         }
     }
 
+    renderTextAligment(style: any, v: any) {
+        const valuesMap = {
+            "auto": "baseline",
+            "baseline": "baseline",
+            "top": "top",
+            "center": "middle",
+            "bottom": "bottom"
+        }
+
+        if(v in valuesMap)
+            style['vertical-align'] = valuesMap[v];
+    }
+
     renderLineSpacing(style: any, spacing: LineSpacing) {   
-        //TODO
+        if (spacing.after) {
+            style["margin-bottom"] = this.renderLength(spacing.after)
+        }
+
+        if (spacing.before) {
+            style["margin-top"] = this.renderLength(spacing.before)
+        }
+
+        switch(spacing.lineRule) {
+            case 'atLeast':
+                style['line-height'] = `calc(100% - ${this.renderLength(spacing.line)})`;
+                break;
+            case 'auto':
+                style['line-height'] = this.renderLength(spacing.line);
+                break;
+            case 'exactly':
+                //TODO: setting min-height maybe not needed
+                style['line-height'] = style['min-height'] = this.renderLength(spacing.line);
+                break;
+        }
     }
 
     renderRunProperties(style: any, props: RunProperties) {
