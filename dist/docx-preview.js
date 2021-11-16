@@ -1178,30 +1178,16 @@ var values = (function () {
 /*!***************************************************!*\
   !*** ./src/document-props/extended-props-part.ts ***!
   \***************************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ExtendedPropsPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var props_1 = __webpack_require__(/*! ./props */ "./src/document-props/props.ts");
 var ExtendedPropsPart = (function (_super) {
-    __extends(ExtendedPropsPart, _super);
+    tslib_1.__extends(ExtendedPropsPart, _super);
     function ExtendedPropsPart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
@@ -1274,66 +1260,46 @@ function safeParseToInt(value) {
 /*!***********************************!*\
   !*** ./src/document/bookmarks.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlBookmarkEnd = exports.WmlBookmarkStart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlBookmarkStart = (function (_super) {
-    __extends(WmlBookmarkStart, _super);
+    tslib_1.__extends(WmlBookmarkStart, _super);
     function WmlBookmarkStart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("id")
     ], WmlBookmarkStart.prototype, "id", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("name")
     ], WmlBookmarkStart.prototype, "name", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("colFirst")
     ], WmlBookmarkStart.prototype, "colFirst", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("colLast")
     ], WmlBookmarkStart.prototype, "colLast", void 0);
-    WmlBookmarkStart = __decorate([
+    WmlBookmarkStart = tslib_1.__decorate([
         xml_serialize_1.element("bookmarkStart")
     ], WmlBookmarkStart);
     return WmlBookmarkStart;
 }(dom_1.DocxElement));
 exports.WmlBookmarkStart = WmlBookmarkStart;
 var WmlBookmarkEnd = (function (_super) {
-    __extends(WmlBookmarkEnd, _super);
+    tslib_1.__extends(WmlBookmarkEnd, _super);
     function WmlBookmarkEnd() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("id")
     ], WmlBookmarkEnd.prototype, "id", void 0);
-    WmlBookmarkEnd = __decorate([
+    WmlBookmarkEnd = tslib_1.__decorate([
         xml_serialize_1.element("bookmarkEnd")
     ], WmlBookmarkEnd);
     return WmlBookmarkEnd;
@@ -1394,57 +1360,37 @@ exports.parseBorders = parseBorders;
 /*!********************************!*\
   !*** ./src/document/breaks.ts ***!
   \********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlLastRenderedPageBreak = exports.WmlBreak = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlBreak = (function (_super) {
-    __extends(WmlBreak, _super);
+    tslib_1.__extends(WmlBreak, _super);
     function WmlBreak() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("type")
     ], WmlBreak.prototype, "type", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("clear")
     ], WmlBreak.prototype, "clear", void 0);
-    WmlBreak = __decorate([
+    WmlBreak = tslib_1.__decorate([
         xml_serialize_1.element('br')
     ], WmlBreak);
     return WmlBreak;
 }(dom_1.DocxElement));
 exports.WmlBreak = WmlBreak;
 var WmlLastRenderedPageBreak = (function (_super) {
-    __extends(WmlLastRenderedPageBreak, _super);
+    tslib_1.__extends(WmlLastRenderedPageBreak, _super);
     function WmlLastRenderedPageBreak() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlLastRenderedPageBreak = __decorate([
+    WmlLastRenderedPageBreak = tslib_1.__decorate([
         xml_serialize_1.element('lastRenderedPageBreak')
     ], WmlLastRenderedPageBreak);
     return WmlLastRenderedPageBreak;
@@ -1517,29 +1463,15 @@ exports.parseElementValue = parseElementValue;
 /*!***************************************!*\
   !*** ./src/document/document-part.ts ***!
   \***************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
-    __extends(DocumentPart, _super);
+    tslib_1.__extends(DocumentPart, _super);
     function DocumentPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -1559,55 +1491,35 @@ exports.DocumentPart = DocumentPart;
 /*!**********************************!*\
   !*** ./src/document/document.ts ***!
   \**********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlBody = exports.WmlDocument = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/document/section.ts");
 var WmlDocument = (function (_super) {
-    __extends(WmlDocument, _super);
+    tslib_1.__extends(WmlDocument, _super);
     function WmlDocument() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlDocument = __decorate([
+    WmlDocument = tslib_1.__decorate([
         xml_serialize_1.element("document")
     ], WmlDocument);
     return WmlDocument;
 }(dom_1.DocxElement));
 exports.WmlDocument = WmlDocument;
 var WmlBody = (function (_super) {
-    __extends(WmlBody, _super);
+    tslib_1.__extends(WmlBody, _super);
     function WmlBody() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromElement("sectPr", section_1.parseSectionProperties)
     ], WmlBody.prototype, "sectionProps", void 0);
-    WmlBody = __decorate([
+    WmlBody = tslib_1.__decorate([
         xml_serialize_1.element("body")
     ], WmlBody);
     return WmlBody;
@@ -1621,26 +1533,12 @@ exports.WmlBody = WmlBody;
 /*!*****************************!*\
   !*** ./src/document/dom.ts ***!
   \*****************************/
-/***/ (function(__unused_webpack_module, exports) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocxContainer = exports.DocxElement = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var DocxElement = (function () {
     function DocxElement(parent) {
         this.parent = parent;
@@ -1651,7 +1549,7 @@ var DocxElement = (function () {
 }());
 exports.DocxElement = DocxElement;
 var DocxContainer = (function (_super) {
-    __extends(DocxContainer, _super);
+    tslib_1.__extends(DocxContainer, _super);
     function DocxContainer() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.children = [];
@@ -1668,38 +1566,28 @@ exports.DocxContainer = DocxContainer;
 /*!*********************************!*\
   !*** ./src/document/drawing.ts ***!
   \*********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseDmlPicture = exports.DmlPicture = exports.WmlDrawing = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlDrawing = (function (_super) {
-    __extends(WmlDrawing, _super);
+    tslib_1.__extends(WmlDrawing, _super);
     function WmlDrawing() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    WmlDrawing = tslib_1.__decorate([
+        xml_serialize_1.element('drawing')
+    ], WmlDrawing);
     return WmlDrawing;
 }(dom_1.DocxContainer));
 exports.WmlDrawing = WmlDrawing;
 var DmlPicture = (function (_super) {
-    __extends(DmlPicture, _super);
+    tslib_1.__extends(DmlPicture, _super);
     function DmlPicture() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
@@ -1721,64 +1609,44 @@ exports.parseDmlPicture = parseDmlPicture;
 /*!********************************!*\
   !*** ./src/document/fields.ts ***!
   \********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlFieldSimple = exports.WmlFieldChar = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlFieldChar = (function (_super) {
-    __extends(WmlFieldChar, _super);
+    tslib_1.__extends(WmlFieldChar, _super);
     function WmlFieldChar() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute('fldCharType')
     ], WmlFieldChar.prototype, "type", void 0);
-    WmlFieldChar = __decorate([
+    WmlFieldChar = tslib_1.__decorate([
         xml_serialize_1.element('fldChar')
     ], WmlFieldChar);
     return WmlFieldChar;
 }(dom_1.DocxElement));
 exports.WmlFieldChar = WmlFieldChar;
 var WmlFieldSimple = (function (_super) {
-    __extends(WmlFieldSimple, _super);
+    tslib_1.__extends(WmlFieldSimple, _super);
     function WmlFieldSimple() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("dirty", common_1.convertBoolean)
     ], WmlFieldSimple.prototype, "dirty", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("fldLock", common_1.convertBoolean)
     ], WmlFieldSimple.prototype, "lock", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("instr")
     ], WmlFieldSimple.prototype, "instruction", void 0);
-    WmlFieldSimple = __decorate([
+    WmlFieldSimple = tslib_1.__decorate([
         xml_serialize_1.element('fldSimple')
     ], WmlFieldSimple);
     return WmlFieldSimple;
@@ -1792,47 +1660,27 @@ exports.WmlFieldSimple = WmlFieldSimple;
 /*!***********************************!*\
   !*** ./src/document/hyperlink.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlHyperlink = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlHyperlink = (function (_super) {
-    __extends(WmlHyperlink, _super);
+    tslib_1.__extends(WmlHyperlink, _super);
     function WmlHyperlink() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     WmlHyperlink.prototype.parse = function (elem) {
         this.anchor = xml_parser_1.default.attr(elem, "anchor");
     };
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute('anchor')
     ], WmlHyperlink.prototype, "anchor", void 0);
-    WmlHyperlink = __decorate([
+    WmlHyperlink = tslib_1.__decorate([
         xml_serialize_1.element('hyperlink')
     ], WmlHyperlink);
     return WmlHyperlink;
@@ -1892,32 +1740,12 @@ exports.parseLineSpacing = parseLineSpacing;
 /*!***********************************!*\
   !*** ./src/document/paragraph.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = exports.WmlParagraph = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/document/section.ts");
@@ -1928,13 +1756,13 @@ var bookmarks_1 = __webpack_require__(/*! ./bookmarks */ "./src/document/bookmar
 var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
 var indentation_1 = __webpack_require__(/*! ./indentation */ "./src/document/indentation.ts");
 var WmlParagraph = (function (_super) {
-    __extends(WmlParagraph, _super);
+    tslib_1.__extends(WmlParagraph, _super);
     function WmlParagraph() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.props = {};
         return _this;
     }
-    WmlParagraph = __decorate([
+    WmlParagraph = tslib_1.__decorate([
         xml_serialize_1.element("p"),
         xml_serialize_1.children(bookmarks_1.WmlBookmarkStart, bookmarks_1.WmlBookmarkEnd, fields_1.WmlFieldSimple)
     ], WmlParagraph);
@@ -2030,49 +1858,30 @@ exports.parseNumbering = parseNumbering;
 /*!*****************************!*\
   !*** ./src/document/run.ts ***!
   \*****************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseShading = exports.parseRunFonts = exports.parseRunProperty = exports.parseRunProperties = exports.WmlRun = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var border_1 = __webpack_require__(/*! ./border */ "./src/document/border.ts");
 var breaks_1 = __webpack_require__(/*! ./breaks */ "./src/document/breaks.ts");
 var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
+var drawing_1 = __webpack_require__(/*! ./drawing */ "./src/document/drawing.ts");
 var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
 var text_1 = __webpack_require__(/*! ./text */ "./src/document/text.ts");
 var WmlRun = (function (_super) {
-    __extends(WmlRun, _super);
+    tslib_1.__extends(WmlRun, _super);
     function WmlRun() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.props = {};
         return _this;
     }
-    WmlRun = __decorate([
+    WmlRun = tslib_1.__decorate([
         xml_serialize_1.element('r'),
-        xml_serialize_1.children(text_1.WmlText, text_1.WmlSymbol, text_1.WmlTab, breaks_1.WmlBreak, text_1.WmlInstructionText, fields_1.WmlFieldChar, breaks_1.WmlLastRenderedPageBreak)
+        xml_serialize_1.children(text_1.WmlText, text_1.WmlSymbol, text_1.WmlTab, breaks_1.WmlBreak, text_1.WmlInstructionText, fields_1.WmlFieldChar, breaks_1.WmlLastRenderedPageBreak, drawing_1.WmlDrawing)
     ], WmlRun);
     return WmlRun;
 }(dom_1.DocxContainer));
@@ -2265,40 +2074,20 @@ function parseFooterHeaderReference(elem, xml) {
 /*!************************************!*\
   !*** ./src/document/table-cell.ts ***!
   \************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlTableCell = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlTableCell = (function (_super) {
-    __extends(WmlTableCell, _super);
+    tslib_1.__extends(WmlTableCell, _super);
     function WmlTableCell() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlTableCell = __decorate([
+    WmlTableCell = tslib_1.__decorate([
         xml_serialize_1.element("tc")
     ], WmlTableCell);
     return WmlTableCell;
@@ -2312,40 +2101,20 @@ exports.WmlTableCell = WmlTableCell;
 /*!***********************************!*\
   !*** ./src/document/table-row.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlTableRow = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlTableRow = (function (_super) {
-    __extends(WmlTableRow, _super);
+    tslib_1.__extends(WmlTableRow, _super);
     function WmlTableRow() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlTableRow = __decorate([
+    WmlTableRow = tslib_1.__decorate([
         xml_serialize_1.element("tr")
     ], WmlTableRow);
     return WmlTableRow;
@@ -2359,47 +2128,27 @@ exports.WmlTableRow = WmlTableRow;
 /*!*******************************!*\
   !*** ./src/document/table.ts ***!
   \*******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseTableColumns = exports.parseTableLook = exports.parseTableProperties = exports.WmlTable = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlTable = (function (_super) {
-    __extends(WmlTable, _super);
+    tslib_1.__extends(WmlTable, _super);
     function WmlTable() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromElement("tblGrid", parseTableColumns)
     ], WmlTable.prototype, "columns", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromElement("tblPr", parseTableProperties)
     ], WmlTable.prototype, "props", void 0);
-    WmlTable = __decorate([
+    WmlTable = tslib_1.__decorate([
         xml_serialize_1.element("tbl")
     ], WmlTable);
     return WmlTable;
@@ -2452,85 +2201,65 @@ exports.parseTableColumns = parseTableColumns;
 /*!******************************!*\
   !*** ./src/document/text.ts ***!
   \******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlInstructionText = exports.WmlTab = exports.WmlSymbol = exports.WmlText = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlText = (function (_super) {
-    __extends(WmlText, _super);
+    tslib_1.__extends(WmlText, _super);
     function WmlText() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromText()
     ], WmlText.prototype, "text", void 0);
-    WmlText = __decorate([
+    WmlText = tslib_1.__decorate([
         xml_serialize_1.element('t')
     ], WmlText);
     return WmlText;
 }(dom_1.DocxElement));
 exports.WmlText = WmlText;
 var WmlSymbol = (function (_super) {
-    __extends(WmlSymbol, _super);
+    tslib_1.__extends(WmlSymbol, _super);
     function WmlSymbol() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute('font')
     ], WmlSymbol.prototype, "font", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute('char')
     ], WmlSymbol.prototype, "char", void 0);
-    WmlSymbol = __decorate([
+    WmlSymbol = tslib_1.__decorate([
         xml_serialize_1.element('sym')
     ], WmlSymbol);
     return WmlSymbol;
 }(dom_1.DocxElement));
 exports.WmlSymbol = WmlSymbol;
 var WmlTab = (function (_super) {
-    __extends(WmlTab, _super);
+    tslib_1.__extends(WmlTab, _super);
     function WmlTab() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlTab = __decorate([
+    WmlTab = tslib_1.__decorate([
         xml_serialize_1.element('tab')
     ], WmlTab);
     return WmlTab;
 }(dom_1.DocxElement));
 exports.WmlTab = WmlTab;
 var WmlInstructionText = (function (_super) {
-    __extends(WmlInstructionText, _super);
+    tslib_1.__extends(WmlInstructionText, _super);
     function WmlInstructionText() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromText()
     ], WmlInstructionText.prototype, "text", void 0);
-    WmlInstructionText = __decorate([
+    WmlInstructionText = tslib_1.__decorate([
         xml_serialize_1.element("instrText")
     ], WmlInstructionText);
     return WmlInstructionText;
@@ -2544,22 +2273,12 @@ exports.WmlInstructionText = WmlInstructionText;
 /*!*****************************!*\
   !*** ./src/docx-preview.ts ***!
   \*****************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.renderAsync = exports.defaults = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
@@ -2581,7 +2300,7 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign(__assign({}, exports.defaults), userOptions);
+    var options = tslib_1.__assign(tslib_1.__assign({}, exports.defaults), userOptions);
     Object.assign(parser, options);
     Object.assign(renderer, options);
     return word_document_1.WordDocument.load(data, parser, options).then(function (doc) {
@@ -2598,30 +2317,16 @@ exports.renderAsync = renderAsync;
 /*!**************************************!*\
   !*** ./src/font-table/font-table.ts ***!
   \**************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FontTablePart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var fonts_1 = __webpack_require__(/*! ./fonts */ "./src/font-table/fonts.ts");
 var FontTablePart = (function (_super) {
-    __extends(FontTablePart, _super);
+    tslib_1.__extends(FontTablePart, _super);
     function FontTablePart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
@@ -2678,29 +2383,15 @@ exports.parseFont = parseFont;
 /*!***********************************!*\
   !*** ./src/footer/footer-part.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FooterPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var FooterPart = (function (_super) {
-    __extends(FooterPart, _super);
+    tslib_1.__extends(FooterPart, _super);
     function FooterPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -2720,40 +2411,20 @@ exports.FooterPart = FooterPart;
 /*!******************************!*\
   !*** ./src/footer/footer.ts ***!
   \******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlFooter = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var WmlFooter = (function (_super) {
-    __extends(WmlFooter, _super);
+    tslib_1.__extends(WmlFooter, _super);
     function WmlFooter() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlFooter = __decorate([
+    WmlFooter = tslib_1.__decorate([
         xml_serialize_1.element("ftr")
     ], WmlFooter);
     return WmlFooter;
@@ -2767,29 +2438,15 @@ exports.WmlFooter = WmlFooter;
 /*!***********************************!*\
   !*** ./src/header/header-part.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HeaderPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var HeaderPart = (function (_super) {
-    __extends(HeaderPart, _super);
+    tslib_1.__extends(HeaderPart, _super);
     function HeaderPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -2809,40 +2466,20 @@ exports.HeaderPart = HeaderPart;
 /*!******************************!*\
   !*** ./src/header/header.ts ***!
   \******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlHeader = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var WmlHeader = (function (_super) {
-    __extends(WmlHeader, _super);
+    tslib_1.__extends(WmlHeader, _super);
     function WmlHeader() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlHeader = __decorate([
+    WmlHeader = tslib_1.__decorate([
         xml_serialize_1.element("hdr")
     ], WmlHeader);
     return WmlHeader;
@@ -2856,22 +2493,12 @@ exports.WmlHeader = WmlHeader;
 /*!******************************!*\
   !*** ./src/html-renderer.ts ***!
   \******************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HtmlRenderer = exports.autos = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/document/paragraph.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
@@ -3210,7 +2837,7 @@ var HtmlRenderer = (function () {
             else {
                 listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
+            styleText += this_3.styleToString(selector, tslib_1.__assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
         };
         var this_3 = this, selector, listStyleType;
         for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
@@ -3721,30 +3348,16 @@ exports.updateTabStop = updateTabStop;
 /*!*****************************************!*\
   !*** ./src/numbering/numbering-part.ts ***!
   \*****************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NumberingPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
 var NumberingPart = (function (_super) {
-    __extends(NumberingPart, _super);
+    tslib_1.__extends(NumberingPart, _super);
     function NumberingPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -4173,17 +3786,12 @@ exports.parseDocumentDefaults = parseDocumentDefaults;
 /*!*****************************!*\
   !*** ./src/styles/style.ts ***!
   \*****************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStyle = exports.WmlStyle = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var common_1 = __webpack_require__(/*! ../document/common */ "./src/document/common.ts");
 var paragraph_1 = __webpack_require__(/*! ../document/paragraph */ "./src/document/paragraph.ts");
 var run_1 = __webpack_require__(/*! ../document/run */ "./src/document/run.ts");
@@ -4191,19 +3799,19 @@ var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/
 var WmlStyle = (function () {
     function WmlStyle() {
     }
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("styleId")
     ], WmlStyle.prototype, "id", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("type")
     ], WmlStyle.prototype, "type", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("customStyle", common_1.convertBoolean)
     ], WmlStyle.prototype, "customStyle", void 0);
-    __decorate([
+    tslib_1.__decorate([
         xml_serialize_1.fromAttribute("default", common_1.convertBoolean)
     ], WmlStyle.prototype, "default", void 0);
-    WmlStyle = __decorate([
+    WmlStyle = tslib_1.__decorate([
         xml_serialize_1.element("style")
     ], WmlStyle);
     return WmlStyle;
@@ -4264,31 +3872,17 @@ exports.parseStyle = parseStyle;
 /*!***********************************!*\
   !*** ./src/styles/styles-part.ts ***!
   \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStylesPart = exports.StylesPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var document_defaults_1 = __webpack_require__(/*! ./document-defaults */ "./src/styles/document-defaults.ts");
 var style_1 = __webpack_require__(/*! ./style */ "./src/styles/style.ts");
 var StylesPart = (function (_super) {
-    __extends(StylesPart, _super);
+    tslib_1.__extends(StylesPart, _super);
     function StylesPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -4327,16 +3921,12 @@ exports.parseStylesPart = parseStylesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/***/ (function(__unused_webpack_module, exports) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __spreadArray = (this && this.__spreadArray) || function (to, from) {
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-    return to;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.mergeDeep = exports.isObject = exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -4383,7 +3973,7 @@ function mergeDeep(target) {
             }
         }
     }
-    return mergeDeep.apply(void 0, __spreadArray([target], sources));
+    return mergeDeep.apply(void 0, tslib_1.__spreadArray([target], sources));
 }
 exports.mergeDeep = mergeDeep;
 
@@ -4521,6 +4111,282 @@ exports.deobfuscate = deobfuscate;
 
 /***/ }),
 
+/***/ "./node_modules/tslib/tslib.es6.js":
+/*!*****************************************!*\
+  !*** ./node_modules/tslib/tslib.es6.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "__extends": () => (/* binding */ __extends),
+/* harmony export */   "__assign": () => (/* binding */ __assign),
+/* harmony export */   "__rest": () => (/* binding */ __rest),
+/* harmony export */   "__decorate": () => (/* binding */ __decorate),
+/* harmony export */   "__param": () => (/* binding */ __param),
+/* harmony export */   "__metadata": () => (/* binding */ __metadata),
+/* harmony export */   "__awaiter": () => (/* binding */ __awaiter),
+/* harmony export */   "__generator": () => (/* binding */ __generator),
+/* harmony export */   "__createBinding": () => (/* binding */ __createBinding),
+/* harmony export */   "__exportStar": () => (/* binding */ __exportStar),
+/* harmony export */   "__values": () => (/* binding */ __values),
+/* harmony export */   "__read": () => (/* binding */ __read),
+/* harmony export */   "__spread": () => (/* binding */ __spread),
+/* harmony export */   "__spreadArrays": () => (/* binding */ __spreadArrays),
+/* harmony export */   "__spreadArray": () => (/* binding */ __spreadArray),
+/* harmony export */   "__await": () => (/* binding */ __await),
+/* harmony export */   "__asyncGenerator": () => (/* binding */ __asyncGenerator),
+/* harmony export */   "__asyncDelegator": () => (/* binding */ __asyncDelegator),
+/* harmony export */   "__asyncValues": () => (/* binding */ __asyncValues),
+/* harmony export */   "__makeTemplateObject": () => (/* binding */ __makeTemplateObject),
+/* harmony export */   "__importStar": () => (/* binding */ __importStar),
+/* harmony export */   "__importDefault": () => (/* binding */ __importDefault),
+/* harmony export */   "__classPrivateFieldGet": () => (/* binding */ __classPrivateFieldGet),
+/* harmony export */   "__classPrivateFieldSet": () => (/* binding */ __classPrivateFieldSet)
+/* harmony export */ });
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    if (typeof b !== "function" && b !== null)
+        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    }
+    return __assign.apply(this, arguments);
+}
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+}
+
+var __createBinding = Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+});
+
+function __exportStar(m, o) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+}
+
+function __values(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+
+function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+}
+
+/** @deprecated */
+function __spread() {
+    for (var ar = [], i = 0; i < arguments.length; i++)
+        ar = ar.concat(__read(arguments[i]));
+    return ar;
+}
+
+/** @deprecated */
+function __spreadArrays() {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+}
+
+function __spreadArray(to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+}
+
+function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+}
+
+function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+}
+
+function __makeTemplateObject(cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+};
+
+var __setModuleDefault = Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+};
+
+function __importStar(mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+}
+
+function __importDefault(mod) {
+    return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+function __classPrivateFieldGet(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+}
+
+
+/***/ }),
+
 /***/ "jszip":
 /*!************************!*\
   !*** external "JSZip" ***!
@@ -4550,11 +4416,40 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
 /******/ 	
 /************************************************************************/
 /******/ 	

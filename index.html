@@ -1,5 +1,6 @@
 <html>
 <head>
+    <link href="./index.css" type="text/css" rel="stylesheet" />
     <!--polyfills for IE11-->
     <script crossorigin src="https://unpkg.com/core-js-bundle@3.3.2/minified.js"></script>
     <!--dependencies-->
@@ -8,7 +9,11 @@
     <script src="dist/docx-preview.js"></script>
 </head>
 <body>
-	<input id="files" type="file" id="files" accept=".docx"/>    <button id="loadButton">load</button>
+    <div class="toolbar">
+        <input id="files" type="file" id="files" accept=".docx"/>    
+        <button id="loadButton">load</button>
+    </div>
+ 
     <div id="doc">
     </div>
 

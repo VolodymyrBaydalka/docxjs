@@ -4,11 +4,12 @@ import { Border, parseBorder } from "./border";
 import { WmlBreak, WmlLastRenderedPageBreak } from "./breaks";
 import { Length, LengthUsage, Underline } from "./common";
 import { DocxContainer } from "./dom";
+import { WmlDrawing } from "./drawing";
 import { WmlFieldChar } from "./fields";
 import { WmlInstructionText, WmlSymbol, WmlTab, WmlText } from "./text";
 
 @element('r')
-@children(WmlText, WmlSymbol, WmlTab, WmlBreak, WmlInstructionText, WmlFieldChar, WmlLastRenderedPageBreak)
+@children(WmlText, WmlSymbol, WmlTab, WmlBreak, WmlInstructionText, WmlFieldChar, WmlLastRenderedPageBreak, WmlDrawing)
 export class WmlRun extends DocxContainer {
     id?: string;
     styleName: string;

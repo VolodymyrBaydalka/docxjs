@@ -9,6 +9,8 @@
     "preserveConstEnums": true,
     "experimentalDecorators": true,
     "sourceMap": true,
+    "importHelpers": true,
+    "noEmitHelpers": true,
     "target": "es5",
     "outDir": "dist",
     "lib": [

@@ -1,6 +1,8 @@
 import globalXmlParser, { XmlParser } from "../parser/xml-parser";
+import { element } from "../parser/xml-serialize";
 import { DocxContainer } from "./dom";
 
+@element('drawing')
 export class WmlDrawing extends DocxContainer {
 
 }

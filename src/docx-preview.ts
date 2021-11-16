@@ -1,6 +1,7 @@
 import { WordDocument } from './word-document';
 import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
+import { __extends } from 'tslib';
 
 export interface Options {
     trimXmlDeclaration: boolean;
