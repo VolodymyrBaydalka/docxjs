@@ -374,13 +374,16 @@ export class HtmlRenderer {
     }
 
     renderDefaultStyle() {
-        var styleText = `.${this.className}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-                .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-                .${this.className} { color: black; }
-                section.${this.className} { box-sizing: border-box; }
-                .${this.className} table { border-collapse: collapse; }
-                .${this.className} table td, .${this.className} table th { vertical-align: top; }
-                .${this.className} p { margin: 0pt; }`;
+        var c = this.className;
+        var styleText = `
+.${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+.${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c} { color: black; }
+section.${c} { box-sizing: border-box; }
+.${c} table { border-collapse: collapse; }
+.${c} table td, .${c} table th { vertical-align: top; }
+.${c} p { margin: 0pt; }
+`;
 
         return createStyleElement(styleText);
     }
