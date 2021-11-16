@@ -5,7 +5,7 @@ import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './dom/document';
 import { ParagraphElement } from './dom/paragraph';
-import { appendClass, keyBy } from './utils';
+import {appendClass, clone, keyBy} from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
@@ -49,7 +49,6 @@ export class HtmlRenderer {
         styleContainer.appendChild(this.renderDefaultStyle());
         
         if (document.stylesPart != null) {
-            this.addFontThemes();
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
@@ -79,35 +78,6 @@ export class HtmlRenderer {
         }
     }
 
-    addFontThemes() {
-        var translatedFonts = this.document.themesPart.importantFonts;
-        const minorLatinFont = translatedFonts.minorLatin;
-        const hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined
-        for (var i = 0; i < this.document.stylesPart.styles.length; i++) {
-            var style = this.document.stylesPart.styles[i];
-            for (var j = 0; j < style.styles.length; j++) {
-                var substyle = style.styles[j];
-                var value = substyle.values["asciiTheme"];
-                const hasFontFamily = substyle.values["font-family"] !== undefined;
-                if (!value) {
-                    if(!hasFontFamily && hasMinorLatin) {
-                        substyle.values["font-family"] = minorLatinFont
-                    }
-                    continue;
-                }
-                delete substyle.values["asciiTheme"];
-                if (hasFontFamily) {
-                    continue;
-                }
-                if (value === "minorHAnsi" && translatedFonts.minorLatin) {
-                    substyle.values["font-family"] = minorLatinFont;
-                } else if (value === "majorHAnsi" && translatedFonts.minorLatin) {
-                    substyle.values["font-family"] = translatedFonts.majorLatin;
-                }
-            }
-        }
-    }
-
     renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
         for(let f of fontsPart.fonts.filter(x => x.refId)) {
             this.document.loadFont(f.refId, f.fontKey).then(fontData => {
@@ -133,6 +103,7 @@ export class HtmlRenderer {
         var stylesMap: Record<string, IDomStyle> = {};
 
         for (let style of styles.filter(x => x.id != null)) {
+            this.replaceAsciiTheme(style);
             style.basedOnResolved = !style.basedOn;
             stylesMap[style.id] = style;
         }
@@ -144,6 +115,7 @@ export class HtmlRenderer {
         }
 
         for (let style of styles) {
+            this.replaceAsciiTheme(style, true);
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
 
@@ -929,6 +901,32 @@ export class HtmlRenderer {
         }
         style.basedOnResolved = true;
         stylesMap[style.id] = style;
+    }
+
+    private replaceAsciiTheme(style: IDomStyle, addDefault: boolean = false) {
+        var translatedFonts = this.document.themesPart.importantFonts;
+        const minorLatinFont = translatedFonts.minorLatin;
+        const hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined
+        for (var j = 0; j < style.styles.length; j++) {
+            var substyle = style.styles[j];
+            var value = substyle.values["asciiTheme"];
+            const hasFontFamily = substyle.values["font-family"] !== undefined;
+            if (!value) {
+                if(addDefault && !hasFontFamily && hasMinorLatin) {
+                    substyle.values["font-family"] = minorLatinFont
+                }
+                continue;
+            }
+            delete substyle.values["asciiTheme"];
+            if (hasFontFamily) {
+                continue;
+            }
+            if (value === "minorHAnsi" && translatedFonts.minorLatin) {
+                substyle.values["font-family"] = minorLatinFont;
+            } else if (value === "majorHAnsi" && translatedFonts.minorLatin) {
+                substyle.values["font-family"] = translatedFonts.majorLatin;
+            }
+        }
     }
 }
 
