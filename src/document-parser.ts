@@ -11,6 +11,7 @@ import globalXmlParser from './parser/xml-parser';
 import { RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
+import {ImportantFonts} from "./font-table/fonts";
 
 export var autos = {
     shd: "white",
@@ -1083,6 +1084,30 @@ export class DocumentParser {
                     break;
             }
         });
+    }
+
+    parseThemesFile(xmlString: string): ImportantFonts {
+        const result: ImportantFonts = {};
+
+        var xthemes = globalXmlParser.parse(xmlString, this.skipDeclaration);
+        var majorFontElements = xthemes.getElementsByTagName("a:majorFont");
+        var minorFontElements = xthemes.getElementsByTagName("a:minorFont");
+        if(majorFontElements && majorFontElements.length === 1) {
+            result.majorLatin = this.parseLatinTypeface(majorFontElements[0]);
+        }
+        if(minorFontElements && minorFontElements.length === 1) {
+            result.minorLatin = this.parseLatinTypeface(minorFontElements[0]);
+        }
+
+        return result;
+    }
+
+    private parseLatinTypeface(fontElement: Element): string {
+        const latinFontElements = fontElement.getElementsByTagName("a:latin");
+        if(latinFontElements && latinFontElements.length === 1) {
+            return latinFontElements[0].getAttribute("typeface") ?? "";
+        }
+        return "";
     }
 }
 

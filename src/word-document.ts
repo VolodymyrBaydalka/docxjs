@@ -9,6 +9,7 @@ import { DocumentPart } from './dom/document-part';
 import { splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
+import {ThemesPart} from "./themes/themes-part";
 
 export class WordDocument {
     private _package: Package;
@@ -22,6 +23,7 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
+    themesPart: ThemesPart;
 
     static load(blob, parser: DocumentParser): Promise<WordDocument> {
         var d = new WordDocument();
@@ -69,6 +71,10 @@ export class WordDocument {
 
             case RelationshipTypes.Styles:
                 this.stylesPart = part = new StylesPart(path, this._parser);
+                break;
+
+            case RelationshipTypes.Theme:
+                this.themesPart = part = new ThemesPart(path, this._parser);
                 break;
         }
 
