@@ -13,6 +13,14 @@ import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
 import { NumberingPartProperties } from './numbering/numbering';
+interface CcsChangeObject {
+    cssRuleCamel: string;
+    newVal: string;
+}
+interface noCssDictEntry {
+    [cssRule: string]: CcsChangeObject
+}
+
 
 export class HtmlRenderer {
 
@@ -20,6 +28,7 @@ export class HtmlRenderer {
     className: string = "docx";
     document: WordDocument;
     options: Options;
+    noCssDict: { [selector: string]: noCssDictEntry} = {};
 
     constructor(public htmlDocument: HTMLDocument) {
     }
@@ -29,6 +38,9 @@ export class HtmlRenderer {
         this.options = options;
 
         styleContainer = styleContainer || bodyContainer;
+        if(options.noInlineCss) {
+            styleContainer = window.document.createElement("div");
+        }
 
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
@@ -59,6 +71,9 @@ export class HtmlRenderer {
         }
         else {
             appentElements(bodyContainer, sectionElements);
+        }
+        if(options.noInlineCss) {
+            this.applyCss(this.noCssDict, bodyContainer);
         }
     }
 
@@ -290,7 +305,40 @@ export class HtmlRenderer {
                 .${this.className} table { border-collapse: collapse; }
                 .${this.className} table td, .${this.className} table th { vertical-align: top; }
                 .${this.className} p { margin: 0pt; }`;
+        if(this.options.noInlineCss) {
+            this.noCssDict[ `.${this.className}-wrapper`] = {
+                "background": {cssRuleCamel: "background", newVal: "gray"},
+                "padding": {cssRuleCamel: "padding", newVal: "30px"},
+                "padding-bottom": {cssRuleCamel: "paddingBottom", newVal: "0px"},
+                "display": {cssRuleCamel: "display", newVal: "flex"},
+                "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column"},
+                "align-items":{cssRuleCamel: "alignItems", newVal: "center"}
+            };
+            this.noCssDict[`.${this.className}-wrapper section.${this.className}`] = {
+                "background": {cssRuleCamel: "background", newVal: "white"},
+                "box-shadow": {cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)"},
+                "margin-bottom": {cssRuleCamel: "marginBottom", newVal: "30px"}
+            };
+            this.noCssDict[`.${this.className}`] = {
+                "color": {cssRuleCamel: "color", newVal: "black"},
+            };
+            this.noCssDict[`section.${this.className}`] = {
+                "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
+            };
+            this.noCssDict[`.${this.className} table`] = {
+                "border-collapse": {cssRuleCamel: "borderCollapse", newVal: "collapse"},
+            };
+            this.noCssDict[`.${this.className} table td`] = {
+                "vertical-align": {cssRuleCamel: "verticalAlign", newVal: "top"},
+            };
+            this.noCssDict[`.${this.className} table th`] = {
+                "vertical-align": {cssRuleCamel: "verticalAlign", newVal: "top"},
+            };
+            this.noCssDict[`.${this.className} p`] = {
+                "margin": {cssRuleCamel: "margin", newVal: "0pt"},
+            };
 
+        }
         return createStyleElement(styleText);
     }
 
@@ -744,16 +792,32 @@ export class HtmlRenderer {
     }
 
     styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
-        let result = selectors + " {\r\n";
+        if(!this.options.noInlineCss) {
+            let result = selectors + " {\r\n";
 
-        for (const key in values) {
-            result += `  ${key}: ${values[key]};\r\n`;
+            for (const key in values) {
+                result += `  ${key}: ${values[key]};\r\n`;
+            }
+
+            if (cssText)
+                result += ";" + cssText;
+
+            return result + "}\r\n";
         }
-
-        if (cssText)
-            result += ";" + cssText;
-
-        return result + "}\r\n";
+        const selectorsplits = selectors.split(", ");
+        for(let i = 0; i < selectorsplits.length; i++) {
+            const split = selectorsplits[i];
+            if(this.noCssDict[split] === undefined) {
+                this.noCssDict[split] = {};
+            }
+            for (const key in values) {
+                const camelVal = key.replace(/-([a-z])/g, function (m, w) {
+                    return w.toUpperCase();
+                });
+                this.noCssDict[split][key] = { cssRuleCamel: camelVal, newVal: values[key]};
+            }
+        }
+        return "";
     }
 
     numberingCounter(id: string, lvl: number) {
@@ -786,6 +850,30 @@ export class HtmlRenderer {
     escapeClassName(className: string) {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
+
+    applyCss(dict: { [selector: string]: noCssDictEntry}, cont: HTMLElement) {
+        let changeList: Array<{selector: string, count: number, styles: noCssDictEntry}> =
+            [];
+        for(let selector in dict) {
+            changeList.push({ selector: selector, count: cont.querySelectorAll(selector).length, styles: dict[selector]});
+        }
+        changeList = changeList.sort((a, b) => {return a.count - b.count});
+        for(let i = 0; i< changeList.length; i++) {
+            const elements = cont.querySelectorAll(changeList[i].selector);
+            for(let j = 0; j < elements.length; j++) {
+                const element: HTMLElement = elements[j] as HTMLElement;
+                const styles: string = element.getAttribute("style");
+                const hasStyles: boolean = styles !== null;
+                for (let style in changeList[i].styles) {
+                    if(!hasStyles || styles.indexOf(style) === -1) {
+                        const changeEntry = changeList[i].styles[style];
+                        element.style[changeEntry.cssRuleCamel] = changeEntry.newVal;
+                    }
+                }
+            }
+        }
+    }
+
     private resolveBaseStyle(style: IDomStyle, stylesMap: Record<string, IDomStyle>) {
         let baseStyle = stylesMap[style.basedOn];
 
