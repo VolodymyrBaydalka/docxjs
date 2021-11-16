@@ -465,10 +465,7 @@ export class HtmlRenderer {
 
             case DomType.BookmarkEnd:
                 return null;
-
-            case DomType.Break:
-                return this.htmlDocument.createElement("br");
-
+    
             case DomType.Run:
                 return this.renderRun(<RunElement>elem);
 
@@ -489,19 +486,15 @@ export class HtmlRenderer {
 
             case DomType.Image:
                 return this.renderImage(<IDomImage>elem);
-
+            
             case DomType.Text:
                 return this.renderText(<TextElement>elem);
 
             case DomType.Tab:
                 return this.renderTab(elem);
-
+            
             case DomType.Symbol:
                 return this.renderSymbol(<SymbolElement>elem);
-
-            default:
-                console.warn(`DomType ${elem.type} has no rendering implementation.`);
-                return null;
         }
 
         return null;
