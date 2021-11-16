@@ -22,3 +22,7 @@ export function keyBy<T = any>(array: T[], by: (x: T) => any): Record<any, T> {
         return a;
     }, {});
 }
+
+export function clone<T>(object: T): T {
+    return JSON.parse(JSON.stringify(object));
+}

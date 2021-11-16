@@ -31,6 +31,7 @@
   },
   "scripts": {
     "build": "webpack --mode production",
+    "build-dev": "webpack --mode development",
     "watch": "webpack --watch",
     "e2e": "karma start"
   },
