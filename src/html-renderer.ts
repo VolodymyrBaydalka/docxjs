@@ -214,65 +214,78 @@ export class HtmlRenderer {
     }
 
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
-        var current = { sectProps: null, elements: [] };
+        var current = {sectProps: null, elements: []};
         var result = [current];
         var styles = this.document.stylesPart?.styles;
         var styleMap = styles ? keyBy(styles, x => x.id) : null;
+        var sectProps;
 
-        for(let elem of elements) {
-            if(elem.type == DomType.Paragraph) {
+        for (let elem of elements) {
+            if (elem.type == DomType.Paragraph) {
                 const styleName = (elem as ParagraphElement).styleName;
                 const s = styleMap && styleName ? styleMap[styleName] : null;
-            
-                if(s?.paragraphProps?.pageBreakBefore) {
+
+                if (s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
-                    current = { sectProps: null, elements: [] };
+                    current = {sectProps: null, elements: []};
                     result.push(current);
                 }
             }
 
             current.elements.push(elem);
 
-            if(elem.type == DomType.Paragraph)
-            {
-                const p = elem as ParagraphElement;
-
-                var sectProps = p.sectionProps;
-                var pBreakIndex = -1;
-                var rBreakIndex = -1;
-                
-                if(this.options.breakPages && p.children) {
-                    pBreakIndex = p.children.findIndex(r => {
-                        rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
-                        return rBreakIndex != -1;
-                    });
-                }
-    
-                if(sectProps || pBreakIndex != -1) {
-                    current.sectProps = sectProps;
-                    current = { sectProps: null, elements: [] };
-                    result.push(current);
-                }
-
-                if(pBreakIndex != -1) {
-                    let breakRun = p.children[pBreakIndex];
-                    let splitRun = rBreakIndex < breakRun.children.length - 1;
-
-                    if(pBreakIndex < p.children.length - 1 || splitRun) {
-                        var children = elem.children;
-                        var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
-                        elem.children = children.slice(0, pBreakIndex);
-                        current.elements.push(newParagraph);
-
-                        if(splitRun) {
-                            let runChildren = breakRun.children;
-                            let newRun =  { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
-                            elem.children.push(newRun);
-                            breakRun.children = runChildren.slice(rBreakIndex);
-                        }
+            if (elem.type != DomType.Paragraph) {
+                continue;
+            }
+            const p = elem as ParagraphElement;
+            sectProps = p.sectionProps;
+            var pBreakIndex = -1;
+            var rBreakIndex = -1;
+            if (this.options.breakPages && p.children) {
+                pBreakIndex = p.children.findIndex(r => {
+                    rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
+                    return rBreakIndex != -1;
+                });
+                if (pBreakIndex > 0) {
+                    // Include Bookmarks in breaking
+                    while (pBreakIndex > 0 && p.children[pBreakIndex - 1].type === DomType.BookmarkStart) {
+                        pBreakIndex--;
                     }
                 }
             }
+            if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
+                current.sectProps = sectProps;
+                current = {sectProps: null, elements: []};
+                if(pBreakIndex === 0) {
+                    current.elements.push(elem);
+                    result[result.length - 1].elements.pop();
+                }
+                result.push(current);
+            }
+            if (pBreakIndex <= 0 ||
+                !p.children || p.children.length <= pBreakIndex
+            ) {
+                continue;
+            }
+            let breakRun = p.children[pBreakIndex];
+            if (!breakRun || !breakRun.children) {
+                continue;
+            }
+            let splitRun = rBreakIndex < breakRun.children.length - 1;
+            if (!(pBreakIndex < p.children.length - 1 || splitRun)) {
+                continue;
+            }
+            var children = elem.children;
+            var newParagraph = {...elem, children: children.slice(pBreakIndex)};
+            elem.children = children.slice(0, pBreakIndex);
+            current.elements.push(newParagraph);
+            if (!splitRun) {
+                continue;
+            }
+            let runChildren = breakRun.children;
+            let newRun = {...breakRun, children: runChildren.slice(0, rBreakIndex)};
+            elem.children.push(newRun);
+            breakRun.children = runChildren.slice(rBreakIndex);
         }
 
         let currentSectProps = null;
@@ -927,6 +940,32 @@ export class HtmlRenderer {
                 substyle.values["font-family"] = translatedFonts.majorLatin;
             }
         }
+    }
+
+    private isFirstRenderElement(elements: OpenXmlElement[]) {
+        if (elements.length === 1) {
+            return true;
+        }
+        for (let i = elements.length - 2; i >= 0; i--) {
+            const element = elements[i];
+            if (!element.children || element.children.length === 0) {
+                continue;
+            }
+            for (let j = element.children.length - 1; j >= 0; j--) {
+                const run = element.children[j];
+                if (run.type !== DomType.Run || !run.children || run.children.length === 0) {
+                    continue;
+                }
+                for (let k = run.children.length - 1; k >= 0; k--) {
+                    const child = run.children[k];
+                    if (child.type === DomType.BookmarkStart || child.type === DomType.BookmarkEnd || child.type === DomType.Break) {
+                        continue;
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 
