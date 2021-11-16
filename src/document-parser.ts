@@ -983,8 +983,15 @@ export class DocumentParser {
     parseFont(node: Element, style: Record<string, string>) {
         var ascii = xml.stringAttr(node, "ascii");
 
-        if (ascii)
+        if (ascii) {
             style["font-family"] = ascii;
+            return;
+        }
+
+        var asciiTheme = xml.stringAttr(node, "w:asciiTheme");
+        if (asciiTheme) {
+            style["asciiTheme"] = asciiTheme;
+        }
     }
 
     parseIndentation(node: Element, style: Record<string, string>) {
