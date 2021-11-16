@@ -463,8 +463,18 @@ export class DocumentParser {
                 case "drawing":
                     let d = this.parseDrawing(c);
 
-                    if (d)
-                        result.children = [d];
+                    if (d) {
+                        const newChildren = [];
+                        // Preserve Page-Breaks before images
+                        for(let i=0; i<result.children.length; i++) {
+                            const rItem = result.children[i];
+                            if(rItem.type === DomType.Break) {
+                                newChildren.push(rItem);
+                            }
+                        }
+                        newChildren.push(d);
+                        result.children = newChildren;
+                    }
                     break;
 
                 case "rPr":
