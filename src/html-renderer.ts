@@ -87,22 +87,14 @@ export class HtmlRenderer {
         var stylesMap: Record<string, IDomStyle> = {};
 
         for (let style of styles.filter(x => x.id != null)) {
+            style.basedOnResolved = !style.basedOn;
             stylesMap[style.id] = style;
         }
-
         for (let style of styles.filter(x => x.basedOn)) {
-            var baseStyle = stylesMap[style.basedOn];
-
-            if (baseStyle) {
-                for (let styleValues of style.styles) {
-                    var baseValues = baseStyle.styles.filter(x => x.target == styleValues.target);
-
-                    if (baseValues && baseValues.length > 0)
-                        this.copyStyleProperties(baseValues[0].values, styleValues.values);
-                }
+            if(style.basedOnResolved) {
+                continue;
             }
-            else if (this.options.debug)
-                console.warn(`Can't find base style ${style.basedOn}`);
+            this.resolveBaseStyle(style, stylesMap)
         }
 
         for (let style of styles) {
@@ -793,6 +785,31 @@ export class HtmlRenderer {
 
     escapeClassName(className: string) {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
+    }
+    private resolveBaseStyle(style: IDomStyle, stylesMap: Record<string, IDomStyle>) {
+        let baseStyle = stylesMap[style.basedOn];
+
+        if (!baseStyle) {
+            if (this.options.debug)
+                console.warn(`Can't find base style ${style.basedOn}`);
+            return;
+        }
+
+        if(baseStyle.basedOnResolved !== true) {
+            // If the base is not resolved yet, resolve that one first
+            this.resolveBaseStyle(baseStyle, stylesMap);
+            baseStyle = stylesMap[style.basedOn];
+        }
+        for (let baseStyleStyles of baseStyle.styles) {
+            let styleStyleValues = style.styles.filter(x => x.target == baseStyleStyles.target);
+            if(styleStyleValues && styleStyleValues.length > 0) {
+                styleStyleValues[0].values = this.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values);
+            } else {
+                style.styles.push(clone(baseStyleStyles))
+            }
+        }
+        style.basedOnResolved = true;
+        stylesMap[style.id] = style;
     }
 }
 
