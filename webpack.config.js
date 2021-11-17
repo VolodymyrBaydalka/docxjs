@@ -21,12 +21,11 @@ var config = {
     rules: [
       {
         test: /\.ts$/,
-        loader: 'ts-loader'
+        use: 'ts-loader'
       }
     ]
   },
   resolve: {
-    // you can now require('file') instead of require('file.js')
     extensions: ['.ts', '.js']
   },
   externals: {
