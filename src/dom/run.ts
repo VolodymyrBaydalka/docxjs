@@ -4,7 +4,6 @@ import { OpenXmlElement } from "./dom";
 
 export interface RunElement extends OpenXmlElement, RunProperties {
     id?: string;
-    break?: string;
     wrapper?: string;
     href?: string;
     fldCharType?: "begin" | "end" | "separate" | string;

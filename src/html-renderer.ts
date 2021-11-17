@@ -1,11 +1,13 @@
 import { WordDocument } from './word-document';
-import { DomType, IDomTable, IDomNumbering, 
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement } from './dom/dom';
+import {
+    DomType, IDomTable, IDomNumbering,
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement
+} from './dom/dom';
 import { Length, CommonProperties } from './dom/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './dom/document';
 import { ParagraphElement } from './dom/paragraph';
-import {appendClass, clone, keyBy} from './utils';
+import { appendClass, clone, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { SectionProperties } from './dom/section';
@@ -13,6 +15,7 @@ import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
 import { NumberingPartProperties } from './numbering/numbering';
+
 interface CcsChangeObject {
     cssRuleCamel: string;
     newVal: string;
@@ -21,7 +24,6 @@ interface noCssDictEntry {
     [cssRule: string]: CcsChangeObject
 }
 
-
 export class HtmlRenderer {
 
     inWrapper: boolean = true;
@@ -29,13 +31,15 @@ export class HtmlRenderer {
     document: WordDocument;
     options: Options;
     noCssDict: { [selector: string]: noCssDictEntry} = {};
+    styleMap: any;
 
-    constructor(public htmlDocument: HTMLDocument) {
+    constructor(public htmlDocument: Document) {
     }
 
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+        this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
         if(options.noInlineCss) {
@@ -47,8 +51,10 @@ export class HtmlRenderer {
 
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
-        
+
         if (document.stylesPart != null) {
+            this.styleMap = this.processStyles(document.stylesPart.styles);
+
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
@@ -59,7 +65,7 @@ export class HtmlRenderer {
             //styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
         }
 
-        if(!options.ignoreFonts && document.fontTablePart) {
+        if (!options.ignoreFonts && document.fontTablePart) {
             this.renderFontTable(document.fontTablePart, styleContainer);
         }
 
@@ -79,7 +85,7 @@ export class HtmlRenderer {
     }
 
     renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
-        for(let f of fontsPart.fonts.filter(x => x.refId)) {
+        for (let f of fontsPart.fonts.filter(x => x.refId)) {
             this.document.loadFont(f.refId, f.fontKey).then(fontData => {
                 var cssTest = `@font-face {
                     font-family: "${f.name}";
@@ -182,7 +188,7 @@ export class HtmlRenderer {
 
     createSection(className: string, props: SectionProperties) {
         var elem = this.htmlDocument.createElement("section");
-        
+
         elem.className = className;
 
         if (props) {
@@ -218,7 +224,7 @@ export class HtmlRenderer {
 
         this.processElement(document);
 
-        for(let section of this.splitBySection(document.children)) {
+        for (let section of this.splitBySection(document.children)) {
             var sectionElement = this.createSection(this.className, section.sectProps || document.props);
             this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
@@ -230,14 +236,12 @@ export class HtmlRenderer {
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
         var current = {sectProps: null, elements: []};
         var result = [current];
-        var styles = this.document.stylesPart?.styles;
-        var styleMap = styles ? keyBy(styles, x => x.id) : null;
         var sectProps;
 
         for (let elem of elements) {
             if (elem.type == DomType.Paragraph) {
                 const styleName = (elem as ParagraphElement).styleName;
-                const s = styleMap && styleName ? styleMap[styleName] : null;
+                const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
 
                 if (s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -328,15 +332,16 @@ export class HtmlRenderer {
     }
 
     renderDefaultStyle() {
-        var styleText = `.${this.className}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-                .${this.className}-wrapper section.${this.className} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-                .${this.className} { color: black; }
-                section.${this.className} { box-sizing: border-box; }
-                .${this.className} table { border-collapse: collapse; }
-                .${this.className} table td, .${this.className} table th { vertical-align: top; }
-                .${this.className} p { margin: 0pt; }`;
+        var c = this.className;
+        var styleText = `.${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+                .${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+                .${c} { color: black; }
+                section.${c} { box-sizing: border-box; }
+                .${c} table { border-collapse: collapse; }
+                .${c} table td, .${c} table th { vertical-align: top; }
+                .${c} p { margin: 0pt; }`;
         if(this.options.noInlineCss) {
-            this.noCssDict[ `.${this.className}-wrapper`] = {
+            this.noCssDict[ `.${c}-wrapper`] = {
                 "background": {cssRuleCamel: "background", newVal: "gray"},
                 "padding": {cssRuleCamel: "padding", newVal: "30px"},
                 "padding-bottom": {cssRuleCamel: "paddingBottom", newVal: "0px"},
@@ -344,27 +349,27 @@ export class HtmlRenderer {
                 "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column"},
                 "align-items":{cssRuleCamel: "alignItems", newVal: "center"}
             };
-            this.noCssDict[`.${this.className}-wrapper section.${this.className}`] = {
+            this.noCssDict[`.${c}-wrapper section.${c}`] = {
                 "background": {cssRuleCamel: "background", newVal: "white"},
                 "box-shadow": {cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)"},
                 "margin-bottom": {cssRuleCamel: "marginBottom", newVal: "30px"}
             };
-            this.noCssDict[`.${this.className}`] = {
+            this.noCssDict[`.${c}`] = {
                 "color": {cssRuleCamel: "color", newVal: "black"},
             };
-            this.noCssDict[`section.${this.className}`] = {
+            this.noCssDict[`section.${c}`] = {
                 "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
             };
-            this.noCssDict[`.${this.className} table`] = {
+            this.noCssDict[`.${c} table`] = {
                 "border-collapse": {cssRuleCamel: "borderCollapse", newVal: "collapse"},
             };
-            this.noCssDict[`.${this.className} table td`] = {
+            this.noCssDict[`.${c} table td`] = {
                 "vertical-align": {cssRuleCamel: "verticalAlign", newVal: "top"},
             };
-            this.noCssDict[`.${this.className} table th`] = {
+            this.noCssDict[`.${c} table th`] = {
                 "vertical-align": {cssRuleCamel: "verticalAlign", newVal: "top"},
             };
-            this.noCssDict[`.${this.className} p`] = {
+            this.noCssDict[`.${c} p`] = {
                 "margin": {cssRuleCamel: "margin", newVal: "0pt"},
             };
 
@@ -395,7 +400,7 @@ export class HtmlRenderer {
     //                 } else {
     //                     topCounters.push(counter);
     //                 }
-                    
+
     //                 css += this.styleToString(`p.${className}:before`, {
     //                     "content": this.levelTextToContent(lvl.text, num.id),
     //                     "counter-increment": counter
@@ -409,7 +414,7 @@ export class HtmlRenderer {
     //                     "display": "inline-block",
     //                     "background": `var(${variable})`
     //                 }, pict.style);
-    
+
     //                 this.document.loadNumberingImage(pict.referenceId).then(data => {
     //                     var text = `.${this.className}-wrapper { ${variable}: url(${data}) }`;
     //                     container.appendChild(createStyleElement(text));
@@ -499,17 +504,17 @@ export class HtmlRenderer {
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
-        var stylesMap = this.processStyles(styles);
+        var stylesMap = this.styleMap;
 
         for (let style of styles) {
-            var subStyles =  style.styles;
+            var subStyles = style.styles;
 
-            if(style.linked) {
+            if (style.linked) {
                 var linkedStyle = style.linked && stylesMap[style.linked];
 
                 if (linkedStyle)
                     subStyles = subStyles.concat(linkedStyle.styles);
-                else if(this.options.debug)
+                else if (this.options.debug)
                     console.warn(`Can't find linked style ${style.linked}`);
             }
 
@@ -544,9 +549,6 @@ export class HtmlRenderer {
             case DomType.BookmarkEnd:
                 return null;
 
-            case DomType.Break:
-                return this.htmlDocument.createElement("br");
-
             case DomType.Run:
                 return this.renderRun(<RunElement>elem);
 
@@ -577,6 +579,9 @@ export class HtmlRenderer {
             case DomType.Symbol:
                 return this.renderSymbol(<SymbolElement>elem);
 
+            case DomType.Break:
+                return this.renderBreak(<BreakElement>elem);
+
             default:
                 console.warn(`DomType ${elem.type} has no rendering implementation.`);
                 return null;
@@ -590,13 +595,13 @@ export class HtmlRenderer {
     }
 
     renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): Node[] {
-        if(elems == null)
+        if (elems == null)
             return null;
 
         var result = elems.map(e => this.renderElement(e, parent)).filter(e => e != null);
 
-        if(into)
-            for(let c of result)
+        if (into)
+            for (let c of result)
                 into.appendChild(c);
 
         return result;
@@ -628,11 +633,11 @@ export class HtmlRenderer {
         this.renderCommonProeprties(style, props);
     }
 
-    renderCommonProeprties(style: any, props: CommonProperties){
-        if(props == null)
+    renderCommonProeprties(style: any, props: CommonProperties) {
+        if (props == null)
             return;
 
-        if(props.color) {
+        if (props.color) {
             style["color"] = props.color;
         }
 
@@ -684,6 +689,14 @@ export class HtmlRenderer {
         return this.htmlDocument.createTextNode(elem.text);
     }
 
+    renderBreak(elem: BreakElement) {
+        if (elem.break == "textWrapping") {
+            return this.htmlDocument.createElement("br");
+        }
+
+        return null;
+    }
+
     renderSymbol(elem: SymbolElement) {
         var span = this.htmlDocument.createElement("span");
         span.style.fontFamily = elem.font;
@@ -693,14 +706,14 @@ export class HtmlRenderer {
 
     renderTab(elem: OpenXmlElement) {
         var tabSpan = this.htmlDocument.createElement("span");
-     
+
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
-        if(this.options.experimental) {
+        if (this.options.experimental) {
             setTimeout(() => {
                 var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
-                
-                if(paragraph.tabs == null)
+
+                if (paragraph.tabs == null)
                     return;
 
                 paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
@@ -719,15 +732,12 @@ export class HtmlRenderer {
     }
 
     renderRun(elem: RunElement) {
-        if (elem.break)
-            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
-        
         if (elem.fldCharType || elem.instrText)
             return null;
 
         var result = this.htmlDocument.createElement("span");
 
-        if(elem.id)
+        if (elem.id)
             result.id = elem.id;
 
         this.renderClass(elem, result);
@@ -1015,6 +1025,6 @@ function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomTyp
 
     while (parent != null && parent.type != type)
         parent = parent.parent;
-    
+
     return <T>parent;
 }

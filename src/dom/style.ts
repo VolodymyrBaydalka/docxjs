@@ -12,6 +12,7 @@ export interface IDomStyle {
     basedOnResolved?: boolean;
     styles: IDomSubStyle[];
     linked?: string;
+    next?: string;
 
     paragraphProps: ParagraphProperties;
     runProps: RunProperties;

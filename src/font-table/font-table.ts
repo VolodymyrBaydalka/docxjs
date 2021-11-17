@@ -8,8 +8,8 @@ export class FontTablePart extends Part {
     load(pkg: Package): Promise<void> {
         return super.load(pkg)
             .then(() => pkg.load(this.path, "xml"))
-            .then((el) => {
-                    this.fonts = parseFonts(el, pkg.xmlParser);
+            .then(el => {
+                this.fonts = parseFonts(el, pkg.xmlParser);
             });
     }
 }

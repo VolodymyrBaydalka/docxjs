@@ -28,6 +28,7 @@ export const LengthUsage: Record<string, LengthUsageType> = {
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
     Border: { mul: 0.125, unit: "pt" },
+    Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: null }
 }

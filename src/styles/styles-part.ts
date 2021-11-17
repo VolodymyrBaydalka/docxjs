@@ -5,7 +5,7 @@ import { IDomStyle } from "../dom/style";
 
 export class StylesPart extends Part {
     styles: IDomStyle[];
-    
+
     private _documentParser: DocumentParser;
 
     constructor(path: string, parser: DocumentParser) {
@@ -15,7 +15,7 @@ export class StylesPart extends Part {
 
     load(pkg: Package) {
         return super.load(pkg)
-            .then(() => pkg.load(this.path, "string"))
+            .then(() => pkg.load(this.path, "xml"))
             .then(xml => {
                 this.styles = this._documentParser.parseStylesFile(xml);
             })

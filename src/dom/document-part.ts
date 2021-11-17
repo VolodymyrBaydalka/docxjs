@@ -15,7 +15,7 @@ export class DocumentPart extends Part {
 
     load(pkg: Package) {
         return super.load(pkg)
-            .then(() => pkg.load(this.path, "string"))
+            .then(() => pkg.load(this.path, "xml"))
             .then(xml => {
                 this.body = this._documentParser.parseDocumentFile(xml);
             });
