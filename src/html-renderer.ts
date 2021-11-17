@@ -99,7 +99,7 @@ export class HtmlRenderer {
         return `${this.className}_${className}`;
     }
 
-    processStyles(styles: IDomStyle[]) {
+    processStyles(styles: IDomStyle[]): Record<string, IDomStyle> {
         var stylesMap: Record<string, IDomStyle> = {};
 
         for (let style of styles.filter(x => x.id != null)) {
@@ -118,7 +118,15 @@ export class HtmlRenderer {
             this.replaceAsciiTheme(style, true);
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
-
+        const defaultStyles = styles.filter(x => x.isDefault);
+        const defaultOverride: IDomStyle = clone(defaultStyles[0]);
+        defaultOverride.styles = [];
+        for(let defaultStyle of defaultStyles) {
+            this.copyStyle(defaultStyle, defaultOverride);
+        }
+        for (let style of styles.filter(x => x.id === null)) {
+            this.copyStyle(defaultOverride, style, true);
+        }
         return stylesMap;
     }
 
@@ -151,7 +159,12 @@ export class HtmlRenderer {
         }
     }
 
-    copyStyleProperties(input: Record<string, string>, output: Record<string, string>, attrs: string[] = null): Record<string, string> {
+    copyStyleProperties(
+        input: Record<string, string>,
+        output: Record<string, string>,
+        attrs: string[] = null,
+        overideExistingEntries: boolean = false
+    ): Record<string, string> {
         if (!input)
             return output;
 
@@ -159,8 +172,9 @@ export class HtmlRenderer {
         if (attrs == null) attrs = Object.getOwnPropertyNames(input);
 
         for (var key of attrs) {
-            if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
+            if (input.hasOwnProperty(key) && (overideExistingEntries || !output.hasOwnProperty(key))) {
                 output[key] = input[key];
+            }
         }
 
         return output;
@@ -904,16 +918,22 @@ export class HtmlRenderer {
             this.resolveBaseStyle(baseStyle, stylesMap);
             baseStyle = stylesMap[style.basedOn];
         }
-        for (let baseStyleStyles of baseStyle.styles) {
-            let styleStyleValues = style.styles.filter(x => x.target == baseStyleStyles.target);
-            if(styleStyleValues && styleStyleValues.length > 0) {
-                styleStyleValues[0].values = this.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values);
-            } else {
-                style.styles.push(clone(baseStyleStyles))
-            }
-        }
+        this.copyStyle(baseStyle, style);
         style.basedOnResolved = true;
         stylesMap[style.id] = style;
+    }
+
+    private copyStyle(base: IDomStyle, target: IDomStyle, overideExistingEntries: boolean = false) {
+        for (let baseStyleStyles of base.styles) {
+            let styleStyleValues = target.styles.filter(x => x.target == baseStyleStyles.target);
+            if (styleStyleValues && styleStyleValues.length > 0) {
+                styleStyleValues[0].values = this.copyStyleProperties(
+                    baseStyleStyles.values, styleStyleValues[0].values, null, overideExistingEntries
+                );
+            } else {
+                target.styles.push(clone(baseStyleStyles))
+            }
+        }
     }
 
     private replaceAsciiTheme(style: IDomStyle, addDefault: boolean = false) {

@@ -625,8 +625,17 @@ var DocumentParser = (function () {
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
-                    if (d)
-                        result.children = [d];
+                    if (d) {
+                        var newChildren = [];
+                        for (var i = 0; i < result.children.length; i++) {
+                            var rItem = result.children[i];
+                            if (rItem.type === dom_1.DomType.Break) {
+                                newChildren.push(rItem);
+                            }
+                        }
+                        newChildren.push(d);
+                        result.children = newChildren;
+                    }
                     break;
                 case "rPr":
                     _this.parseRunProperties(c, result);
@@ -1980,6 +1989,17 @@ var HtmlRenderer = (function () {
             this.replaceAsciiTheme(style, true);
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
+        var defaultStyles = styles.filter(function (x) { return x.isDefault; });
+        var defaultOverride = (0, utils_1.clone)(defaultStyles[0]);
+        defaultOverride.styles = [];
+        for (var _e = 0, defaultStyles_1 = defaultStyles; _e < defaultStyles_1.length; _e++) {
+            var defaultStyle = defaultStyles_1[_e];
+            this.copyStyle(defaultStyle, defaultOverride);
+        }
+        for (var _f = 0, _g = styles.filter(function (x) { return x.id === null; }); _f < _g.length; _f++) {
+            var style = _g[_f];
+            this.copyStyle(defaultOverride, style, true);
+        }
         return stylesMap;
     };
     HtmlRenderer.prototype.processElement = function (element) {
@@ -2010,8 +2030,9 @@ var HtmlRenderer = (function () {
             }
         }
     };
-    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs) {
+    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs, overideExistingEntries) {
         if (attrs === void 0) { attrs = null; }
+        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
         if (!input)
             return output;
         if (output == null)
@@ -2020,8 +2041,9 @@ var HtmlRenderer = (function () {
             attrs = Object.getOwnPropertyNames(input);
         for (var _i = 0, attrs_1 = attrs; _i < attrs_1.length; _i++) {
             var key = attrs_1[_i];
-            if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
+            if (input.hasOwnProperty(key) && (overideExistingEntries || !output.hasOwnProperty(key))) {
                 output[key] = input[key];
+            }
         }
         return output;
     };
@@ -2068,6 +2090,7 @@ var HtmlRenderer = (function () {
         var result = [current];
         var styles = (_a = this.document.stylesPart) === null || _a === void 0 ? void 0 : _a.styles;
         var styleMap = styles ? (0, utils_1.keyBy)(styles, function (x) { return x.id; }) : null;
+        var sectProps;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
@@ -2080,40 +2103,57 @@ var HtmlRenderer = (function () {
                 }
             }
             current.elements.push(elem);
-            if (elem.type == dom_1.DomType.Paragraph) {
-                var p = elem;
-                var sectProps = p.sectionProps;
-                var pBreakIndex = -1;
-                var rBreakIndex = -1;
-                if (this.options.breakPages && p.children) {
-                    pBreakIndex = p.children.findIndex(function (r) {
-                        var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; })) !== null && _b !== void 0 ? _b : -1;
-                        return rBreakIndex != -1;
-                    });
-                }
-                if (sectProps || pBreakIndex != -1) {
-                    current.sectProps = sectProps;
-                    current = { sectProps: null, elements: [] };
-                    result.push(current);
-                }
-                if (pBreakIndex != -1) {
-                    var breakRun = p.children[pBreakIndex];
-                    var splitRun = rBreakIndex < breakRun.children.length - 1;
-                    if (pBreakIndex < p.children.length - 1 || splitRun) {
-                        var children = elem.children;
-                        var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
-                        elem.children = children.slice(0, pBreakIndex);
-                        current.elements.push(newParagraph);
-                        if (splitRun) {
-                            var runChildren = breakRun.children;
-                            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
-                            elem.children.push(newRun);
-                            breakRun.children = runChildren.slice(rBreakIndex);
-                        }
+            if (elem.type != dom_1.DomType.Paragraph) {
+                continue;
+            }
+            var p = elem;
+            sectProps = p.sectionProps;
+            var pBreakIndex = -1;
+            var rBreakIndex = -1;
+            if (this.options.breakPages && p.children) {
+                pBreakIndex = p.children.findIndex(function (r) {
+                    var _a, _b;
+                    rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; })) !== null && _b !== void 0 ? _b : -1;
+                    return rBreakIndex != -1;
+                });
+                if (pBreakIndex > 0) {
+                    while (pBreakIndex > 0 && p.children[pBreakIndex - 1].type === dom_1.DomType.BookmarkStart) {
+                        pBreakIndex--;
                     }
                 }
             }
+            if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
+                current.sectProps = sectProps;
+                current = { sectProps: null, elements: [] };
+                if (pBreakIndex === 0) {
+                    current.elements.push(elem);
+                    result[result.length - 1].elements.pop();
+                }
+                result.push(current);
+            }
+            if (pBreakIndex <= 0 ||
+                !p.children || p.children.length <= pBreakIndex) {
+                continue;
+            }
+            var breakRun = p.children[pBreakIndex];
+            if (!breakRun || !breakRun.children) {
+                continue;
+            }
+            var splitRun = rBreakIndex < breakRun.children.length - 1;
+            if (!(pBreakIndex < p.children.length - 1 || splitRun)) {
+                continue;
+            }
+            var children = elem.children;
+            var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
+            elem.children = children.slice(0, pBreakIndex);
+            current.elements.push(newParagraph);
+            if (!splitRun) {
+                continue;
+            }
+            var runChildren = breakRun.children;
+            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
+            elem.children.push(newRun);
+            breakRun.children = runChildren.slice(rBreakIndex);
         }
         var currentSectProps = null;
         for (var i = result.length - 1; i >= 0; i--) {
@@ -2547,22 +2587,26 @@ var HtmlRenderer = (function () {
             this.resolveBaseStyle(baseStyle, stylesMap);
             baseStyle = stylesMap[style.basedOn];
         }
+        this.copyStyle(baseStyle, style);
+        style.basedOnResolved = true;
+        stylesMap[style.id] = style;
+    };
+    HtmlRenderer.prototype.copyStyle = function (base, target, overideExistingEntries) {
+        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
         var _loop_3 = function (baseStyleStyles) {
-            var styleStyleValues = style.styles.filter(function (x) { return x.target == baseStyleStyles.target; });
+            var styleStyleValues = target.styles.filter(function (x) { return x.target == baseStyleStyles.target; });
             if (styleStyleValues && styleStyleValues.length > 0) {
-                styleStyleValues[0].values = this_3.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values);
+                styleStyleValues[0].values = this_3.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values, null, overideExistingEntries);
             }
             else {
-                style.styles.push((0, utils_1.clone)(baseStyleStyles));
+                target.styles.push((0, utils_1.clone)(baseStyleStyles));
             }
         };
         var this_3 = this;
-        for (var _i = 0, _a = baseStyle.styles; _i < _a.length; _i++) {
+        for (var _i = 0, _a = base.styles; _i < _a.length; _i++) {
             var baseStyleStyles = _a[_i];
             _loop_3(baseStyleStyles);
         }
-        style.basedOnResolved = true;
-        stylesMap[style.id] = style;
     };
     HtmlRenderer.prototype.replaceAsciiTheme = function (style, addDefault) {
         if (addDefault === void 0) { addDefault = false; }
@@ -2590,6 +2634,31 @@ var HtmlRenderer = (function () {
                 substyle.values["font-family"] = translatedFonts.majorLatin;
             }
         }
+    };
+    HtmlRenderer.prototype.isFirstRenderElement = function (elements) {
+        if (elements.length === 1) {
+            return true;
+        }
+        for (var i = elements.length - 2; i >= 0; i--) {
+            var element = elements[i];
+            if (!element.children || element.children.length === 0) {
+                continue;
+            }
+            for (var j = element.children.length - 1; j >= 0; j--) {
+                var run = element.children[j];
+                if (run.type !== dom_1.DomType.Run || !run.children || run.children.length === 0) {
+                    continue;
+                }
+                for (var k = run.children.length - 1; k >= 0; k--) {
+                    var child = run.children[k];
+                    if (child.type === dom_1.DomType.BookmarkStart || child.type === dom_1.DomType.BookmarkEnd || child.type === dom_1.DomType.Break) {
+                        continue;
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
     };
     return HtmlRenderer;
 }());
