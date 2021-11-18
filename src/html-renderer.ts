@@ -781,8 +781,13 @@ export class HtmlRenderer {
         for (let col of columns) {
             let colElem = this.htmlDocument.createElement("col");
 
-            if (col.width)
-                colElem.style.width = `${col.width}px`;
+            if (col.width) {
+                if (col.width.indexOf('pt') >= 0 || col.width.indexOf('px') >= 0) {
+                    colElem.style.width = col.width;
+                } else {
+                    colElem.style.width = `${col.width}px`;
+                }
+            }
 
             result.appendChild(colElem);
         }
