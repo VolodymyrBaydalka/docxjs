@@ -7,105 +7,19 @@
 		exports["docx"] = factory(require("JSZip"));
 	else
 		root["docx"] = factory(root["JSZip"]);
-})(window, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/docx-preview.ts");
-/******/ })
-/************************************************************************/
-/******/ ({
+})(self, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
+return /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
 
 /***/ "./src/common/package.ts":
 /*!*******************************!*\
   !*** ./src/common/package.ts ***!
   \*******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Package = void 0;
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
@@ -133,7 +47,7 @@ var Package = (function () {
         var relsPath = "_rels/.rels";
         if (path != null) {
             var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
-            relsPath = f + "_rels/" + fn + ".rels";
+            relsPath = "".concat(f, "_rels/").concat(fn, ".rels");
         }
         return this.load(relsPath, "xml").then(function (xml) {
             return xml == null ? null : (0, relationship_1.parseRelationships)(xml, _this.xmlParser);
@@ -150,12 +64,10 @@ exports.Package = Package;
 /*!****************************!*\
   !*** ./src/common/part.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Part = void 0;
 var Part = (function () {
     function Part(path) {
@@ -178,12 +90,10 @@ exports.Part = Part;
 /*!************************************!*\
   !*** ./src/common/relationship.ts ***!
   \************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRelationships = exports.RelationshipTypes = void 0;
 var RelationshipTypes;
 (function (RelationshipTypes) {
@@ -215,12 +125,10 @@ exports.parseRelationships = parseRelationships;
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
   \********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
@@ -239,7 +147,7 @@ var DocumentParser = (function () {
         this.ignoreWidth = false;
         this.debug = false;
     }
-    DocumentParser.prototype.parseDocumentFile = function (xmlString) {
+    DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var _this = this;
         var result = {
             type: dom_1.DomType.Document,
@@ -247,7 +155,7 @@ var DocumentParser = (function () {
             cssStyle: {},
             props: null
         };
-        var xbody = xml_parser_1.default.element(xml_parser_1.default.parse(xmlString, this.skipDeclaration), "body");
+        var xbody = xml_parser_1.default.element(xmlDoc, "body");
         xml.foreach(xbody, function (elem) {
             switch (elem.localName) {
                 case "p":
@@ -263,10 +171,9 @@ var DocumentParser = (function () {
         });
         return result;
     };
-    DocumentParser.prototype.parseStylesFile = function (xmlString) {
+    DocumentParser.prototype.parseStylesFile = function (xstyles) {
         var _this = this;
         var result = [];
-        var xstyles = xml_parser_1.default.parse(xmlString, this.skipDeclaration);
         xml.foreach(xstyles, function (n) {
             switch (n.localName) {
                 case "style":
@@ -343,6 +250,9 @@ var DocumentParser = (function () {
                 case "link":
                     result.linked = xml.className(n, "val");
                     break;
+                case "next":
+                    result.next = xml.className(n, "val");
+                    break;
                 case "aliases":
                     result.aliases = xml.stringAttr(n, "val").split(",");
                     break;
@@ -382,7 +292,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.debug && console.warn("DOCX: Unknown style element: " + n.localName);
+                    _this.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
             }
         });
         return result;
@@ -917,7 +827,6 @@ var DocumentParser = (function () {
         if (childStyle === void 0) { childStyle = null; }
         if (handler === void 0) { handler = null; }
         style = style || {};
-        var spacing = null;
         xml.foreach(elem, function (c) {
             switch (c.localName) {
                 case "jc":
@@ -1004,7 +913,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.debug && console.warn("DOCX: Unknown document element: " + c.localName);
+                        _this.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
                     break;
             }
         });
@@ -1085,13 +994,13 @@ var DocumentParser = (function () {
         if (line !== null) {
             switch (lineRule) {
                 case "auto":
-                    style["line-height"] = "" + (line / 240).toFixed(2);
+                    style["line-height"] = "".concat((line / 240).toFixed(2));
                     break;
                 case "atLeast":
-                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
+                    style["line-height"] = "calc(100% + ".concat(line / 20, "pt)");
                     break;
                 default:
-                    style["line-height"] = style["min-height"] = line / 20 + "pt";
+                    style["line-height"] = style["min-height"] = "".concat(line / 20, "pt");
                     break;
             }
         }
@@ -1204,7 +1113,7 @@ var xml = (function () {
             case "auto":
                 return autoColor;
         }
-        return v ? "#" + v : defValue;
+        return v ? "#".concat(v) : defValue;
     };
     xml.boolAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = false; }
@@ -1271,7 +1180,7 @@ var values = (function () {
             return "none";
         var color = xml.colorAttr(c, "color");
         var size = xml.sizeAttr(c, "sz", SizeType.Border);
-        return size + " solid " + (color == "auto" ? "black" : color);
+        return "".concat(size, " solid ").concat(color == "auto" ? "black" : color);
     };
     values.valueOfTblLayout = function (c) {
         var type = xml.stringAttr(c, "val");
@@ -1334,7 +1243,7 @@ var values = (function () {
             return b;
         if (b == null)
             return a;
-        return "calc(" + a + " + " + b + ")";
+        return "calc(".concat(a, " + ").concat(b, ")");
     };
     values.checkMask = function (num, mask) {
         return (num & mask) == mask;
@@ -1365,10 +1274,8 @@ var values = (function () {
 /*!*****************************!*\
   !*** ./src/docx-preview.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -1381,7 +1288,7 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.renderAsync = void 0;
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
@@ -1391,7 +1298,7 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, noInlineCss: false }, userOptions);
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, noStyleBlock: false }, userOptions);
     parser.ignoreWidth = options.ignoreWidth;
     parser.debug = options.debug || parser.debug;
     renderer.className = options.className || "docx";
@@ -1410,12 +1317,10 @@ exports.renderAsync = renderAsync;
 /*!*****************************!*\
   !*** ./src/dom/bookmark.ts ***!
   \*****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseBookmarkEnd = exports.parseBookmarkStart = void 0;
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
 function parseBookmarkStart(elem, xml) {
@@ -1443,12 +1348,10 @@ exports.parseBookmarkEnd = parseBookmarkEnd;
 /*!***************************!*\
   !*** ./src/dom/common.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseCommonProperty = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -1458,6 +1361,7 @@ exports.LengthUsage = {
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
     Border: { mul: 0.125, unit: "pt" },
+    Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: null }
 };
@@ -1490,10 +1394,8 @@ exports.parseCommonProperty = parseCommonProperty;
 /*!**********************************!*\
   !*** ./src/dom/document-part.ts ***!
   \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1510,7 +1412,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
@@ -1523,7 +1425,7 @@ var DocumentPart = (function (_super) {
     DocumentPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
             _this.body = _this._documentParser.parseDocumentFile(xml);
         });
@@ -1539,12 +1441,10 @@ exports.DocumentPart = DocumentPart;
 /*!************************!*\
   !*** ./src/dom/dom.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DomType = void 0;
 var DomType;
 (function (DomType) {
@@ -1572,12 +1472,10 @@ var DomType;
 /*!*********************************!*\
   !*** ./src/dom/line-spacing.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseLineSpacing = void 0;
 function parseLineSpacing(elem, xml) {
     return {
@@ -1596,12 +1494,10 @@ exports.parseLineSpacing = parseLineSpacing;
 /*!******************************!*\
   !*** ./src/dom/paragraph.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = void 0;
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/dom/section.ts");
@@ -1696,12 +1592,10 @@ exports.parseNumbering = parseNumbering;
 /*!************************!*\
   !*** ./src/dom/run.ts ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRunProperty = exports.parseRunProperties = void 0;
 var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
 function parseRunProperties(elem, xml) {
@@ -1727,12 +1621,10 @@ exports.parseRunProperty = parseRunProperty;
 /*!****************************!*\
   !*** ./src/dom/section.ts ***!
   \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseSectionProperties = exports.SectionType = void 0;
 var SectionType;
 (function (SectionType) {
@@ -1797,10 +1689,8 @@ function parseColumns(elem, xml) {
 /*!**************************************!*\
   !*** ./src/font-table/font-table.ts ***!
   \**************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -1817,7 +1707,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FontTablePart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var fonts_1 = __webpack_require__(/*! ./fonts */ "./src/font-table/fonts.ts");
@@ -1845,12 +1735,10 @@ exports.FontTablePart = FontTablePart;
 /*!*********************************!*\
   !*** ./src/font-table/fonts.ts ***!
   \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseFont = exports.parseFonts = void 0;
 function parseFonts(root, xmlParser) {
     return xmlParser.elements(root).map(function (el) { return parseFont(el, xmlParser); });
@@ -1886,10 +1774,8 @@ exports.parseFont = parseFont;
 /*!******************************!*\
   !*** ./src/html-renderer.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -1902,7 +1788,7 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HtmlRenderer = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
@@ -1918,8 +1804,9 @@ var HtmlRenderer = (function () {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
+        this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
-        if (options.noInlineCss) {
+        if (options.noStyleBlock) {
             styleContainer = window.document.createElement("div");
         }
         removeAllElements(styleContainer);
@@ -1927,6 +1814,7 @@ var HtmlRenderer = (function () {
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.stylesPart != null) {
+            this.styleMap = this.processStyles(document.stylesPart.styles);
             appendComment(styleContainer, "docx document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
@@ -1946,15 +1834,15 @@ var HtmlRenderer = (function () {
         else {
             appentElements(bodyContainer, sectionElements);
         }
-        if (options.noInlineCss) {
+        if (options.noStyleBlock) {
             this.applyCss(this.noCssDict, bodyContainer);
         }
     };
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
         var _loop_1 = function (f) {
             this_1.document.loadFont(f.refId, f.fontKey).then(function (fontData) {
-                var cssTest = "@font-face {\n                    font-family: \"" + f.name + "\";\n                    src: url(" + fontData + ");\n                }";
-                appendComment(styleContainer, "Font " + f.name);
+                var cssTest = "@font-face {\n                    font-family: \"".concat(f.name, "\";\n                    src: url(").concat(fontData, ");\n                }");
+                appendComment(styleContainer, "Font ".concat(f.name));
                 styleContainer.appendChild(createStyleElement(cssTest));
             });
         };
@@ -1967,7 +1855,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.processClassName = function (className) {
         if (!className)
             return this.className;
-        return this.className + "_" + className;
+        return "".concat(this.className, "_").concat(className);
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
         var stylesMap = {};
@@ -2064,7 +1952,7 @@ var HtmlRenderer = (function () {
                     elem.style.minHeight = this.renderLength(props.pageSize.height);
             }
             if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = "" + props.columns.numberOfColumns;
+                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
                 elem.style.columnGap = this.renderLength(props.columns.space);
                 if (props.columns.separator) {
                     elem.style.columnRule = "1px solid black";
@@ -2085,18 +1973,16 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.splitBySection = function (elements) {
-        var _a, _b;
+        var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var styles = (_a = this.document.stylesPart) === null || _a === void 0 ? void 0 : _a.styles;
-        var styleMap = styles ? (0, utils_1.keyBy)(styles, function (x) { return x.id; }) : null;
         var sectProps;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
                 var styleName = elem.styleName;
-                var s = styleMap && styleName ? styleMap[styleName] : null;
-                if ((_b = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _b === void 0 ? void 0 : _b.pageBreakBefore) {
+                var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
@@ -2167,17 +2053,18 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderLength = function (l) {
-        return l ? "" + l.value + l.type : null;
+        return l ? "".concat(l.value).concat(l.type) : null;
     };
     HtmlRenderer.prototype.renderWrapper = function () {
         var wrapper = document.createElement("div");
-        wrapper.className = this.className + "-wrapper";
+        wrapper.className = "".concat(this.className, "-wrapper");
         return wrapper;
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
-        var styleText = "." + this.className + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                ." + this.className + "-wrapper section." + this.className + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                ." + this.className + " { color: black; }\n                section." + this.className + " { box-sizing: border-box; }\n                ." + this.className + " table { border-collapse: collapse; }\n                ." + this.className + " table td, ." + this.className + " table th { vertical-align: top; }\n                ." + this.className + " p { margin: 0pt; }";
-        if (this.options.noInlineCss) {
-            this.noCssDict["." + this.className + "-wrapper"] = {
+        var c = this.className;
+        var styleText = ".".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                .").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                .").concat(c, " { color: black; }\n                section.").concat(c, " { box-sizing: border-box; }\n                .").concat(c, " table { border-collapse: collapse; }\n                .").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n                .").concat(c, " p { margin: 0pt; }");
+        if (this.options.noStyleBlock) {
+            this.noCssDict[".".concat(c, "-wrapper")] = {
                 "background": { cssRuleCamel: "background", newVal: "gray" },
                 "padding": { cssRuleCamel: "padding", newVal: "30px" },
                 "padding-bottom": { cssRuleCamel: "paddingBottom", newVal: "0px" },
@@ -2185,27 +2072,27 @@ var HtmlRenderer = (function () {
                 "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column" },
                 "align-items": { cssRuleCamel: "alignItems", newVal: "center" }
             };
-            this.noCssDict["." + this.className + "-wrapper section." + this.className] = {
+            this.noCssDict[".".concat(c, "-wrapper section.").concat(c)] = {
                 "background": { cssRuleCamel: "background", newVal: "white" },
                 "box-shadow": { cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)" },
                 "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "30px" }
             };
-            this.noCssDict["." + this.className] = {
+            this.noCssDict[".".concat(c)] = {
                 "color": { cssRuleCamel: "color", newVal: "black" },
             };
-            this.noCssDict["section." + this.className] = {
+            this.noCssDict["section.".concat(c)] = {
                 "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
             };
-            this.noCssDict["." + this.className + " table"] = {
+            this.noCssDict[".".concat(c, " table")] = {
                 "border-collapse": { cssRuleCamel: "borderCollapse", newVal: "collapse" },
             };
-            this.noCssDict["." + this.className + " table td"] = {
+            this.noCssDict[".".concat(c, " table td")] = {
                 "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
             };
-            this.noCssDict["." + this.className + " table th"] = {
+            this.noCssDict[".".concat(c, " table th")] = {
                 "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
             };
-            this.noCssDict["." + this.className + " p"] = {
+            this.noCssDict[".".concat(c, " p")] = {
                 "margin": { cssRuleCamel: "margin", newVal: "0pt" },
             };
         }
@@ -2216,32 +2103,32 @@ var HtmlRenderer = (function () {
         var styleText = "";
         var rootCounters = [];
         var _loop_2 = function () {
-            selector = "p." + this_2.numberingClass(num.id, num.level);
+            selector = "p.".concat(this_2.numberingClass(num.id, num.level));
             listStyleType = "none";
             if (num.levelText && num.format == "decimal") {
                 var counter = this_2.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_2.styleToString("p." + this_2.numberingClass(num.id, num.level - 1), {
+                    styleText += this_2.styleToString("p.".concat(this_2.numberingClass(num.id, num.level - 1)), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_2.styleToString(selector + ":before", {
+                styleText += this_2.styleToString("".concat(selector, ":before"), {
                     "content": this_2.levelTextToContent(num.levelText, num.id),
                     "counter-increment": counter
                 });
             }
             else if (num.bullet) {
-                var valiable_1 = ("--" + this_2.className + "-" + num.bullet.src).toLowerCase();
-                styleText += this_2.styleToString(selector + ":before", {
+                var valiable_1 = "--".concat(this_2.className, "-").concat(num.bullet.src).toLowerCase();
+                styleText += this_2.styleToString("".concat(selector, ":before"), {
                     "content": "' '",
                     "display": "inline-block",
-                    "background": "var(" + valiable_1 + ")"
+                    "background": "var(".concat(valiable_1, ")")
                 }, num.bullet.style);
                 this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
-                    var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
+                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
@@ -2256,7 +2143,7 @@ var HtmlRenderer = (function () {
             _loop_2();
         }
         if (rootCounters.length > 0) {
-            styleText += this.styleToString("." + this.className + "-wrapper", {
+            styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
                 "counter-reset": rootCounters.join(" ")
             });
         }
@@ -2264,7 +2151,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
-        var stylesMap = this.processStyles(styles);
+        var stylesMap = this.styleMap;
         for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
             var style = styles_3[_i];
             var subStyles = style.styles;
@@ -2273,19 +2160,19 @@ var HtmlRenderer = (function () {
                 if (linkedStyle)
                     subStyles = subStyles.concat(linkedStyle.styles);
                 else if (this.options.debug)
-                    console.warn("Can't find linked style " + style.linked);
+                    console.warn("Can't find linked style ".concat(style.linked));
             }
             for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
                 var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
-                    selector += style.target + "." + style.cssName;
+                    selector += "".concat(style.target, ".").concat(style.cssName);
                 else if (style.target)
-                    selector += style.target + "." + style.cssName + " " + subStyle.target;
+                    selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
                 else
-                    selector += "." + style.cssName + " " + subStyle.target;
+                    selector += ".".concat(style.cssName, " ").concat(subStyle.target);
                 if (style.isDefault && style.target)
-                    selector = "." + this.className + " " + style.target + ", " + selector;
+                    selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
@@ -2299,8 +2186,6 @@ var HtmlRenderer = (function () {
                 return this.renderBookmarkStart(elem);
             case dom_1.DomType.BookmarkEnd:
                 return null;
-            case dom_1.DomType.Break:
-                return this.htmlDocument.createElement("br");
             case dom_1.DomType.Run:
                 return this.renderRun(elem);
             case dom_1.DomType.Table:
@@ -2321,8 +2206,10 @@ var HtmlRenderer = (function () {
                 return this.renderTab(elem);
             case dom_1.DomType.Symbol:
                 return this.renderSymbol(elem);
+            case dom_1.DomType.Break:
+                return this.renderBreak(elem);
             default:
-                console.warn("DomType " + elem.type + " has no rendering implementation.");
+                console.warn("DomType ".concat(elem.type, " has no rendering implementation."));
                 return null;
         }
         return null;
@@ -2401,10 +2288,16 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderText = function (elem) {
         return this.htmlDocument.createTextNode(elem.text);
     };
+    HtmlRenderer.prototype.renderBreak = function (elem) {
+        if (elem.break == "textWrapping") {
+            return this.htmlDocument.createElement("br");
+        }
+        return null;
+    };
     HtmlRenderer.prototype.renderSymbol = function (elem) {
         var span = this.htmlDocument.createElement("span");
         span.style.fontFamily = elem.font;
-        span.innerHTML = "&#x" + elem.char + ";";
+        span.innerHTML = "&#x".concat(elem.char, ";");
         return span;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
@@ -2428,8 +2321,6 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
-        if (elem.break)
-            return elem.break == "page" ? null : this.htmlDocument.createElement("br");
         if (elem.fldCharType || elem.instrText)
             return null;
         var result = this.htmlDocument.createElement("span");
@@ -2466,7 +2357,7 @@ var HtmlRenderer = (function () {
             var col = columns_1[_i];
             var colElem = this.htmlDocument.createElement("col");
             if (col.width)
-                colElem.style.width = col.width + "px";
+                colElem.style.width = "".concat(col.width, "px");
             result.appendChild(colElem);
         }
         return result;
@@ -2501,14 +2392,14 @@ var HtmlRenderer = (function () {
             ouput.className = input.className;
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
-        return this.className + "-num-" + id + "-" + lvl;
+        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
-        if (!this.options.noInlineCss) {
+        if (!this.options.noStyleBlock) {
             var result = selectors + " {\r\n";
             for (var key in values) {
-                result += "  " + key + ": " + values[key] + ";\r\n";
+                result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
             }
             if (cssText)
                 result += ";" + cssText;
@@ -2530,13 +2421,13 @@ var HtmlRenderer = (function () {
         return "";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
-        return this.className + "-num-" + id + "-" + lvl;
+        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
     };
     HtmlRenderer.prototype.levelTextToContent = function (text, id) {
         var _this = this;
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(" + _this.numberingCounter(id, lvl) + ")\"";
+            return "\"counter(".concat(_this.numberingCounter(id, lvl), ")\"");
         });
         return '"' + result + '"';
     };
@@ -2558,9 +2449,15 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.applyCss = function (dict, cont) {
         var changeList = [];
         for (var selector in dict) {
-            changeList.push({ selector: selector, count: cont.querySelectorAll(selector).length, styles: dict[selector] });
+            changeList.push({
+                selector: selector,
+                count: cont.querySelectorAll(selector).length,
+                styles: dict[selector]
+            });
         }
-        changeList = changeList.sort(function (a, b) { return a.count - b.count; });
+        changeList = changeList.sort(function (a, b) {
+            return a.count - b.count;
+        });
         for (var i = 0; i < changeList.length; i++) {
             var elements = cont.querySelectorAll(changeList[i].selector);
             for (var j = 0; j < elements.length; j++) {
@@ -2580,7 +2477,7 @@ var HtmlRenderer = (function () {
         var baseStyle = stylesMap[style.basedOn];
         if (!baseStyle) {
             if (this.options.debug)
-                console.warn("Can't find base style " + style.basedOn);
+                console.warn("Can't find base style ".concat(style.basedOn));
             return;
         }
         if (baseStyle.basedOnResolved !== true) {
@@ -2696,12 +2593,10 @@ function findParent(elem, type) {
 /*!***************************!*\
   !*** ./src/javascript.ts ***!
   \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updateTabStop = void 0;
 function updateTabStop(elem, tabs, pixelToPoint) {
     if (pixelToPoint === void 0) { pixelToPoint = 72 / 96; }
@@ -2713,7 +2608,7 @@ function updateTabStop(elem, tabs, pixelToPoint) {
     if (tab == null)
         return;
     elem.style.display = "inline-block";
-    elem.style.width = (tab.position.value - left) + "pt";
+    elem.style.width = "".concat((tab.position.value - left), "pt");
     switch (tab.leader) {
         case "dot":
         case "middleDot":
@@ -2735,10 +2630,8 @@ exports.updateTabStop = updateTabStop;
 /*!*****************************************!*\
   !*** ./src/numbering/numbering-part.ts ***!
   \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -2755,7 +2648,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NumberingPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
@@ -2786,12 +2679,10 @@ exports.NumberingPart = NumberingPart;
 /*!************************************!*\
   !*** ./src/numbering/numbering.ts ***!
   \************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumberingBulletPicture = exports.parseNumberingLevelOverrride = exports.parseNumberingLevel = exports.parseAbstractNumbering = exports.parseNumbering = exports.parseNumberingPart = void 0;
 var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
 var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
@@ -2938,12 +2829,10 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 /*!**********************************!*\
   !*** ./src/parser/xml-parser.ts ***!
   \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XmlParser = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
 var XmlParser = (function () {
@@ -3008,7 +2897,7 @@ var XmlParser = (function () {
 }());
 exports.XmlParser = XmlParser;
 var globalXmlParser = new XmlParser();
-exports.default = globalXmlParser;
+exports["default"] = globalXmlParser;
 
 
 /***/ }),
@@ -3017,10 +2906,8 @@ exports.default = globalXmlParser;
 /*!***********************************!*\
   !*** ./src/styles/styles-part.ts ***!
   \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -3037,7 +2924,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var StylesPart = (function (_super) {
@@ -3050,7 +2937,7 @@ var StylesPart = (function (_super) {
     StylesPart.prototype.load = function (pkg) {
         var _this = this;
         return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function () { return pkg.load(_this.path, "xml"); })
             .then(function (xml) {
             _this.styles = _this._documentParser.parseStylesFile(xml);
         });
@@ -3066,10 +2953,8 @@ exports.StylesPart = StylesPart;
 /*!***********************************!*\
   !*** ./src/themes/themes-part.ts ***!
   \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-"use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -3086,7 +2971,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ThemesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var ThemesPart = (function (_super) {
@@ -3115,19 +3000,17 @@ exports.ThemesPart = ThemesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.clone = exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
 exports.addElementClass = addElementClass;
 function appendClass(classList, className) {
-    return (!classList) ? className : classList + " " + className;
+    return (!classList) ? className : "".concat(classList, " ").concat(className);
 }
 exports.appendClass = appendClass;
 function splitPath(path) {
@@ -3156,12 +3039,10 @@ exports.clone = clone;
 /*!******************************!*\
   !*** ./src/word-document.ts ***!
   \******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deobfuscate = exports.WordDocument = void 0;
 var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
@@ -3227,7 +3108,7 @@ var WordDocument = (function () {
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart("" + folder + rel.target, rel.type);
+                return _this.loadRelationshipPart("".concat(folder).concat(rel.target), rel.type);
             });
             return Promise.all(rels).then(function () { return part; });
         });
@@ -3273,13 +3154,47 @@ exports.deobfuscate = deobfuscate;
 /*!************************!*\
   !*** external "JSZip" ***!
   \************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
+/***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 
 /***/ })
 
-/******/ });
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/docx-preview.ts");
+/******/ 	
+/******/ 	return __webpack_exports__;
+/******/ })()
+;
 });
 //# sourceMappingURL=docx-preview.js.map
