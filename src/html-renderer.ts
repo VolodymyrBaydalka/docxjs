@@ -15,13 +15,13 @@ import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
 
-interface CcsChangeObject {
+interface CssChangeObject {
     cssRuleCamel: string;
     newVal: string;
 }
 
 interface noCssDictEntry {
-    [cssRule: string]: CcsChangeObject
+    [cssRule: string]: CssChangeObject
 }
 
 export class HtmlRenderer {
