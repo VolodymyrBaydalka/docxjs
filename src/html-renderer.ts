@@ -42,7 +42,7 @@ export class HtmlRenderer {
         this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
-        if (options.noInlineCss) {
+        if (options.noStyleBlock) {
             styleContainer = window.document.createElement("div");
         }
 
@@ -79,7 +79,7 @@ export class HtmlRenderer {
         else {
             appentElements(bodyContainer, sectionElements);
         }
-        if (options.noInlineCss) {
+        if (options.noStyleBlock) {
             this.applyCss(this.noCssDict, bodyContainer);
         }
     }
@@ -341,7 +341,7 @@ export class HtmlRenderer {
                 .${c} table { border-collapse: collapse; }
                 .${c} table td, .${c} table th { vertical-align: top; }
                 .${c} p { margin: 0pt; }`;
-        if (this.options.noInlineCss) {
+        if (this.options.noStyleBlock) {
             this.noCssDict[`.${c}-wrapper`] = {
                 "background": {cssRuleCamel: "background", newVal: "gray"},
                 "padding": {cssRuleCamel: "padding", newVal: "30px"},
@@ -833,7 +833,7 @@ export class HtmlRenderer {
     }
 
     styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
-        if (!this.options.noInlineCss) {
+        if (!this.options.noStyleBlock) {
             let result = selectors + " {\r\n";
 
             for (const key in values) {

@@ -11,7 +11,7 @@ export interface Options {
     debug: boolean;
     experimental: boolean;
     className: string;
-    noInlineCss: boolean;
+    noStyleBlock: boolean;
 }
 
 export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null) {
@@ -27,7 +27,7 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
         experimental: false,
         className: "docx",
         inWrapper: true,
-        noInlineCss: false,
+        noStyleBlock: false,
         ... userOptions
     };
 
