@@ -850,7 +850,10 @@ export class DocumentParser {
                         break;
 
                 case "tblW":
-                    style["width"] = values.valueOfSize(c, "w");
+                    const tableWidthType = xml.stringAttr(c, "type");
+                    if(tableWidthType !== "auto") {
+                        style["width"] = values.valueOfSize(c, "w");
+                    }
                     break;
 
                 case "trHeight":
