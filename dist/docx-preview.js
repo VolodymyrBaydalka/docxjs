@@ -851,7 +851,10 @@ var DocumentParser = (function () {
                     if (_this.ignoreWidth)
                         break;
                 case "tblW":
-                    style["width"] = values.valueOfSize(c, "w");
+                    var tableWidthType = xml.stringAttr(c, "type");
+                    if (tableWidthType !== "auto") {
+                        style["width"] = values.valueOfSize(c, "w");
+                    }
                     break;
                 case "trHeight":
                     _this.parseTrHeight(c, style);
@@ -2356,8 +2359,14 @@ var HtmlRenderer = (function () {
         for (var _i = 0, columns_1 = columns; _i < columns_1.length; _i++) {
             var col = columns_1[_i];
             var colElem = this.htmlDocument.createElement("col");
-            if (col.width)
-                colElem.style.width = "".concat(col.width, "px");
+            if (col.width) {
+                if (col.width.indexOf('pt') >= 0 || col.width.indexOf('px') >= 0) {
+                    colElem.style.width = col.width;
+                }
+                else {
+                    colElem.style.width = "".concat(col.width, "px");
+                }
+            }
             result.appendChild(colElem);
         }
         return result;
