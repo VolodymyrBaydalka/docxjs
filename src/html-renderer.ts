@@ -14,12 +14,12 @@ import { SectionProperties } from './dom/section';
 import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
-import { NumberingPartProperties } from './numbering/numbering';
 
 interface CcsChangeObject {
     cssRuleCamel: string;
     newVal: string;
 }
+
 interface noCssDictEntry {
     [cssRule: string]: CcsChangeObject
 }
@@ -30,7 +30,7 @@ export class HtmlRenderer {
     className: string = "docx";
     document: WordDocument;
     options: Options;
-    noCssDict: { [selector: string]: noCssDictEntry} = {};
+    noCssDict: { [selector: string]: noCssDictEntry } = {};
     styleMap: any;
 
     constructor(public htmlDocument: Document) {
@@ -42,7 +42,7 @@ export class HtmlRenderer {
         this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
-        if(options.noInlineCss) {
+        if (options.noInlineCss) {
             styleContainer = window.document.createElement("div");
         }
 
@@ -79,7 +79,7 @@ export class HtmlRenderer {
         else {
             appentElements(bodyContainer, sectionElements);
         }
-        if(options.noInlineCss) {
+        if (options.noInlineCss) {
             this.applyCss(this.noCssDict, bodyContainer);
         }
     }
@@ -114,7 +114,7 @@ export class HtmlRenderer {
             stylesMap[style.id] = style;
         }
         for (let style of styles.filter(x => x.basedOn)) {
-            if(style.basedOnResolved) {
+            if (style.basedOnResolved) {
                 continue;
             }
             this.resolveBaseStyle(style, stylesMap)
@@ -127,7 +127,7 @@ export class HtmlRenderer {
         const defaultStyles = styles.filter(x => x.isDefault);
         const defaultOverride: IDomStyle = clone(defaultStyles[0]);
         defaultOverride.styles = [];
-        for(let defaultStyle of defaultStyles) {
+        for (let defaultStyle of defaultStyles) {
             this.copyStyle(defaultStyle, defaultOverride);
         }
         for (let style of styles.filter(x => x.id === null)) {
@@ -274,7 +274,7 @@ export class HtmlRenderer {
             if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
                 current.sectProps = sectProps;
                 current = {sectProps: null, elements: []};
-                if(pBreakIndex === 0) {
+                if (pBreakIndex === 0) {
                     current.elements.push(elem);
                     result[result.length - 1].elements.pop();
                 }
@@ -311,7 +311,8 @@ export class HtmlRenderer {
         for (let i = result.length - 1; i >= 0; i--) {
             if (result[i].sectProps == null) {
                 result[i].sectProps = currentSectProps;
-            } else {
+            }
+            else {
                 currentSectProps = result[i].sectProps
             }
         }
@@ -340,14 +341,14 @@ export class HtmlRenderer {
                 .${c} table { border-collapse: collapse; }
                 .${c} table td, .${c} table th { vertical-align: top; }
                 .${c} p { margin: 0pt; }`;
-        if(this.options.noInlineCss) {
-            this.noCssDict[ `.${c}-wrapper`] = {
+        if (this.options.noInlineCss) {
+            this.noCssDict[`.${c}-wrapper`] = {
                 "background": {cssRuleCamel: "background", newVal: "gray"},
                 "padding": {cssRuleCamel: "padding", newVal: "30px"},
                 "padding-bottom": {cssRuleCamel: "paddingBottom", newVal: "0px"},
                 "display": {cssRuleCamel: "display", newVal: "flex"},
                 "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column"},
-                "align-items":{cssRuleCamel: "alignItems", newVal: "center"}
+                "align-items": {cssRuleCamel: "alignItems", newVal: "center"}
             };
             this.noCssDict[`.${c}-wrapper section.${c}`] = {
                 "background": {cssRuleCamel: "background", newVal: "white"},
@@ -832,7 +833,7 @@ export class HtmlRenderer {
     }
 
     styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
-        if(!this.options.noInlineCss) {
+        if (!this.options.noInlineCss) {
             let result = selectors + " {\r\n";
 
             for (const key in values) {
@@ -845,16 +846,16 @@ export class HtmlRenderer {
             return result + "}\r\n";
         }
         const selectorsplits = selectors.split(", ");
-        for(let i = 0; i < selectorsplits.length; i++) {
+        for (let i = 0; i < selectorsplits.length; i++) {
             const split = selectorsplits[i];
-            if(this.noCssDict[split] === undefined) {
+            if (this.noCssDict[split] === undefined) {
                 this.noCssDict[split] = {};
             }
             for (const key in values) {
                 const camelVal = key.replace(/-([a-z])/g, function (m, w) {
                     return w.toUpperCase();
                 });
-                this.noCssDict[split][key] = { cssRuleCamel: camelVal, newVal: values[key]};
+                this.noCssDict[split][key] = {cssRuleCamel: camelVal, newVal: values[key]};
             }
         }
         return "";
@@ -891,21 +892,27 @@ export class HtmlRenderer {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
 
-    applyCss(dict: { [selector: string]: noCssDictEntry}, cont: HTMLElement) {
-        let changeList: Array<{selector: string, count: number, styles: noCssDictEntry}> =
+    applyCss(dict: { [selector: string]: noCssDictEntry }, cont: HTMLElement) {
+        let changeList: Array<{ selector: string, count: number, styles: noCssDictEntry }> =
             [];
-        for(let selector in dict) {
-            changeList.push({ selector: selector, count: cont.querySelectorAll(selector).length, styles: dict[selector]});
+        for (let selector in dict) {
+            changeList.push({
+                selector: selector,
+                count: cont.querySelectorAll(selector).length,
+                styles: dict[selector]
+            });
         }
-        changeList = changeList.sort((a, b) => {return a.count - b.count});
-        for(let i = 0; i< changeList.length; i++) {
+        changeList = changeList.sort((a, b) => {
+            return a.count - b.count
+        });
+        for (let i = 0; i < changeList.length; i++) {
             const elements = cont.querySelectorAll(changeList[i].selector);
-            for(let j = 0; j < elements.length; j++) {
+            for (let j = 0; j < elements.length; j++) {
                 const element: HTMLElement = elements[j] as HTMLElement;
                 const styles: string = element.getAttribute("style");
                 const hasStyles: boolean = styles !== null;
                 for (let style in changeList[i].styles) {
-                    if(!hasStyles || styles.indexOf(style) === -1) {
+                    if (!hasStyles || styles.indexOf(style) === -1) {
                         const changeEntry = changeList[i].styles[style];
                         element.style[changeEntry.cssRuleCamel] = changeEntry.newVal;
                     }
@@ -923,7 +930,7 @@ export class HtmlRenderer {
             return;
         }
 
-        if(baseStyle.basedOnResolved !== true) {
+        if (baseStyle.basedOnResolved !== true) {
             // If the base is not resolved yet, resolve that one first
             this.resolveBaseStyle(baseStyle, stylesMap);
             baseStyle = stylesMap[style.basedOn];
@@ -940,7 +947,8 @@ export class HtmlRenderer {
                 styleStyleValues[0].values = this.copyStyleProperties(
                     baseStyleStyles.values, styleStyleValues[0].values, null, overideExistingEntries
                 );
-            } else {
+            }
+            else {
                 target.styles.push(clone(baseStyleStyles))
             }
         }
@@ -955,7 +963,7 @@ export class HtmlRenderer {
             var value = substyle.values["asciiTheme"];
             const hasFontFamily = substyle.values["font-family"] !== undefined;
             if (!value) {
-                if(addDefault && !hasFontFamily && hasMinorLatin) {
+                if (addDefault && !hasFontFamily && hasMinorLatin) {
                     substyle.values["font-family"] = minorLatinFont
                 }
                 continue;
@@ -966,7 +974,8 @@ export class HtmlRenderer {
             }
             if (value === "minorHAnsi" && translatedFonts.minorLatin) {
                 substyle.values["font-family"] = minorLatinFont;
-            } else if (value === "majorHAnsi" && translatedFonts.minorLatin) {
+            }
+            else if (value === "majorHAnsi" && translatedFonts.minorLatin) {
                 substyle.values["font-family"] = translatedFonts.majorLatin;
             }
         }

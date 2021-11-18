@@ -11,7 +11,7 @@ import globalXmlParser from './parser/xml-parser';
 import { RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
-import {ImportantFonts} from "./font-table/fonts";
+import { ImportantFonts } from "./font-table/fonts";
 
 export var autos = {
     shd: "white",
