@@ -23,7 +23,7 @@ export class WordDocument {
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
 
-    static load(blob, parser: DocumentParser): Promise<WordDocument> {
+    stati sadasdasdsadadc load(blob, parser: DocumentParser): Promise<WordDocument> {
         var d = new WordDocument();
 
         d._parser = parser;
