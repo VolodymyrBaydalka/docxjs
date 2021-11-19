@@ -12,36 +12,44 @@ return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/common/package.ts":
-/*!*******************************!*\
-  !*** ./src/common/package.ts ***!
-  \*******************************/
+/***/ "./src/common/open-xml-package.ts":
+/*!****************************************!*\
+  !*** ./src/common/open-xml-package.ts ***!
+  \****************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Package = void 0;
+exports.OpenXmlPackage = void 0;
+var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var relationship_1 = __webpack_require__(/*! ./relationship */ "./src/common/relationship.ts");
-var Package = (function () {
-    function Package(_zip) {
+var OpenXmlPackage = (function () {
+    function OpenXmlPackage(_zip, options) {
         this._zip = _zip;
+        this.options = options;
         this.xmlParser = new xml_parser_1.XmlParser();
     }
-    Package.prototype.exists = function (path) {
-        return this._zip.files[path] != null;
+    OpenXmlPackage.prototype.get = function (path) {
+        return this._zip.files[normalizePath(path)];
     };
-    Package.prototype.load = function (path, type) {
-        var _this = this;
-        var file = this._zip.files[path];
-        if (file == null)
-            return Promise.resolve(null);
-        if (type == "xml")
-            return file.async("string").then(function (t) { return _this.xmlParser.parse(t); });
-        return file.async(type);
+    OpenXmlPackage.prototype.update = function (path, content) {
+        this._zip.file(path, content);
     };
-    Package.prototype.loadRelationships = function (path) {
+    OpenXmlPackage.load = function (input, options) {
+        return JSZip.loadAsync(input).then(function (zip) { return new OpenXmlPackage(zip, options); });
+    };
+    OpenXmlPackage.prototype.save = function (type) {
+        if (type === void 0) { type = "blob"; }
+        return this._zip.generateAsync({ type: type });
+    };
+    OpenXmlPackage.prototype.load = function (path, type) {
+        var _a, _b;
+        if (type === void 0) { type = "string"; }
+        return (_b = (_a = this.get(path)) === null || _a === void 0 ? void 0 : _a.async(type)) !== null && _b !== void 0 ? _b : Promise.resolve(null);
+    };
+    OpenXmlPackage.prototype.loadRelationships = function (path) {
         var _this = this;
         if (path === void 0) { path = null; }
         var relsPath = "_rels/.rels";
@@ -49,13 +57,18 @@ var Package = (function () {
             var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
             relsPath = f + "_rels/" + fn + ".rels";
         }
-        return this.load(relsPath, "xml").then(function (xml) {
-            return xml == null ? null : (0, relationship_1.parseRelationships)(xml, _this.xmlParser);
-        });
+        return this.load(relsPath)
+            .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
     };
-    return Package;
+    OpenXmlPackage.prototype.parseXmlDocument = function (txt) {
+        return (0, xml_parser_1.parseXmlString)(txt, this.options.trimXmlDeclaration);
+    };
+    return OpenXmlPackage;
 }());
-exports.Package = Package;
+exports.OpenXmlPackage = OpenXmlPackage;
+function normalizePath(path) {
+    return path.startsWith('/') ? path.substr(1) : path;
+}
 
 
 /***/ }),
@@ -64,20 +77,36 @@ exports.Package = Package;
 /*!****************************!*\
   !*** ./src/common/part.ts ***!
   \****************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Part = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var Part = (function () {
-    function Part(path) {
+    function Part(_package, path) {
+        this._package = _package;
         this.path = path;
     }
-    Part.prototype.load = function (pkg) {
+    Part.prototype.load = function () {
         var _this = this;
-        return pkg.loadRelationships(this.path).then(function (rels) {
-            _this.rels = rels;
-        });
+        return Promise.all([
+            this._package.loadRelationships(this.path).then(function (rels) {
+                _this.rels = rels;
+            }),
+            this._package.load(this.path).then(function (text) {
+                var xmlDoc = _this._package.parseXmlDocument(text);
+                if (_this._package.options.keepOrigin) {
+                    _this._xmlDocument = xmlDoc;
+                }
+                _this.parseXml(xmlDoc.firstElementChild);
+            })
+        ]);
+    };
+    Part.prototype.save = function () {
+        this._package.update(this.path, (0, xml_parser_1.serializeXmlString)(this._xmlDocument));
+    };
+    Part.prototype.parseXml = function (root) {
     };
     return Part;
 }());
@@ -107,6 +136,10 @@ var RelationshipTypes;
     RelationshipTypes["Settings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings";
     RelationshipTypes["WebSettings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings";
     RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
+    RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
+    RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
+    RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
+    RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 })(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
 function parseRelationships(root, xmlParser) {
     return xmlParser.elements(root).map(function (e) { return ({
@@ -1262,12 +1295,14 @@ function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
     var parser = new document_parser_1.DocumentParser();
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true }, userOptions);
+    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, trimXmlDeclaration: true }, userOptions);
     parser.ignoreWidth = options.ignoreWidth;
     parser.debug = options.debug || parser.debug;
     renderer.className = options.className || "docx";
     renderer.inWrapper = options.inWrapper;
-    return word_document_1.WordDocument.load(data, parser).then(function (doc) {
+    return word_document_1.WordDocument.load(data, parser, {
+        trimXmlDeclaration: options.trimXmlDeclaration
+    }).then(function (doc) {
         renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
     });
@@ -1381,18 +1416,13 @@ exports.DocumentPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
     __extends(DocumentPart, _super);
-    function DocumentPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function DocumentPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    DocumentPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            _this.body = _this._documentParser.parseDocumentFile(xml);
-        });
+    DocumentPart.prototype.parseXml = function (root) {
+        this.body = this._documentParser.parseDocumentFile(root);
     };
     return DocumentPart;
 }(part_1.Part));
@@ -1680,13 +1710,8 @@ var FontTablePart = (function (_super) {
     function FontTablePart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    FontTablePart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (el) {
-            _this.fonts = (0, fonts_1.parseFonts)(el, pkg.xmlParser);
-        });
+    FontTablePart.prototype.parseXml = function (root) {
+        this.fonts = (0, fonts_1.parseFonts)(root, this._package.xmlParser);
     };
     return FontTablePart;
 }(part_1.Part));
@@ -2424,19 +2449,14 @@ var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
 var NumberingPart = (function (_super) {
     __extends(NumberingPart, _super);
-    function NumberingPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function NumberingPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    NumberingPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            Object.assign(_this, (0, numbering_1.parseNumberingPart)(xml, pkg.xmlParser));
-            _this.domNumberings = _this._documentParser.parseNumberingFile(xml);
-        });
+    NumberingPart.prototype.parseXml = function (root) {
+        Object.assign(this, (0, numbering_1.parseNumberingPart)(root, this._package.xmlParser));
+        this.domNumberings = this._documentParser.parseNumberingFile(root);
     };
     return NumberingPart;
 }(part_1.Part));
@@ -2603,8 +2623,27 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.XmlParser = void 0;
+exports.XmlParser = exports.serializeXmlString = exports.parseXmlString = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
+function parseXmlString(xmlString, trimXmlDeclaration) {
+    if (trimXmlDeclaration === void 0) { trimXmlDeclaration = false; }
+    if (trimXmlDeclaration)
+        xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    var result = new DOMParser().parseFromString(xmlString, "application/xml");
+    var errorText = hasXmlParserError(result);
+    if (errorText)
+        throw new Error(errorText);
+    return result;
+}
+exports.parseXmlString = parseXmlString;
+function hasXmlParserError(doc) {
+    var _a;
+    return (_a = doc.getElementsByTagName("parsererror")[0]) === null || _a === void 0 ? void 0 : _a.textContent;
+}
+function serializeXmlString(elem) {
+    return new XMLSerializer().serializeToString(elem);
+}
+exports.serializeXmlString = serializeXmlString;
 var XmlParser = (function () {
     function XmlParser() {
     }
@@ -2699,18 +2738,13 @@ exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var StylesPart = (function (_super) {
     __extends(StylesPart, _super);
-    function StylesPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function StylesPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    StylesPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            _this.styles = _this._documentParser.parseStylesFile(xml);
-        });
+    StylesPart.prototype.parseXml = function (root) {
+        this.styles = this._documentParser.parseStylesFile(root);
     };
     return StylesPart;
 }(part_1.Part));
@@ -2723,11 +2757,20 @@ exports.StylesPart = StylesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports) {
 
 
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.mergeDeep = exports.isObject = exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -2750,6 +2793,33 @@ function keyBy(array, by) {
     }, {});
 }
 exports.keyBy = keyBy;
+function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+exports.isObject = isObject;
+function mergeDeep(target) {
+    var _a;
+    var sources = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        sources[_i - 1] = arguments[_i];
+    }
+    if (!sources.length)
+        return target;
+    var source = sources.shift();
+    if (isObject(target) && isObject(source)) {
+        for (var key in source) {
+            if (isObject(source[key])) {
+                var val = (_a = target[key]) !== null && _a !== void 0 ? _a : (target[key] = {});
+                mergeDeep(val, source[key]);
+            }
+            else {
+                target[key] = source[key];
+            }
+        }
+    }
+    return mergeDeep.apply(void 0, __spreadArray([target], sources, false));
+}
+exports.mergeDeep = mergeDeep;
 
 
 /***/ }),
@@ -2763,62 +2833,70 @@ exports.keyBy = keyBy;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deobfuscate = exports.WordDocument = void 0;
-var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
 var font_table_1 = __webpack_require__(/*! ./font-table/font-table */ "./src/font-table/font-table.ts");
-var package_1 = __webpack_require__(/*! ./common/package */ "./src/common/package.ts");
+var open_xml_package_1 = __webpack_require__(/*! ./common/open-xml-package */ "./src/common/open-xml-package.ts");
 var document_part_1 = __webpack_require__(/*! ./dom/document-part */ "./src/dom/document-part.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
+var topLevelRels = [
+    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
+    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+    { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+];
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
         this.partsMap = {};
     }
-    WordDocument.load = function (blob, parser) {
+    WordDocument.load = function (blob, parser, options) {
         var d = new WordDocument();
         d._parser = parser;
-        return JSZip.loadAsync(blob)
-            .then(function (zip) {
-            d._package = new package_1.Package(zip);
+        return open_xml_package_1.OpenXmlPackage.load(blob, options)
+            .then(function (pkg) {
+            d._package = pkg;
             return d._package.loadRelationships();
         }).then(function (rels) {
-            var _a;
             d.rels = rels;
-            var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.OfficeDocument; })) !== null && _a !== void 0 ? _a : {
-                target: "word/document.xml",
-                type: relationship_1.RelationshipTypes.OfficeDocument
-            }, target = _b.target, type = _b.type;
-            return d.loadRelationshipPart(target, type).then(function () { return d; });
-        });
+            var tasks = topLevelRels.map(function (rel) {
+                var _a;
+                var r = (_a = rels.find(function (x) { return x.type === rel.type; })) !== null && _a !== void 0 ? _a : rel;
+                return d.loadRelationshipPart(r.target, r.type);
+            });
+            return Promise.all(tasks);
+        }).then(function () { return d; });
+    };
+    WordDocument.prototype.save = function (type) {
+        if (type === void 0) { type = "blob"; }
+        return this._package.save(type);
     };
     WordDocument.prototype.loadRelationshipPart = function (path, type) {
         var _this = this;
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
-        if (!this._package.exists(path))
+        if (!this._package.get(path))
             return Promise.resolve(null);
         var part = null;
         switch (type) {
             case relationship_1.RelationshipTypes.OfficeDocument:
-                this.documentPart = part = new document_part_1.DocumentPart(path, this._parser);
+                this.documentPart = part = new document_part_1.DocumentPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.FontTable:
-                this.fontTablePart = part = new font_table_1.FontTablePart(path);
+                this.fontTablePart = part = new font_table_1.FontTablePart(this._package, path);
                 break;
             case relationship_1.RelationshipTypes.Numbering:
-                this.numberingPart = part = new numbering_part_1.NumberingPart(path, this._parser);
+                this.numberingPart = part = new numbering_part_1.NumberingPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Styles:
-                this.stylesPart = part = new styles_part_1.StylesPart(path, this._parser);
+                this.stylesPart = part = new styles_part_1.StylesPart(this._package, path, this._parser);
                 break;
         }
         if (part == null)
             return Promise.resolve(null);
         this.partsMap[path] = part;
         this.parts.push(part);
-        return part.load(this._package).then(function () {
+        return part.load().then(function () {
             if (part.rels == null || part.rels.length == 0)
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
@@ -2840,12 +2918,13 @@ var WordDocument = (function () {
         return this.loadResource(this.fontTablePart, id, "uint8array")
             .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
     };
-    WordDocument.prototype.loadResource = function (part, id, outputType) {
+    WordDocument.prototype.getPathById = function (part, id) {
         var rel = part.rels.find(function (x) { return x.id == id; });
-        if (rel == null)
-            return Promise.resolve(null);
-        var fodler = (0, utils_1.splitPath)(part.path)[0];
-        return this._package.load(fodler + rel.target, outputType);
+        return rel ? (0, utils_1.splitPath)(part.path)[0] + rel.target : null;
+    };
+    WordDocument.prototype.loadResource = function (part, id, outputType) {
+        var path = this.getPathById(part, id);
+        return path ? this._package.load(path, outputType) : Promise.resolve(null);
     };
     return WordDocument;
 }());

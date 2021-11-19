@@ -1,4 +1,4 @@
-import { Package } from "../common/package";
+import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
 import { IDomStyle } from "../dom/style";
@@ -8,16 +8,12 @@ export class StylesPart extends Part {
 
     private _documentParser: DocumentParser;
 
-    constructor(path: string, parser: DocumentParser) {
-        super(path);
+    constructor(pkg: OpenXmlPackage, path: string, parser: DocumentParser) {
+        super(pkg, path);
         this._documentParser = parser;
     }
 
-    load(pkg: Package) {
-        return super.load(pkg)
-            .then(() => pkg.load(this.path, "xml"))
-            .then(xml => {
-                this.styles = this._documentParser.parseStylesFile(xml);
-            })
+    parseXml(root: Element) {
+        this.styles = this._documentParser.parseStylesFile(root);     
     }
 }

@@ -1,17 +1,22 @@
-import * as JSZip from 'jszip';
+import { OutputType } from "jszip";
 
 import { DocumentParser } from './document-parser';
 import { Relationship, RelationshipTypes } from './common/relationship';
 import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
-import { Package } from './common/package';
+import { OpenXmlPackage } from './common/open-xml-package';
 import { DocumentPart } from './dom/document-part';
 import { splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
+const topLevelRels = [
+    { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
+    { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+    { type: RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+];
 
 export class WordDocument {
-    private _package: Package;
+    private _package: OpenXmlPackage;
     private _parser: DocumentParser;
     
     rels: Relationship[];
@@ -23,52 +28,57 @@ export class WordDocument {
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
 
-    static load(blob, parser: DocumentParser): Promise<WordDocument> {
+    static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
         var d = new WordDocument();
 
         d._parser = parser;
 
-        return JSZip.loadAsync(blob)
-            .then(zip => {
-                d._package = new Package(zip);
+        return OpenXmlPackage.load(blob, options)
+            .then(pkg => {
+                d._package = pkg;
 
                 return d._package.loadRelationships();
             }).then(rels => {
                 d.rels = rels;
 
-                let { target, type } = rels.find(x => x.type == RelationshipTypes.OfficeDocument) ?? {
-                    target: "word/document.xml",
-                    type: RelationshipTypes.OfficeDocument
-                }; //fallback
+                const tasks = topLevelRels.map(rel => {
+                    const r = rels.find(x => x.type === rel.type) ?? rel; //fallback                    
+                    return d.loadRelationshipPart(r.target, r.type);
+                });
 
-                return d.loadRelationshipPart(target, type).then(() => d);
-            });
+                return Promise.all(tasks);
+            }).then(() => d);
+    }
+
+    save(type = "blob"): Promise<any> {
+        return this._package.save(type);
     }
 
     private loadRelationshipPart(path: string, type: string): Promise<Part> {
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
 
-        if (!this._package.exists(path))
+        if (!this._package.get(path))
             return Promise.resolve(null);
 
         let part: Part = null;
 
         switch(type) {
             case RelationshipTypes.OfficeDocument:
-                this.documentPart = part = new DocumentPart(path, this._parser);
+                this.documentPart = part = new DocumentPart(this._package, path, this._parser);
                 break;
 
             case RelationshipTypes.FontTable:
-                this.fontTablePart = part = new FontTablePart(path);
+                this.fontTablePart = part = new FontTablePart(this._package, path);
                 break;
 
             case RelationshipTypes.Numbering:
-                this.numberingPart = part = new NumberingPart(path, this._parser);
+                this.numberingPart = part = new NumberingPart(this._package, path, this._parser);
                 break;
 
             case RelationshipTypes.Styles:
-                this.stylesPart = part = new StylesPart(path, this._parser);
+                this.stylesPart = part = new StylesPart(this._package, path, this._parser);
+
                 break;
         }
 
@@ -78,7 +88,7 @@ export class WordDocument {
         this.partsMap[path] = part;
         this.parts.push(part);
 
-        return part.load(this._package).then(() => {
+        return part.load().then(() => {
             if (part.rels == null || part.rels.length == 0)
                 return part;
 
@@ -106,15 +116,14 @@ export class WordDocument {
             .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
     }
 
-    private loadResource(part: Part, id: string, outputType: JSZip.OutputType) {
-        let rel = part.rels.find(x => x.id == id);
+    getPathById(part: Part, id: string): string {
+        const rel = part.rels.find(x => x.id == id);
+        return rel ? splitPath(part.path)[0] + rel.target : null;
+    }
 
-        if (rel == null)
-            return Promise.resolve(null);
-
-        let [fodler] = splitPath(part.path);
-
-        return this._package.load(fodler + rel.target, outputType);
+    private loadResource(part: Part, id: string, outputType: OutputType) {
+        const path = this.getPathById(part, id);
+        return path ? this._package.load(path, outputType) : Promise.resolve(null);
     }
 }
 
