@@ -845,6 +845,11 @@ export class DocumentParser {
                     style["vertical-align"] = xml.stringAttr(c, "val");
                     break;
 
+                case "spacing":
+                    if (elem.localName == "pPr")
+                        this.parseSpacing(c, style);
+                    break;
+
                 case "lang":
                 case "noProof": //ignore spellcheck
                 case "webHidden": // maybe web-hidden should be implemented
@@ -927,6 +932,32 @@ export class DocumentParser {
         if (firstLine) style["text-indent"] = firstLine;
         if (left || start) style["margin-left"] = left || start;
         if (right || end) style["margin-right"] = right || end;
+    }
+
+    parseSpacing(node: Element, style: Record<string, string>) {
+        var before = xml.sizeAttr(node, "before");
+        var after = xml.sizeAttr(node, "after");
+        var line = xml.intAttr(node, "line", null);
+        var lineRule = xml.stringAttr(node, "lineRule");
+
+        if (before) style["margin-top"] = before;
+        if (after) style["margin-bottom"] = after;
+        
+        if (line !== null) {
+            switch(lineRule) {
+                case "auto": 
+                    style["line-height"] = `${(line / 240).toFixed(2)}`;
+                    break;
+
+                case "atLeast":
+                    style["line-height"] = `calc(100% + ${line / 20}pt)`;
+                    break;
+
+                default:
+                    style["line-height"] = style["min-height"] = `${line / 20}pt`
+                    break;
+            }
+        }
     }
 
     parseMarginProperties(node: Element, output: Record<string, string>) {

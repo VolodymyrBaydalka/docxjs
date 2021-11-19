@@ -14,7 +14,7 @@ export interface ExtendedPropsDeclaration {
 }
 
 export function parseExtendedProps(root: Element, xmlParser: XmlParser): ExtendedPropsDeclaration {
-    let result = <ExtendedPropsDeclaration>{
+    const result = <ExtendedPropsDeclaration>{
 
     };
 

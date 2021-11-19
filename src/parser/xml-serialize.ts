@@ -80,11 +80,11 @@ export function deserializeElement<T = any>(n: Element, output: T, ops: Deserial
     deserializeSchema(n, output, schema);
 
     for (let i = 0, l = n.children.length; i < l; i ++) {
-        let elem = n.children.item(i);
-        let child = schema.children[elem.localName];
+        const elem = n.children.item(i);
+        const child = schema.children[elem.localName];
 
         if (child) {
-            let obj = Object.create(child.proto);
+            const obj = child.proto.constructor ? new child.proto.constructor() : Object.create(child.proto);
             deserializeElement(elem, obj, ops);
             (output as any).children.push(obj);
         }

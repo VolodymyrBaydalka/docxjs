@@ -12,10 +12,12 @@ import { StylesPart } from './styles/styles-part';
 import { FooterPart } from "./footer/footer-part";
 import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
+import { CorePropsPart } from "./document-props/core-props-part";
 
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+    { type: RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
 ]
 
 export class WordDocument {
@@ -30,6 +32,7 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
+    corePropsPart: CorePropsPart;
     extendedPropsPart: ExtendedPropsPart;
 
     static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
@@ -92,6 +95,10 @@ export class WordDocument {
                 part = new HeaderPart(this._package, path, this._parser);
                 break;
 
+            case RelationshipTypes.CoreProperties:
+                this.corePropsPart = part = new CorePropsPart(this._package, path);
+                break;
+    
             case RelationshipTypes.ExtendedProperties:
                 this.extendedPropsPart = part = new ExtendedPropsPart(this._package, path);
                 break;

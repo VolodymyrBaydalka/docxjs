@@ -114,7 +114,7 @@ export class HtmlRenderer {
     processStyles(styles: WmlStyle[]) {
         const styleMap = keyBy(styles, s => s.id);
 
-        for(let style of styles.filter(s => s.basedOn)) {
+        for (let style of styles.filter(s => s.basedOn)) {
             const baseStyle = styleMap[style.basedOn];
         
             if(baseStyle) {
@@ -129,11 +129,7 @@ export class HtmlRenderer {
     }
 
     processDomStyles(styles: IDomStyle[]) {
-        var domStylesMap: Record<string, IDomStyle> = {};
-
-        for (let style of styles.filter(x => x.id != null)) {
-            domStylesMap[style.id] = style;
-        }
+        var domStylesMap = keyBy(styles, x => x.id);
 
         for (let style of styles.filter(x => x.basedOn)) {
             var baseStyle = domStylesMap[style.basedOn];
@@ -560,6 +556,8 @@ section.${c} { box-sizing: border-box; }
             return this.renderBookmarkStart(elem);
         } else if (elem instanceof WmlRun) {
             return this.renderRun(elem);
+        } else if (elem instanceof WmlBreak) {
+            return this.renderBreak(elem);
         } else if (elem instanceof WmlText) {
             return this.renderText(elem);
         } else if (elem instanceof WmlSymbol) {
@@ -664,12 +662,12 @@ section.${c} { box-sizing: border-box; }
     }
 
     renderLineSpacing(style: any, spacing: LineSpacing) {   
-        if (spacing.after) {
-            style["margin-bottom"] = this.renderLength(spacing.after)
+        if (spacing.before) {
+            style["margin-top"] = this.renderLength(spacing.before);
         }
 
-        if (spacing.before) {
-            style["margin-top"] = this.renderLength(spacing.before)
+        if (spacing.after) {
+            style["margin-bottom"] = this.renderLength(spacing.after);
         }
 
         switch(spacing.lineRule) {
@@ -870,6 +868,14 @@ section.${c} { box-sizing: border-box; }
 
     renderText(elem: WmlText) {
         return this.htmlDocument.createTextNode(elem.text);
+    }
+
+    renderBreak(elem: WmlBreak) {
+        if (elem.type == "textWrapping") {
+            return this.htmlDocument.createElement("br");
+        }
+
+        return null;
     }
 
     renderSymbol(elem: WmlSymbol) {
