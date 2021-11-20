@@ -1,7 +1,8 @@
 describe("Render document", function () {
   const tests = [
     'test1',
-    'test2'
+    'test2',
+    'test3'
   ];
 
   for (let path of tests) {

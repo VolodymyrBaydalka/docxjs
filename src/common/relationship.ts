@@ -24,11 +24,11 @@ export enum RelationshipTypes {
     CoreProperties = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
 }
 
-export function parseRelationships(root: Element, xmlParser: XmlParser): Relationship[] {
-    return xmlParser.elements(root).map(e => <Relationship>{
-        id: xmlParser.attr(e, "Id"),
-        type: xmlParser.attr(e, "Type"),
-        target: xmlParser.attr(e, "Target"),
-        targetMode: xmlParser.attr(e, "TargetMode")
+export function parseRelationships(root: Element, xml: XmlParser): Relationship[] {
+    return xml.elements(root).map(e => <Relationship>{
+        id: xml.attr(e, "Id"),
+        type: xml.attr(e, "Type"),
+        target: xml.attr(e, "Target"),
+        targetMode: xml.attr(e, "TargetMode")
     });
 }

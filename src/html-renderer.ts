@@ -380,7 +380,7 @@ section.${c} { box-sizing: border-box; }
             var selector = `p.${this.numberingClass(num.id, num.level)}`;
             var listStyleType = "none";
 
-            if (num.levelText && num.format == "decimal") {
+            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter" || num.format == "lowerRoman")) {
                 let counter = this.numberingCounter(num.id, num.level);
 
                 if (num.level > 0) {
@@ -707,7 +707,7 @@ section.${c} { box-sizing: border-box; }
             let colElem = this.htmlDocument.createElement("col");
 
             if (col.width)
-                colElem.style.width = `${col.width}px`;
+                colElem.style.width = col.width;
 
             result.appendChild(colElem);
         }

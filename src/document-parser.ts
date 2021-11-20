@@ -11,6 +11,8 @@ import globalXmlParser from './parser/xml-parser';
 import { RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
+import { WmlFooter } from './footer/footer';
+import { WmlHeader } from './header/header';
 
 export var autos = {
     shd: "white",
@@ -26,33 +28,46 @@ export class DocumentParser {
     ignoreWidth: boolean = false;
     debug: boolean = false;
 
-    parseDocumentFile(xmlDoc: Element) {
-        var result: DocumentElement = {
-            type: DomType.Document,
-            children: [],
-            cssStyle: {},
-            props: null
-        };
+    parseFooter(xmlDoc: Element): WmlFooter {
+        var result = new WmlFooter();
+        result.children = this.parseBodyElements(xmlDoc);
+        return result;
+    }
 
+    parseHeader(xmlDoc: Element): WmlHeader {
+        var result = new WmlHeader();
+        result.children = this.parseBodyElements(xmlDoc);
+        return result;
+    }
+
+    parseDocumentFile(xmlDoc: Element): DocumentElement {
         var xbody = globalXmlParser.element(xmlDoc, "body");
+        var sectPr = globalXmlParser.element(xbody, "sectPr");
 
-        xml.foreach(xbody, elem => {
+        return {
+            type: DomType.Document,
+            children: this.parseBodyElements(xbody),
+            props: sectPr ? parseSectionProperties(sectPr, globalXmlParser) : null,
+            cssStyle: {},
+        };
+    }
+
+    parseBodyElements(element: Element): OpenXmlElement[] {
+        var children = [];
+        
+        xml.foreach(element, elem => {
             switch (elem.localName) {
                 case "p":
-                    result.children.push(this.parseParagraph(elem));
+                    children.push(this.parseParagraph(elem));
                     break;
 
                 case "tbl":
-                    result.children.push(this.parseTable(elem));
-                    break;
-
-                case "sectPr":
-                    result.props = parseSectionProperties(elem, globalXmlParser);
+                    children.push(this.parseTable(elem));
                     break;
             }
         });
 
-        return result;
+        return children;
     }
 
     parseStylesFile(xstyles: Element): IDomStyle[] {
@@ -907,7 +922,7 @@ export class DocumentParser {
                     break;
 
                 case "vAlign":
-                    style["vertical-align"] = xml.stringAttr(c, "val");
+                    style["vertical-align"] = values.valueOfTextAlignment(c);
                     break;
 
                 case "spacing":
@@ -1146,7 +1161,7 @@ class xml {
     }
 
     static convertSize(val: string, type: SizeType = SizeType.Dxa) {
-        if (val == null || val.indexOf("pt") > -1)
+        if (val == null || /.+p[xt]$/.test(val))
             return val;
 
         var intVal = parseInt(val);

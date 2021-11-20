@@ -13,17 +13,17 @@ export class Part {
     load(): Promise<any> {
         return Promise.all([
             this._package.loadRelationships(this.path).then(rels => {
-            this.rels = rels;
+                this.rels = rels;
             }),
             this._package.load(this.path).then(text => {
-                const xmlDoc = this._package.parseXmlDocument(text); 
+                const xmlDoc = this._package.parseXmlDocument(text);
 
                 if (this._package.options.keepOrigin) {
                     this._xmlDocument = xmlDoc;
                 }
 
                 this.parseXml(xmlDoc.firstElementChild);
-        })
+            })
         ]);
     }
 
