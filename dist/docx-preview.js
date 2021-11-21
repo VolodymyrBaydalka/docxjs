@@ -452,12 +452,17 @@ var DocumentParser = (function () {
         var result = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
-            style: {}
+            pStyle: {},
+            rStyle: {},
+            suff: "tab"
         };
         xml.foreach(node, function (n) {
             switch (n.localName) {
                 case "pPr":
-                    _this.parseDefaultProperties(n, result.style);
+                    _this.parseDefaultProperties(n, result.pStyle);
+                    break;
+                case "rPr":
+                    _this.parseDefaultProperties(n, result.rStyle);
                     break;
                 case "lvlPicBulletId":
                     var id = xml.intAttr(n, "val");
@@ -468,6 +473,9 @@ var DocumentParser = (function () {
                     break;
                 case "numFmt":
                     result.format = xml.stringAttr(n, "val");
+                    break;
+                case "suff":
+                    result.suff = xml.stringAttr(n, "val");
                     break;
             }
         });
@@ -1002,12 +1010,15 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseIndentation = function (node, style) {
         var firstLine = xml.sizeAttr(node, "firstLine");
+        var hanging = xml.sizeAttr(node, "hanging");
         var left = xml.sizeAttr(node, "left");
         var start = xml.sizeAttr(node, "start");
         var right = xml.sizeAttr(node, "right");
         var end = xml.sizeAttr(node, "end");
         if (firstLine)
             style["text-indent"] = firstLine;
+        if (hanging)
+            style["text-indent"] = "-" + hanging;
         if (left || start)
             style["margin-left"] = left || start;
         if (right || end)
@@ -2349,32 +2360,17 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; }\n";
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n";
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderNumbering = function (styles, styleContainer) {
+    HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
         var _loop_3 = function () {
             selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
-            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter" || num.format == "lowerRoman")) {
-                var counter = this_3.numberingCounter(num.id, num.level);
-                if (num.level > 0) {
-                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
-                        "counter-reset": counter
-                    });
-                }
-                else {
-                    rootCounters.push(counter);
-                }
-                styleText += this_3.styleToString(selector + ":before", {
-                    "content": this_3.levelTextToContent(num.levelText, num.id),
-                    "counter-increment": counter
-                });
-            }
-            else if (num.bullet) {
+            if (num.bullet) {
                 var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
                 styleText += this_3.styleToString(selector + ":before", {
                     "content": "' '",
@@ -2386,14 +2382,26 @@ var HtmlRenderer = (function () {
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
+            else if (num.levelText) {
+                var counter = this_3.numberingCounter(num.id, num.level);
+                if (num.level > 0) {
+                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
+                        "counter-reset": counter
+                    });
+                }
+                else {
+                    rootCounters.push(counter);
+                }
+                styleText += this_3.styleToString(selector + ":before", __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+            }
             else {
                 listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
+            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
         };
         var this_3 = this, selector, listStyleType;
-        for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
-            var num = styles_2[_i];
+        for (var _i = 0, numberings_1 = numberings; _i < numberings_1.length; _i++) {
+            var num = numberings_1[_i];
             _loop_3();
         }
         if (rootCounters.length > 0) {
@@ -2406,8 +2414,8 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
         var stylesMap = this.styleMap;
-        for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
-            var style = styles_3[_i];
+        for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
+            var style = styles_2[_i];
             var subStyles = style.styles;
             if (style.linked) {
                 var linkedStyle = style.linked && stylesMap[style.linked];
@@ -2658,13 +2666,18 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
         return this.className + "-num-" + id + "-" + lvl;
     };
-    HtmlRenderer.prototype.levelTextToContent = function (text, id) {
+    HtmlRenderer.prototype.levelTextToContent = function (text, suff, id, numformat) {
         var _this = this;
+        var _a;
+        var suffMap = {
+            "tab": "\\9",
+            "space": "\\a0",
+        };
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(" + _this.numberingCounter(id, lvl) + ")\"";
+            return "\"counter(" + _this.numberingCounter(id, lvl) + ", " + numformat + ")\"";
         });
-        return '"' + result + '"';
+        return "\"" + result + ((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "") + "\"";
     };
     HtmlRenderer.prototype.numFormatToCssValue = function (format) {
         var mapping = {

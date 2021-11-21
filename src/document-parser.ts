@@ -317,13 +317,19 @@ export class DocumentParser {
         var result: IDomNumbering = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
-            style: {}
+            pStyle: {},
+            rStyle: {},
+            suff: "tab"
         };
 
         xml.foreach(node, n => {
             switch (n.localName) {
                 case "pPr":
-                    this.parseDefaultProperties(n, result.style);
+                    this.parseDefaultProperties(n, result.pStyle);
+                    break;
+
+                case "rPr":
+                    this.parseDefaultProperties(n, result.rStyle);
                     break;
 
                 case "lvlPicBulletId":
@@ -338,7 +344,11 @@ export class DocumentParser {
                 case "numFmt":
                     result.format = xml.stringAttr(n, "val");
                     break;
-            }
+
+                case "suff":
+                    result.suff = xml.stringAttr(n, "val");
+                    break;
+                }
         });
 
         return result;
@@ -1004,12 +1014,14 @@ export class DocumentParser {
 
     parseIndentation(node: Element, style: Record<string, string>) {
         var firstLine = xml.sizeAttr(node, "firstLine");
+        var hanging = xml.sizeAttr(node, "hanging");
         var left = xml.sizeAttr(node, "left");
         var start = xml.sizeAttr(node, "start");
         var right = xml.sizeAttr(node, "right");
         var end = xml.sizeAttr(node, "end");
 
         if (firstLine) style["text-indent"] = firstLine;
+        if (hanging) style["text-indent"] = `-${hanging}`;
         if (left || start) style["margin-left"] = left || start;
         if (right || end) style["margin-right"] = right || end;
     }

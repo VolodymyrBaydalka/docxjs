@@ -3,7 +3,9 @@ describe("Render document", function () {
     'text',
     'text-break',
     'table',
-    'page-layout'
+    'page-layout',
+    'numbering',
+    'line-spacing'
   ];
 
   for (let path of tests) {
