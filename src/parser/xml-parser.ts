@@ -1,5 +1,26 @@
 import { Length,  LengthUsage, LengthUsageType, convertLength  } from "../dom/common";
 
+export function parseXmlString(xmlString: string, trimXmlDeclaration: boolean = false): Document {
+    if (trimXmlDeclaration)
+        xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    
+    const result = new DOMParser().parseFromString(xmlString, "application/xml");  
+    const errorText = hasXmlParserError(result);
+
+    if (errorText)
+        throw new Error(errorText);
+
+    return result;
+}
+
+function hasXmlParserError(doc: Document) {
+    return doc.getElementsByTagName("parsererror")[0]?.textContent;
+}
+
+export function serializeXmlString(elem: Node): string {
+    return new XMLSerializer().serializeToString(elem);
+}
+
 export class XmlParser {
     parse(xmlString: string, skipDeclaration: boolean = true): Element {
         if (skipDeclaration)
@@ -30,6 +51,11 @@ export class XmlParser {
         }
 
         return null;
+    }
+
+    elementAttr(elem: Element, localName: string, attrLocalName: string): string {
+        var el = this.element(elem, localName);
+        return el ? this.attr(el, attrLocalName) : undefined;
     }
 
     attr(elem: Element, localName: string): string {

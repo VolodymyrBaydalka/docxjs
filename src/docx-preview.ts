@@ -11,6 +11,7 @@ export interface Options {
     debug: boolean;
     experimental: boolean;
     className: string;
+    trimXmlDeclaration: boolean;
 }
 
 export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null) {
@@ -26,6 +27,7 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
         experimental: false,
         className: "docx",
         inWrapper: true,
+        trimXmlDeclaration: true,
         ... userOptions
     };
 
@@ -35,7 +37,9 @@ export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleC
     renderer.className = options.className || "docx";
     renderer.inWrapper = options.inWrapper;
 
-    return WordDocument.load(data, parser).then(doc => {
+    return WordDocument.load(data, parser, { 
+        trimXmlDeclaration: options.trimXmlDeclaration
+    }).then(doc => {
         renderer.render(doc, bodyContainer, styleContainer, options);
         return doc;
     })

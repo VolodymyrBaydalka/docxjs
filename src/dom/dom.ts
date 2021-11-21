@@ -13,7 +13,9 @@ export enum DomType {
     Tab = "tab",
     Symbol = "symbol",
     BookmarkStart = "bookmarkStart",
-    BookmarkEnd = "bookmarkEnd"
+    BookmarkEnd = "bookmarkEnd",
+    Footer = "footer",
+    Header = "header"
 }
 
 export interface OpenXmlElement {

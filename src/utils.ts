@@ -16,9 +16,43 @@ export function splitPath(path: string): [string, string] {
     return [folder, fileName];
 }
 
+export function resolvePath(path: string, base: string): string {
+    try {
+        const prefix = "file://docx/";
+        const url = new URL(path, prefix + base).toString();
+        return url.substr(prefix.length);
+    } catch {
+        return `${base}${path}`;
+    }
+}
+
 export function keyBy<T = any>(array: T[], by: (x: T) => any): Record<any, T> {
     return array.reduce((a, x) => {
         a[by(x)] = x;
         return a;
     }, {});
+}
+
+export function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+export function mergeDeep(target, ...sources) {
+    if (!sources.length) 
+        return target;
+    
+    const source = sources.shift();
+
+    if (isObject(target) && isObject(source)) {
+        for (const key in source) {
+            if (isObject(source[key])) {
+                const val = target[key] ?? (target[key] = {});
+                mergeDeep(val, source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        }
+    }
+
+    return mergeDeep(target, ...sources);
 }
