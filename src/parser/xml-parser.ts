@@ -58,6 +58,11 @@ export class XmlParser {
 
         return null;
     }
+    
+    elementAttr(elem: Element, localName: string, attrLocalName: string): string {
+        var el = this.element(elem, localName);
+        return el ? this.attr(el, attrLocalName) : undefined;
+    }
 
     attr = attr;
 

@@ -141,12 +141,12 @@ var RelationshipTypes;
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
     RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 })(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
-function parseRelationships(root, xmlParser) {
-    return xmlParser.elements(root).map(function (e) { return ({
-        id: xmlParser.attr(e, "Id"),
-        type: xmlParser.attr(e, "Type"),
-        target: xmlParser.attr(e, "Target"),
-        targetMode: xmlParser.attr(e, "TargetMode")
+function parseRelationships(root, xml) {
+    return xml.elements(root).map(function (e) { return ({
+        id: xml.attr(e, "Id"),
+        type: xml.attr(e, "Type"),
+        target: xml.attr(e, "Target"),
+        targetMode: xml.attr(e, "TargetMode")
     }); });
 }
 exports.parseRelationships = parseRelationships;
@@ -873,7 +873,7 @@ var DocumentParser = (function () {
                     style["table-layout"] = values.valueOfTblLayout(c);
                     break;
                 case "vAlign":
-                    style["vertical-align"] = xml.stringAttr(c, "val");
+                    style["vertical-align"] = values.valueOfTextAlignment(c);
                     break;
                 case "spacing":
                     if (elem.localName == "pPr")
@@ -1079,7 +1079,7 @@ var xml = (function () {
     };
     xml.convertSize = function (val, type) {
         if (type === void 0) { type = SizeType.Dxa; }
-        if (val == null || val.indexOf("pt") > -1)
+        if (val == null || /.+p[xt]$/.test(val))
             return val;
         var intVal = parseInt(val);
         switch (type) {
@@ -1169,6 +1169,17 @@ var values = (function () {
             case "end":
             case "right": return "right";
             case "both": return "justify";
+        }
+        return type;
+    };
+    values.valueOfTextAlignment = function (c) {
+        var type = xml.stringAttr(c, "val");
+        switch (type) {
+            case "auto":
+            case "baseline": return "baseline";
+            case "top": return "top";
+            case "center": return "middle";
+            case "bottom": return "bottom";
         }
         return type;
     };
@@ -3695,6 +3706,10 @@ var XmlParser = (function () {
         }
         return null;
     };
+    XmlParser.prototype.elementAttr = function (elem, localName, attrLocalName) {
+        var el = this.element(elem, localName);
+        return el ? this.attr(el, attrLocalName) : undefined;
+    };
     XmlParser.prototype.intAttr = function (node, attrName, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }
         var val = this.attr(node, attrName);
@@ -4026,6 +4041,114 @@ exports.parseStylesPart = parseStylesPart;
 
 /***/ }),
 
+/***/ "./src/theme/theme-part.ts":
+/*!*********************************!*\
+  !*** ./src/theme/theme-part.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ThemePart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var theme_1 = __webpack_require__(/*! ./theme */ "./src/theme/theme.ts");
+var ThemePart = (function (_super) {
+    (0, tslib_1.__extends)(ThemePart, _super);
+    function ThemePart(pkg, path) {
+        return _super.call(this, pkg, path) || this;
+    }
+    ThemePart.prototype.parseXml = function (root) {
+        this.theme = (0, theme_1.parseTheme)(root, this._package.xmlParser);
+    };
+    return ThemePart;
+}(part_1.Part));
+exports.ThemePart = ThemePart;
+
+
+/***/ }),
+
+/***/ "./src/theme/theme.ts":
+/*!****************************!*\
+  !*** ./src/theme/theme.ts ***!
+  \****************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseFontInfo = exports.parseFontScheme = exports.parseColorScheme = exports.parseTheme = exports.DmlTheme = void 0;
+var DmlTheme = (function () {
+    function DmlTheme() {
+    }
+    return DmlTheme;
+}());
+exports.DmlTheme = DmlTheme;
+function parseTheme(elem, xml) {
+    var result = new DmlTheme();
+    var themeElements = xml.element(elem, "themeElements");
+    for (var _i = 0, _a = xml.elements(themeElements); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "clrScheme":
+                result.colorScheme = parseColorScheme(el, xml);
+                break;
+            case "fontScheme":
+                result.fontScheme = parseFontScheme(el, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseTheme = parseTheme;
+function parseColorScheme(elem, xml) {
+    var result = {
+        name: xml.attr(elem, "name"),
+        colors: {}
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var el = _a[_i];
+        var srgbClr = xml.element(el, "srgbClr");
+        var sysClr = xml.element(el, "sysClr");
+        if (srgbClr) {
+            result.colors[el.localName] = xml.attr(srgbClr, "val");
+        }
+        else if (sysClr) {
+            result.colors[el.localName] = xml.attr(sysClr, "lastClr");
+        }
+    }
+    return result;
+}
+exports.parseColorScheme = parseColorScheme;
+function parseFontScheme(elem, xml) {
+    var result = {
+        name: xml.attr(elem, "name"),
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "majorFont":
+                result.majorFont = parseFontInfo(el, xml);
+                break;
+            case "minorFont":
+                result.minorFont = parseFontInfo(el, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseFontScheme = parseFontScheme;
+function parseFontInfo(elem, xml) {
+    return {
+        latinTypeface: xml.elementAttr(elem, "latin", "typeface"),
+        eaTypeface: xml.elementAttr(elem, "ea", "typeface"),
+        csTypeface: xml.elementAttr(elem, "cs", "typeface"),
+    };
+}
+exports.parseFontInfo = parseFontInfo;
+
+
+/***/ }),
+
 /***/ "./src/utils.ts":
 /*!**********************!*\
   !*** ./src/utils.ts ***!
@@ -4034,7 +4157,7 @@ exports.parseStylesPart = parseStylesPart;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeDeep = exports.isObject = exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.mergeDeep = exports.isObject = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
@@ -4051,6 +4174,17 @@ function splitPath(path) {
     return [folder, fileName];
 }
 exports.splitPath = splitPath;
+function resolvePath(path, base) {
+    try {
+        var prefix = "file://docx/";
+        var url = new URL(path, prefix + base).toString();
+        return url.substr(prefix.length);
+    }
+    catch (_a) {
+        return "" + base + path;
+    }
+}
+exports.resolvePath = resolvePath;
 function keyBy(array, by) {
     return array.reduce(function (a, x) {
         a[by(x)] = x;
@@ -4109,6 +4243,7 @@ var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/foote
 var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/header/header-part.ts");
 var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
+var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
 var topLevelRels = [
     { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
@@ -4160,6 +4295,9 @@ var WordDocument = (function () {
             case relationship_1.RelationshipTypes.Styles:
                 this.stylesPart = part = new styles_part_1.StylesPart(this._package, path, this._parser);
                 break;
+            case relationship_1.RelationshipTypes.Theme:
+                part = new theme_part_1.ThemePart(this._package, path);
+                break;
             case relationship_1.RelationshipTypes.Footer:
                 part = new footer_part_1.FooterPart(this._package, path, this._parser);
                 break;
@@ -4182,7 +4320,7 @@ var WordDocument = (function () {
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart("" + folder + rel.target, rel.type);
+                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
             });
             return Promise.all(rels).then(function () { return part; });
         });
@@ -4201,7 +4339,8 @@ var WordDocument = (function () {
     };
     WordDocument.prototype.getPathById = function (part, id) {
         var rel = part.rels.find(function (x) { return x.id == id; });
-        return rel ? (0, utils_1.splitPath)(part.path)[0] + rel.target : null;
+        var folder = (0, utils_1.splitPath)(part.path)[0];
+        return rel ? (0, utils_1.resolvePath)(rel.target, folder) : null;
     };
     WordDocument.prototype.loadResource = function (part, id, outputType) {
         var path = this.getPathById(part, id);

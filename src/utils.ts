@@ -16,6 +16,16 @@ export function splitPath(path: string): [string, string] {
     return [folder, fileName];
 }
 
+export function resolvePath(path: string, base: string): string {
+    try {
+        const prefix = "file://docx/";
+        const url = new URL(path, prefix + base).toString();
+        return url.substr(prefix.length);
+    } catch {
+        return `${base}${path}`;
+    }
+}
+
 export function keyBy<T = any>(array: T[], by: (x: T) => any): Record<any, T> {
     return array.reduce((a, x) => {
         a[by(x)] = x;

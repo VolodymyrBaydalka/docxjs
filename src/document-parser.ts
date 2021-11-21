@@ -842,7 +842,7 @@ export class DocumentParser {
                     break;
 
                 case "vAlign":
-                    style["vertical-align"] = xml.stringAttr(c, "val");
+                    style["vertical-align"] = values.valueOfTextAlignment(c);
                     break;
 
                 case "spacing":
@@ -1081,7 +1081,7 @@ class xml {
     }
 
     static convertSize(val: string, type: SizeType = SizeType.Dxa) {
-        if (val == null || val.indexOf("pt") > -1)
+        if (val == null || /.+p[xt]$/.test(val))
             return val;
 
         var intVal = parseInt(val);
@@ -1176,6 +1176,20 @@ class values {
             case "end":
             case "right": return "right";
             case "both": return "justify";
+        }
+
+        return type;
+    }
+
+    static valueOfTextAlignment(c: Element) {
+        var type = xml.stringAttr(c, "val");
+
+        switch (type) {
+            case "auto":
+            case "baseline": return "baseline";
+            case "top": return "top";
+            case "center": return "middle";
+            case "bottom": return "bottom";
         }
 
         return type;

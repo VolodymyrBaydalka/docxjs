@@ -6,19 +6,20 @@ import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
 import { OpenXmlPackage } from './common/open-xml-package';
 import { DocumentPart } from './document/document-part';
-import { splitPath } from './utils';
+import { resolvePath, splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
 import { FooterPart } from "./footer/footer-part";
 import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
 import { CorePropsPart } from "./document-props/core-props-part";
+import { ThemePart } from "./theme/theme-part";
 
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
     { type: RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
-]
+];
 
 export class WordDocument {
     private _package: OpenXmlPackage;
@@ -87,6 +88,10 @@ export class WordDocument {
                 this.stylesPart = part = new StylesPart(this._package, path, this._parser);
                 break;
 
+            case RelationshipTypes.Theme:
+                part = new ThemePart(this._package, path);
+                break;
+    
             case RelationshipTypes.Footer:
                 part = new FooterPart(this._package, path, this._parser);
                 break;
@@ -114,9 +119,9 @@ export class WordDocument {
             if (part.rels == null || part.rels.length == 0)
                 return part;
 
-            let [folder] = splitPath(part.path);
-            let rels = part.rels.map(rel => {
-                return this.loadRelationshipPart(`${folder}${rel.target}`, rel.type)
+            const [folder] = splitPath(part.path); 
+            const rels = part.rels.map(rel => {
+                return this.loadRelationshipPart(resolvePath(rel.target, folder), rel.type)
             });
 
             return Promise.all(rels).then(() => part);
@@ -140,7 +145,8 @@ export class WordDocument {
 
     getPathById(part: Part, id: string): string {
         const rel = part.rels.find(x => x.id == id);
-        return rel ? splitPath(part.path)[0] + rel.target : null;
+        const [folder] = splitPath(part.path); 
+        return rel ? resolvePath(rel.target, folder) : null;
     }
 
     private loadResource(part: Part, id: string, outputType: OutputType) {

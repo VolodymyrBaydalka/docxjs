@@ -1,14 +1,16 @@
 describe("Render document", function () {
   const tests = [
-    'test1',
-    'test2'
+    'text',
+    'text-break',
+    'table',
+    'page-layout'
   ];
 
   for (let path of tests) {
     it(`from ${path} should be correct`, async () => {
 
-      const docBlob = await fetch(`/base/tests/${path}/document.docx`).then(r => r.blob());
-      const resultText = await fetch(`/base/tests/${path}/result.html`).then(r => r.text());
+      const docBlob = await fetch(`/base/tests/render-test/${path}/document.docx`).then(r => r.blob());
+      const resultText = await fetch(`/base/tests/render-test/${path}/result.html`).then(r => r.text());
 
       const div = document.createElement("div");
 
