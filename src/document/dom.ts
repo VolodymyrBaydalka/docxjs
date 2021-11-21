@@ -13,8 +13,10 @@ export class DocxContainer extends DocxElement {
 export interface IDomNumbering {
     id: string;
     level: number;
-    style: Record<string, string>;
+    pStyle: Record<string, string>;
+    rStyle: Record<string, string>;
     levelText?: string;
+    suff: string;
     format?: string;
     bullet?: NumberingPicBullet;
 }

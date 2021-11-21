@@ -30,7 +30,8 @@
             docx.renderAsync(file, container, null, { 
                 debug: true,
                 experimental: true,
-                keepOrigin: true
+                keepOrigin: true,
+                ignoreLastRenderedPageBreak: false
             }).then(function(x){ console.log(x); });
         }
     </script>

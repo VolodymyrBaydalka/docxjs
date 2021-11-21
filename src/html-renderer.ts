@@ -378,7 +378,7 @@ export class HtmlRenderer {
 section.${c} { box-sizing: border-box; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
-.${c} p { margin: 0pt; }
+.${c} p { margin: 0pt; min-height: 1em; }
 `;
 
         return createStyleElement(styleText);
@@ -449,32 +449,15 @@ section.${c} { box-sizing: border-box; }
     //     return createStyleElement(css);
     // }
 
-    renderNumbering(styles: IDomNumbering[], styleContainer: HTMLElement) {
+    renderNumbering(numberings: IDomNumbering[], styleContainer: HTMLElement) {
         var styleText = "";
         var rootCounters = [];
 
-        for (var num of styles) {
+        for (var num of numberings) {
             var selector = `p.${this.numberingClass(num.id, num.level)}`;
             var listStyleType = "none";
 
-            if (num.levelText && (num.format == "decimal" || num.format == "lowerLetter" || num.format == "lowerRoman")) {
-                let counter = this.numberingCounter(num.id, num.level);
-
-                if (num.level > 0) {
-                    styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-                        "counter-reset": counter
-                    });
-                }
-                else {
-                    rootCounters.push(counter);
-                }
-
-                styleText += this.styleToString(`${selector}:before`, {
-                    "content": this.levelTextToContent(num.levelText, num.id, this.numFormatToCssValue(num.format)),
-                    "counter-increment": counter
-                });
-            }
-            else if (num.bullet) {
+            if (num.bullet) {
                 let valiable = `--${this.className}-${num.bullet.src}`.toLowerCase();
 
                 styleText += this.styleToString(`${selector}:before`, {
@@ -488,6 +471,24 @@ section.${c} { box-sizing: border-box; }
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
+            else if (num.levelText) {
+                let counter = this.numberingCounter(num.id, num.level);
+
+                if (num.level > 0) {
+                    styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
+                        "counter-reset": counter
+                    });
+                }
+                else {
+                    rootCounters.push(counter);
+                }
+
+                styleText += this.styleToString(`${selector}:before`, {
+                    "content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
+                    "counter-increment": counter,
+                    ...num.rStyle,
+                });
+            }
             else {
                 listStyleType = this.numFormatToCssValue(num.format);
             }
@@ -496,7 +497,7 @@ section.${c} { box-sizing: border-box; }
                 "display": "list-item",
                 "list-style-position": "inside",
                 "list-style-type": listStyleType,
-                ...num.style
+                ...num.pStyle
             });
         }
 
@@ -1012,13 +1013,18 @@ section.${c} { box-sizing: border-box; }
         return `${this.className}-num-${id}-${lvl}`;
     }
 
-    levelTextToContent(text: string, id: string, numformat: string) {
+    levelTextToContent(text: string, suff: string, id: string, numformat: string) {
+        const suffMap = {
+            "tab": "\\9",
+            "space": "\\a0",            
+        };
+
         var result = text.replace(/%\d*/g, s => {
             let lvl = parseInt(s.substring(1), 10) - 1;
             return `"counter(${this.numberingCounter(id, lvl)}, ${numformat})"`;
         });
 
-        return '"' + result + '"';
+        return `"${result}${suffMap[suff] ?? ""}"`;
     }
 
     numFormatToCssValue(format: string) {
