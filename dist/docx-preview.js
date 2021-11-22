@@ -2360,7 +2360,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n";
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {

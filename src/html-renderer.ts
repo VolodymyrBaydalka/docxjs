@@ -302,6 +302,7 @@ section.${c} { box-sizing: border-box; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
+.${c} span { white-space: pre-wrap; }
 `;
 
         return createStyleElement(styleText);

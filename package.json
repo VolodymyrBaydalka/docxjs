@@ -1,6 +1,6 @@
 {
   "name": "docx-preview",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "Apache-2.0",
   "keywords": [
     "word",
@@ -34,7 +34,8 @@
     "build-prod": "webpack --mode production",
     "build-all": "npm run build & npm run build-prod",
     "watch": "webpack --watch",
-    "e2e": "karma start"
+    "e2e": "karma start --single-run",
+    "e2e-watch": "karma start"
   },
   "files": [
     "dist"
