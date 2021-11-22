@@ -2545,7 +2545,8 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderText = function (elem) {
-        return this.htmlDocument.createTextNode(elem.text);
+        var text = elem.text ? elem.text.replace(/ /g, '\u00A0') : '';
+        return this.htmlDocument.createTextNode(text);
     };
     HtmlRenderer.prototype.renderBreak = function (elem) {
         if (elem.break == "textWrapping") {

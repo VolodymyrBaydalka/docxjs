@@ -613,7 +613,8 @@ section.${c} { box-sizing: border-box; }
     }
 
     renderText(elem: TextElement) {
-        return this.htmlDocument.createTextNode(elem.text);
+        const text = elem.text ? elem.text.replace(/ /g, '\u00A0') : '';
+        return this.htmlDocument.createTextNode(text);
     }
 
     renderBreak(elem: BreakElement) {
