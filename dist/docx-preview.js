@@ -923,10 +923,16 @@ var DocumentParser = (function () {
                     style["text-decoration"] = values.valueOfStrike(c);
                     break;
                 case "b":
-                    style["font-weight"] = values.valueOfBold(c);
+                    style["font-weight"] = xml.boolAttr(c, "val", true) ? "bold" : "normal";
                     break;
                 case "i":
-                    style["font-style"] = "italic";
+                    style["font-style"] = xml.boolAttr(c, "val", true) ? "italic" : "normal";
+                    break;
+                case "caps":
+                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "uppercase" : "none";
+                    break;
+                case "smallCaps":
+                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "lowercase" : "none";
                     break;
                 case "u":
                     _this.parseUnderline(c, style);
