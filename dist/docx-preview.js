@@ -55,7 +55,7 @@ var OpenXmlPackage = (function () {
         var relsPath = "_rels/.rels";
         if (path != null) {
             var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
-            relsPath = f + "_rels/" + fn + ".rels";
+            relsPath = "".concat(f, "_rels/").concat(fn, ".rels");
         }
         return this.load(relsPath)
             .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
@@ -356,7 +356,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.options.debug && console.warn("DOCX: Unknown style element: " + n.localName);
+                    _this.options.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
             }
         });
         return result;
@@ -982,7 +982,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.options.debug && console.warn("DOCX: Unknown document element: " + c.localName);
+                        _this.options.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
                     break;
             }
         });
@@ -1042,7 +1042,7 @@ var DocumentParser = (function () {
         if (firstLine)
             style["text-indent"] = firstLine;
         if (hanging)
-            style["text-indent"] = "-" + hanging;
+            style["text-indent"] = "-".concat(hanging);
         if (left || start)
             style["margin-left"] = left || start;
         if (right || end)
@@ -1060,13 +1060,13 @@ var DocumentParser = (function () {
         if (line !== null) {
             switch (lineRule) {
                 case "auto":
-                    style["line-height"] = "" + (line / 240).toFixed(2);
+                    style["line-height"] = "".concat((line / 240).toFixed(2));
                     break;
                 case "atLeast":
-                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
+                    style["line-height"] = "calc(100% + ".concat(line / 20, "pt)");
                     break;
                 default:
-                    style["line-height"] = style["min-height"] = line / 20 + "pt";
+                    style["line-height"] = style["min-height"] = "".concat(line / 20, "pt");
                     break;
             }
         }
@@ -1158,7 +1158,7 @@ var xml = (function () {
             case "auto":
                 return autoColor;
         }
-        return v ? "#" + v : defValue;
+        return v ? "#".concat(v) : defValue;
     };
     xml.boolAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = false; }
@@ -1226,7 +1226,7 @@ var values = (function () {
             return "none";
         var color = xml.colorAttr(c, "color");
         var size = xml.sizeAttr(c, "sz", SizeType.Border);
-        return size + " solid " + (color == "auto" ? "black" : color);
+        return "".concat(size, " solid ").concat(color == "auto" ? "black" : color);
     };
     values.valueOfTblLayout = function (c) {
         var type = xml.stringAttr(c, "val");
@@ -1289,7 +1289,7 @@ var values = (function () {
             return b;
         if (b == null)
             return a;
-        return "calc(" + a + " + " + b + ")";
+        return "calc(".concat(a, " + ").concat(b, ")");
     };
     values.checkMask = function (num, mask) {
         return (num & mask) == mask;
@@ -2200,8 +2200,8 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
         var _loop_1 = function (f) {
             this_1.document.loadFont(f.refId, f.fontKey).then(function (fontData) {
-                var cssTest = "@font-face {\n                    font-family: \"" + f.name + "\";\n                    src: url(" + fontData + ");\n                }";
-                appendComment(styleContainer, "Font " + f.name);
+                var cssTest = "@font-face {\n                    font-family: \"".concat(f.name, "\";\n                    src: url(").concat(fontData, ");\n                }");
+                appendComment(styleContainer, "Font ".concat(f.name));
                 styleContainer.appendChild(createStyleElement(cssTest));
             });
         };
@@ -2214,7 +2214,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.processClassName = function (className) {
         if (!className)
             return this.className;
-        return this.className + "_" + className;
+        return "".concat(this.className, "_").concat(className);
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
         var stylesMap = {};
@@ -2238,7 +2238,7 @@ var HtmlRenderer = (function () {
                 }
             }
             else if (this.options.debug)
-                console.warn("Can't find base style " + style.basedOn);
+                console.warn("Can't find base style ".concat(style.basedOn));
         }
         for (var _f = 0, styles_1 = styles; _f < styles_1.length; _f++) {
             var style = styles_1[_f];
@@ -2306,7 +2306,7 @@ var HtmlRenderer = (function () {
                     elem.style.minHeight = this.renderLength(props.pageSize.height);
             }
             if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = "" + props.columns.numberOfColumns;
+                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
                 elem.style.columnGap = this.renderLength(props.columns.space);
                 if (props.columns.separator) {
                     elem.style.columnRule = "1px solid black";
@@ -2398,16 +2398,16 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderLength = function (l) {
-        return l ? "" + l.value + l.type : null;
+        return l ? "".concat(l.value).concat(l.type) : null;
     };
     HtmlRenderer.prototype.renderWrapper = function () {
         var wrapper = document.createElement("div");
-        wrapper.className = this.className + "-wrapper";
+        wrapper.className = "".concat(this.className, "-wrapper");
         return wrapper;
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
+        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }\n");
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2415,31 +2415,31 @@ var HtmlRenderer = (function () {
         var styleText = "";
         var rootCounters = [];
         var _loop_3 = function () {
-            selector = "p." + this_3.numberingClass(num.id, num.level);
+            selector = "p.".concat(this_3.numberingClass(num.id, num.level));
             listStyleType = "none";
             if (num.bullet) {
-                var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
-                styleText += this_3.styleToString(selector + ":before", {
+                var valiable_1 = "--".concat(this_3.className, "-").concat(num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString("".concat(selector, ":before"), {
                     "content": "' '",
                     "display": "inline-block",
-                    "background": "var(" + valiable_1 + ")"
+                    "background": "var(".concat(valiable_1, ")")
                 }, num.bullet.style);
                 this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
-                    var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
+                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else if (num.levelText) {
                 var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
+                    styleText += this_3.styleToString("p.".concat(this_3.numberingClass(num.id, num.level - 1)), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_3.styleToString(selector + ":before", __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+                styleText += this_3.styleToString("".concat(selector, ":before"), __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
                 listStyleType = this_3.numFormatToCssValue(num.format);
@@ -2452,7 +2452,7 @@ var HtmlRenderer = (function () {
             _loop_3();
         }
         if (rootCounters.length > 0) {
-            styleText += this.styleToString("." + this.className + "-wrapper", {
+            styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
                 "counter-reset": rootCounters.join(" ")
             });
         }
@@ -2469,19 +2469,19 @@ var HtmlRenderer = (function () {
                 if (linkedStyle)
                     subStyles = subStyles.concat(linkedStyle.styles);
                 else if (this.options.debug)
-                    console.warn("Can't find linked style " + style.linked);
+                    console.warn("Can't find linked style ".concat(style.linked));
             }
             for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
                 var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
-                    selector += style.target + "." + style.cssName;
+                    selector += "".concat(style.target, ".").concat(style.cssName);
                 else if (style.target)
-                    selector += style.target + "." + style.cssName + " " + subStyle.target;
+                    selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
                 else
-                    selector += "." + style.cssName + " " + subStyle.target;
+                    selector += ".".concat(style.cssName, " ").concat(subStyle.target);
                 if (style.isDefault && style.target)
-                    selector = "." + this.className + " " + style.target + ", " + selector;
+                    selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
@@ -2603,7 +2603,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSymbol = function (elem) {
         var span = this.htmlDocument.createElement("span");
         span.style.fontFamily = elem.font;
-        span.innerHTML = "&#x" + elem.char + ";";
+        span.innerHTML = "&#x".concat(elem.char, ";");
         return span;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
@@ -2698,20 +2698,20 @@ var HtmlRenderer = (function () {
             ouput.className = input.className;
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
-        return this.className + "-num-" + id + "-" + lvl;
+        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
         var result = selectors + " {\r\n";
         for (var key in values) {
-            result += "  " + key + ": " + values[key] + ";\r\n";
+            result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
         }
         if (cssText)
             result += ";" + cssText;
         return result + "}\r\n";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
-        return this.className + "-num-" + id + "-" + lvl;
+        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
     };
     HtmlRenderer.prototype.levelTextToContent = function (text, suff, id, numformat) {
         var _this = this;
@@ -2722,9 +2722,9 @@ var HtmlRenderer = (function () {
         };
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(" + _this.numberingCounter(id, lvl) + ", " + numformat + ")\"";
+            return "\"counter(".concat(_this.numberingCounter(id, lvl), ", ").concat(numformat, ")\"");
         });
-        return "\"" + result + ((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "") + "\"";
+        return "\"".concat(result).concat((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "", "\"");
     };
     HtmlRenderer.prototype.numFormatToCssValue = function (format) {
         var mapping = {
@@ -2792,7 +2792,7 @@ function updateTabStop(elem, tabs, pixelToPoint) {
     if (tab == null)
         return;
     elem.style.display = "inline-block";
-    elem.style.width = (tab.position.value - left) + "pt";
+    elem.style.width = "".concat((tab.position.value - left), "pt");
     switch (tab.leader) {
         case "dot":
         case "middleDot":
@@ -3086,6 +3086,8 @@ var XmlParser = (function () {
         if (defaultValue === void 0) { defaultValue = null; }
         var v = this.attr(node, attrName);
         switch (v) {
+            case "true": return true;
+            case "false": return false;
             case "1": return true;
             case "0": return false;
             default: return defaultValue;
@@ -3291,7 +3293,7 @@ function addElementClass(element, className) {
 }
 exports.addElementClass = addElementClass;
 function appendClass(classList, className) {
-    return (!classList) ? className : classList + " " + className;
+    return (!classList) ? className : "".concat(classList, " ").concat(className);
 }
 exports.appendClass = appendClass;
 function splitPath(path) {
@@ -3308,7 +3310,7 @@ function resolvePath(path, base) {
         return url.substr(prefix.length);
     }
     catch (_a) {
-        return "" + base + path;
+        return "".concat(base).concat(path);
     }
 }
 exports.resolvePath = resolvePath;
