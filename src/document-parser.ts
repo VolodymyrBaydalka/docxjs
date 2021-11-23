@@ -20,13 +20,21 @@ export var autos = {
     highlight: "transparent"
 };
 
-export class DocumentParser {
-    // removes XML declaration 
-    skipDeclaration: boolean = true;
+export interface DocumentParserOptions {
+    ignoreWidth: boolean;
+    debug: boolean;
+}
 
-    // ignores page and table sizes
-    ignoreWidth: boolean = false;
-    debug: boolean = false;
+export class DocumentParser {
+    options: DocumentParserOptions;
+
+    constructor(options?: Partial<DocumentParserOptions>) {
+        this.options = {
+            ignoreWidth: false,
+            debug: false,
+            ...options   
+        };
+    }
 
     parseFooter(xmlDoc: Element): WmlFooter {
         var result = new WmlFooter();
@@ -203,7 +211,7 @@ export class DocumentParser {
                     break;
 
                 default:
-                    this.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
+                    this.options.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
             }
         });
 
@@ -466,7 +474,7 @@ export class DocumentParser {
                 case "lastRenderedPageBreak":
                     result.children.push(<BreakElement>{ 
                         type: DomType.Break, 
-                        break: "page"
+                        break: "lastRenderedPageBreak"
                     });
                     break;
                 
@@ -860,7 +868,7 @@ export class DocumentParser {
                     break;
 
                 case "tcW":
-                    if (this.ignoreWidth)
+                    if (this.options.ignoreWidth)
                         break;
 
                 case "tblW":
@@ -948,7 +956,7 @@ export class DocumentParser {
 
                 default:
                     if (handler != null && !handler(c))
-                        this.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
+                        this.options.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
                     break;
             }
         });
@@ -1207,6 +1215,7 @@ class values {
         switch (xml.stringAttr(c, "type")) {
             case "dxa": break;
             case "pct": type = SizeType.Percent; break;
+            case "auto": return "auto";
         }
 
         return xml.sizeAttr(c, attr, type);

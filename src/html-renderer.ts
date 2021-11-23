@@ -17,7 +17,6 @@ import { IDomStyle } from './dom/style';
 
 export class HtmlRenderer {
 
-    inWrapper: boolean = true;
     className: string = "docx";
     document: WordDocument;
     options: Options;
@@ -29,6 +28,7 @@ export class HtmlRenderer {
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+        this.className = options.className;
         this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
@@ -57,7 +57,7 @@ export class HtmlRenderer {
 
         var sectionElements = this.renderSections(document.documentPart.body);
 
-        if (this.inWrapper) {
+        if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
@@ -208,6 +208,16 @@ export class HtmlRenderer {
         return result;
     }
 
+    isPageBreakElement(elem: OpenXmlElement): boolean {
+        if (elem.type != DomType.Break)
+            return false;
+
+        if ((elem as BreakElement).break == "lastRenderedPageBreak")
+            return !this.options.ignoreLastRenderedPageBreak;
+
+        return (elem as BreakElement).break == "page";  
+    }
+
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
         var current = { sectProps: null, elements: [] };
         var result = [current];
@@ -235,7 +245,7 @@ export class HtmlRenderer {
 
                 if (this.options.breakPages && p.children) {
                     pBreakIndex = p.children.findIndex(r => {
-                        rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
+                        rBreakIndex = r.children?.findIndex(this.isPageBreakElement.bind(this)) ?? -1;
                         return rBreakIndex != -1;
                     });
                 }

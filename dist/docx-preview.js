@@ -158,9 +158,20 @@ exports.parseRelationships = parseRelationships;
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
   \********************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
@@ -177,10 +188,8 @@ exports.autos = {
     highlight: "transparent"
 };
 var DocumentParser = (function () {
-    function DocumentParser() {
-        this.skipDeclaration = true;
-        this.ignoreWidth = false;
-        this.debug = false;
+    function DocumentParser(options) {
+        this.options = __assign({ ignoreWidth: false, debug: false }, options);
     }
     DocumentParser.prototype.parseFooter = function (xmlDoc) {
         var result = new footer_1.WmlFooter();
@@ -338,7 +347,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.debug && console.warn("DOCX: Unknown style element: " + n.localName);
+                    _this.options.debug && console.warn("DOCX: Unknown style element: " + n.localName);
             }
         });
         return result;
@@ -571,7 +580,7 @@ var DocumentParser = (function () {
                 case "lastRenderedPageBreak":
                     result.children.push({
                         type: dom_1.DomType.Break,
-                        break: "page"
+                        break: "lastRenderedPageBreak"
                     });
                     break;
                 case "sym":
@@ -893,7 +902,7 @@ var DocumentParser = (function () {
                     style["background-color"] = xml.colorAttr(c, "val", null, exports.autos.highlight);
                     break;
                 case "tcW":
-                    if (_this.ignoreWidth)
+                    if (_this.options.ignoreWidth)
                         break;
                 case "tblW":
                     style["width"] = values.valueOfSize(c, "w");
@@ -958,7 +967,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.debug && console.warn("DOCX: Unknown document element: " + c.localName);
+                        _this.options.debug && console.warn("DOCX: Unknown document element: " + c.localName);
                     break;
             }
         });
@@ -1186,6 +1195,7 @@ var values = (function () {
             case "pct":
                 type = SizeType.Percent;
                 break;
+            case "auto": return "auto";
         }
         return xml.sizeAttr(c, attr, type);
     };
@@ -1494,24 +1504,37 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.renderAsync = void 0;
+exports.renderAsync = exports.praseAsync = exports.defaultOptions = void 0;
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
+exports.defaultOptions = {
+    ignoreHeight: false,
+    ignoreWidth: false,
+    ignoreFonts: false,
+    breakPages: true,
+    debug: false,
+    experimental: false,
+    className: "docx",
+    inWrapper: true,
+    trimXmlDeclaration: true,
+    ignoreLastRenderedPageBreak: true,
+};
+function praseAsync(data, userOptions) {
+    if (userOptions === void 0) { userOptions = null; }
+    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
+    return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
+}
+exports.praseAsync = praseAsync;
 function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (styleContainer === void 0) { styleContainer = null; }
     if (userOptions === void 0) { userOptions = null; }
-    var parser = new document_parser_1.DocumentParser();
+    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, trimXmlDeclaration: true }, userOptions);
-    parser.ignoreWidth = options.ignoreWidth;
-    parser.debug = options.debug || parser.debug;
-    renderer.className = options.className || "docx";
-    renderer.inWrapper = options.inWrapper;
-    return word_document_1.WordDocument.load(data, parser, {
-        trimXmlDeclaration: options.trimXmlDeclaration
-    }).then(function (doc) {
-        renderer.render(doc, bodyContainer, styleContainer, options);
+    return word_document_1.WordDocument
+        .load(data, new document_parser_1.DocumentParser(ops), ops)
+        .then(function (doc) {
+        renderer.render(doc, bodyContainer, styleContainer, ops);
         return doc;
     });
 }
@@ -2125,13 +2148,13 @@ var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts"
 var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
-        this.inWrapper = true;
         this.className = "docx";
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
+        this.className = options.className;
         this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
@@ -2150,7 +2173,7 @@ var HtmlRenderer = (function () {
         if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
         var sectionElements = this.renderSections(document.documentPart.body);
-        if (this.inWrapper) {
+        if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
@@ -2288,7 +2311,15 @@ var HtmlRenderer = (function () {
         }
         return result;
     };
+    HtmlRenderer.prototype.isPageBreakElement = function (elem) {
+        if (elem.type != dom_1.DomType.Break)
+            return false;
+        if (elem.break == "lastRenderedPageBreak")
+            return !this.options.ignoreLastRenderedPageBreak;
+        return elem.break == "page";
+    };
     HtmlRenderer.prototype.splitBySection = function (elements) {
+        var _this = this;
         var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
@@ -2312,7 +2343,7 @@ var HtmlRenderer = (function () {
                 if (this.options.breakPages && p.children) {
                     pBreakIndex = p.children.findIndex(function (r) {
                         var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; })) !== null && _b !== void 0 ? _b : -1;
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
                         return rBreakIndex != -1;
                     });
                 }
