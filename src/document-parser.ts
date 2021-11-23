@@ -50,14 +50,26 @@ export class DocumentParser {
 
     parseDocumentFile(xmlDoc: Element): DocumentElement {
         var xbody = globalXmlParser.element(xmlDoc, "body");
+        var background = globalXmlParser.element(xmlDoc, "background");
         var sectPr = globalXmlParser.element(xbody, "sectPr");
 
         return {
             type: DomType.Document,
             children: this.parseBodyElements(xbody),
             props: sectPr ? parseSectionProperties(sectPr, globalXmlParser) : null,
-            cssStyle: {},
+            cssStyle: background ? this.parseBackground(background) : {},
         };
+    }
+
+    parseBackground(elem: Element): any {
+        var result = {};
+        var color = xml.colorAttr(elem, "color");
+
+        if (color) {
+            result["background-color"] = color;
+        }
+
+        return result;
     }
 
     parseBodyElements(element: Element): OpenXmlElement[] {

@@ -203,13 +203,22 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var xbody = xml_parser_1.default.element(xmlDoc, "body");
+        var background = xml_parser_1.default.element(xmlDoc, "background");
         var sectPr = xml_parser_1.default.element(xbody, "sectPr");
         return {
             type: dom_1.DomType.Document,
             children: this.parseBodyElements(xbody),
             props: sectPr ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default) : null,
-            cssStyle: {},
+            cssStyle: background ? this.parseBackground(background) : {},
         };
+    };
+    DocumentParser.prototype.parseBackground = function (elem) {
+        var result = {};
+        var color = xml.colorAttr(elem, "color");
+        if (color) {
+            result["background-color"] = color;
+        }
+        return result;
     };
     DocumentParser.prototype.parseBodyElements = function (element) {
         var _this = this;
@@ -2306,6 +2315,7 @@ var HtmlRenderer = (function () {
         for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
             var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            this.renderStyleValues(document.cssStyle, sectionElement);
             this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
         }

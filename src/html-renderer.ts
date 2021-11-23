@@ -201,6 +201,7 @@ export class HtmlRenderer {
 
         for (let section of this.splitBySection(document.children)) {
             var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            this.renderStyleValues(document.cssStyle, sectionElement);
             this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
         }
