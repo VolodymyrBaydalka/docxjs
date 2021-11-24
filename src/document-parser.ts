@@ -11,7 +11,6 @@ import globalXmlParser from './parser/xml-parser';
 import { RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
-import { ImportantFonts } from "./font-table/fonts";
 import { WmlFooter } from './footer/footer';
 import { WmlHeader } from './header/header';
 
@@ -893,10 +892,7 @@ export class DocumentParser {
                         break;
 
                 case "tblW":
-                    const tableWidthType = xml.stringAttr(c, "type");
-                    if(tableWidthType !== "auto") {
-                        style["width"] = values.valueOfSize(c, "w");
-                    }
+                    style["width"] = values.valueOfSize(c, "w");
                     break;
 
                 case "trHeight":

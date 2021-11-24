@@ -8,11 +8,6 @@ export interface FontDeclaration {
     refId: string
 }
 
-export interface ImportantFonts {
-    majorLatin?: string,
-    minorLatin?: string
-}
-
 export function parseFonts(root: Element, xmlParser: XmlParser): FontDeclaration[] {
     return xmlParser.elements(root).map(el => parseFont(el, xmlParser));
 }
