@@ -1,4 +1,4 @@
-import { ParagraphTab } from "./dom/paragraph";
+import { ParagraphTab } from "./document/paragraph";
 
 export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], pixelToPoint: number = 72 / 96) {
 

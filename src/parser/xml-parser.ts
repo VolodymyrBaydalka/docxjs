@@ -1,4 +1,4 @@
-import { Length,  LengthUsage, LengthUsageType, convertLength  } from "../dom/common";
+import { Length,  LengthUsage, LengthUsageType, convertLength  } from "../document/common";
 
 export function parseXmlString(xmlString: string, trimXmlDeclaration: boolean = false): Document {
     if (trimXmlDeclaration)

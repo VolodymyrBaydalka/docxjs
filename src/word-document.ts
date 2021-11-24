@@ -5,7 +5,7 @@ import { Relationship, RelationshipTypes } from './common/relationship';
 import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
 import { OpenXmlPackage } from './common/open-xml-package';
-import { DocumentPart } from './dom/document-part';
+import { DocumentPart } from './document/document-part';
 import { resolvePath, splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';

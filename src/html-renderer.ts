@@ -2,18 +2,18 @@ import { WordDocument } from './word-document';
 import {
     DomType, IDomTable, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement
-} from './dom/dom';
-import { Length, CommonProperties } from './dom/common';
+} from './document/dom';
+import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
-import { DocumentElement } from './dom/document';
-import { ParagraphElement } from './dom/paragraph';
+import { DocumentElement } from './document/document';
+import { ParagraphElement } from './document/paragraph';
 import { appendClass } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { SectionProperties } from './dom/section';
-import { RunElement, RunProperties } from './dom/run';
-import { BookmarkStartElement } from './dom/bookmark';
-import { IDomStyle } from './dom/style';
+import { SectionProperties } from './document/section';
+import { RunElement, RunProperties } from './document/run';
+import { BookmarkStartElement } from './document/bookmark';
+import { IDomStyle } from './document/style';
 
 export class HtmlRenderer {
 

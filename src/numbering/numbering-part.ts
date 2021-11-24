@@ -1,7 +1,7 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { IDomNumbering } from "../dom/dom";
+import { IDomNumbering } from "../document/dom";
 import { AbstractNumbering, Numbering, NumberingBulletPicture, NumberingPartProperties, parseNumberingPart } from "./numbering";
 
 export class NumberingPart extends Part implements NumberingPartProperties {

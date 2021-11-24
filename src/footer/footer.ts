@@ -1,4 +1,4 @@
-import { DomType, OpenXmlElement } from "../dom/dom";
+import { DomType, OpenXmlElement } from "../document/dom";
 
 export class WmlFooter implements OpenXmlElement {
     type: DomType = DomType.Footer;

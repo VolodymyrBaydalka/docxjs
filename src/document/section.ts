@@ -38,11 +38,18 @@ export enum SectionType {
     OddPage = "oddPage",
 }
 
+export interface FooterHeaderReference {
+    id: string;
+    type: string;
+}
+
 export interface SectionProperties {
     type: SectionType | string;
     pageSize: PageSize,
     pageMargins: PageMargins,
     columns: Columns;
+    footerRefs: FooterHeaderReference[];
+    headerRefs: FooterHeaderReference[];
 }
 
 export function parseSectionProperties(elem: Element, xml: XmlParser): SectionProperties {
@@ -77,6 +84,14 @@ export function parseSectionProperties(elem: Element, xml: XmlParser): SectionPr
             case "cols":
                 section.columns = parseColumns(e, xml);
                 break;
+
+            case "headerReference":
+                (section.headerRefs ?? (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
+                break;
+            
+            case "footerReference":
+                (section.footerRefs ?? (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
+                break;
         }
     }
 
@@ -95,4 +110,11 @@ function parseColumns(elem: Element, xml: XmlParser): Columns {
                 space: xml.lengthAttr(e, "space")
             })
     };
+}
+
+function parseFooterHeaderReference(elem: Element, xml: XmlParser): FooterHeaderReference {
+    return {
+        id: xml.attr(elem, "id"),
+        type: xml.attr(elem, "type"),
+    }
 }

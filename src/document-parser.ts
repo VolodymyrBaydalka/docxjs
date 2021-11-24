@@ -2,15 +2,15 @@ import {
     DomType, IDomTable, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
     IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
-} from './dom/dom';
+} from './document/dom';
 import * as utils from './utils';
-import { DocumentElement } from './dom/document';
-import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
-import { parseSectionProperties } from './dom/section';
+import { DocumentElement } from './document/document';
+import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
+import { parseSectionProperties } from './document/section';
 import globalXmlParser from './parser/xml-parser';
-import { RunElement } from './dom/run';
-import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
-import { IDomStyle, IDomSubStyle } from './dom/style';
+import { RunElement } from './document/run';
+import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmark';
+import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFooter } from './footer/footer';
 import { WmlHeader } from './header/header';
 

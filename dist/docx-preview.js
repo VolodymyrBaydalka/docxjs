@@ -174,12 +174,12 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
-var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
+var dom_1 = __webpack_require__(/*! ./document/dom */ "./src/document/dom.ts");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
-var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragraph.ts");
-var section_1 = __webpack_require__(/*! ./dom/section */ "./src/dom/section.ts");
+var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/document/paragraph.ts");
+var section_1 = __webpack_require__(/*! ./document/section */ "./src/document/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
-var bookmark_1 = __webpack_require__(/*! ./dom/bookmark */ "./src/dom/bookmark.ts");
+var bookmark_1 = __webpack_require__(/*! ./document/bookmark */ "./src/document/bookmark.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
 exports.autos = {
@@ -1500,74 +1500,16 @@ function safeParseToInt(value) {
 
 /***/ }),
 
-/***/ "./src/docx-preview.ts":
-/*!*****************************!*\
-  !*** ./src/docx-preview.ts ***!
-  \*****************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.renderAsync = exports.praseAsync = exports.defaultOptions = void 0;
-var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
-var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
-var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
-exports.defaultOptions = {
-    ignoreHeight: false,
-    ignoreWidth: false,
-    ignoreFonts: false,
-    breakPages: true,
-    debug: false,
-    experimental: false,
-    className: "docx",
-    inWrapper: true,
-    trimXmlDeclaration: true,
-    ignoreLastRenderedPageBreak: true,
-};
-function praseAsync(data, userOptions) {
-    if (userOptions === void 0) { userOptions = null; }
-    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
-    return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
-}
-exports.praseAsync = praseAsync;
-function renderAsync(data, bodyContainer, styleContainer, userOptions) {
-    if (styleContainer === void 0) { styleContainer = null; }
-    if (userOptions === void 0) { userOptions = null; }
-    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
-    var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    return word_document_1.WordDocument
-        .load(data, new document_parser_1.DocumentParser(ops), ops)
-        .then(function (doc) {
-        renderer.render(doc, bodyContainer, styleContainer, ops);
-        return doc;
-    });
-}
-exports.renderAsync = renderAsync;
-
-
-/***/ }),
-
-/***/ "./src/dom/bookmark.ts":
-/*!*****************************!*\
-  !*** ./src/dom/bookmark.ts ***!
-  \*****************************/
+/***/ "./src/document/bookmark.ts":
+/*!**********************************!*\
+  !*** ./src/document/bookmark.ts ***!
+  \**********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseBookmarkEnd = exports.parseBookmarkStart = void 0;
-var dom_1 = __webpack_require__(/*! ./dom */ "./src/dom/dom.ts");
+var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 function parseBookmarkStart(elem, xml) {
     return {
         type: dom_1.DomType.BookmarkStart,
@@ -1589,10 +1531,10 @@ exports.parseBookmarkEnd = parseBookmarkEnd;
 
 /***/ }),
 
-/***/ "./src/dom/common.ts":
-/*!***************************!*\
-  !*** ./src/dom/common.ts ***!
-  \***************************/
+/***/ "./src/document/common.ts":
+/*!********************************!*\
+  !*** ./src/document/common.ts ***!
+  \********************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1635,10 +1577,10 @@ exports.parseCommonProperty = parseCommonProperty;
 
 /***/ }),
 
-/***/ "./src/dom/document-part.ts":
-/*!**********************************!*\
-  !*** ./src/dom/document-part.ts ***!
-  \**********************************/
+/***/ "./src/document/document-part.ts":
+/*!***************************************!*\
+  !*** ./src/document/document-part.ts ***!
+  \***************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1677,10 +1619,10 @@ exports.DocumentPart = DocumentPart;
 
 /***/ }),
 
-/***/ "./src/dom/dom.ts":
-/*!************************!*\
-  !*** ./src/dom/dom.ts ***!
-  \************************/
+/***/ "./src/document/dom.ts":
+/*!*****************************!*\
+  !*** ./src/document/dom.ts ***!
+  \*****************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1710,10 +1652,10 @@ var DomType;
 
 /***/ }),
 
-/***/ "./src/dom/line-spacing.ts":
-/*!*********************************!*\
-  !*** ./src/dom/line-spacing.ts ***!
-  \*********************************/
+/***/ "./src/document/line-spacing.ts":
+/*!**************************************!*\
+  !*** ./src/document/line-spacing.ts ***!
+  \**************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1732,19 +1674,19 @@ exports.parseLineSpacing = parseLineSpacing;
 
 /***/ }),
 
-/***/ "./src/dom/paragraph.ts":
-/*!******************************!*\
-  !*** ./src/dom/paragraph.ts ***!
-  \******************************/
+/***/ "./src/document/paragraph.ts":
+/*!***********************************!*\
+  !*** ./src/document/paragraph.ts ***!
+  \***********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumbering = exports.parseTabs = exports.parseParagraphProperty = exports.parseParagraphProperties = void 0;
-var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
-var section_1 = __webpack_require__(/*! ./section */ "./src/dom/section.ts");
-var line_spacing_1 = __webpack_require__(/*! ./line-spacing */ "./src/dom/line-spacing.ts");
-var run_1 = __webpack_require__(/*! ./run */ "./src/dom/run.ts");
+var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
+var section_1 = __webpack_require__(/*! ./section */ "./src/document/section.ts");
+var line_spacing_1 = __webpack_require__(/*! ./line-spacing */ "./src/document/line-spacing.ts");
+var run_1 = __webpack_require__(/*! ./run */ "./src/document/run.ts");
 function parseParagraphProperties(elem, xml) {
     var result = {};
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
@@ -1830,16 +1772,16 @@ exports.parseNumbering = parseNumbering;
 
 /***/ }),
 
-/***/ "./src/dom/run.ts":
-/*!************************!*\
-  !*** ./src/dom/run.ts ***!
-  \************************/
+/***/ "./src/document/run.ts":
+/*!*****************************!*\
+  !*** ./src/document/run.ts ***!
+  \*****************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseRunProperty = exports.parseRunProperties = void 0;
-var common_1 = __webpack_require__(/*! ./common */ "./src/dom/common.ts");
+var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 function parseRunProperties(elem, xml) {
     var result = {};
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
@@ -1859,10 +1801,10 @@ exports.parseRunProperty = parseRunProperty;
 
 /***/ }),
 
-/***/ "./src/dom/section.ts":
-/*!****************************!*\
-  !*** ./src/dom/section.ts ***!
-  \****************************/
+/***/ "./src/document/section.ts":
+/*!*********************************!*\
+  !*** ./src/document/section.ts ***!
+  \*********************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1877,9 +1819,10 @@ var SectionType;
     SectionType["OddPage"] = "oddPage";
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
+    var _a, _b;
     var section = {};
-    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
-        var e = _a[_i];
+    for (var _i = 0, _c = xml.elements(elem); _i < _c.length; _i++) {
+        var e = _c[_i];
         switch (e.localName) {
             case "pgSz":
                 section.pageSize = {
@@ -1905,6 +1848,12 @@ function parseSectionProperties(elem, xml) {
             case "cols":
                 section.columns = parseColumns(e, xml);
                 break;
+            case "headerReference":
+                ((_a = section.headerRefs) !== null && _a !== void 0 ? _a : (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml));
+                break;
+            case "footerReference":
+                ((_b = section.footerRefs) !== null && _b !== void 0 ? _b : (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml));
+                break;
         }
     }
     return section;
@@ -1923,6 +1872,70 @@ function parseColumns(elem, xml) {
         }); })
     };
 }
+function parseFooterHeaderReference(elem, xml) {
+    return {
+        id: xml.attr(elem, "id"),
+        type: xml.attr(elem, "type"),
+    };
+}
+
+
+/***/ }),
+
+/***/ "./src/docx-preview.ts":
+/*!*****************************!*\
+  !*** ./src/docx-preview.ts ***!
+  \*****************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.renderAsync = exports.praseAsync = exports.defaultOptions = void 0;
+var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
+var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
+var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
+exports.defaultOptions = {
+    ignoreHeight: false,
+    ignoreWidth: false,
+    ignoreFonts: false,
+    breakPages: true,
+    debug: false,
+    experimental: false,
+    className: "docx",
+    inWrapper: true,
+    trimXmlDeclaration: true,
+    ignoreLastRenderedPageBreak: true,
+};
+function praseAsync(data, userOptions) {
+    if (userOptions === void 0) { userOptions = null; }
+    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
+    return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
+}
+exports.praseAsync = praseAsync;
+function renderAsync(data, bodyContainer, styleContainer, userOptions) {
+    if (styleContainer === void 0) { styleContainer = null; }
+    if (userOptions === void 0) { userOptions = null; }
+    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
+    var renderer = new html_renderer_1.HtmlRenderer(window.document);
+    return word_document_1.WordDocument
+        .load(data, new document_parser_1.DocumentParser(ops), ops)
+        .then(function (doc) {
+        renderer.render(doc, bodyContainer, styleContainer, ops);
+        return doc;
+    });
+}
+exports.renderAsync = renderAsync;
 
 
 /***/ }),
@@ -2058,7 +2071,7 @@ exports.FooterPart = FooterPart;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlFooter = void 0;
-var dom_1 = __webpack_require__(/*! ../dom/dom */ "./src/dom/dom.ts");
+var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var WmlFooter = (function () {
     function WmlFooter() {
         this.type = dom_1.DomType.Footer;
@@ -2123,7 +2136,7 @@ exports.HeaderPart = HeaderPart;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlHeader = void 0;
-var dom_1 = __webpack_require__(/*! ../dom/dom */ "./src/dom/dom.ts");
+var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var WmlHeader = (function () {
     function WmlHeader() {
         this.type = dom_1.DomType.Header;
@@ -2157,7 +2170,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HtmlRenderer = void 0;
-var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
+var dom_1 = __webpack_require__(/*! ./document/dom */ "./src/document/dom.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
 var HtmlRenderer = (function () {
@@ -2863,8 +2876,8 @@ exports.NumberingPart = NumberingPart;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseNumberingBulletPicture = exports.parseNumberingLevelOverrride = exports.parseNumberingLevel = exports.parseAbstractNumbering = exports.parseNumbering = exports.parseNumberingPart = void 0;
-var paragraph_1 = __webpack_require__(/*! ../dom/paragraph */ "./src/dom/paragraph.ts");
-var run_1 = __webpack_require__(/*! ../dom/run */ "./src/dom/run.ts");
+var paragraph_1 = __webpack_require__(/*! ../document/paragraph */ "./src/document/paragraph.ts");
+var run_1 = __webpack_require__(/*! ../document/run */ "./src/document/run.ts");
 function parseNumberingPart(elem, xml) {
     var result = {
         numberings: [],
@@ -3013,7 +3026,7 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XmlParser = exports.serializeXmlString = exports.parseXmlString = void 0;
-var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
+var common_1 = __webpack_require__(/*! ../document/common */ "./src/document/common.ts");
 function parseXmlString(xmlString, trimXmlDeclaration) {
     if (trimXmlDeclaration === void 0) { trimXmlDeclaration = false; }
     if (trimXmlDeclaration)
@@ -3364,7 +3377,7 @@ exports.deobfuscate = exports.WordDocument = void 0;
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
 var font_table_1 = __webpack_require__(/*! ./font-table/font-table */ "./src/font-table/font-table.ts");
 var open_xml_package_1 = __webpack_require__(/*! ./common/open-xml-package */ "./src/common/open-xml-package.ts");
-var document_part_1 = __webpack_require__(/*! ./dom/document-part */ "./src/dom/document-part.ts");
+var document_part_1 = __webpack_require__(/*! ./document/document-part */ "./src/document/document-part.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
