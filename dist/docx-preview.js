@@ -136,6 +136,7 @@ var RelationshipTypes;
     RelationshipTypes["Settings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings";
     RelationshipTypes["WebSettings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings";
     RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
+    RelationshipTypes["Footnotes"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes";
     RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
     RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
@@ -182,6 +183,7 @@ var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/
 var bookmark_1 = __webpack_require__(/*! ./document/bookmark */ "./src/document/bookmark.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
+var footnote_1 = __webpack_require__(/*! ./footnotes/footnote */ "./src/footnotes/footnote.ts");
 exports.autos = {
     shd: "white",
     color: "black",
@@ -191,6 +193,18 @@ var DocumentParser = (function () {
     function DocumentParser(options) {
         this.options = __assign({ ignoreWidth: false, debug: false }, options);
     }
+    DocumentParser.prototype.parseFootnotes = function (xmlDoc) {
+        var result = [];
+        for (var _i = 0, _a = xml_parser_1.default.elements(xmlDoc, "footnote"); _i < _a.length; _i++) {
+            var el = _a[_i];
+            var footnote = new footnote_1.WmlFootnote();
+            footnote.id = xml_parser_1.default.attr(el, "id");
+            footnote.footnoteType = xml_parser_1.default.attr(el, "type");
+            footnote.children = this.parseBodyElements(el);
+            result.push(footnote);
+        }
+        return result;
+    };
     DocumentParser.prototype.parseFooter = function (xmlDoc) {
         var result = new footer_1.WmlFooter();
         result.children = this.parseBodyElements(xmlDoc);
@@ -601,6 +615,12 @@ var DocumentParser = (function () {
                     break;
                 case "tab":
                     result.children.push({ type: dom_1.DomType.Tab });
+                    break;
+                case "footnoteReference":
+                    result.children.push({
+                        type: dom_1.DomType.FootnoteReference,
+                        id: xml.stringAttr(c, "id")
+                    });
                     break;
                 case "instrText":
                     result.instrText = c.textContent;
@@ -1647,6 +1667,8 @@ var DomType;
     DomType["BookmarkEnd"] = "bookmarkEnd";
     DomType["Footer"] = "footer";
     DomType["Header"] = "header";
+    DomType["FootnoteReference"] = "footnoteReference";
+    DomType["Footnote"] = "footnote";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -1917,7 +1939,8 @@ exports.defaultOptions = {
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
     renderHeaders: true,
-    renderFooters: true
+    renderFooters: true,
+    renderFootnotes: true
 };
 function praseAsync(data, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
@@ -2087,6 +2110,71 @@ exports.WmlFooter = WmlFooter;
 
 /***/ }),
 
+/***/ "./src/footnotes/footnote.ts":
+/*!***********************************!*\
+  !*** ./src/footnotes/footnote.ts ***!
+  \***********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WmlFootnote = void 0;
+var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
+var WmlFootnote = (function () {
+    function WmlFootnote() {
+        this.type = dom_1.DomType.Footnote;
+        this.children = [];
+        this.cssStyle = {};
+    }
+    return WmlFootnote;
+}());
+exports.WmlFootnote = WmlFootnote;
+
+
+/***/ }),
+
+/***/ "./src/footnotes/footnotes-part.ts":
+/*!*****************************************!*\
+  !*** ./src/footnotes/footnotes-part.ts ***!
+  \*****************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FootnotesPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var FootnotesPart = (function (_super) {
+    __extends(FootnotesPart, _super);
+    function FootnotesPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    FootnotesPart.prototype.parseXml = function (root) {
+        this.footnotes = this._documentParser.parseFootnotes(root);
+    };
+    return FootnotesPart;
+}(part_1.Part));
+exports.FootnotesPart = FootnotesPart;
+
+
+/***/ }),
+
 /***/ "./src/header/header-part.ts":
 /*!***********************************!*\
   !*** ./src/header/header-part.ts ***!
@@ -2179,6 +2267,7 @@ var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
         this.className = "docx";
+        this.footnoteMap = {};
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
@@ -2199,6 +2288,9 @@ var HtmlRenderer = (function () {
         if (document.numberingPart) {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
+        }
+        if (document.footnotesPart) {
+            this.footnoteMap = (0, utils_1.keyBy)(document.footnotesPart.footnotes, function (x) { return x.id; });
         }
         if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
@@ -2232,13 +2324,9 @@ var HtmlRenderer = (function () {
         return "".concat(this.className, "_").concat(className);
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
-        var stylesMap = {};
-        for (var _i = 0, _a = styles.filter(function (x) { return x.id != null; }); _i < _a.length; _i++) {
+        var stylesMap = (0, utils_1.keyBy)(styles.filter(function (x) { return x.id != null; }), function (x) { return x.id; });
+        for (var _i = 0, _a = styles.filter(function (x) { return x.basedOn; }); _i < _a.length; _i++) {
             var style = _a[_i];
-            stylesMap[style.id] = style;
-        }
-        for (var _b = 0, _c = styles.filter(function (x) { return x.basedOn; }); _b < _c.length; _b++) {
-            var style = _c[_b];
             var baseStyle = stylesMap[style.basedOn];
             if (baseStyle) {
                 var _loop_2 = function (styleValues) {
@@ -2247,16 +2335,16 @@ var HtmlRenderer = (function () {
                         this_2.copyStyleProperties(baseValues[0].values, styleValues.values);
                 };
                 var this_2 = this, baseValues;
-                for (var _d = 0, _e = style.styles; _d < _e.length; _d++) {
-                    var styleValues = _e[_d];
+                for (var _b = 0, _c = style.styles; _b < _c.length; _b++) {
+                    var styleValues = _c[_b];
                     _loop_2(styleValues);
                 }
             }
             else if (this.options.debug)
                 console.warn("Can't find base style ".concat(style.basedOn));
         }
-        for (var _f = 0, styles_1 = styles; _f < styles_1.length; _f++) {
-            var style = styles_1[_f];
+        for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
+            var style = styles_1[_d];
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
         return stylesMap;
@@ -2335,16 +2423,20 @@ var HtmlRenderer = (function () {
         this.processElement(document);
         for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
+            this.currentFootnoteIds = [];
             var props = section.sectProps || document.props;
             var sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
             var headerPart = this.options.renderHeaders ? this.findHeaderFooter(props.headerRefs, result.length) : null;
             var footerPart = this.options.renderFooters ? this.findHeaderFooter(props.footerRefs, result.length) : null;
-            headerPart && this.renderElements([headerPart.headerElement], document, sectionElement);
+            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
             var contentElement = this.htmlDocument.createElement("article");
-            this.renderElements(section.elements, document, contentElement);
+            this.renderElements(section.elements, contentElement);
             sectionElement.appendChild(contentElement);
-            footerPart && this.renderElements([footerPart.footerElement], document, sectionElement);
+            if (this.options.renderFootnotes) {
+                this.renderFootnotes(this.currentFootnoteIds, sectionElement);
+            }
+            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
             result.push(sectionElement);
         }
         return result;
@@ -2490,6 +2582,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
         var stylesMap = this.styleMap;
+        var defautStyles = (0, utils_1.keyBy)(styles.filter(function (s) { return s.isDefault; }), function (s) { return s.target; });
         for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
             var style = styles_2[_i];
             var subStyles = style.styles;
@@ -2509,14 +2602,23 @@ var HtmlRenderer = (function () {
                     selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
                 else
                     selector += ".".concat(style.cssName, " ").concat(subStyle.target);
-                if (style.isDefault && style.target)
+                if (defautStyles[style.target] == style)
                     selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderElement = function (elem, parent) {
+    HtmlRenderer.prototype.renderFootnotes = function (footnoteIds, into) {
+        var _this = this;
+        var footnotes = footnoteIds.map(function (id) { return _this.footnoteMap[id]; });
+        if (footnotes.length > 0) {
+            var result = this.htmlDocument.createElement("ol");
+            this.renderElements(footnotes, result);
+            into.appendChild(result);
+        }
+    };
+    HtmlRenderer.prototype.renderElement = function (elem) {
         switch (elem.type) {
             case dom_1.DomType.Paragraph:
                 return this.renderParagraph(elem);
@@ -2550,17 +2652,21 @@ var HtmlRenderer = (function () {
                 return this.renderContainer(elem, "footer");
             case dom_1.DomType.Header:
                 return this.renderContainer(elem, "header");
+            case dom_1.DomType.Footnote:
+                return this.renderContainer(elem, "li");
+            case dom_1.DomType.FootnoteReference:
+                return this.renderFootnoteReference(elem);
         }
         return null;
     };
     HtmlRenderer.prototype.renderChildren = function (elem, into) {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     };
-    HtmlRenderer.prototype.renderElements = function (elems, parent, into) {
+    HtmlRenderer.prototype.renderElements = function (elems, into) {
         var _this = this;
         if (elems == null)
             return null;
-        var result = elems.map(function (e) { return _this.renderElement(e, parent); }).filter(function (e) { return e != null; });
+        var result = elems.map(function (e) { return _this.renderElement(e); }).filter(function (e) { return e != null; });
         if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var c = result_1[_i];
@@ -2643,6 +2749,12 @@ var HtmlRenderer = (function () {
         span.style.fontFamily = elem.font;
         span.innerHTML = "&#x".concat(elem.char, ";");
         return span;
+    };
+    HtmlRenderer.prototype.renderFootnoteReference = function (elem) {
+        var result = this.htmlDocument.createElement("sup");
+        this.currentFootnoteIds.push(elem.id);
+        result.textContent = "".concat(this.currentFootnoteIds.length);
+        return result;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
         var tabSpan = this.htmlDocument.createElement("span");
@@ -3411,6 +3523,7 @@ var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/heade
 var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
 var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
+var footnotes_part_1 = __webpack_require__(/*! ./footnotes/footnotes-part */ "./src/footnotes/footnotes-part.ts");
 var topLevelRels = [
     { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
@@ -3464,6 +3577,9 @@ var WordDocument = (function () {
                 break;
             case relationship_1.RelationshipTypes.Theme:
                 part = new theme_part_1.ThemePart(this._package, path);
+                break;
+            case relationship_1.RelationshipTypes.Footnotes:
+                this.footnotesPart = part = new footnotes_part_1.FootnotesPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Footer:
                 part = new footer_part_1.FooterPart(this._package, path, this._parser);

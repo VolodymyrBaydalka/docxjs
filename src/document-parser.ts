@@ -1,7 +1,7 @@
 import {
     DomType, IDomTable, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
+    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
 } from './document/dom';
 import * as utils from './utils';
 import { DocumentElement } from './document/document';
@@ -13,6 +13,7 @@ import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmark';
 import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFooter } from './footer/footer';
 import { WmlHeader } from './header/header';
+import { WmlFootnote } from './footnotes/footnote';
 
 export var autos = {
     shd: "white",
@@ -34,6 +35,20 @@ export class DocumentParser {
             debug: false,
             ...options   
         };
+    }
+
+    parseFootnotes(xmlDoc: Element): WmlFootnote[] {
+        var result = [];
+
+        for (let el of globalXmlParser.elements(xmlDoc, "footnote")) {
+            const footnote = new WmlFootnote();
+            footnote.id = globalXmlParser.attr(el, "id");
+            footnote.footnoteType = globalXmlParser.attr(el, "type");
+            footnote.children = this.parseBodyElements(el);
+            result.push(footnote);
+        }
+
+        return result;
     }
 
     parseFooter(xmlDoc: Element): WmlFooter {
@@ -500,6 +515,13 @@ export class DocumentParser {
 
                 case "tab":
                     result.children.push({ type: DomType.Tab });
+                    break;
+
+                case "footnoteReference":
+                    result.children.push(<FootnoteReferenceElement>{ 
+                        type: DomType.FootnoteReference, 
+                        id: xml.stringAttr(c, "id")
+                    });
                     break;
 
                 case "instrText":

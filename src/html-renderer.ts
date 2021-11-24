@@ -1,13 +1,13 @@
 import { WordDocument } from './word-document';
 import {
     DomType, IDomTable, IDomNumbering,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
 } from './document/dom';
 import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { ParagraphElement } from './document/paragraph';
-import { appendClass } from './utils';
+import { appendClass, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -17,6 +17,7 @@ import { IDomStyle } from './document/style';
 import { Part } from './common/part';
 import { HeaderPart } from './header/header-part';
 import { FooterPart } from './footer/footer-part';
+import { WmlFootnote } from './footnotes/footnote';
 
 export class HtmlRenderer {
 
@@ -24,6 +25,8 @@ export class HtmlRenderer {
     document: WordDocument;
     options: Options;
     styleMap: any;
+    footnoteMap: any = {};
+    currentFootnoteIds: string[];
 
     constructor(public htmlDocument: Document) {
     }
@@ -53,6 +56,10 @@ export class HtmlRenderer {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
             //styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
+        }
+
+        if (document.footnotesPart) {
+            this.footnoteMap = keyBy(document.footnotesPart.footnotes, x => x.id);
         }
 
         if (!options.ignoreFonts && document.fontTablePart)
@@ -92,12 +99,8 @@ export class HtmlRenderer {
     }
 
     processStyles(styles: IDomStyle[]) {
-        var stylesMap: Record<string, IDomStyle> = {};
-
-        for (let style of styles.filter(x => x.id != null)) {
-            stylesMap[style.id] = style;
-        }
-
+        const stylesMap = keyBy(styles.filter(x => x.id != null), x => x.id);
+        
         for (let style of styles.filter(x => x.basedOn)) {
             var baseStyle = stylesMap[style.basedOn];
 
@@ -203,6 +206,8 @@ export class HtmlRenderer {
         this.processElement(document);
 
         for (let section of this.splitBySection(document.children)) {
+            this.currentFootnoteIds = [];
+
             const props = section.sectProps || document.props;
             const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
@@ -210,13 +215,17 @@ export class HtmlRenderer {
             var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
             var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
 
-            headerPart && this.renderElements([headerPart.headerElement], document, sectionElement);
+            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
 
             var contentElement = this.htmlDocument.createElement("article");
-            this.renderElements(section.elements, document, contentElement);
+            this.renderElements(section.elements,contentElement);
             sectionElement.appendChild(contentElement);
 
-            footerPart && this.renderElements([footerPart.footerElement], document, sectionElement);
+            if (this.options.renderFootnotes) {
+                this.renderFootnotes(this.currentFootnoteIds, sectionElement);
+            }
+
+            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
 
             result.push(sectionElement);
         }
@@ -475,6 +484,7 @@ section.${c}>article { margin-bottom: auto; }
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
         var stylesMap = this.styleMap;
+        var defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
 
         for (let style of styles) {
             var subStyles = style.styles;
@@ -498,7 +508,7 @@ section.${c}>article { margin-bottom: auto; }
                 else
                     selector += `.${style.cssName} ${subStyle.target}`;
 
-                if (style.isDefault && style.target)
+                if (defautStyles[style.target] == style)
                     selector = `.${this.className} ${style.target}, ` + selector;
 
                 styleText += this.styleToString(selector, subStyle.values);
@@ -508,7 +518,17 @@ section.${c}>article { margin-bottom: auto; }
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): Node {
+    renderFootnotes(footnoteIds: string[], into: HTMLElement) {
+        var footnotes = footnoteIds.map(id => this.footnoteMap[id]);
+        
+        if (footnotes.length > 0) {
+            var result = this.htmlDocument.createElement("ol");
+            this.renderElements(footnotes, result);
+            into.appendChild(result);
+        }
+    }
+
+    renderElement(elem: OpenXmlElement): Node {
         switch (elem.type) {
             case DomType.Paragraph:
                 return this.renderParagraph(<ParagraphElement>elem);
@@ -557,20 +577,26 @@ section.${c}>article { margin-bottom: auto; }
 
             case DomType.Header:
                 return this.renderContainer(elem, "header");
+
+            case DomType.Footnote:
+                return this.renderContainer(elem, "li");
+    
+            case DomType.FootnoteReference:
+                return this.renderFootnoteReference(elem as FootnoteReferenceElement);
         }
 
         return null;
     }
 
     renderChildren(elem: OpenXmlElement, into?: HTMLElement): Node[] {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     }
 
-    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): Node[] {
+    renderElements(elems: OpenXmlElement[], into?: HTMLElement): Node[] {
         if (elems == null)
             return null;
 
-        var result = elems.map(e => this.renderElement(e, parent)).filter(e => e != null);
+        var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
 
         if (into)
             for (let c of result)
@@ -680,6 +706,13 @@ section.${c}>article { margin-bottom: auto; }
         span.style.fontFamily = elem.font;
         span.innerHTML = `&#x${elem.char};`
         return span;
+    }
+
+    renderFootnoteReference(elem: FootnoteReferenceElement) {
+        var result = this.htmlDocument.createElement("sup");
+        this.currentFootnoteIds.push(elem.id); 
+        result.textContent = `${this.currentFootnoteIds.length}`;
+        return result;
     }
 
     renderTab(elem: OpenXmlElement) {

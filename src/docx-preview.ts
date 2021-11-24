@@ -14,6 +14,7 @@ export interface Options {
     trimXmlDeclaration: boolean;
     renderHeaders: boolean;
     renderFooters: boolean;
+    renderFootnotes: boolean;
     ignoreLastRenderedPageBreak: boolean;
 }
 
@@ -29,7 +30,8 @@ export const defaultOptions: Options = {
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
     renderHeaders: true,
-    renderFooters: true
+    renderFooters: true,
+    renderFootnotes: true
 }
 
 export function praseAsync(data: Blob | any, userOptions: Partial<Options> = null): Promise<any>  {

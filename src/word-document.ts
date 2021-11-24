@@ -14,6 +14,7 @@ import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
 import { CorePropsPart } from "./document-props/core-props-part";
 import { ThemePart } from "./theme/theme-part";
+import { FootnotesPart } from "./footnotes/footnotes-part";
 
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
@@ -33,6 +34,7 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
+    footnotesPart: FootnotesPart;
     corePropsPart: CorePropsPart;
     extendedPropsPart: ExtendedPropsPart;
 
@@ -91,7 +93,11 @@ export class WordDocument {
             case RelationshipTypes.Theme:
                 part = new ThemePart(this._package, path);
                 break;
-    
+
+            case RelationshipTypes.Footnotes:
+                this.footnotesPart = part = new FootnotesPart(this._package, path, this._parser);
+                break;
+        
             case RelationshipTypes.Footer:
                 part = new FooterPart(this._package, path, this._parser);
                 break;
