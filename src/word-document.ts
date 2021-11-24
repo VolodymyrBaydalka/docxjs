@@ -143,6 +143,12 @@ export class WordDocument {
             .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
     }
 
+    findPartByRelId(id: string, basePart: Part = null) {
+        var rel = (basePart.rels ?? this.rels).find(r => r.id == id);
+        const folder = basePart ? splitPath(basePart.path)[0] : ''; 
+        return rel ? this.partsMap[resolvePath(rel.target, folder)] : null;
+    }
+
     getPathById(part: Part, id: string): string {
         const rel = part.rels.find(x => x.id == id);
         const [folder] = splitPath(part.path); 

@@ -5,7 +5,8 @@ describe("Render document", function () {
     'table',
     'page-layout',
     'numbering',
-    'line-spacing'
+    'line-spacing',
+    'header-footer',
   ];
 
   for (let path of tests) {

@@ -12,6 +12,8 @@ export interface Options {
     experimental: boolean;
     className: string;
     trimXmlDeclaration: boolean;
+    renderHeaders: boolean;
+    renderFooters: boolean;
     ignoreLastRenderedPageBreak: boolean;
 }
 
@@ -26,6 +28,8 @@ export const defaultOptions: Options = {
     inWrapper: true,
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
+    renderHeaders: true,
+    renderFooters: true
 }
 
 export function praseAsync(data: Blob | any, userOptions: Partial<Options> = null): Promise<any>  {

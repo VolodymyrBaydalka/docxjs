@@ -10,10 +10,13 @@ import { ParagraphElement } from './document/paragraph';
 import { appendClass } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { SectionProperties } from './document/section';
+import { FooterHeaderReference, SectionProperties } from './document/section';
 import { RunElement, RunProperties } from './document/run';
 import { BookmarkStartElement } from './document/bookmark';
 import { IDomStyle } from './document/style';
+import { Part } from './common/part';
+import { HeaderPart } from './header/header-part';
+import { FooterPart } from './footer/footer-part';
 
 export class HtmlRenderer {
 
@@ -195,18 +198,41 @@ export class HtmlRenderer {
     }
 
     renderSections(document: DocumentElement): HTMLElement[] {
-        var result = [];
+        const result = [];
 
         this.processElement(document);
 
         for (let section of this.splitBySection(document.children)) {
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            const props = section.sectProps || document.props;
+            const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            this.renderElements(section.elements, document, sectionElement);
+            
+            var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
+            var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
+
+            headerPart && this.renderElements([headerPart.headerElement], document, sectionElement);
+
+            var contentElement = this.htmlDocument.createElement("article");
+            this.renderElements(section.elements, document, contentElement);
+            sectionElement.appendChild(contentElement);
+
+            footerPart && this.renderElements([footerPart.footerElement], document, sectionElement);
+
             result.push(sectionElement);
         }
 
         return result;
+    }
+
+    findHeaderFooter<T extends Part>(refs: FooterHeaderReference[], page: number): T {
+        var ref = refs ? ((page == 0 ? refs.find(x => x.type == "first") : null)
+            ?? (page % 2 ==0 ? refs.find(x => x.type == "even") : null)
+            ?? refs.find(x => x.type == "default")) : null;
+        
+        if (ref == null)
+            return null;
+
+        return this.document.findPartByRelId(ref.id, this.document.documentPart) as T;
     }
 
     isPageBreakElement(elem: OpenXmlElement): boolean {
@@ -307,9 +333,10 @@ export class HtmlRenderer {
         var c = this.className;
         var styleText = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-.${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; }
-section.${c} { box-sizing: border-box; }
+section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; }
+section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
@@ -524,6 +551,12 @@ section.${c} { box-sizing: border-box; }
 
             case DomType.Break:
                 return this.renderBreak(<BreakElement>elem);
+
+            case DomType.Footer:
+                return this.renderContainer(elem, "footer");
+
+            case DomType.Header:
+                return this.renderContainer(elem, "header");
         }
 
         return null;
@@ -543,6 +576,12 @@ section.${c} { box-sizing: border-box; }
             for (let c of result)
                 into.appendChild(c);
 
+        return result;
+    }
+
+    renderContainer(elem: OpenXmlElement, tagName: string) {
+        var result = this.htmlDocument.createElement(tagName);
+        this.renderChildren(elem, result);
         return result;
     }
 
@@ -652,7 +691,7 @@ section.${c} { box-sizing: border-box; }
             setTimeout(() => {
                 var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
 
-                if (paragraph.tabs == null)
+                if (paragraph?.tabs == null)
                     return;
 
                 paragraph.tabs.sort((a, b) => a.position.value - b.position.value);

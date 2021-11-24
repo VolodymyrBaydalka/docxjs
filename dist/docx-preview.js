@@ -1916,6 +1916,8 @@ exports.defaultOptions = {
     inWrapper: true,
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
+    renderHeaders: true,
+    renderFooters: true
 };
 function praseAsync(data, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
@@ -2333,12 +2335,26 @@ var HtmlRenderer = (function () {
         this.processElement(document);
         for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            var props = section.sectProps || document.props;
+            var sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            this.renderElements(section.elements, document, sectionElement);
+            var headerPart = this.options.renderHeaders ? this.findHeaderFooter(props.headerRefs, result.length) : null;
+            var footerPart = this.options.renderFooters ? this.findHeaderFooter(props.footerRefs, result.length) : null;
+            headerPart && this.renderElements([headerPart.headerElement], document, sectionElement);
+            var contentElement = this.htmlDocument.createElement("article");
+            this.renderElements(section.elements, document, contentElement);
+            sectionElement.appendChild(contentElement);
+            footerPart && this.renderElements([footerPart.footerElement], document, sectionElement);
             result.push(sectionElement);
         }
         return result;
+    };
+    HtmlRenderer.prototype.findHeaderFooter = function (refs, page) {
+        var _a, _b;
+        var ref = refs ? ((_b = (_a = (page == 0 ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 0 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; })) : null;
+        if (ref == null)
+            return null;
+        return this.document.findPartByRelId(ref.id, this.document.documentPart);
     };
     HtmlRenderer.prototype.isPageBreakElement = function (elem) {
         if (elem.type != dom_1.DomType.Break)
@@ -2420,7 +2436,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }\n");
+        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper>section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; display: flex; flex-flow: column nowrap; }\nsection.").concat(c, ">article { margin-bottom: auto; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }\n");
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2530,6 +2546,10 @@ var HtmlRenderer = (function () {
                 return this.renderSymbol(elem);
             case dom_1.DomType.Break:
                 return this.renderBreak(elem);
+            case dom_1.DomType.Footer:
+                return this.renderContainer(elem, "footer");
+            case dom_1.DomType.Header:
+                return this.renderContainer(elem, "header");
         }
         return null;
     };
@@ -2546,6 +2566,11 @@ var HtmlRenderer = (function () {
                 var c = result_1[_i];
                 into.appendChild(c);
             }
+        return result;
+    };
+    HtmlRenderer.prototype.renderContainer = function (elem, tagName) {
+        var result = this.htmlDocument.createElement(tagName);
+        this.renderChildren(elem, result);
         return result;
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
@@ -2625,7 +2650,7 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if (paragraph.tabs == null)
+                if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
@@ -3478,6 +3503,13 @@ var WordDocument = (function () {
     WordDocument.prototype.loadFont = function (id, key) {
         return this.loadResource(this.fontTablePart, id, "uint8array")
             .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
+    };
+    WordDocument.prototype.findPartByRelId = function (id, basePart) {
+        var _a;
+        if (basePart === void 0) { basePart = null; }
+        var rel = ((_a = basePart.rels) !== null && _a !== void 0 ? _a : this.rels).find(function (r) { return r.id == id; });
+        var folder = basePart ? (0, utils_1.splitPath)(basePart.path)[0] : '';
+        return rel ? this.partsMap[(0, utils_1.resolvePath)(rel.target, folder)] : null;
     };
     WordDocument.prototype.getPathById = function (part, id) {
         var rel = part.rels.find(function (x) { return x.id == id; });
