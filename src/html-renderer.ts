@@ -27,7 +27,6 @@ interface noCssDictEntry {
 
 export class HtmlRenderer {
 
-    inWrapper: boolean = true;
     className: string = "docx";
     document: WordDocument;
     options: Options;
@@ -40,6 +39,7 @@ export class HtmlRenderer {
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+        this.className = options.className;
         this.styleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
@@ -72,7 +72,7 @@ export class HtmlRenderer {
 
         var sectionElements = this.renderSections(document.documentPart.body);
 
-        if (this.inWrapper) {
+        if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
@@ -227,18 +227,25 @@ export class HtmlRenderer {
 
         this.processElement(document);
 
-        for (let section of this.splitBySection(document.children, document.props)) {
-            var sectionElement = this.createSection(this.className, section.sectProps);
-            this.renderElements(section.elements, sectionElement);
-            if (this.hasFooter(section.sectProps.footer)) {
-                sectionElement.appendChild(
-                    this.createFooter(this.className, section.sectProps as SectionRenderProperties)
-                );
-            }
+        for (let section of this.splitBySection(document.children)) {
+            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            this.renderStyleValues(document.cssStyle, sectionElement);
+            this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
         }
 
         return result;
+    }
+
+    
+    isPageBreakElement(elem: OpenXmlElement): boolean {
+        if (elem.type != DomType.Break)
+            return false;
+
+        if ((elem as BreakElement).break == "lastRenderedPageBreak")
+            return !this.options.ignoreLastRenderedPageBreak;
+
+        return (elem as BreakElement).break == "page";  
     }
 
     splitBySection(elements: OpenXmlElement[], lastSectionProps: SectionProperties): Section[] {
@@ -269,7 +276,7 @@ export class HtmlRenderer {
             var rBreakIndex = -1;
             if (this.options.breakPages && p.children) {
                 pBreakIndex = p.children.findIndex(r => {
-                    rBreakIndex = r.children?.findIndex(t => (t as BreakElement).break == "page") ?? -1;
+                    rBreakIndex = r.children?.findIndex(this.isPageBreakElement.bind(this)) ?? -1;
                     return rBreakIndex != -1;
                 });
                 if (pBreakIndex > 0) {
@@ -377,7 +384,8 @@ section.${c} { box-sizing: border-box; position: relative; }
 ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%; padding: inherit; box-sizing: border-box; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
-.${c} p { margin: 0pt; }`;
+.${c} p { margin: 0pt; min-height: 1em; }
+.${c} span { white-space: pre-wrap; }`;
         if (this.options.noStyleBlock) {
             this.noCssDict[`.${c}-wrapper`] = {
                 "background": {cssRuleCamel: "background", newVal: "gray"},
@@ -418,12 +426,17 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             };
             this.noCssDict[`.${c} p`] = {
                 "margin": {cssRuleCamel: "margin", newVal: "0pt"},
+                "min-height": {cssRuleCamel: "minHeight", newVal: "1em"},
+            };
+            this.noCssDict[`.${c} span`] = {
+                "white-space": {cssRuleCamel: "whiteSpace", newVal: "preWrap"},
             };
             if(this.options.experimental) {
                 styleText +=`\n.${c} p { word-spacing: -0.55pt; }`;
                 this.noCssDict[`.${c} p`]["word-spacing"] = {cssRuleCamel: "wordSpacing", newVal: "-0.55pt"};
             }
         }
+
         return createStyleElement(styleText);
     }
 
@@ -492,32 +505,15 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
     //     return createStyleElement(css);
     // }
 
-    renderNumbering(styles: IDomNumbering[], styleContainer: HTMLElement) {
+    renderNumbering(numberings: IDomNumbering[], styleContainer: HTMLElement) {
         var styleText = "";
         var rootCounters = [];
 
-        for (var num of styles) {
+        for (var num of numberings) {
             var selector = `p.${this.numberingClass(num.id, num.level)}`;
             var listStyleType = "none";
 
-            if (num.levelText && num.format == "decimal") {
-                let counter = this.numberingCounter(num.id, num.level);
-
-                if (num.level > 0) {
-                    styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-                        "counter-reset": counter
-                    });
-                }
-                else {
-                    rootCounters.push(counter);
-                }
-
-                styleText += this.styleToString(`${selector}:before`, {
-                    "content": this.levelTextToContent(num.levelText, num.id),
-                    "counter-increment": counter
-                });
-            }
-            else if (num.bullet) {
+            if (num.bullet) {
                 let valiable = `--${this.className}-${num.bullet.src}`.toLowerCase();
 
                 styleText += this.styleToString(`${selector}:before`, {
@@ -531,6 +527,24 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
+            else if (num.levelText) {
+                let counter = this.numberingCounter(num.id, num.level);
+
+                if (num.level > 0) {
+                    styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
+                        "counter-reset": counter
+                    });
+                }
+                else {
+                    rootCounters.push(counter);
+                }
+
+                styleText += this.styleToString(`${selector}:before`, {
+                    "content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
+                    "counter-increment": counter,
+                    ...num.rStyle,
+                });
+            }
             else {
                 listStyleType = this.numFormatToCssValue(num.format);
             }
@@ -539,7 +553,7 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
                 "display": "list-item",
                 "list-style-position": "inside",
                 "list-style-type": listStyleType,
-                ...num.style
+                ...num.pStyle
             });
         }
 
@@ -830,14 +844,8 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
         for (let col of columns) {
             let colElem = this.htmlDocument.createElement("col");
 
-            if (col.width) {
-                if (col.width.indexOf('pt') >= 0 || col.width.indexOf('px') >= 0) {
-                    colElem.style.width = col.width;
-                }
-                else {
-                    colElem.style.width = `${col.width}px`;
-                }
-            }
+            if (col.width)
+                colElem.style.width = col.width;
 
             result.appendChild(colElem);
         }
@@ -920,13 +928,18 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
         return `${this.className}-num-${id}-${lvl}`;
     }
 
-    levelTextToContent(text: string, id: string) {
+    levelTextToContent(text: string, suff: string, id: string, numformat: string) {
+        const suffMap = {
+            "tab": "\\9",
+            "space": "\\a0",            
+        };
+
         var result = text.replace(/%\d*/g, s => {
             let lvl = parseInt(s.substring(1), 10) - 1;
-            return `"counter(${this.numberingCounter(id, lvl)})"`;
+            return `"counter(${this.numberingCounter(id, lvl)}, ${numformat})"`;
         });
 
-        return '"' + result + '"';
+        return `"${result}${suffMap[suff] ?? ""}"`;
     }
 
     numFormatToCssValue(format: string) {
@@ -1060,19 +1073,6 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             }
         }
         return true;
-    }
-
-    private createFooter(className: string, sectProps: SectionRenderProperties): HTMLElement {
-        const elem = this.htmlDocument.createElement("div");
-        elem.className = `${className}-footer-container`;
-        const footerElem: FooterPart =
-            this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection)
-        if(!footerElem) {
-            return elem;
-        }
-        this.renderElements(footerElem.paragraphs, elem);
-
-        return elem;
     }
 
 

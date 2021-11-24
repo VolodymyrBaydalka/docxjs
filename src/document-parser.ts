@@ -12,6 +12,8 @@ import { RunElement } from './dom/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
 import { IDomStyle, IDomSubStyle } from './dom/style';
 import { ImportantFonts } from "./font-table/fonts";
+import { WmlFooter } from './footer/footer';
+import { WmlHeader } from './header/header';
 
 export var autos = {
     shd: "white",
@@ -19,41 +21,74 @@ export var autos = {
     highlight: "transparent"
 };
 
+export interface DocumentParserOptions {
+    ignoreWidth: boolean;
+    debug: boolean;
+}
+
 export class DocumentParser {
-    // removes XML declaration 
-    skipDeclaration: boolean = true;
+    options: DocumentParserOptions;
 
-    // ignores page and table sizes
-    ignoreWidth: boolean = false;
-    debug: boolean = false;
-
-    parseDocumentFile(xmlDoc: Element) {
-        var result: DocumentElement = {
-            type: DomType.Document,
-            children: [],
-            cssStyle: {},
-            props: null
+    constructor(options?: Partial<DocumentParserOptions>) {
+        this.options = {
+            ignoreWidth: false,
+            debug: false,
+            ...options   
         };
+    }
 
+    parseFooter(xmlDoc: Element): WmlFooter {
+        var result = new WmlFooter();
+        result.children = this.parseBodyElements(xmlDoc);
+        return result;
+    }
+
+    parseHeader(xmlDoc: Element): WmlHeader {
+        var result = new WmlHeader();
+        result.children = this.parseBodyElements(xmlDoc);
+        return result;
+    }
+
+    parseDocumentFile(xmlDoc: Element): DocumentElement {
         var xbody = globalXmlParser.element(xmlDoc, "body");
+        var background = globalXmlParser.element(xmlDoc, "background");
+        var sectPr = globalXmlParser.element(xbody, "sectPr");
 
-        xml.foreach(xbody, elem => {
+        return {
+            type: DomType.Document,
+            children: this.parseBodyElements(xbody),
+            props: sectPr ? parseSectionProperties(sectPr, globalXmlParser) : null,
+            cssStyle: background ? this.parseBackground(background) : {},
+        };
+    }
+
+    parseBackground(elem: Element): any {
+        var result = {};
+        var color = xml.colorAttr(elem, "color");
+
+        if (color) {
+            result["background-color"] = color;
+        }
+
+        return result;
+    }
+
+    parseBodyElements(element: Element): OpenXmlElement[] {
+        var children = [];
+        
+        xml.foreach(element, elem => {
             switch (elem.localName) {
                 case "p":
-                    result.children.push(this.parseParagraph(elem));
+                    children.push(this.parseParagraph(elem));
                     break;
 
                 case "tbl":
-                    result.children.push(this.parseTable(elem));
-                    break;
-
-                case "sectPr":
-                    result.props = parseSectionProperties(elem, globalXmlParser);
+                    children.push(this.parseTable(elem));
                     break;
             }
         });
 
-        return result;
+        return children;
     }
 
     parseStylesFile(xstyles: Element): IDomStyle[] {
@@ -189,7 +224,7 @@ export class DocumentParser {
                     break;
 
                 default:
-                    this.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
+                    this.options.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
             }
         });
 
@@ -303,13 +338,19 @@ export class DocumentParser {
         var result: IDomNumbering = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
-            style: {}
+            pStyle: {},
+            rStyle: {},
+            suff: "tab"
         };
 
         xml.foreach(node, n => {
             switch (n.localName) {
                 case "pPr":
-                    this.parseDefaultProperties(n, result.style);
+                    this.parseDefaultProperties(n, result.pStyle);
+                    break;
+
+                case "rPr":
+                    this.parseDefaultProperties(n, result.rStyle);
                     break;
 
                 case "lvlPicBulletId":
@@ -324,7 +365,11 @@ export class DocumentParser {
                 case "numFmt":
                     result.format = xml.stringAttr(n, "val");
                     break;
-            }
+
+                case "suff":
+                    result.suff = xml.stringAttr(n, "val");
+                    break;
+                }
         });
 
         return result;
@@ -442,7 +487,7 @@ export class DocumentParser {
                 case "lastRenderedPageBreak":
                     result.children.push(<BreakElement>{ 
                         type: DomType.Break, 
-                        break: "page"
+                        break: "lastRenderedPageBreak"
                     });
                     break;
                 
@@ -846,7 +891,7 @@ export class DocumentParser {
                     break;
 
                 case "tcW":
-                    if (this.ignoreWidth)
+                    if (this.options.ignoreWidth)
                         break;
 
                 case "tblW":
@@ -865,13 +910,21 @@ export class DocumentParser {
                     break;
 
                 case "b":
-                    style["font-weight"] = values.valueOfBold(c);
+                    style["font-weight"] = xml.boolAttr(c, "val", true) ? "bold" : "normal";
                     break;
 
                 case "i":
-                    style["font-style"] = "italic";
+                    style["font-style"] = xml.boolAttr(c, "val", true) ? "italic" : "normal";
+                    break;
+                
+                case "caps":
+                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "uppercase" : "none";
                     break;
 
+                case "smallCaps":
+                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "lowercase" : "none";
+                    break;
+    
                 case "u":
                     this.parseUnderline(c, style);
                     break;
@@ -921,7 +974,7 @@ export class DocumentParser {
                     break;
 
                 case "vAlign":
-                    style["vertical-align"] = xml.stringAttr(c, "val");
+                    style["vertical-align"] = values.valueOfTextAlignment(c);
                     break;
 
                 case "spacing":
@@ -937,7 +990,7 @@ export class DocumentParser {
 
                 default:
                     if (handler != null && !handler(c))
-                        this.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
+                        this.options.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
                     break;
             }
         });
@@ -1010,12 +1063,14 @@ export class DocumentParser {
 
     parseIndentation(node: Element, style: Record<string, string>) {
         var firstLine = xml.sizeAttr(node, "firstLine");
+        var hanging = xml.sizeAttr(node, "hanging");
         var left = xml.sizeAttr(node, "left");
         var start = xml.sizeAttr(node, "start");
         var right = xml.sizeAttr(node, "right");
         var end = xml.sizeAttr(node, "end");
 
         if (firstLine) style["text-indent"] = firstLine;
+        if (hanging) style["text-indent"] = `-${hanging}`;
         if (left || start) style["margin-left"] = left || start;
         if (right || end) style["margin-right"] = right || end;
     }
@@ -1206,7 +1261,7 @@ class xml {
     }
 
     static convertSize(val: string, type: SizeType = SizeType.Dxa) {
-        if (val == null || val.indexOf("pt") > -1)
+        if (val == null || /.+p[xt]$/.test(val))
             return val;
 
         var intVal = parseInt(val);
@@ -1240,6 +1295,7 @@ class values {
         switch (xml.stringAttr(c, "type")) {
             case "dxa": break;
             case "pct": type = SizeType.Percent; break;
+            case "auto": return "auto";
         }
 
         return xml.sizeAttr(c, attr, type);

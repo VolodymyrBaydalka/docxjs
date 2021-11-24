@@ -25,6 +25,27 @@ Usage
     ...
 </body>
 ```
+API
+---
+```ts
+renderAsync(
+    document: Blob | ArrayBuffer | Uint8Array, // could be any type that supported by JSZip.loadAsync
+    bodyContainer: HTMLElement, //element to render document content,
+    styleContainer: HTMLElement, //element to render document styles, numbeings, fonts. If null, bodyContainer will be used.
+    options: {
+        className: string = "docx", //class name/prefix for default and document style classes
+        inWrapper: boolean = true, //enables rendering of wrapper around document content
+        ignoreWidth: boolean = false, //disables rendering width of page
+        ignoreHeight: boolean = false, //disables rendering height of page
+        ignoreFonts: boolean = false, //disables fonts rendering
+        breakPages: boolean = true, //enables page breaking on page breaks
+        ignoreLastRenderedPageBreak: boolean = true, //disables page breaking on lastRenderedPageBreak elements
+        experimental: boolean = false, //enables experimental features
+        trimXmlDeclaration: boolean = true, //if true, xml declaration will be removed from xml documents before parsing
+        debug: boolean = false, //enables additional logging
+    }
+    ): Promise<any>
+```
 Status and stability
 ------
 So far I can't come up with final approach of parsing documents and final structure of API. Main development is moved to **next** branch. Only **renderAsync** function is stable and definition shouldn't be changed in future. Inner implementation of parsing and rendering may be changed at any point of time.

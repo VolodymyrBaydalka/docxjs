@@ -1,25 +1,19 @@
-import { Package } from "../common/package";
+import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { ParagraphElement } from "../dom/paragraph";
+import { WmlFooter } from "./footer";
 
 export class FooterPart extends Part {
+    footerElement: WmlFooter;
+    
     private _documentParser: DocumentParser;
-    public paragraphs: ParagraphElement[] = [];
-    public rootNode: Element;
 
-    constructor(path: string, parser: DocumentParser) {
-        super(path);
+    constructor(pkg: OpenXmlPackage, path: string, parser: DocumentParser) {
+        super(pkg, path);
         this._documentParser = parser;
     }
-
-    load(pkg: Package) {
-        return super.load(pkg)
-            .then(() => pkg.load(this.path, "string"))
-            .then(xml => {
-                const result = this._documentParser.parseFooterFile(xml);
-                this.paragraphs = result.content;
-                this.rootNode = result.root;
-            })
+    
+    parseXml(root: Element) {
+        this.footerElement = this._documentParser.parseFooter(root);
     }
 }

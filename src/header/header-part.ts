@@ -1,10 +1,10 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { IDomStyle } from "../dom/style";
+import { WmlHeader } from "./header";
 
-export class StylesPart extends Part {
-    styles: IDomStyle[];
+export class HeaderPart extends Part {
+    headerElement: WmlHeader;
 
     private _documentParser: DocumentParser;
 
@@ -14,6 +14,6 @@ export class StylesPart extends Part {
     }
 
     parseXml(root: Element) {
-        this.styles = this._documentParser.parseStylesFile(root);     
+        this.headerElement = this._documentParser.parseHeader(root);
     }
 }

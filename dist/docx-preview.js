@@ -12,36 +12,44 @@ return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/common/package.ts":
-/*!*******************************!*\
-  !*** ./src/common/package.ts ***!
-  \*******************************/
+/***/ "./src/common/open-xml-package.ts":
+/*!****************************************!*\
+  !*** ./src/common/open-xml-package.ts ***!
+  \****************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Package = void 0;
+exports.OpenXmlPackage = void 0;
+var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var utils_1 = __webpack_require__(/*! ../utils */ "./src/utils.ts");
 var relationship_1 = __webpack_require__(/*! ./relationship */ "./src/common/relationship.ts");
-var Package = (function () {
-    function Package(_zip) {
+var OpenXmlPackage = (function () {
+    function OpenXmlPackage(_zip, options) {
         this._zip = _zip;
+        this.options = options;
         this.xmlParser = new xml_parser_1.XmlParser();
     }
-    Package.prototype.exists = function (path) {
-        return this._zip.files[path] != null;
+    OpenXmlPackage.prototype.get = function (path) {
+        return this._zip.files[normalizePath(path)];
     };
-    Package.prototype.load = function (path, type) {
-        var _this = this;
-        var file = this._zip.files[path];
-        if (file == null)
-            return Promise.resolve(null);
-        if (type == "xml")
-            return file.async("string").then(function (t) { return _this.xmlParser.parse(t); });
-        return file.async(type);
+    OpenXmlPackage.prototype.update = function (path, content) {
+        this._zip.file(path, content);
     };
-    Package.prototype.loadRelationships = function (path) {
+    OpenXmlPackage.load = function (input, options) {
+        return JSZip.loadAsync(input).then(function (zip) { return new OpenXmlPackage(zip, options); });
+    };
+    OpenXmlPackage.prototype.save = function (type) {
+        if (type === void 0) { type = "blob"; }
+        return this._zip.generateAsync({ type: type });
+    };
+    OpenXmlPackage.prototype.load = function (path, type) {
+        var _a, _b;
+        if (type === void 0) { type = "string"; }
+        return (_b = (_a = this.get(path)) === null || _a === void 0 ? void 0 : _a.async(type)) !== null && _b !== void 0 ? _b : Promise.resolve(null);
+    };
+    OpenXmlPackage.prototype.loadRelationships = function (path) {
         var _this = this;
         if (path === void 0) { path = null; }
         var relsPath = "_rels/.rels";
@@ -49,13 +57,18 @@ var Package = (function () {
             var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
             relsPath = "".concat(f, "_rels/").concat(fn, ".rels");
         }
-        return this.load(relsPath, "xml").then(function (xml) {
-            return xml == null ? null : (0, relationship_1.parseRelationships)(xml, _this.xmlParser);
-        });
+        return this.load(relsPath)
+            .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
     };
-    return Package;
+    OpenXmlPackage.prototype.parseXmlDocument = function (txt) {
+        return (0, xml_parser_1.parseXmlString)(txt, this.options.trimXmlDeclaration);
+    };
+    return OpenXmlPackage;
 }());
-exports.Package = Package;
+exports.OpenXmlPackage = OpenXmlPackage;
+function normalizePath(path) {
+    return path.startsWith('/') ? path.substr(1) : path;
+}
 
 
 /***/ }),
@@ -64,20 +77,36 @@ exports.Package = Package;
 /*!****************************!*\
   !*** ./src/common/part.ts ***!
   \****************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Part = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
 var Part = (function () {
-    function Part(path) {
+    function Part(_package, path) {
+        this._package = _package;
         this.path = path;
     }
-    Part.prototype.load = function (pkg) {
+    Part.prototype.load = function () {
         var _this = this;
-        return pkg.loadRelationships(this.path).then(function (rels) {
-            _this.rels = rels;
-        });
+        return Promise.all([
+            this._package.loadRelationships(this.path).then(function (rels) {
+                _this.rels = rels;
+            }),
+            this._package.load(this.path).then(function (text) {
+                var xmlDoc = _this._package.parseXmlDocument(text);
+                if (_this._package.options.keepOrigin) {
+                    _this._xmlDocument = xmlDoc;
+                }
+                _this.parseXml(xmlDoc.firstElementChild);
+            })
+        ]);
+    };
+    Part.prototype.save = function () {
+        this._package.update(this.path, (0, xml_parser_1.serializeXmlString)(this._xmlDocument));
+    };
+    Part.prototype.parseXml = function (root) {
     };
     return Part;
 }());
@@ -99,7 +128,6 @@ var RelationshipTypes;
 (function (RelationshipTypes) {
     RelationshipTypes["OfficeDocument"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     RelationshipTypes["FontTable"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable";
-    RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
     RelationshipTypes["Image"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
     RelationshipTypes["Numbering"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
     RelationshipTypes["Styles"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
@@ -108,13 +136,17 @@ var RelationshipTypes;
     RelationshipTypes["Settings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings";
     RelationshipTypes["WebSettings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings";
     RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
+    RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
+    RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
+    RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
+    RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 })(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
-function parseRelationships(root, xmlParser) {
-    return xmlParser.elements(root).map(function (e) { return ({
-        id: xmlParser.attr(e, "Id"),
-        type: xmlParser.attr(e, "Type"),
-        target: xmlParser.attr(e, "Target"),
-        targetMode: xmlParser.attr(e, "TargetMode")
+function parseRelationships(root, xml) {
+    return xml.elements(root).map(function (e) { return ({
+        id: xml.attr(e, "Id"),
+        type: xml.attr(e, "Type"),
+        target: xml.attr(e, "Target"),
+        targetMode: xml.attr(e, "TargetMode")
     }); });
 }
 exports.parseRelationships = parseRelationships;
@@ -126,9 +158,20 @@ exports.parseRelationships = parseRelationships;
 /*!********************************!*\
   !*** ./src/document-parser.ts ***!
   \********************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./dom/dom */ "./src/dom/dom.ts");
@@ -137,40 +180,60 @@ var paragraph_1 = __webpack_require__(/*! ./dom/paragraph */ "./src/dom/paragrap
 var section_1 = __webpack_require__(/*! ./dom/section */ "./src/dom/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
 var bookmark_1 = __webpack_require__(/*! ./dom/bookmark */ "./src/dom/bookmark.ts");
+var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
+var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
 exports.autos = {
     shd: "white",
     color: "black",
     highlight: "transparent"
 };
 var DocumentParser = (function () {
-    function DocumentParser() {
-        this.skipDeclaration = true;
-        this.ignoreWidth = false;
-        this.debug = false;
+    function DocumentParser(options) {
+        this.options = __assign({ ignoreWidth: false, debug: false }, options);
     }
+    DocumentParser.prototype.parseFooter = function (xmlDoc) {
+        var result = new footer_1.WmlFooter();
+        result.children = this.parseBodyElements(xmlDoc);
+        return result;
+    };
+    DocumentParser.prototype.parseHeader = function (xmlDoc) {
+        var result = new header_1.WmlHeader();
+        result.children = this.parseBodyElements(xmlDoc);
+        return result;
+    };
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
-        var _this = this;
-        var result = {
-            type: dom_1.DomType.Document,
-            children: [],
-            cssStyle: {},
-            props: null
-        };
         var xbody = xml_parser_1.default.element(xmlDoc, "body");
-        xml.foreach(xbody, function (elem) {
+        var background = xml_parser_1.default.element(xmlDoc, "background");
+        var sectPr = xml_parser_1.default.element(xbody, "sectPr");
+        return {
+            type: dom_1.DomType.Document,
+            children: this.parseBodyElements(xbody),
+            props: sectPr ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default) : null,
+            cssStyle: background ? this.parseBackground(background) : {},
+        };
+    };
+    DocumentParser.prototype.parseBackground = function (elem) {
+        var result = {};
+        var color = xml.colorAttr(elem, "color");
+        if (color) {
+            result["background-color"] = color;
+        }
+        return result;
+    };
+    DocumentParser.prototype.parseBodyElements = function (element) {
+        var _this = this;
+        var children = [];
+        xml.foreach(element, function (elem) {
             switch (elem.localName) {
                 case "p":
-                    result.children.push(_this.parseParagraph(elem));
+                    children.push(_this.parseParagraph(elem));
                     break;
                 case "tbl":
-                    result.children.push(_this.parseTable(elem));
-                    break;
-                case "sectPr":
-                    result.props = (0, section_1.parseSectionProperties)(elem, xml_parser_1.default);
+                    children.push(_this.parseTable(elem));
                     break;
             }
         });
-        return result;
+        return children;
     };
     DocumentParser.prototype.parseStylesFile = function (xstyles) {
         var _this = this;
@@ -293,7 +356,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
+                    _this.options.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
             }
         });
         return result;
@@ -407,12 +470,17 @@ var DocumentParser = (function () {
         var result = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
-            style: {}
+            pStyle: {},
+            rStyle: {},
+            suff: "tab"
         };
         xml.foreach(node, function (n) {
             switch (n.localName) {
                 case "pPr":
-                    _this.parseDefaultProperties(n, result.style);
+                    _this.parseDefaultProperties(n, result.pStyle);
+                    break;
+                case "rPr":
+                    _this.parseDefaultProperties(n, result.rStyle);
                     break;
                 case "lvlPicBulletId":
                     var id = xml.intAttr(n, "val");
@@ -423,6 +491,9 @@ var DocumentParser = (function () {
                     break;
                 case "numFmt":
                     result.format = xml.stringAttr(n, "val");
+                    break;
+                case "suff":
+                    result.suff = xml.stringAttr(n, "val");
                     break;
             }
         });
@@ -518,7 +589,7 @@ var DocumentParser = (function () {
                 case "lastRenderedPageBreak":
                     result.children.push({
                         type: dom_1.DomType.Break,
-                        break: "page"
+                        break: "lastRenderedPageBreak"
                     });
                     break;
                 case "sym":
@@ -529,24 +600,15 @@ var DocumentParser = (function () {
                     });
                     break;
                 case "tab":
-                    result.children.push({ type: dom_1.DomType.Tab, parent: result });
+                    result.children.push({ type: dom_1.DomType.Tab });
                     break;
                 case "instrText":
                     result.instrText = c.textContent;
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
-                    if (d) {
-                        var newChildren = [];
-                        for (var i = 0; i < result.children.length; i++) {
-                            var rItem = result.children[i];
-                            if (rItem.type === dom_1.DomType.Break) {
-                                newChildren.push(rItem);
-                            }
-                        }
-                        newChildren.push(d);
-                        result.children = newChildren;
-                    }
+                    if (d)
+                        result.children = [d];
                     break;
                 case "rPr":
                     _this.parseRunProperties(c, result);
@@ -849,13 +911,10 @@ var DocumentParser = (function () {
                     style["background-color"] = xml.colorAttr(c, "val", null, exports.autos.highlight);
                     break;
                 case "tcW":
-                    if (_this.ignoreWidth)
+                    if (_this.options.ignoreWidth)
                         break;
                 case "tblW":
-                    var tableWidthType = xml.stringAttr(c, "type");
-                    if (tableWidthType !== "auto") {
-                        style["width"] = values.valueOfSize(c, "w");
-                    }
+                    style["width"] = values.valueOfSize(c, "w");
                     break;
                 case "trHeight":
                     _this.parseTrHeight(c, style);
@@ -864,10 +923,16 @@ var DocumentParser = (function () {
                     style["text-decoration"] = values.valueOfStrike(c);
                     break;
                 case "b":
-                    style["font-weight"] = values.valueOfBold(c);
+                    style["font-weight"] = xml.boolAttr(c, "val", true) ? "bold" : "normal";
                     break;
                 case "i":
-                    style["font-style"] = "italic";
+                    style["font-style"] = xml.boolAttr(c, "val", true) ? "italic" : "normal";
+                    break;
+                case "caps":
+                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "uppercase" : "none";
+                    break;
+                case "smallCaps":
+                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "lowercase" : "none";
                     break;
                 case "u":
                     _this.parseUnderline(c, style);
@@ -905,7 +970,7 @@ var DocumentParser = (function () {
                     style["table-layout"] = values.valueOfTblLayout(c);
                     break;
                 case "vAlign":
-                    style["vertical-align"] = xml.stringAttr(c, "val");
+                    style["vertical-align"] = values.valueOfTextAlignment(c);
                     break;
                 case "spacing":
                     if (elem.localName == "pPr")
@@ -917,7 +982,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
+                        _this.options.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
                     break;
             }
         });
@@ -964,23 +1029,20 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseFont = function (node, style) {
         var ascii = xml.stringAttr(node, "ascii");
-        if (ascii) {
+        if (ascii)
             style["font-family"] = ascii;
-            return;
-        }
-        var asciiTheme = xml.stringAttr(node, "w:asciiTheme");
-        if (asciiTheme) {
-            style["asciiTheme"] = asciiTheme;
-        }
     };
     DocumentParser.prototype.parseIndentation = function (node, style) {
         var firstLine = xml.sizeAttr(node, "firstLine");
+        var hanging = xml.sizeAttr(node, "hanging");
         var left = xml.sizeAttr(node, "left");
         var start = xml.sizeAttr(node, "start");
         var right = xml.sizeAttr(node, "right");
         var end = xml.sizeAttr(node, "end");
         if (firstLine)
             style["text-indent"] = firstLine;
+        if (hanging)
+            style["text-indent"] = "-".concat(hanging);
         if (left || start)
             style["margin-left"] = left || start;
         if (right || end)
@@ -1058,39 +1120,6 @@ var DocumentParser = (function () {
             }
         });
     };
-    DocumentParser.prototype.parseFooterFile = function (xmlString) {
-        var xFooter = xml_parser_1.default.parse(xmlString, this.skipDeclaration);
-        var result = { root: xFooter, content: [] };
-        var paragraphs = xFooter.getElementsByTagName("w:p");
-        if (!paragraphs || paragraphs.length === 0) {
-            return result;
-        }
-        for (var i = 0; i < paragraphs.length; i++) {
-            result.content.push(this.parseParagraph(paragraphs[i]));
-        }
-        return result;
-    };
-    DocumentParser.prototype.parseThemesFile = function (xmlString) {
-        var result = {};
-        var xthemes = xml_parser_1.default.parse(xmlString, this.skipDeclaration);
-        var majorFontElements = xthemes.getElementsByTagName("a:majorFont");
-        var minorFontElements = xthemes.getElementsByTagName("a:minorFont");
-        if (majorFontElements && majorFontElements.length === 1) {
-            result.majorLatin = this.parseLatinTypeface(majorFontElements[0]);
-        }
-        if (minorFontElements && minorFontElements.length === 1) {
-            result.minorLatin = this.parseLatinTypeface(minorFontElements[0]);
-        }
-        return result;
-    };
-    DocumentParser.prototype.parseLatinTypeface = function (fontElement) {
-        var _a;
-        var latinFontElements = fontElement.getElementsByTagName("a:latin");
-        if (latinFontElements && latinFontElements.length === 1) {
-            return (_a = latinFontElements[0].getAttribute("typeface")) !== null && _a !== void 0 ? _a : "";
-        }
-        return "";
-    };
     return DocumentParser;
 }());
 exports.DocumentParser = DocumentParser;
@@ -1150,7 +1179,7 @@ var xml = (function () {
     };
     xml.convertSize = function (val, type) {
         if (type === void 0) { type = SizeType.Dxa; }
-        if (val == null || val.indexOf("pt") > -1)
+        if (val == null || /.+p[xt]$/.test(val))
             return val;
         var intVal = parseInt(val);
         switch (type) {
@@ -1181,6 +1210,7 @@ var values = (function () {
             case "pct":
                 type = SizeType.Percent;
                 break;
+            case "auto": return "auto";
         }
         return xml.sizeAttr(c, attr, type);
     };
@@ -1286,6 +1316,190 @@ var values = (function () {
 
 /***/ }),
 
+/***/ "./src/document-props/core-props-part.ts":
+/*!***********************************************!*\
+  !*** ./src/document-props/core-props-part.ts ***!
+  \***********************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CorePropsPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var core_props_1 = __webpack_require__(/*! ./core-props */ "./src/document-props/core-props.ts");
+var CorePropsPart = (function (_super) {
+    __extends(CorePropsPart, _super);
+    function CorePropsPart() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    CorePropsPart.prototype.parseXml = function (root) {
+        this.props = (0, core_props_1.parseCoreProps)(root, this._package.xmlParser);
+    };
+    return CorePropsPart;
+}(part_1.Part));
+exports.CorePropsPart = CorePropsPart;
+
+
+/***/ }),
+
+/***/ "./src/document-props/core-props.ts":
+/*!******************************************!*\
+  !*** ./src/document-props/core-props.ts ***!
+  \******************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseCoreProps = void 0;
+function parseCoreProps(root, xmlParser) {
+    var result = {};
+    for (var _i = 0, _a = xmlParser.elements(root); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "title":
+                result.title = el.textContent;
+                break;
+            case "description":
+                result.description = el.textContent;
+                break;
+            case "subject":
+                result.subject = el.textContent;
+                break;
+            case "creator":
+                result.creator = el.textContent;
+                break;
+            case "keywords":
+                result.keywords = el.textContent;
+                break;
+            case "language":
+                result.language = el.textContent;
+                break;
+            case "lastModifiedBy":
+                result.lastModifiedBy = el.textContent;
+                break;
+            case "revision":
+                el.textContent && (result.revision = parseInt(el.textContent));
+                break;
+        }
+    }
+    return result;
+}
+exports.parseCoreProps = parseCoreProps;
+
+
+/***/ }),
+
+/***/ "./src/document-props/extended-props-part.ts":
+/*!***************************************************!*\
+  !*** ./src/document-props/extended-props-part.ts ***!
+  \***************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ExtendedPropsPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var extended_props_1 = __webpack_require__(/*! ./extended-props */ "./src/document-props/extended-props.ts");
+var ExtendedPropsPart = (function (_super) {
+    __extends(ExtendedPropsPart, _super);
+    function ExtendedPropsPart() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    ExtendedPropsPart.prototype.parseXml = function (root) {
+        this.props = (0, extended_props_1.parseExtendedProps)(root, this._package.xmlParser);
+    };
+    return ExtendedPropsPart;
+}(part_1.Part));
+exports.ExtendedPropsPart = ExtendedPropsPart;
+
+
+/***/ }),
+
+/***/ "./src/document-props/extended-props.ts":
+/*!**********************************************!*\
+  !*** ./src/document-props/extended-props.ts ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseExtendedProps = void 0;
+function parseExtendedProps(root, xmlParser) {
+    var result = {};
+    for (var _i = 0, _a = xmlParser.elements(root); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "Template":
+                result.template = el.textContent;
+                break;
+            case "Pages":
+                result.pages = safeParseToInt(el.textContent);
+                break;
+            case "Words":
+                result.words = safeParseToInt(el.textContent);
+                break;
+            case "Characters":
+                result.characters = safeParseToInt(el.textContent);
+                break;
+            case "Application":
+                result.application = el.textContent;
+                break;
+            case "Lines":
+                result.lines = safeParseToInt(el.textContent);
+                break;
+            case "Paragraphs":
+                result.paragraphs = safeParseToInt(el.textContent);
+                break;
+            case "Company":
+                result.company = el.textContent;
+                break;
+            case "AppVersion":
+                result.appVersion = el.textContent;
+                break;
+        }
+    }
+    return result;
+}
+exports.parseExtendedProps = parseExtendedProps;
+function safeParseToInt(value) {
+    if (typeof value === 'undefined')
+        return;
+    return parseInt(value);
+}
+
+
+/***/ }),
+
 /***/ "./src/docx-preview.ts":
 /*!*****************************!*\
   !*** ./src/docx-preview.ts ***!
@@ -1305,22 +1519,37 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.renderAsync = void 0;
+exports.renderAsync = exports.praseAsync = exports.defaultOptions = void 0;
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
+exports.defaultOptions = {
+    ignoreHeight: false,
+    ignoreWidth: false,
+    ignoreFonts: false,
+    breakPages: true,
+    debug: false,
+    experimental: false,
+    className: "docx",
+    inWrapper: true,
+    trimXmlDeclaration: true,
+    ignoreLastRenderedPageBreak: true,
+};
+function praseAsync(data, userOptions) {
+    if (userOptions === void 0) { userOptions = null; }
+    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
+    return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
+}
+exports.praseAsync = praseAsync;
 function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (styleContainer === void 0) { styleContainer = null; }
     if (userOptions === void 0) { userOptions = null; }
-    var parser = new document_parser_1.DocumentParser();
+    var ops = __assign(__assign({}, exports.defaultOptions), userOptions);
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = __assign({ ignoreHeight: false, ignoreWidth: false, ignoreFonts: false, breakPages: true, debug: false, experimental: false, className: "docx", inWrapper: true, noStyleBlock: false }, userOptions);
-    parser.ignoreWidth = options.ignoreWidth;
-    parser.debug = options.debug || parser.debug;
-    renderer.className = options.className || "docx";
-    renderer.inWrapper = options.inWrapper;
-    return word_document_1.WordDocument.load(data, parser).then(function (doc) {
-        renderer.render(doc, bodyContainer, styleContainer, options);
+    return word_document_1.WordDocument
+        .load(data, new document_parser_1.DocumentParser(ops), ops)
+        .then(function (doc) {
+        renderer.render(doc, bodyContainer, styleContainer, ops);
         return doc;
     });
 }
@@ -1433,18 +1662,13 @@ exports.DocumentPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
     __extends(DocumentPart, _super);
-    function DocumentPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function DocumentPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    DocumentPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            _this.body = _this._documentParser.parseDocumentFile(xml);
-        });
+    DocumentPart.prototype.parseXml = function (root) {
+        this.body = this._documentParser.parseDocumentFile(root);
     };
     return DocumentPart;
 }(part_1.Part));
@@ -1479,6 +1703,8 @@ var DomType;
     DomType["Symbol"] = "symbol";
     DomType["BookmarkStart"] = "bookmarkStart";
     DomType["BookmarkEnd"] = "bookmarkEnd";
+    DomType["Footer"] = "footer";
+    DomType["Header"] = "header";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -1651,8 +1877,7 @@ var SectionType;
     SectionType["OddPage"] = "oddPage";
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
-    var section = { footer: {} };
-    section.id = xml.attr(elem, "rsidSect");
+    var section = {};
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
         var e = _a[_i];
         switch (e.localName) {
@@ -1680,26 +1905,6 @@ function parseSectionProperties(elem, xml) {
             case "cols":
                 section.columns = parseColumns(e, xml);
                 break;
-            case "footerReference":
-                var footerType = xml.attr(e, "type");
-                var footerId = xml.attr(e, "id");
-                switch (footerType) {
-                    case "default":
-                        section.footer.default = footerId;
-                        break;
-                    case "first":
-                        section.footer.first = footerId;
-                        break;
-                    case "even":
-                        section.footer.even = footerId;
-                        break;
-                }
-                break;
-            case "titlePg":
-                var titlePageVal = xml.attr(e, "val");
-                if (titlePageVal !== "false") {
-                    section.footer.forceFirstDifferent = true;
-                }
         }
     }
     return section;
@@ -1753,13 +1958,8 @@ var FontTablePart = (function (_super) {
     function FontTablePart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    FontTablePart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (el) {
-            _this.fonts = (0, fonts_1.parseFonts)(el, pkg.xmlParser);
-        });
+    FontTablePart.prototype.parseXml = function (root) {
+        this.fonts = (0, fonts_1.parseFonts)(root, this._package.xmlParser);
     };
     return FontTablePart;
 }(part_1.Part));
@@ -1834,25 +2034,105 @@ exports.FooterPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var FooterPart = (function (_super) {
     __extends(FooterPart, _super);
-    function FooterPart(path, parser) {
-        var _this = _super.call(this, path) || this;
-        _this.paragraphs = [];
+    function FooterPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    FooterPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
-            .then(function (xml) {
-            var result = _this._documentParser.parseFooterFile(xml);
-            _this.paragraphs = result.content;
-            _this.rootNode = result.root;
-        });
+    FooterPart.prototype.parseXml = function (root) {
+        this.footerElement = this._documentParser.parseFooter(root);
     };
     return FooterPart;
 }(part_1.Part));
 exports.FooterPart = FooterPart;
+
+
+/***/ }),
+
+/***/ "./src/footer/footer.ts":
+/*!******************************!*\
+  !*** ./src/footer/footer.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WmlFooter = void 0;
+var dom_1 = __webpack_require__(/*! ../dom/dom */ "./src/dom/dom.ts");
+var WmlFooter = (function () {
+    function WmlFooter() {
+        this.type = dom_1.DomType.Footer;
+        this.children = [];
+        this.cssStyle = {};
+    }
+    return WmlFooter;
+}());
+exports.WmlFooter = WmlFooter;
+
+
+/***/ }),
+
+/***/ "./src/header/header-part.ts":
+/*!***********************************!*\
+  !*** ./src/header/header-part.ts ***!
+  \***********************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HeaderPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var HeaderPart = (function (_super) {
+    __extends(HeaderPart, _super);
+    function HeaderPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    HeaderPart.prototype.parseXml = function (root) {
+        this.headerElement = this._documentParser.parseHeader(root);
+    };
+    return HeaderPart;
+}(part_1.Part));
+exports.HeaderPart = HeaderPart;
+
+
+/***/ }),
+
+/***/ "./src/header/header.ts":
+/*!******************************!*\
+  !*** ./src/header/header.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WmlHeader = void 0;
+var dom_1 = __webpack_require__(/*! ../dom/dom */ "./src/dom/dom.ts");
+var WmlHeader = (function () {
+    function WmlHeader() {
+        this.type = dom_1.DomType.Header;
+        this.children = [];
+        this.cssStyle = {};
+    }
+    return WmlHeader;
+}());
+exports.WmlHeader = WmlHeader;
 
 
 /***/ }),
@@ -1883,19 +2163,15 @@ var javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts"
 var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
-        this.inWrapper = true;
         this.className = "docx";
-        this.noCssDict = {};
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
+        this.className = options.className;
         this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
-        if (options.noStyleBlock) {
-            styleContainer = window.document.createElement("div");
-        }
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
@@ -1909,20 +2185,16 @@ var HtmlRenderer = (function () {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
-        if (!options.ignoreFonts && document.fontTablePart) {
+        if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
-        }
         var sectionElements = this.renderSections(document.documentPart.body);
-        if (this.inWrapper) {
+        if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
         }
         else {
             appentElements(bodyContainer, sectionElements);
-        }
-        if (options.noStyleBlock) {
-            this.applyCss(this.noCssDict, bodyContainer);
         }
     };
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
@@ -1948,32 +2220,29 @@ var HtmlRenderer = (function () {
         var stylesMap = {};
         for (var _i = 0, _a = styles.filter(function (x) { return x.id != null; }); _i < _a.length; _i++) {
             var style = _a[_i];
-            this.replaceAsciiTheme(style);
-            style.basedOnResolved = !style.basedOn;
             stylesMap[style.id] = style;
         }
         for (var _b = 0, _c = styles.filter(function (x) { return x.basedOn; }); _b < _c.length; _b++) {
             var style = _c[_b];
-            if (style.basedOnResolved) {
-                continue;
+            var baseStyle = stylesMap[style.basedOn];
+            if (baseStyle) {
+                var _loop_2 = function (styleValues) {
+                    baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
+                    if (baseValues && baseValues.length > 0)
+                        this_2.copyStyleProperties(baseValues[0].values, styleValues.values);
+                };
+                var this_2 = this, baseValues;
+                for (var _d = 0, _e = style.styles; _d < _e.length; _d++) {
+                    var styleValues = _e[_d];
+                    _loop_2(styleValues);
+                }
             }
-            this.resolveBaseStyle(style, stylesMap);
+            else if (this.options.debug)
+                console.warn("Can't find base style ".concat(style.basedOn));
         }
-        for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
-            var style = styles_1[_d];
-            this.replaceAsciiTheme(style, true);
+        for (var _f = 0, styles_1 = styles; _f < styles_1.length; _f++) {
+            var style = styles_1[_f];
             style.cssName = this.processClassName(this.escapeClassName(style.id));
-        }
-        var defaultStyles = styles.filter(function (x) { return x.isDefault; });
-        var defaultOverride = (0, utils_1.clone)(defaultStyles[0]);
-        defaultOverride.styles = [];
-        for (var _e = 0, defaultStyles_1 = defaultStyles; _e < defaultStyles_1.length; _e++) {
-            var defaultStyle = defaultStyles_1[_e];
-            this.copyStyle(defaultStyle, defaultOverride);
-        }
-        for (var _f = 0, _g = styles.filter(function (x) { return x.id === null; }); _f < _g.length; _f++) {
-            var style = _g[_f];
-            this.copyStyle(defaultOverride, style, true);
         }
         return stylesMap;
     };
@@ -2005,9 +2274,8 @@ var HtmlRenderer = (function () {
             }
         }
     };
-    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs, overideExistingEntries) {
+    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs) {
         if (attrs === void 0) { attrs = null; }
-        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
         if (!input)
             return output;
         if (output == null)
@@ -2016,35 +2284,33 @@ var HtmlRenderer = (function () {
             attrs = Object.getOwnPropertyNames(input);
         for (var _i = 0, attrs_1 = attrs; _i < attrs_1.length; _i++) {
             var key = attrs_1[_i];
-            if (input.hasOwnProperty(key) && (overideExistingEntries || !output.hasOwnProperty(key))) {
+            if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
                 output[key] = input[key];
-            }
         }
         return output;
     };
     HtmlRenderer.prototype.createSection = function (className, props) {
         var elem = this.htmlDocument.createElement("section");
         elem.className = className;
-        if (!props) {
-            return elem;
-        }
-        if (props.pageMargins) {
-            elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-            elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-            elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-            elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
-        }
-        if (props.pageSize) {
-            if (!this.options.ignoreWidth)
-                elem.style.width = this.renderLength(props.pageSize.width);
-            if (!this.options.ignoreHeight)
-                elem.style.minHeight = this.renderLength(props.pageSize.height);
-        }
-        if (props.columns && props.columns.numberOfColumns) {
-            elem.style.columnCount = "".concat(props.columns.numberOfColumns);
-            elem.style.columnGap = this.renderLength(props.columns.space);
-            if (props.columns.separator) {
-                elem.style.columnRule = "1px solid black";
+        if (props) {
+            if (props.pageMargins) {
+                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+            }
+            if (props.pageSize) {
+                if (!this.options.ignoreWidth)
+                    elem.style.width = this.renderLength(props.pageSize.width);
+                if (!this.options.ignoreHeight)
+                    elem.style.minHeight = this.renderLength(props.pageSize.height);
+            }
+            if (props.columns && props.columns.numberOfColumns) {
+                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
+                elem.style.columnGap = this.renderLength(props.columns.space);
+                if (props.columns.separator) {
+                    elem.style.columnRule = "1px solid black";
+                }
             }
         }
         return elem;
@@ -2052,120 +2318,84 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSections = function (document) {
         var result = [];
         this.processElement(document);
-        for (var _i = 0, _a = this.splitBySection(document.children, document.props); _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
-            var sectionElement = this.createSection(this.className, section.sectProps);
-            this.renderElements(section.elements, sectionElement);
-            if (this.hasFooter(section.sectProps.footer)) {
-                sectionElement.appendChild(this.createFooter(this.className, section.sectProps));
-            }
+            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            this.renderStyleValues(document.cssStyle, sectionElement);
+            this.renderElements(section.elements, document, sectionElement);
             result.push(sectionElement);
         }
         return result;
     };
-    HtmlRenderer.prototype.splitBySection = function (elements, lastSectionProps) {
+    HtmlRenderer.prototype.isPageBreakElement = function (elem) {
+        if (elem.type != dom_1.DomType.Break)
+            return false;
+        if (elem.break == "lastRenderedPageBreak")
+            return !this.options.ignoreLastRenderedPageBreak;
+        return elem.break == "page";
+    };
+    HtmlRenderer.prototype.splitBySection = function (elements) {
+        var _this = this;
         var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var sectProps;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
                 var styleName = elem.styleName;
                 var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
-                    current.sectProps = (0, utils_1.clone)(sectProps);
+                    current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
             }
             current.elements.push(elem);
-            if (elem.type != dom_1.DomType.Paragraph) {
-                continue;
-            }
-            var p = elem;
-            sectProps = (0, utils_1.clone)(p.sectionProps);
-            var pBreakIndex = -1;
-            var rBreakIndex = -1;
-            if (this.options.breakPages && p.children) {
-                pBreakIndex = p.children.findIndex(function (r) {
-                    var _a, _b;
-                    rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(function (t) { return t.break == "page"; })) !== null && _b !== void 0 ? _b : -1;
-                    return rBreakIndex != -1;
-                });
-                if (pBreakIndex > 0) {
-                    while (pBreakIndex > 0 && p.children[pBreakIndex - 1].type === dom_1.DomType.BookmarkStart) {
-                        pBreakIndex--;
+            if (elem.type == dom_1.DomType.Paragraph) {
+                var p = elem;
+                var sectProps = p.sectionProps;
+                var pBreakIndex = -1;
+                var rBreakIndex = -1;
+                if (this.options.breakPages && p.children) {
+                    pBreakIndex = p.children.findIndex(function (r) {
+                        var _a, _b;
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
+                        return rBreakIndex != -1;
+                    });
+                }
+                if (sectProps || pBreakIndex != -1) {
+                    current.sectProps = sectProps;
+                    current = { sectProps: null, elements: [] };
+                    result.push(current);
+                }
+                if (pBreakIndex != -1) {
+                    var breakRun = p.children[pBreakIndex];
+                    var splitRun = rBreakIndex < breakRun.children.length - 1;
+                    if (pBreakIndex < p.children.length - 1 || splitRun) {
+                        var children = elem.children;
+                        var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
+                        elem.children = children.slice(0, pBreakIndex);
+                        current.elements.push(newParagraph);
+                        if (splitRun) {
+                            var runChildren = breakRun.children;
+                            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
+                            elem.children.push(newRun);
+                            breakRun.children = runChildren.slice(rBreakIndex);
+                        }
                     }
                 }
             }
-            if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
-                if (sectProps) {
-                    current.sectProps = (0, utils_1.clone)(sectProps);
-                }
-                current = { sectProps: null, elements: [] };
-                if (pBreakIndex === 0) {
-                    current.elements.push(elem);
-                    result[result.length - 1].elements.pop();
-                }
-                result.push(current);
-            }
-            if (pBreakIndex <= 0 ||
-                !p.children || p.children.length <= pBreakIndex) {
-                continue;
-            }
-            var breakRun = p.children[pBreakIndex];
-            if (!breakRun || !breakRun.children) {
-                continue;
-            }
-            var splitRun = rBreakIndex < breakRun.children.length - 1;
-            if (!(pBreakIndex < p.children.length - 1 || splitRun)) {
-                continue;
-            }
-            var children = elem.children;
-            var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
-            elem.children = children.slice(0, pBreakIndex);
-            current.elements.push(newParagraph);
-            if (!splitRun) {
-                continue;
-            }
-            var runChildren = breakRun.children;
-            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
-            elem.children.push(newRun);
-            breakRun.children = runChildren.slice(rBreakIndex);
-        }
-        if (result.length > 0) {
-            result[result.length - 1].sectProps = lastSectionProps;
         }
         var currentSectProps = null;
         for (var i = result.length - 1; i >= 0; i--) {
-            if (result[i].sectProps === null) {
-                result[i].sectProps = (0, utils_1.clone)(currentSectProps);
+            if (result[i].sectProps == null) {
+                result[i].sectProps = currentSectProps;
             }
             else {
-                currentSectProps = (0, utils_1.clone)(result[i].sectProps);
+                currentSectProps = result[i].sectProps;
             }
         }
-        this.addSectionInnerPageNums(result);
         return result;
-    };
-    HtmlRenderer.prototype.addSectionInnerPageNums = function (result) {
-        var lastSectionId = "";
-        var sectiontPageCount = 0;
-        for (var j = 0; j < result.length; j++) {
-            var sectProps = result[j].sectProps;
-            if (sectProps === null) {
-                continue;
-            }
-            if (sectProps.id !== lastSectionId) {
-                lastSectionId = sectProps.id;
-                sectiontPageCount = 1;
-            }
-            else {
-                sectiontPageCount++;
-            }
-            sectProps.pageWithinSection = sectiontPageCount;
-        }
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         return l ? "".concat(l.value).concat(l.type) : null;
@@ -2177,98 +2407,49 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = ".".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; position: relative; }\n").concat(c, "-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%; padding: inherit; box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; }");
-        if (this.options.noStyleBlock) {
-            this.noCssDict[".".concat(c, "-wrapper")] = {
-                "background": { cssRuleCamel: "background", newVal: "gray" },
-                "padding": { cssRuleCamel: "padding", newVal: "30px" },
-                "padding-bottom": { cssRuleCamel: "paddingBottom", newVal: "0px" },
-                "display": { cssRuleCamel: "display", newVal: "flex" },
-                "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column" },
-                "align-items": { cssRuleCamel: "alignItems", newVal: "center" }
-            };
-            this.noCssDict[".".concat(c, "-wrapper section.").concat(c)] = {
-                "background": { cssRuleCamel: "background", newVal: "white" },
-                "box-shadow": { cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)" },
-                "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "30px" }
-            };
-            this.noCssDict[".".concat(c)] = {
-                "color": { cssRuleCamel: "color", newVal: "black" },
-            };
-            this.noCssDict["section.".concat(c)] = {
-                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
-                "position": { cssRuleCamel: "position", newVal: "relative" }
-            };
-            this.noCssDict[".".concat(c, "-footer-container")] = {
-                "bottom": { cssRuleCamel: "bottom", newVal: "0px" },
-                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
-                "left": { cssRuleCamel: "left", newVal: "0px" },
-                "padding": { cssRuleCamel: "padding", newVal: "inherit" },
-                "position": { cssRuleCamel: "position", newVal: "absolute" },
-                "width": { cssRuleCamel: "width", newVal: "100%" }
-            };
-            this.noCssDict[".".concat(c, " table")] = {
-                "border-collapse": { cssRuleCamel: "borderCollapse", newVal: "collapse" },
-            };
-            this.noCssDict[".".concat(c, " table td")] = {
-                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
-            };
-            this.noCssDict[".".concat(c, " table th")] = {
-                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
-            };
-            this.noCssDict[".".concat(c, " p")] = {
-                "margin": { cssRuleCamel: "margin", newVal: "0pt" },
-            };
-            if (this.options.experimental) {
-                styleText += "\n.".concat(c, " p { word-spacing: -0.55pt; }");
-                this.noCssDict[".".concat(c, " p")]["word-spacing"] = { cssRuleCamel: "wordSpacing", newVal: "-0.55pt" };
-            }
-        }
+        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }\n");
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderNumbering = function (styles, styleContainer) {
+    HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
-        var _loop_2 = function () {
-            selector = "p.".concat(this_2.numberingClass(num.id, num.level));
+        var _loop_3 = function () {
+            selector = "p.".concat(this_3.numberingClass(num.id, num.level));
             listStyleType = "none";
-            if (num.levelText && num.format == "decimal") {
-                var counter = this_2.numberingCounter(num.id, num.level);
+            if (num.bullet) {
+                var valiable_1 = "--".concat(this_3.className, "-").concat(num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString("".concat(selector, ":before"), {
+                    "content": "' '",
+                    "display": "inline-block",
+                    "background": "var(".concat(valiable_1, ")")
+                }, num.bullet.style);
+                this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
+                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
+                    styleContainer.appendChild(createStyleElement(text));
+                });
+            }
+            else if (num.levelText) {
+                var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_2.styleToString("p.".concat(this_2.numberingClass(num.id, num.level - 1)), {
+                    styleText += this_3.styleToString("p.".concat(this_3.numberingClass(num.id, num.level - 1)), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_2.styleToString("".concat(selector, ":before"), {
-                    "content": this_2.levelTextToContent(num.levelText, num.id),
-                    "counter-increment": counter
-                });
-            }
-            else if (num.bullet) {
-                var valiable_1 = "--".concat(this_2.className, "-").concat(num.bullet.src).toLowerCase();
-                styleText += this_2.styleToString("".concat(selector, ":before"), {
-                    "content": "' '",
-                    "display": "inline-block",
-                    "background": "var(".concat(valiable_1, ")")
-                }, num.bullet.style);
-                this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
-                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
-                    styleContainer.appendChild(createStyleElement(text));
-                });
+                styleText += this_3.styleToString("".concat(selector, ":before"), __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
-                listStyleType = this_2.numFormatToCssValue(num.format);
+                listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.style));
+            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
         };
-        var this_2 = this, selector, listStyleType;
-        for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
-            var num = styles_2[_i];
-            _loop_2();
+        var this_3 = this, selector, listStyleType;
+        for (var _i = 0, numberings_1 = numberings; _i < numberings_1.length; _i++) {
+            var num = numberings_1[_i];
+            _loop_3();
         }
         if (rootCounters.length > 0) {
             styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
@@ -2280,8 +2461,8 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
         var stylesMap = this.styleMap;
-        for (var _i = 0, styles_3 = styles; _i < styles_3.length; _i++) {
-            var style = styles_3[_i];
+        for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
+            var style = styles_2[_i];
             var subStyles = style.styles;
             if (style.linked) {
                 var linkedStyle = style.linked && stylesMap[style.linked];
@@ -2306,7 +2487,7 @@ var HtmlRenderer = (function () {
         }
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderElement = function (elem) {
+    HtmlRenderer.prototype.renderElement = function (elem, parent) {
         switch (elem.type) {
             case dom_1.DomType.Paragraph:
                 return this.renderParagraph(elem);
@@ -2336,20 +2517,17 @@ var HtmlRenderer = (function () {
                 return this.renderSymbol(elem);
             case dom_1.DomType.Break:
                 return this.renderBreak(elem);
-            default:
-                console.warn("DomType ".concat(elem.type, " has no rendering implementation."));
-                return null;
         }
         return null;
     };
     HtmlRenderer.prototype.renderChildren = function (elem, into) {
-        return this.renderElements(elem.children, into);
+        return this.renderElements(elem.children, elem, into);
     };
-    HtmlRenderer.prototype.renderElements = function (elems, into) {
+    HtmlRenderer.prototype.renderElements = function (elems, parent, into) {
         var _this = this;
         if (elems == null)
             return null;
-        var result = elems.map(function (e) { return _this.renderElement(e); }).filter(function (e) { return e != null; });
+        var result = elems.map(function (e) { return _this.renderElement(e, parent); }).filter(function (e) { return e != null; });
         if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var c = result_1[_i];
@@ -2434,7 +2612,7 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
+                if (paragraph.tabs == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
@@ -2484,14 +2662,8 @@ var HtmlRenderer = (function () {
         for (var _i = 0, columns_1 = columns; _i < columns_1.length; _i++) {
             var col = columns_1[_i];
             var colElem = this.htmlDocument.createElement("col");
-            if (col.width) {
-                if (col.width.indexOf('pt') >= 0 || col.width.indexOf('px') >= 0) {
-                    colElem.style.width = col.width;
-                }
-                else {
-                    colElem.style.width = "".concat(col.width, "px");
-                }
-            }
+            if (col.width)
+                colElem.style.width = col.width;
             result.appendChild(colElem);
         }
         return result;
@@ -2530,40 +2702,29 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
-        if (!this.options.noStyleBlock) {
-            var result = selectors + " {\r\n";
-            for (var key in values) {
-                result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
-            }
-            if (cssText)
-                result += ";" + cssText;
-            return result + "}\r\n";
+        var result = selectors + " {\r\n";
+        for (var key in values) {
+            result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
         }
-        var selectorsplits = selectors.split(", ");
-        for (var i = 0; i < selectorsplits.length; i++) {
-            var split = selectorsplits[i];
-            if (this.noCssDict[split] === undefined) {
-                this.noCssDict[split] = {};
-            }
-            for (var key in values) {
-                var camelVal = key.replace(/-([a-z])/g, function (m, w) {
-                    return w.toUpperCase();
-                });
-                this.noCssDict[split][key] = { cssRuleCamel: camelVal, newVal: values[key] };
-            }
-        }
-        return "";
+        if (cssText)
+            result += ";" + cssText;
+        return result + "}\r\n";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
         return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
     };
-    HtmlRenderer.prototype.levelTextToContent = function (text, id) {
+    HtmlRenderer.prototype.levelTextToContent = function (text, suff, id, numformat) {
         var _this = this;
+        var _a;
+        var suffMap = {
+            "tab": "\\9",
+            "space": "\\a0",
+        };
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(".concat(_this.numberingCounter(id, lvl), ")\"");
+            return "\"counter(".concat(_this.numberingCounter(id, lvl), ", ").concat(numformat, ")\"");
         });
-        return '"' + result + '"';
+        return "\"".concat(result).concat((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "", "\"");
     };
     HtmlRenderer.prototype.numFormatToCssValue = function (format) {
         var mapping = {
@@ -2579,149 +2740,6 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.escapeClassName = function (className) {
         return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
-    };
-    HtmlRenderer.prototype.applyCss = function (dict, cont) {
-        var changeList = [];
-        for (var selector in dict) {
-            changeList.push({
-                selector: selector,
-                count: cont.querySelectorAll(selector).length,
-                styles: dict[selector]
-            });
-        }
-        changeList = changeList.sort(function (a, b) {
-            return a.count - b.count;
-        });
-        for (var i = 0; i < changeList.length; i++) {
-            var elements = cont.querySelectorAll(changeList[i].selector);
-            for (var j = 0; j < elements.length; j++) {
-                var element = elements[j];
-                var styles = element.getAttribute("style");
-                var hasStyles = styles !== null;
-                for (var style in changeList[i].styles) {
-                    if (!hasStyles || styles.indexOf(style) === -1) {
-                        var changeEntry = changeList[i].styles[style];
-                        element.style[changeEntry.cssRuleCamel] = changeEntry.newVal;
-                    }
-                }
-            }
-        }
-    };
-    HtmlRenderer.prototype.resolveBaseStyle = function (style, stylesMap) {
-        var baseStyle = stylesMap[style.basedOn];
-        if (!baseStyle) {
-            if (this.options.debug)
-                console.warn("Can't find base style ".concat(style.basedOn));
-            return;
-        }
-        if (baseStyle.basedOnResolved !== true) {
-            this.resolveBaseStyle(baseStyle, stylesMap);
-            baseStyle = stylesMap[style.basedOn];
-        }
-        this.copyStyle(baseStyle, style);
-        style.basedOnResolved = true;
-        stylesMap[style.id] = style;
-    };
-    HtmlRenderer.prototype.copyStyle = function (base, target, overideExistingEntries) {
-        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
-        var _loop_3 = function (baseStyleStyles) {
-            var styleStyleValues = target.styles.filter(function (x) { return x.target == baseStyleStyles.target; });
-            if (styleStyleValues && styleStyleValues.length > 0) {
-                styleStyleValues[0].values = this_3.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values, null, overideExistingEntries);
-            }
-            else {
-                target.styles.push((0, utils_1.clone)(baseStyleStyles));
-            }
-        };
-        var this_3 = this;
-        for (var _i = 0, _a = base.styles; _i < _a.length; _i++) {
-            var baseStyleStyles = _a[_i];
-            _loop_3(baseStyleStyles);
-        }
-    };
-    HtmlRenderer.prototype.replaceAsciiTheme = function (style, addDefault) {
-        if (addDefault === void 0) { addDefault = false; }
-        var translatedFonts = this.document.themesPart.importantFonts;
-        var minorLatinFont = translatedFonts.minorLatin;
-        var hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined;
-        for (var j = 0; j < style.styles.length; j++) {
-            var substyle = style.styles[j];
-            var value = substyle.values["asciiTheme"];
-            var hasFontFamily = substyle.values["font-family"] !== undefined;
-            if (!value) {
-                if (addDefault && !hasFontFamily && hasMinorLatin) {
-                    substyle.values["font-family"] = minorLatinFont;
-                }
-                continue;
-            }
-            delete substyle.values["asciiTheme"];
-            if (hasFontFamily) {
-                continue;
-            }
-            if (value === "minorHAnsi" && translatedFonts.minorLatin) {
-                substyle.values["font-family"] = minorLatinFont;
-            }
-            else if (value === "majorHAnsi" && translatedFonts.minorLatin) {
-                substyle.values["font-family"] = translatedFonts.majorLatin;
-            }
-        }
-    };
-    HtmlRenderer.prototype.isFirstRenderElement = function (elements) {
-        if (elements.length === 1) {
-            return true;
-        }
-        for (var i = elements.length - 2; i >= 0; i--) {
-            var element = elements[i];
-            if (!element.children || element.children.length === 0) {
-                continue;
-            }
-            for (var j = element.children.length - 1; j >= 0; j--) {
-                var run = element.children[j];
-                if (run.type !== dom_1.DomType.Run || !run.children || run.children.length === 0) {
-                    continue;
-                }
-                for (var k = run.children.length - 1; k >= 0; k--) {
-                    var child = run.children[k];
-                    if (child.type === dom_1.DomType.BookmarkStart || child.type === dom_1.DomType.BookmarkEnd || child.type === dom_1.DomType.Break) {
-                        continue;
-                    }
-                    return false;
-                }
-            }
-        }
-        return true;
-    };
-    HtmlRenderer.prototype.createFooter = function (className, sectProps) {
-        var elem = this.htmlDocument.createElement("div");
-        elem.className = "".concat(className, "-footer-container");
-        var footerElem = this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection);
-        if (!footerElem) {
-            return elem;
-        }
-        this.renderElements(footerElem.paragraphs, elem);
-        return elem;
-    };
-    HtmlRenderer.prototype.hasFooter = function (footer) {
-        return (footer.default !== undefined || footer.first !== undefined || footer.even !== undefined);
-    };
-    HtmlRenderer.prototype.getNeededFooter = function (footer, pageWithinSection) {
-        var footerId;
-        if (footer.forceFirstDifferent) {
-            footerId = footer.first;
-        }
-        else if (footer.first && pageWithinSection === 1) {
-            footerId = footer.first;
-        }
-        else if (footer.even && pageWithinSection % 2 === 0) {
-            footerId = footer.even;
-        }
-        else {
-            footerId = footer.default;
-        }
-        if (footerId === undefined || this.document.footerParts[footerId] === undefined) {
-            return undefined;
-        }
-        return this.document.footerParts[footerId];
     };
     return HtmlRenderer;
 }());
@@ -2820,19 +2838,14 @@ var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
 var NumberingPart = (function (_super) {
     __extends(NumberingPart, _super);
-    function NumberingPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function NumberingPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    NumberingPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            Object.assign(_this, (0, numbering_1.parseNumberingPart)(xml, pkg.xmlParser));
-            _this.domNumberings = _this._documentParser.parseNumberingFile(xml);
-        });
+    NumberingPart.prototype.parseXml = function (root) {
+        Object.assign(this, (0, numbering_1.parseNumberingPart)(root, this._package.xmlParser));
+        this.domNumberings = this._documentParser.parseNumberingFile(root);
     };
     return NumberingPart;
 }(part_1.Part));
@@ -2999,8 +3012,27 @@ exports.parseNumberingBulletPicture = parseNumberingBulletPicture;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.XmlParser = void 0;
+exports.XmlParser = exports.serializeXmlString = exports.parseXmlString = void 0;
 var common_1 = __webpack_require__(/*! ../dom/common */ "./src/dom/common.ts");
+function parseXmlString(xmlString, trimXmlDeclaration) {
+    if (trimXmlDeclaration === void 0) { trimXmlDeclaration = false; }
+    if (trimXmlDeclaration)
+        xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    var result = new DOMParser().parseFromString(xmlString, "application/xml");
+    var errorText = hasXmlParserError(result);
+    if (errorText)
+        throw new Error(errorText);
+    return result;
+}
+exports.parseXmlString = parseXmlString;
+function hasXmlParserError(doc) {
+    var _a;
+    return (_a = doc.getElementsByTagName("parsererror")[0]) === null || _a === void 0 ? void 0 : _a.textContent;
+}
+function serializeXmlString(elem) {
+    return new XMLSerializer().serializeToString(elem);
+}
+exports.serializeXmlString = serializeXmlString;
 var XmlParser = (function () {
     function XmlParser() {
     }
@@ -3028,6 +3060,10 @@ var XmlParser = (function () {
         }
         return null;
     };
+    XmlParser.prototype.elementAttr = function (elem, localName, attrLocalName) {
+        var el = this.element(elem, localName);
+        return el ? this.attr(el, attrLocalName) : undefined;
+    };
     XmlParser.prototype.attr = function (elem, localName) {
         for (var i = 0, l = elem.attributes.length; i < l; i++) {
             var a = elem.attributes.item(i);
@@ -3050,6 +3086,8 @@ var XmlParser = (function () {
         if (defaultValue === void 0) { defaultValue = null; }
         var v = this.attr(node, attrName);
         switch (v) {
+            case "true": return true;
+            case "false": return false;
             case "1": return true;
             case "0": return false;
             default: return defaultValue;
@@ -3095,18 +3133,13 @@ exports.StylesPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var StylesPart = (function (_super) {
     __extends(StylesPart, _super);
-    function StylesPart(path, parser) {
-        var _this = _super.call(this, path) || this;
+    function StylesPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    StylesPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "xml"); })
-            .then(function (xml) {
-            _this.styles = _this._documentParser.parseStylesFile(xml);
-        });
+    StylesPart.prototype.parseXml = function (root) {
+        this.styles = this._documentParser.parseStylesFile(root);
     };
     return StylesPart;
 }(part_1.Part));
@@ -3115,10 +3148,10 @@ exports.StylesPart = StylesPart;
 
 /***/ }),
 
-/***/ "./src/themes/themes-part.ts":
-/*!***********************************!*\
-  !*** ./src/themes/themes-part.ts ***!
-  \***********************************/
+/***/ "./src/theme/theme-part.ts":
+/*!*********************************!*\
+  !*** ./src/theme/theme-part.ts ***!
+  \*********************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3138,26 +3171,101 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ThemesPart = void 0;
+exports.ThemePart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
-var ThemesPart = (function (_super) {
-    __extends(ThemesPart, _super);
-    function ThemesPart(path, parser) {
-        var _this = _super.call(this, path) || this;
-        _this._documentParser = parser;
-        return _this;
+var theme_1 = __webpack_require__(/*! ./theme */ "./src/theme/theme.ts");
+var ThemePart = (function (_super) {
+    __extends(ThemePart, _super);
+    function ThemePart(pkg, path) {
+        return _super.call(this, pkg, path) || this;
     }
-    ThemesPart.prototype.load = function (pkg) {
-        var _this = this;
-        return _super.prototype.load.call(this, pkg)
-            .then(function () { return pkg.load(_this.path, "string"); })
-            .then(function (xml) {
-            _this.importantFonts = _this._documentParser.parseThemesFile(xml);
-        });
+    ThemePart.prototype.parseXml = function (root) {
+        this.theme = (0, theme_1.parseTheme)(root, this._package.xmlParser);
     };
-    return ThemesPart;
+    return ThemePart;
 }(part_1.Part));
-exports.ThemesPart = ThemesPart;
+exports.ThemePart = ThemePart;
+
+
+/***/ }),
+
+/***/ "./src/theme/theme.ts":
+/*!****************************!*\
+  !*** ./src/theme/theme.ts ***!
+  \****************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseFontInfo = exports.parseFontScheme = exports.parseColorScheme = exports.parseTheme = exports.DmlTheme = void 0;
+var DmlTheme = (function () {
+    function DmlTheme() {
+    }
+    return DmlTheme;
+}());
+exports.DmlTheme = DmlTheme;
+function parseTheme(elem, xml) {
+    var result = new DmlTheme();
+    var themeElements = xml.element(elem, "themeElements");
+    for (var _i = 0, _a = xml.elements(themeElements); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "clrScheme":
+                result.colorScheme = parseColorScheme(el, xml);
+                break;
+            case "fontScheme":
+                result.fontScheme = parseFontScheme(el, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseTheme = parseTheme;
+function parseColorScheme(elem, xml) {
+    var result = {
+        name: xml.attr(elem, "name"),
+        colors: {}
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var el = _a[_i];
+        var srgbClr = xml.element(el, "srgbClr");
+        var sysClr = xml.element(el, "sysClr");
+        if (srgbClr) {
+            result.colors[el.localName] = xml.attr(srgbClr, "val");
+        }
+        else if (sysClr) {
+            result.colors[el.localName] = xml.attr(sysClr, "lastClr");
+        }
+    }
+    return result;
+}
+exports.parseColorScheme = parseColorScheme;
+function parseFontScheme(elem, xml) {
+    var result = {
+        name: xml.attr(elem, "name"),
+    };
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var el = _a[_i];
+        switch (el.localName) {
+            case "majorFont":
+                result.majorFont = parseFontInfo(el, xml);
+                break;
+            case "minorFont":
+                result.minorFont = parseFontInfo(el, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseFontScheme = parseFontScheme;
+function parseFontInfo(elem, xml) {
+    return {
+        latinTypeface: xml.elementAttr(elem, "latin", "typeface"),
+        eaTypeface: xml.elementAttr(elem, "ea", "typeface"),
+        csTypeface: xml.elementAttr(elem, "cs", "typeface"),
+    };
+}
+exports.parseFontInfo = parseFontInfo;
 
 
 /***/ }),
@@ -3166,11 +3274,20 @@ exports.ThemesPart = ThemesPart;
 /*!**********************!*\
   !*** ./src/utils.ts ***!
   \**********************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports) {
 
 
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.clone = exports.keyBy = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.mergeDeep = exports.isObject = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -3186,6 +3303,17 @@ function splitPath(path) {
     return [folder, fileName];
 }
 exports.splitPath = splitPath;
+function resolvePath(path, base) {
+    try {
+        var prefix = "file://docx/";
+        var url = new URL(path, prefix + base).toString();
+        return url.substr(prefix.length);
+    }
+    catch (_a) {
+        return "".concat(base).concat(path);
+    }
+}
+exports.resolvePath = resolvePath;
 function keyBy(array, by) {
     return array.reduce(function (a, x) {
         a[by(x)] = x;
@@ -3193,22 +3321,33 @@ function keyBy(array, by) {
     }, {});
 }
 exports.keyBy = keyBy;
-function clone(object) {
-    if (object === undefined) {
-        return undefined;
-    }
-    if (object === null) {
-        return null;
-    }
-    try {
-        return JSON.parse(JSON.stringify(object));
-    }
-    catch (e) {
-        console.warn("Couldn't clone object:", object);
-        return object;
-    }
+function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
 }
-exports.clone = clone;
+exports.isObject = isObject;
+function mergeDeep(target) {
+    var _a;
+    var sources = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        sources[_i - 1] = arguments[_i];
+    }
+    if (!sources.length)
+        return target;
+    var source = sources.shift();
+    if (isObject(target) && isObject(source)) {
+        for (var key in source) {
+            if (isObject(source[key])) {
+                var val = (_a = target[key]) !== null && _a !== void 0 ? _a : (target[key] = {});
+                mergeDeep(val, source[key]);
+            }
+            else {
+                target[key] = source[key];
+            }
+        }
+    }
+    return mergeDeep.apply(void 0, __spreadArray([target], sources, false));
+}
+exports.mergeDeep = mergeDeep;
 
 
 /***/ }),
@@ -3222,78 +3361,95 @@ exports.clone = clone;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deobfuscate = exports.WordDocument = void 0;
-var JSZip = __webpack_require__(/*! jszip */ "jszip");
 var relationship_1 = __webpack_require__(/*! ./common/relationship */ "./src/common/relationship.ts");
 var font_table_1 = __webpack_require__(/*! ./font-table/font-table */ "./src/font-table/font-table.ts");
-var package_1 = __webpack_require__(/*! ./common/package */ "./src/common/package.ts");
+var open_xml_package_1 = __webpack_require__(/*! ./common/open-xml-package */ "./src/common/open-xml-package.ts");
 var document_part_1 = __webpack_require__(/*! ./dom/document-part */ "./src/dom/document-part.ts");
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
-var themes_part_1 = __webpack_require__(/*! ./themes/themes-part */ "./src/themes/themes-part.ts");
 var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/footer/footer-part.ts");
+var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/header/header-part.ts");
+var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
+var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
+var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
+var topLevelRels = [
+    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
+    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+    { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+];
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
         this.partsMap = {};
-        this.footerParts = {};
     }
-    WordDocument.load = function (blob, parser) {
+    WordDocument.load = function (blob, parser, options) {
         var d = new WordDocument();
         d._parser = parser;
-        return JSZip.loadAsync(blob)
-            .then(function (zip) {
-            d._package = new package_1.Package(zip);
+        return open_xml_package_1.OpenXmlPackage.load(blob, options)
+            .then(function (pkg) {
+            d._package = pkg;
             return d._package.loadRelationships();
         }).then(function (rels) {
-            var _a;
             d.rels = rels;
-            var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.OfficeDocument; })) !== null && _a !== void 0 ? _a : {
-                id: "",
-                target: "word/document.xml",
-                type: relationship_1.RelationshipTypes.OfficeDocument
-            }, target = _b.target, type = _b.type, id = _b.id;
-            return d.loadRelationshipPart(target, type, id).then(function () { return d; });
-        });
+            var tasks = topLevelRels.map(function (rel) {
+                var _a;
+                var r = (_a = rels.find(function (x) { return x.type === rel.type; })) !== null && _a !== void 0 ? _a : rel;
+                return d.loadRelationshipPart(r.target, r.type);
+            });
+            return Promise.all(tasks);
+        }).then(function () { return d; });
     };
-    WordDocument.prototype.loadRelationshipPart = function (path, type, id) {
+    WordDocument.prototype.save = function (type) {
+        if (type === void 0) { type = "blob"; }
+        return this._package.save(type);
+    };
+    WordDocument.prototype.loadRelationshipPart = function (path, type) {
         var _this = this;
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
-        if (!this._package.exists(path))
+        if (!this._package.get(path))
             return Promise.resolve(null);
         var part = null;
         switch (type) {
             case relationship_1.RelationshipTypes.OfficeDocument:
-                this.documentPart = part = new document_part_1.DocumentPart(path, this._parser);
+                this.documentPart = part = new document_part_1.DocumentPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.FontTable:
-                this.fontTablePart = part = new font_table_1.FontTablePart(path);
-                break;
-            case relationship_1.RelationshipTypes.Footer:
-                part = new footer_part_1.FooterPart(path, this._parser);
-                this.footerParts[id] = part = new footer_part_1.FooterPart(path, this._parser);
+                this.fontTablePart = part = new font_table_1.FontTablePart(this._package, path);
                 break;
             case relationship_1.RelationshipTypes.Numbering:
-                this.numberingPart = part = new numbering_part_1.NumberingPart(path, this._parser);
+                this.numberingPart = part = new numbering_part_1.NumberingPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Styles:
-                this.stylesPart = part = new styles_part_1.StylesPart(path, this._parser);
+                this.stylesPart = part = new styles_part_1.StylesPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Theme:
-                this.themesPart = part = new themes_part_1.ThemesPart(path, this._parser);
+                part = new theme_part_1.ThemePart(this._package, path);
+                break;
+            case relationship_1.RelationshipTypes.Footer:
+                part = new footer_part_1.FooterPart(this._package, path, this._parser);
+                break;
+            case relationship_1.RelationshipTypes.Header:
+                part = new header_part_1.HeaderPart(this._package, path, this._parser);
+                break;
+            case relationship_1.RelationshipTypes.CoreProperties:
+                this.corePropsPart = part = new core_props_part_1.CorePropsPart(this._package, path);
+                break;
+            case relationship_1.RelationshipTypes.ExtendedProperties:
+                this.extendedPropsPart = part = new extended_props_part_1.ExtendedPropsPart(this._package, path);
                 break;
         }
         if (part == null)
             return Promise.resolve(null);
         this.partsMap[path] = part;
         this.parts.push(part);
-        return part.load(this._package).then(function () {
+        return part.load().then(function () {
             if (part.rels == null || part.rels.length == 0)
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart("".concat(folder).concat(rel.target), rel.type, rel.id);
+                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
             });
             return Promise.all(rels).then(function () { return part; });
         });
@@ -3310,12 +3466,14 @@ var WordDocument = (function () {
         return this.loadResource(this.fontTablePart, id, "uint8array")
             .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
     };
-    WordDocument.prototype.loadResource = function (part, id, outputType) {
+    WordDocument.prototype.getPathById = function (part, id) {
         var rel = part.rels.find(function (x) { return x.id == id; });
-        if (rel == null)
-            return Promise.resolve(null);
-        var fodler = (0, utils_1.splitPath)(part.path)[0];
-        return this._package.load(fodler + rel.target, outputType);
+        var folder = (0, utils_1.splitPath)(part.path)[0];
+        return rel ? (0, utils_1.resolvePath)(rel.target, folder) : null;
+    };
+    WordDocument.prototype.loadResource = function (part, id, outputType) {
+        var path = this.getPathById(part, id);
+        return path ? this._package.load(path, outputType) : Promise.resolve(null);
     };
     return WordDocument;
 }());

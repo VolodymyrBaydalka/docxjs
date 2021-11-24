@@ -11,34 +11,38 @@ export interface Options {
     debug: boolean;
     experimental: boolean;
     className: string;
+    trimXmlDeclaration: boolean;
+    ignoreLastRenderedPageBreak: boolean;
     noStyleBlock: boolean;
 }
 
-export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null) {
-    var parser = new DocumentParser();
-    var renderer = new HtmlRenderer(window.document);
+export const defaultOptions: Options = {
+    ignoreHeight: false,
+    ignoreWidth: false,
+    ignoreFonts: false,
+    breakPages: true,
+    debug: false,
+    experimental: false,
+    className: "docx",
+    inWrapper: true,
+    trimXmlDeclaration: true,
+    ignoreLastRenderedPageBreak: true,
+    noStyleBlock: false
+}
 
-    var options = { 
-        ignoreHeight: false,
-        ignoreWidth: false,
-        ignoreFonts: false,
-        breakPages: true,
-        debug: false,
-        experimental: false,
-        className: "docx",
-        inWrapper: true,
-        noStyleBlock: false,
-        ... userOptions
-    };
+export function praseAsync(data: Blob | any, userOptions: Partial<Options> = null): Promise<any>  {
+    const ops = { ...defaultOptions, ...userOptions };
+    return WordDocument.load(data, new DocumentParser(ops), ops);
+}
 
-    parser.ignoreWidth = options.ignoreWidth;
-    parser.debug = options.debug || parser.debug;
+export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null): Promise<any> {
+    const ops = { ...defaultOptions, ...userOptions };
+    const renderer = new HtmlRenderer(window.document);
 
-    renderer.className = options.className || "docx";
-    renderer.inWrapper = options.inWrapper;
-
-    return WordDocument.load(data, parser).then(doc => {
-        renderer.render(doc, bodyContainer, styleContainer, options);
-        return doc;
-    })
+    return WordDocument
+        .load(data, new DocumentParser(ops), ops)
+        .then(doc => {
+            renderer.render(doc, bodyContainer, styleContainer, ops);
+            return doc;
+        });
 }

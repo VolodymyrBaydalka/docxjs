@@ -13,7 +13,9 @@ export enum DomType {
     Tab = "tab",
     Symbol = "symbol",
     BookmarkStart = "bookmarkStart",
-    BookmarkEnd = "bookmarkEnd"
+    BookmarkEnd = "bookmarkEnd",
+    Footer = "footer",
+    Header = "header"
 }
 
 export interface OpenXmlElement {
@@ -65,9 +67,11 @@ export interface IDomTableColumn {
 export interface IDomNumbering {
     id: string;
     level: number;
-    style: Record<string, string>;
+    pStyle: Record<string, string>;
+    rStyle: Record<string, string>;
     levelText?: string;
     format?: string;
+    suff?: string;
     bullet?: NumberingPicBullet;
 }
 
