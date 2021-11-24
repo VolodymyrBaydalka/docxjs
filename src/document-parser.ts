@@ -455,7 +455,7 @@ export class DocumentParser {
                     break;
 
                 case "tab":
-                    result.children.push({ type: DomType.Tab });
+                    result.children.push({ type: DomType.Tab, parent: result });
                     break;
 
                 case "instrText":
@@ -1105,6 +1105,21 @@ export class DocumentParser {
                     break;
             }
         });
+    }
+
+    parseFooterFile(xmlString: string): {root: Element, content: ParagraphElement[]} {
+
+        var xFooter = globalXmlParser.parse(xmlString, this.skipDeclaration);
+        const result: {root: Element, content: ParagraphElement[]} = {root: xFooter, content: []};
+        var paragraphs = xFooter.getElementsByTagName("w:p");
+        if(!paragraphs || paragraphs.length === 0) {
+            return result;
+         }
+        for(let i=0; i<paragraphs.length; i++) {
+            result.content.push(this.parseParagraph(paragraphs[i]) as ParagraphElement);
+        }
+
+        return result;
     }
 
     parseThemesFile(xmlString: string): ImportantFonts {

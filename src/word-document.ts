@@ -10,6 +10,7 @@ import { splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
 import {ThemesPart} from "./themes/themes-part";
+import { FooterPart } from "./footer/footer-part";
 
 export class WordDocument {
     private _package: Package;
@@ -24,6 +25,7 @@ export class WordDocument {
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
     themesPart: ThemesPart;
+    footerParts: { [id: string]: FooterPart } = {};
 
     static load(blob, parser: DocumentParser): Promise<WordDocument> {
         var d = new WordDocument();
@@ -38,16 +40,17 @@ export class WordDocument {
             }).then(rels => {
                 d.rels = rels;
 
-                let { target, type } = rels.find(x => x.type == RelationshipTypes.OfficeDocument) ?? {
+                let { target, type, id } = rels.find(x => x.type == RelationshipTypes.OfficeDocument) ?? {
+                    id: "",
                     target: "word/document.xml",
                     type: RelationshipTypes.OfficeDocument
                 }; //fallback
 
-                return d.loadRelationshipPart(target, type).then(() => d);
+                return d.loadRelationshipPart(target, type, id).then(() => d);
             });
     }
 
-    private loadRelationshipPart(path: string, type: string): Promise<Part> {
+    private loadRelationshipPart(path: string, type: string, id: string): Promise<Part> {
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
 
@@ -63,6 +66,11 @@ export class WordDocument {
 
             case RelationshipTypes.FontTable:
                 this.fontTablePart = part = new FontTablePart(path);
+                break;
+
+            case RelationshipTypes.Footer:
+                part = new FooterPart(path, this._parser);
+                this.footerParts[id] = part = new FooterPart(path, this._parser);
                 break;
 
             case RelationshipTypes.Numbering:
@@ -90,7 +98,7 @@ export class WordDocument {
 
             let [folder] = splitPath(part.path);
             let rels = part.rels.map(rel => {
-                return this.loadRelationshipPart(`${folder}${rel.target}`, rel.type)
+                return this.loadRelationshipPart(`${folder}${rel.target}`, rel.type, rel.id)
             });
 
             return Promise.all(rels).then(() => part);

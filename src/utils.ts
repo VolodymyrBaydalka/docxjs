@@ -24,5 +24,16 @@ export function keyBy<T = any>(array: T[], by: (x: T) => any): Record<any, T> {
 }
 
 export function clone<T>(object: T): T {
-    return JSON.parse(JSON.stringify(object));
+    if(object === undefined) {
+        return undefined;
+    }
+    if(object === null) {
+        return null;
+    }
+    try {
+        return JSON.parse(JSON.stringify(object));
+    } catch(e) {
+        console.warn(`Couldn't clone object:`, object);
+        return object;
+    }
 }

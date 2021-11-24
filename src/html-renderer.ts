@@ -10,10 +10,11 @@ import { ParagraphElement } from './dom/paragraph';
 import { appendClass, clone, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { SectionProperties } from './dom/section';
+import { Section, SectionFooter, SectionProperties, SectionRenderProperties } from './dom/section';
 import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
+import { FooterPart } from "./footer/footer-part";
 
 interface CssChangeObject {
     cssRuleCamel: string;
@@ -191,28 +192,30 @@ export class HtmlRenderer {
 
         elem.className = className;
 
-        if (props) {
-            if (props.pageMargins) {
-                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
-            }
+        if (!props) {
+            return elem;
+        }
 
-            if (props.pageSize) {
-                if (!this.options.ignoreWidth)
-                    elem.style.width = this.renderLength(props.pageSize.width);
-                if (!this.options.ignoreHeight)
-                    elem.style.minHeight = this.renderLength(props.pageSize.height);
-            }
+        if (props.pageMargins) {
+            elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+            elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+            elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+            elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+        }
 
-            if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = `${props.columns.numberOfColumns}`;
-                elem.style.columnGap = this.renderLength(props.columns.space);
+        if (props.pageSize) {
+            if (!this.options.ignoreWidth)
+                elem.style.width = this.renderLength(props.pageSize.width);
+            if (!this.options.ignoreHeight)
+                elem.style.minHeight = this.renderLength(props.pageSize.height);
+        }
 
-                if (props.columns.separator) {
-                    elem.style.columnRule = "1px solid black";
-                }
+        if (props.columns && props.columns.numberOfColumns) {
+            elem.style.columnCount = `${props.columns.numberOfColumns}`;
+            elem.style.columnGap = this.renderLength(props.columns.space);
+
+            if (props.columns.separator) {
+                elem.style.columnRule = "1px solid black";
             }
         }
 
@@ -224,19 +227,24 @@ export class HtmlRenderer {
 
         this.processElement(document);
 
-        for (let section of this.splitBySection(document.children)) {
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
-            this.renderElements(section.elements, document, sectionElement);
+        for (let section of this.splitBySection(document.children, document.props)) {
+            var sectionElement = this.createSection(this.className, section.sectProps);
+            this.renderElements(section.elements, sectionElement);
+            if (this.hasFooter(section.sectProps.footer)) {
+                sectionElement.appendChild(
+                    this.createFooter(this.className, section.sectProps as SectionRenderProperties)
+                );
+            }
             result.push(sectionElement);
         }
 
         return result;
     }
 
-    splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
-        var current = {sectProps: null, elements: []};
+    splitBySection(elements: OpenXmlElement[], lastSectionProps: SectionProperties): Section[] {
+        let current: Section = {sectProps: null, elements: []};
         var result = [current];
-        var sectProps;
+        let sectProps: SectionProperties;
 
         for (let elem of elements) {
             if (elem.type == DomType.Paragraph) {
@@ -244,7 +252,7 @@ export class HtmlRenderer {
                 const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
 
                 if (s?.paragraphProps?.pageBreakBefore) {
-                    current.sectProps = sectProps;
+                    current.sectProps = clone(sectProps);
                     current = {sectProps: null, elements: []};
                     result.push(current);
                 }
@@ -256,7 +264,7 @@ export class HtmlRenderer {
                 continue;
             }
             const p = elem as ParagraphElement;
-            sectProps = p.sectionProps;
+            sectProps = clone(p.sectionProps);
             var pBreakIndex = -1;
             var rBreakIndex = -1;
             if (this.options.breakPages && p.children) {
@@ -272,7 +280,9 @@ export class HtmlRenderer {
                 }
             }
             if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
-                current.sectProps = sectProps;
+                if (sectProps) {
+                    current.sectProps = clone(sectProps);
+                }
                 current = {sectProps: null, elements: []};
                 if (pBreakIndex === 0) {
                     current.elements.push(elem);
@@ -306,18 +316,44 @@ export class HtmlRenderer {
             breakRun.children = runChildren.slice(rBreakIndex);
         }
 
-        let currentSectProps = null;
 
+        if (result.length > 0) {
+            // The last sections props are located in the body itself
+            result[result.length - 1].sectProps = lastSectionProps;
+        }
+
+        let currentSectProps = null;
         for (let i = result.length - 1; i >= 0; i--) {
-            if (result[i].sectProps == null) {
-                result[i].sectProps = currentSectProps;
+            if (result[i].sectProps === null) {
+                result[i].sectProps = clone(currentSectProps);
             }
             else {
-                currentSectProps = result[i].sectProps
+                currentSectProps = clone(result[i].sectProps);
             }
         }
 
+        this.addSectionInnerPageNums(result);
         return result;
+    }
+
+    private addSectionInnerPageNums(result: Section[]) {
+        // Add Section inner page Count to Sections
+        let lastSectionId: string = "";
+        let sectiontPageCount: number = 0;
+        for (let j = 0; j < result.length; j++) {
+            const sectProps = result[j].sectProps;
+            if (sectProps === null) {
+                continue;
+            }
+            if (sectProps.id !== lastSectionId) {
+                lastSectionId = sectProps.id;
+                sectiontPageCount = 1;
+            }
+            else {
+                sectiontPageCount++;
+            }
+            (sectProps as SectionRenderProperties).pageWithinSection = sectiontPageCount;
+        }
     }
 
     renderLength(l: Length): string {
@@ -335,12 +371,13 @@ export class HtmlRenderer {
     renderDefaultStyle() {
         var c = this.className;
         var styleText = `.${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-                .${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-                .${c} { color: black; }
-                section.${c} { box-sizing: border-box; }
-                .${c} table { border-collapse: collapse; }
-                .${c} table td, .${c} table th { vertical-align: top; }
-                .${c} p { margin: 0pt; }`;
+.${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c} { color: black; }
+section.${c} { box-sizing: border-box; position: relative; }
+${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%; padding: inherit; box-sizing: border-box; }
+.${c} table { border-collapse: collapse; }
+.${c} table td, .${c} table th { vertical-align: top; }
+.${c} p { margin: 0pt; }`;
         if (this.options.noStyleBlock) {
             this.noCssDict[`.${c}-wrapper`] = {
                 "background": {cssRuleCamel: "background", newVal: "gray"},
@@ -360,6 +397,15 @@ export class HtmlRenderer {
             };
             this.noCssDict[`section.${c}`] = {
                 "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
+                "position": {cssRuleCamel: "position", newVal: "relative"}
+            };
+            this.noCssDict[`.${c}-footer-container`] = {
+                "bottom": {cssRuleCamel: "bottom", newVal: "0px"},
+                "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
+                "left": {cssRuleCamel: "left", newVal: "0px"},
+                "padding": {cssRuleCamel: "padding", newVal: "inherit"},
+                "position": {cssRuleCamel: "position", newVal: "absolute"},
+                "width": {cssRuleCamel: "width", newVal: "100%"}
             };
             this.noCssDict[`.${c} table`] = {
                 "border-collapse": {cssRuleCamel: "borderCollapse", newVal: "collapse"},
@@ -373,7 +419,10 @@ export class HtmlRenderer {
             this.noCssDict[`.${c} p`] = {
                 "margin": {cssRuleCamel: "margin", newVal: "0pt"},
             };
-
+            if(this.options.experimental) {
+                styleText +=`\n.${c} p { word-spacing: -0.55pt; }`;
+                this.noCssDict[`.${c} p`]["word-spacing"] = {cssRuleCamel: "wordSpacing", newVal: "-0.55pt"};
+            }
         }
         return createStyleElement(styleText);
     }
@@ -539,7 +588,7 @@ export class HtmlRenderer {
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: OpenXmlElement, parent: OpenXmlElement): Node {
+    renderElement(elem: OpenXmlElement): Node {
         switch (elem.type) {
             case DomType.Paragraph:
                 return this.renderParagraph(<ParagraphElement>elem);
@@ -592,14 +641,14 @@ export class HtmlRenderer {
     }
 
     renderChildren(elem: OpenXmlElement, into?: HTMLElement): Node[] {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     }
 
-    renderElements(elems: OpenXmlElement[], parent: OpenXmlElement, into?: HTMLElement): Node[] {
+    renderElements(elems: OpenXmlElement[], into?: HTMLElement): Node[] {
         if (elems == null)
             return null;
 
-        var result = elems.map(e => this.renderElement(e, parent)).filter(e => e != null);
+        var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
 
         if (into)
             for (let c of result)
@@ -714,7 +763,7 @@ export class HtmlRenderer {
             setTimeout(() => {
                 var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
 
-                if (paragraph.tabs == null)
+                if (paragraph?.tabs == null)
                     return;
 
                 paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
@@ -784,7 +833,8 @@ export class HtmlRenderer {
             if (col.width) {
                 if (col.width.indexOf('pt') >= 0 || col.width.indexOf('px') >= 0) {
                     colElem.style.width = col.width;
-                } else {
+                }
+                else {
                     colElem.style.width = `${col.width}px`;
                 }
             }
@@ -1010,6 +1060,44 @@ export class HtmlRenderer {
             }
         }
         return true;
+    }
+
+    private createFooter(className: string, sectProps: SectionRenderProperties): HTMLElement {
+        const elem = this.htmlDocument.createElement("div");
+        elem.className = `${className}-footer-container`;
+        const footerElem: FooterPart =
+            this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection)
+        if(!footerElem) {
+            return elem;
+        }
+        this.renderElements(footerElem.paragraphs, elem);
+
+        return elem;
+    }
+
+
+
+    hasFooter(footer: SectionFooter): boolean {
+        return (footer.default !== undefined || footer.first !== undefined || footer.even !== undefined);
+    }
+
+    getNeededFooter(footer: SectionFooter, pageWithinSection: number): FooterPart {
+        let footerId: string | undefined;
+        if(footer.forceFirstDifferent) {
+            footerId = footer.first;
+        }
+        else if (footer.first && pageWithinSection === 1) {
+            footerId = footer.first;
+        }
+        else if (footer.even && pageWithinSection % 2 === 0) {
+            footerId = footer.even;
+        } else {
+            footerId = footer.default;
+        }
+        if(footerId === undefined || this.document.footerParts[footerId] === undefined) {
+            return undefined;
+        }
+        return  this.document.footerParts[footerId];
     }
 }
 

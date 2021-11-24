@@ -10,6 +10,7 @@ export interface Relationship {
 export enum RelationshipTypes {
     OfficeDocument = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
     FontTable = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable",
+    Footer = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
     Image = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
     Numbering = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering",
     Styles = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",

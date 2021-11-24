@@ -99,6 +99,7 @@ var RelationshipTypes;
 (function (RelationshipTypes) {
     RelationshipTypes["OfficeDocument"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     RelationshipTypes["FontTable"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable";
+    RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
     RelationshipTypes["Image"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
     RelationshipTypes["Numbering"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
     RelationshipTypes["Styles"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
@@ -528,7 +529,7 @@ var DocumentParser = (function () {
                     });
                     break;
                 case "tab":
-                    result.children.push({ type: dom_1.DomType.Tab });
+                    result.children.push({ type: dom_1.DomType.Tab, parent: result });
                     break;
                 case "instrText":
                     result.instrText = c.textContent;
@@ -1056,6 +1057,18 @@ var DocumentParser = (function () {
                     break;
             }
         });
+    };
+    DocumentParser.prototype.parseFooterFile = function (xmlString) {
+        var xFooter = xml_parser_1.default.parse(xmlString, this.skipDeclaration);
+        var result = { root: xFooter, content: [] };
+        var paragraphs = xFooter.getElementsByTagName("w:p");
+        if (!paragraphs || paragraphs.length === 0) {
+            return result;
+        }
+        for (var i = 0; i < paragraphs.length; i++) {
+            result.content.push(this.parseParagraph(paragraphs[i]));
+        }
+        return result;
     };
     DocumentParser.prototype.parseThemesFile = function (xmlString) {
         var result = {};
@@ -1638,7 +1651,8 @@ var SectionType;
     SectionType["OddPage"] = "oddPage";
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
-    var section = {};
+    var section = { footer: {} };
+    section.id = xml.attr(elem, "rsidSect");
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
         var e = _a[_i];
         switch (e.localName) {
@@ -1666,6 +1680,26 @@ function parseSectionProperties(elem, xml) {
             case "cols":
                 section.columns = parseColumns(e, xml);
                 break;
+            case "footerReference":
+                var footerType = xml.attr(e, "type");
+                var footerId = xml.attr(e, "id");
+                switch (footerType) {
+                    case "default":
+                        section.footer.default = footerId;
+                        break;
+                    case "first":
+                        section.footer.first = footerId;
+                        break;
+                    case "even":
+                        section.footer.even = footerId;
+                        break;
+                }
+                break;
+            case "titlePg":
+                var titlePageVal = xml.attr(e, "val");
+                if (titlePageVal !== "false") {
+                    section.footer.forceFirstDifferent = true;
+                }
         }
     }
     return section;
@@ -1769,6 +1803,56 @@ function parseFont(elem, xmlParser) {
     return result;
 }
 exports.parseFont = parseFont;
+
+
+/***/ }),
+
+/***/ "./src/footer/footer-part.ts":
+/*!***********************************!*\
+  !*** ./src/footer/footer-part.ts ***!
+  \***********************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FooterPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var FooterPart = (function (_super) {
+    __extends(FooterPart, _super);
+    function FooterPart(path, parser) {
+        var _this = _super.call(this, path) || this;
+        _this.paragraphs = [];
+        _this._documentParser = parser;
+        return _this;
+    }
+    FooterPart.prototype.load = function (pkg) {
+        var _this = this;
+        return _super.prototype.load.call(this, pkg)
+            .then(function () { return pkg.load(_this.path, "string"); })
+            .then(function (xml) {
+            var result = _this._documentParser.parseFooterFile(xml);
+            _this.paragraphs = result.content;
+            _this.rootNode = result.root;
+        });
+    };
+    return FooterPart;
+}(part_1.Part));
+exports.FooterPart = FooterPart;
 
 
 /***/ }),
@@ -1941,25 +2025,26 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.createSection = function (className, props) {
         var elem = this.htmlDocument.createElement("section");
         elem.className = className;
-        if (props) {
-            if (props.pageMargins) {
-                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
-            }
-            if (props.pageSize) {
-                if (!this.options.ignoreWidth)
-                    elem.style.width = this.renderLength(props.pageSize.width);
-                if (!this.options.ignoreHeight)
-                    elem.style.minHeight = this.renderLength(props.pageSize.height);
-            }
-            if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
-                elem.style.columnGap = this.renderLength(props.columns.space);
-                if (props.columns.separator) {
-                    elem.style.columnRule = "1px solid black";
-                }
+        if (!props) {
+            return elem;
+        }
+        if (props.pageMargins) {
+            elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+            elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+            elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+            elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+        }
+        if (props.pageSize) {
+            if (!this.options.ignoreWidth)
+                elem.style.width = this.renderLength(props.pageSize.width);
+            if (!this.options.ignoreHeight)
+                elem.style.minHeight = this.renderLength(props.pageSize.height);
+        }
+        if (props.columns && props.columns.numberOfColumns) {
+            elem.style.columnCount = "".concat(props.columns.numberOfColumns);
+            elem.style.columnGap = this.renderLength(props.columns.space);
+            if (props.columns.separator) {
+                elem.style.columnRule = "1px solid black";
             }
         }
         return elem;
@@ -1967,15 +2052,18 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSections = function (document) {
         var result = [];
         this.processElement(document);
-        for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.splitBySection(document.children, document.props); _i < _a.length; _i++) {
             var section = _a[_i];
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
-            this.renderElements(section.elements, document, sectionElement);
+            var sectionElement = this.createSection(this.className, section.sectProps);
+            this.renderElements(section.elements, sectionElement);
+            if (this.hasFooter(section.sectProps.footer)) {
+                sectionElement.appendChild(this.createFooter(this.className, section.sectProps));
+            }
             result.push(sectionElement);
         }
         return result;
     };
-    HtmlRenderer.prototype.splitBySection = function (elements) {
+    HtmlRenderer.prototype.splitBySection = function (elements, lastSectionProps) {
         var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
@@ -1986,7 +2074,7 @@ var HtmlRenderer = (function () {
                 var styleName = elem.styleName;
                 var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
-                    current.sectProps = sectProps;
+                    current.sectProps = (0, utils_1.clone)(sectProps);
                     current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
@@ -1996,7 +2084,7 @@ var HtmlRenderer = (function () {
                 continue;
             }
             var p = elem;
-            sectProps = p.sectionProps;
+            sectProps = (0, utils_1.clone)(p.sectionProps);
             var pBreakIndex = -1;
             var rBreakIndex = -1;
             if (this.options.breakPages && p.children) {
@@ -2012,7 +2100,9 @@ var HtmlRenderer = (function () {
                 }
             }
             if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
-                current.sectProps = sectProps;
+                if (sectProps) {
+                    current.sectProps = (0, utils_1.clone)(sectProps);
+                }
                 current = { sectProps: null, elements: [] };
                 if (pBreakIndex === 0) {
                     current.elements.push(elem);
@@ -2044,16 +2134,38 @@ var HtmlRenderer = (function () {
             elem.children.push(newRun);
             breakRun.children = runChildren.slice(rBreakIndex);
         }
+        if (result.length > 0) {
+            result[result.length - 1].sectProps = lastSectionProps;
+        }
         var currentSectProps = null;
         for (var i = result.length - 1; i >= 0; i--) {
-            if (result[i].sectProps == null) {
-                result[i].sectProps = currentSectProps;
+            if (result[i].sectProps === null) {
+                result[i].sectProps = (0, utils_1.clone)(currentSectProps);
             }
             else {
-                currentSectProps = result[i].sectProps;
+                currentSectProps = (0, utils_1.clone)(result[i].sectProps);
             }
         }
+        this.addSectionInnerPageNums(result);
         return result;
+    };
+    HtmlRenderer.prototype.addSectionInnerPageNums = function (result) {
+        var lastSectionId = "";
+        var sectiontPageCount = 0;
+        for (var j = 0; j < result.length; j++) {
+            var sectProps = result[j].sectProps;
+            if (sectProps === null) {
+                continue;
+            }
+            if (sectProps.id !== lastSectionId) {
+                lastSectionId = sectProps.id;
+                sectiontPageCount = 1;
+            }
+            else {
+                sectiontPageCount++;
+            }
+            sectProps.pageWithinSection = sectiontPageCount;
+        }
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         return l ? "".concat(l.value).concat(l.type) : null;
@@ -2065,7 +2177,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = ".".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n                .").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n                .").concat(c, " { color: black; }\n                section.").concat(c, " { box-sizing: border-box; }\n                .").concat(c, " table { border-collapse: collapse; }\n                .").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n                .").concat(c, " p { margin: 0pt; }");
+        var styleText = ".".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; position: relative; }\n").concat(c, "-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%; padding: inherit; box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; }");
         if (this.options.noStyleBlock) {
             this.noCssDict[".".concat(c, "-wrapper")] = {
                 "background": { cssRuleCamel: "background", newVal: "gray" },
@@ -2085,6 +2197,15 @@ var HtmlRenderer = (function () {
             };
             this.noCssDict["section.".concat(c)] = {
                 "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
+                "position": { cssRuleCamel: "position", newVal: "relative" }
+            };
+            this.noCssDict[".".concat(c, "-footer-container")] = {
+                "bottom": { cssRuleCamel: "bottom", newVal: "0px" },
+                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
+                "left": { cssRuleCamel: "left", newVal: "0px" },
+                "padding": { cssRuleCamel: "padding", newVal: "inherit" },
+                "position": { cssRuleCamel: "position", newVal: "absolute" },
+                "width": { cssRuleCamel: "width", newVal: "100%" }
             };
             this.noCssDict[".".concat(c, " table")] = {
                 "border-collapse": { cssRuleCamel: "borderCollapse", newVal: "collapse" },
@@ -2098,6 +2219,10 @@ var HtmlRenderer = (function () {
             this.noCssDict[".".concat(c, " p")] = {
                 "margin": { cssRuleCamel: "margin", newVal: "0pt" },
             };
+            if (this.options.experimental) {
+                styleText += "\n.".concat(c, " p { word-spacing: -0.55pt; }");
+                this.noCssDict[".".concat(c, " p")]["word-spacing"] = { cssRuleCamel: "wordSpacing", newVal: "-0.55pt" };
+            }
         }
         return createStyleElement(styleText);
     };
@@ -2181,7 +2306,7 @@ var HtmlRenderer = (function () {
         }
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderElement = function (elem, parent) {
+    HtmlRenderer.prototype.renderElement = function (elem) {
         switch (elem.type) {
             case dom_1.DomType.Paragraph:
                 return this.renderParagraph(elem);
@@ -2218,13 +2343,13 @@ var HtmlRenderer = (function () {
         return null;
     };
     HtmlRenderer.prototype.renderChildren = function (elem, into) {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     };
-    HtmlRenderer.prototype.renderElements = function (elems, parent, into) {
+    HtmlRenderer.prototype.renderElements = function (elems, into) {
         var _this = this;
         if (elems == null)
             return null;
-        var result = elems.map(function (e) { return _this.renderElement(e, parent); }).filter(function (e) { return e != null; });
+        var result = elems.map(function (e) { return _this.renderElement(e); }).filter(function (e) { return e != null; });
         if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var c = result_1[_i];
@@ -2309,7 +2434,7 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if (paragraph.tabs == null)
+                if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
@@ -2565,6 +2690,38 @@ var HtmlRenderer = (function () {
             }
         }
         return true;
+    };
+    HtmlRenderer.prototype.createFooter = function (className, sectProps) {
+        var elem = this.htmlDocument.createElement("div");
+        elem.className = "".concat(className, "-footer-container");
+        var footerElem = this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection);
+        if (!footerElem) {
+            return elem;
+        }
+        this.renderElements(footerElem.paragraphs, elem);
+        return elem;
+    };
+    HtmlRenderer.prototype.hasFooter = function (footer) {
+        return (footer.default !== undefined || footer.first !== undefined || footer.even !== undefined);
+    };
+    HtmlRenderer.prototype.getNeededFooter = function (footer, pageWithinSection) {
+        var footerId;
+        if (footer.forceFirstDifferent) {
+            footerId = footer.first;
+        }
+        else if (footer.first && pageWithinSection === 1) {
+            footerId = footer.first;
+        }
+        else if (footer.even && pageWithinSection % 2 === 0) {
+            footerId = footer.even;
+        }
+        else {
+            footerId = footer.default;
+        }
+        if (footerId === undefined || this.document.footerParts[footerId] === undefined) {
+            return undefined;
+        }
+        return this.document.footerParts[footerId];
     };
     return HtmlRenderer;
 }());
@@ -3037,7 +3194,19 @@ function keyBy(array, by) {
 }
 exports.keyBy = keyBy;
 function clone(object) {
-    return JSON.parse(JSON.stringify(object));
+    if (object === undefined) {
+        return undefined;
+    }
+    if (object === null) {
+        return null;
+    }
+    try {
+        return JSON.parse(JSON.stringify(object));
+    }
+    catch (e) {
+        console.warn("Couldn't clone object:", object);
+        return object;
+    }
 }
 exports.clone = clone;
 
@@ -3062,10 +3231,12 @@ var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
 var themes_part_1 = __webpack_require__(/*! ./themes/themes-part */ "./src/themes/themes-part.ts");
+var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/footer/footer-part.ts");
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
         this.partsMap = {};
+        this.footerParts = {};
     }
     WordDocument.load = function (blob, parser) {
         var d = new WordDocument();
@@ -3078,13 +3249,14 @@ var WordDocument = (function () {
             var _a;
             d.rels = rels;
             var _b = (_a = rels.find(function (x) { return x.type == relationship_1.RelationshipTypes.OfficeDocument; })) !== null && _a !== void 0 ? _a : {
+                id: "",
                 target: "word/document.xml",
                 type: relationship_1.RelationshipTypes.OfficeDocument
-            }, target = _b.target, type = _b.type;
-            return d.loadRelationshipPart(target, type).then(function () { return d; });
+            }, target = _b.target, type = _b.type, id = _b.id;
+            return d.loadRelationshipPart(target, type, id).then(function () { return d; });
         });
     };
-    WordDocument.prototype.loadRelationshipPart = function (path, type) {
+    WordDocument.prototype.loadRelationshipPart = function (path, type, id) {
         var _this = this;
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
@@ -3097,6 +3269,10 @@ var WordDocument = (function () {
                 break;
             case relationship_1.RelationshipTypes.FontTable:
                 this.fontTablePart = part = new font_table_1.FontTablePart(path);
+                break;
+            case relationship_1.RelationshipTypes.Footer:
+                part = new footer_part_1.FooterPart(path, this._parser);
+                this.footerParts[id] = part = new footer_part_1.FooterPart(path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Numbering:
                 this.numberingPart = part = new numbering_part_1.NumberingPart(path, this._parser);
@@ -3117,7 +3293,7 @@ var WordDocument = (function () {
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart("".concat(folder).concat(rel.target), rel.type);
+                return _this.loadRelationshipPart("".concat(folder).concat(rel.target), rel.type, rel.id);
             });
             return Promise.all(rels).then(function () { return part; });
         });
