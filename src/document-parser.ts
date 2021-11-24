@@ -862,8 +862,6 @@ export class DocumentParser {
 
     parseDefaultProperties(elem: Element, style: Record<string, string> = null, childStyle: Record<string, string> = null, handler: (prop: Element) => boolean = null): Record<string, string> {
         style = style || {};
-
-
         xml.foreach(elem, c => {
             switch (c.localName) {
                 case "jc":
@@ -1055,7 +1053,7 @@ export class DocumentParser {
             return;
         }
 
-        var asciiTheme = xml.stringAttr(node, "w:asciiTheme");
+        var asciiTheme = xml.stringAttr(node, "asciiTheme");
         if (asciiTheme) {
             style["asciiTheme"] = asciiTheme;
         }
@@ -1160,45 +1158,6 @@ export class DocumentParser {
                     break;
             }
         });
-    }
-
-    parseFooterFile(xmlString: string): {root: Element, content: ParagraphElement[]} {
-
-        var xFooter = globalXmlParser.parse(xmlString, this.skipDeclaration);
-        const result: {root: Element, content: ParagraphElement[]} = {root: xFooter, content: []};
-        var paragraphs = xFooter.getElementsByTagName("w:p");
-        if(!paragraphs || paragraphs.length === 0) {
-            return result;
-         }
-        for(let i=0; i<paragraphs.length; i++) {
-            result.content.push(this.parseParagraph(paragraphs[i]) as ParagraphElement);
-        }
-
-        return result;
-    }
-
-    parseThemesFile(xmlString: string): ImportantFonts {
-        const result: ImportantFonts = {};
-
-        var xthemes = globalXmlParser.parse(xmlString, this.skipDeclaration);
-        var majorFontElements = xthemes.getElementsByTagName("a:majorFont");
-        var minorFontElements = xthemes.getElementsByTagName("a:minorFont");
-        if(majorFontElements && majorFontElements.length === 1) {
-            result.majorLatin = this.parseLatinTypeface(majorFontElements[0]);
-        }
-        if(minorFontElements && minorFontElements.length === 1) {
-            result.minorLatin = this.parseLatinTypeface(minorFontElements[0]);
-        }
-
-        return result;
-    }
-
-    private parseLatinTypeface(fontElement: Element): string {
-        const latinFontElements = fontElement.getElementsByTagName("a:latin");
-        if(latinFontElements && latinFontElements.length === 1) {
-            return latinFontElements[0].getAttribute("typeface") ?? "";
-        }
-        return "";
     }
 }
 

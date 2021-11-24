@@ -9,17 +9,17 @@ import { DocumentPart } from './dom/document-part';
 import { resolvePath, splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
-import { ThemesPart } from "./themes/themes-part";
 import { FooterPart } from "./footer/footer-part";
 import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
 import { CorePropsPart } from "./document-props/core-props-part";
 import { ThemePart } from "./theme/theme-part";
+import { WmlFooter } from "./footer/footer";
 
 const topLevelRels = [
-    { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
-    { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
-    { type: RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+    { type: RelationshipTypes.OfficeDocument, target: "word/document.xml", id: "" },
+    { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml", id: "" },
+    { type: RelationshipTypes.CoreProperties, target: "docProps/core.xml", id: "" },
 ];
 
 export class WordDocument {
@@ -34,9 +34,9 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
-    themesPart: ThemesPart;
     corePropsPart: CorePropsPart;
     extendedPropsPart: ExtendedPropsPart;
+    footer: { [id: string]: WmlFooter } = {};
 
     static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
         var d = new WordDocument();
@@ -53,7 +53,7 @@ export class WordDocument {
 
                 const tasks = topLevelRels.map(rel => {
                     const r = rels.find(x => x.type === rel.type) ?? rel; //fallback                    
-                    return d.loadRelationshipPart(r.target, r.type);
+                    return d.loadRelationshipPart(r.target, r.type, r.id);
                 });
 
                 return Promise.all(tasks);
@@ -64,7 +64,7 @@ export class WordDocument {
         return this._package.save(type);
     }
 
-    private loadRelationshipPart(path: string, type: string): Promise<Part> {
+    private loadRelationshipPart(path: string, type: string, id: string): Promise<Part> {
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
 
@@ -109,10 +109,6 @@ export class WordDocument {
             case RelationshipTypes.ExtendedProperties:
                 this.extendedPropsPart = part = new ExtendedPropsPart(this._package, path);
                 break;
-
-            case RelationshipTypes.Theme:
-                this.themesPart = part = new ThemesPart(path, this._parser);
-                break;
         }
 
         if (part == null)
@@ -122,12 +118,17 @@ export class WordDocument {
         this.parts.push(part);
 
         return part.load().then(() => {
+            if(type === RelationshipTypes.Footer) {
+                const footerElem = (part as FooterPart).footerElement;
+                footerElem.id = id;
+                this.footer[id] = footerElem;
+            }
             if (part.rels == null || part.rels.length == 0)
                 return part;
 
             const [folder] = splitPath(part.path); 
             const rels = part.rels.map(rel => {
-                return this.loadRelationshipPart(resolvePath(rel.target, folder), rel.type)
+                return this.loadRelationshipPart(resolvePath(rel.target, folder), rel.type, rel.id)
             });
 
             return Promise.all(rels).then(() => part);

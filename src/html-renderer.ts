@@ -15,6 +15,8 @@ import { RunElement, RunProperties } from './dom/run';
 import { BookmarkStartElement } from './dom/bookmark';
 import { IDomStyle } from './dom/style';
 import { FooterPart } from "./footer/footer-part";
+import { ThemePart } from "./theme/theme-part";
+import { WmlFooter } from "./footer/footer";
 
 interface CssChangeObject {
     cssRuleCamel: string;
@@ -227,10 +229,15 @@ export class HtmlRenderer {
 
         this.processElement(document);
 
-        for (let section of this.splitBySection(document.children)) {
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+        for (let section of this.splitBySection(document.children, document.props)) {
+            var sectionElement = this.createSection(this.className, section.sectProps);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            this.renderElements(section.elements, document, sectionElement);
+            this.renderElements(section.elements, sectionElement);
+            if (this.hasFooter(section.sectProps.footer)) {
+                sectionElement.appendChild(
+                    this.createFooter(this.className, section.sectProps as SectionRenderProperties)
+                );
+            }
             result.push(sectionElement);
         }
 
@@ -432,8 +439,8 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
                 "white-space": {cssRuleCamel: "whiteSpace", newVal: "preWrap"},
             };
             if(this.options.experimental) {
-                styleText +=`\n.${c} p { word-spacing: -0.55pt; }`;
-                this.noCssDict[`.${c} p`]["word-spacing"] = {cssRuleCamel: "wordSpacing", newVal: "-0.55pt"};
+                styleText +=`\n.${c} p { word-spacing: -0.54pt; }`;
+                this.noCssDict[`.${c} p`]["word-spacing"] = {cssRuleCamel: "wordSpacing", newVal: "-0.54pt"};
             }
         }
 
@@ -1023,8 +1030,9 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
     }
 
     private replaceAsciiTheme(style: IDomStyle, addDefault: boolean = false) {
-        var translatedFonts = this.document.themesPart.importantFonts;
-        const minorLatinFont = translatedFonts.minorLatin;
+        const themePart = this.document.parts.find((x) => x.path.indexOf("theme")>=0) as ThemePart;
+        var translatedFonts = themePart.theme.fontScheme;
+        const minorLatinFont = translatedFonts.minorFont.latinTypeface;
         const hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined
         for (var j = 0; j < style.styles.length; j++) {
             var substyle = style.styles[j];
@@ -1040,11 +1048,11 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             if (hasFontFamily) {
                 continue;
             }
-            if (value === "minorHAnsi" && translatedFonts.minorLatin) {
+            if (value === "minorHAnsi" && minorLatinFont) {
                 substyle.values["font-family"] = minorLatinFont;
             }
-            else if (value === "majorHAnsi" && translatedFonts.minorLatin) {
-                substyle.values["font-family"] = translatedFonts.majorLatin;
+            else if (value === "majorHAnsi" && translatedFonts.majorFont?.latinTypeface) {
+                substyle.values["font-family"] = translatedFonts.majorFont.latinTypeface;
             }
         }
     }
@@ -1077,11 +1085,26 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
 
 
 
+    private createFooter(className: string, sectProps: SectionRenderProperties): HTMLElement {
+        const elem = this.htmlDocument.createElement("div");
+        elem.className = `${className}-footer-container`;
+        const footerElem: WmlFooter =
+            this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection)
+        if(!footerElem) {
+            return elem;
+        }
+        this.renderElements(footerElem.children, elem);
+
+        return elem;
+    }
+
+
+
     hasFooter(footer: SectionFooter): boolean {
         return (footer.default !== undefined || footer.first !== undefined || footer.even !== undefined);
     }
 
-    getNeededFooter(footer: SectionFooter, pageWithinSection: number): FooterPart {
+    getNeededFooter(footer: SectionFooter, pageWithinSection: number): WmlFooter {
         let footerId: string | undefined;
         if(footer.forceFirstDifferent) {
             footerId = footer.first;
@@ -1094,10 +1117,10 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
         } else {
             footerId = footer.default;
         }
-        if(footerId === undefined || this.document.footerParts[footerId] === undefined) {
+        if(footerId === undefined || this.document.footer[footerId] === undefined) {
             return undefined;
         }
-        return  this.document.footerParts[footerId];
+        return  this.document.footer[footerId];
     }
 }
 

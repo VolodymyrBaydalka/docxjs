@@ -600,15 +600,24 @@ var DocumentParser = (function () {
                     });
                     break;
                 case "tab":
-                    result.children.push({ type: dom_1.DomType.Tab });
+                    result.children.push({ type: dom_1.DomType.Tab, parent: result });
                     break;
                 case "instrText":
                     result.instrText = c.textContent;
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
-                    if (d)
-                        result.children = [d];
+                    if (d) {
+                        var newChildren = [];
+                        for (var i = 0; i < result.children.length; i++) {
+                            var rItem = result.children[i];
+                            if (rItem.type === dom_1.DomType.Break) {
+                                newChildren.push(rItem);
+                            }
+                        }
+                        newChildren.push(d);
+                        result.children = newChildren;
+                    }
                     break;
                 case "rPr":
                     _this.parseRunProperties(c, result);
@@ -914,7 +923,10 @@ var DocumentParser = (function () {
                     if (_this.options.ignoreWidth)
                         break;
                 case "tblW":
-                    style["width"] = values.valueOfSize(c, "w");
+                    var tableWidthType = xml.stringAttr(c, "type");
+                    if (tableWidthType !== "auto") {
+                        style["width"] = values.valueOfSize(c, "w");
+                    }
                     break;
                 case "trHeight":
                     _this.parseTrHeight(c, style);
@@ -1029,8 +1041,14 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseFont = function (node, style) {
         var ascii = xml.stringAttr(node, "ascii");
-        if (ascii)
+        if (ascii) {
             style["font-family"] = ascii;
+            return;
+        }
+        var asciiTheme = xml.stringAttr(node, "asciiTheme");
+        if (asciiTheme) {
+            style["asciiTheme"] = asciiTheme;
+        }
     };
     DocumentParser.prototype.parseIndentation = function (node, style) {
         var firstLine = xml.sizeAttr(node, "firstLine");
@@ -1534,6 +1552,7 @@ exports.defaultOptions = {
     inWrapper: true,
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
+    noStyleBlock: false
 };
 function praseAsync(data, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
@@ -1877,7 +1896,8 @@ var SectionType;
     SectionType["OddPage"] = "oddPage";
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
-    var section = {};
+    var section = { footer: {} };
+    section.id = xml.attr(elem, "rsidSect");
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
         var e = _a[_i];
         switch (e.localName) {
@@ -1905,6 +1925,26 @@ function parseSectionProperties(elem, xml) {
             case "cols":
                 section.columns = parseColumns(e, xml);
                 break;
+            case "footerReference":
+                var footerType = xml.attr(e, "type");
+                var footerId = xml.attr(e, "id");
+                switch (footerType) {
+                    case "default":
+                        section.footer.default = footerId;
+                        break;
+                    case "first":
+                        section.footer.first = footerId;
+                        break;
+                    case "even":
+                        section.footer.even = footerId;
+                        break;
+                }
+                break;
+            case "titlePg":
+                var titlePageVal = xml.attr(e, "val");
+                if (titlePageVal !== "false") {
+                    section.footer.forceFirstDifferent = true;
+                }
         }
     }
     return section;
@@ -2061,6 +2101,7 @@ exports.WmlFooter = void 0;
 var dom_1 = __webpack_require__(/*! ../dom/dom */ "./src/dom/dom.ts");
 var WmlFooter = (function () {
     function WmlFooter() {
+        this.id = "";
         this.type = dom_1.DomType.Footer;
         this.children = [];
         this.cssStyle = {};
@@ -2164,6 +2205,7 @@ var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
         this.className = "docx";
+        this.noCssDict = {};
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
@@ -2172,6 +2214,9 @@ var HtmlRenderer = (function () {
         this.className = options.className;
         this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
+        if (options.noStyleBlock) {
+            styleContainer = window.document.createElement("div");
+        }
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
@@ -2185,8 +2230,9 @@ var HtmlRenderer = (function () {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
-        if (!options.ignoreFonts && document.fontTablePart)
+        if (!options.ignoreFonts && document.fontTablePart) {
             this.renderFontTable(document.fontTablePart, styleContainer);
+        }
         var sectionElements = this.renderSections(document.documentPart.body);
         if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
@@ -2195,6 +2241,9 @@ var HtmlRenderer = (function () {
         }
         else {
             appentElements(bodyContainer, sectionElements);
+        }
+        if (options.noStyleBlock) {
+            this.applyCss(this.noCssDict, bodyContainer);
         }
     };
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
@@ -2220,29 +2269,32 @@ var HtmlRenderer = (function () {
         var stylesMap = {};
         for (var _i = 0, _a = styles.filter(function (x) { return x.id != null; }); _i < _a.length; _i++) {
             var style = _a[_i];
+            this.replaceAsciiTheme(style);
+            style.basedOnResolved = !style.basedOn;
             stylesMap[style.id] = style;
         }
         for (var _b = 0, _c = styles.filter(function (x) { return x.basedOn; }); _b < _c.length; _b++) {
             var style = _c[_b];
-            var baseStyle = stylesMap[style.basedOn];
-            if (baseStyle) {
-                var _loop_2 = function (styleValues) {
-                    baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
-                    if (baseValues && baseValues.length > 0)
-                        this_2.copyStyleProperties(baseValues[0].values, styleValues.values);
-                };
-                var this_2 = this, baseValues;
-                for (var _d = 0, _e = style.styles; _d < _e.length; _d++) {
-                    var styleValues = _e[_d];
-                    _loop_2(styleValues);
-                }
+            if (style.basedOnResolved) {
+                continue;
             }
-            else if (this.options.debug)
-                console.warn("Can't find base style ".concat(style.basedOn));
+            this.resolveBaseStyle(style, stylesMap);
         }
-        for (var _f = 0, styles_1 = styles; _f < styles_1.length; _f++) {
-            var style = styles_1[_f];
+        for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
+            var style = styles_1[_d];
+            this.replaceAsciiTheme(style, true);
             style.cssName = this.processClassName(this.escapeClassName(style.id));
+        }
+        var defaultStyles = styles.filter(function (x) { return x.isDefault; });
+        var defaultOverride = (0, utils_1.clone)(defaultStyles[0]);
+        defaultOverride.styles = [];
+        for (var _e = 0, defaultStyles_1 = defaultStyles; _e < defaultStyles_1.length; _e++) {
+            var defaultStyle = defaultStyles_1[_e];
+            this.copyStyle(defaultStyle, defaultOverride);
+        }
+        for (var _f = 0, _g = styles.filter(function (x) { return x.id === null; }); _f < _g.length; _f++) {
+            var style = _g[_f];
+            this.copyStyle(defaultOverride, style, true);
         }
         return stylesMap;
     };
@@ -2274,8 +2326,9 @@ var HtmlRenderer = (function () {
             }
         }
     };
-    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs) {
+    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs, overideExistingEntries) {
         if (attrs === void 0) { attrs = null; }
+        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
         if (!input)
             return output;
         if (output == null)
@@ -2284,33 +2337,35 @@ var HtmlRenderer = (function () {
             attrs = Object.getOwnPropertyNames(input);
         for (var _i = 0, attrs_1 = attrs; _i < attrs_1.length; _i++) {
             var key = attrs_1[_i];
-            if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
+            if (input.hasOwnProperty(key) && (overideExistingEntries || !output.hasOwnProperty(key))) {
                 output[key] = input[key];
+            }
         }
         return output;
     };
     HtmlRenderer.prototype.createSection = function (className, props) {
         var elem = this.htmlDocument.createElement("section");
         elem.className = className;
-        if (props) {
-            if (props.pageMargins) {
-                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
-            }
-            if (props.pageSize) {
-                if (!this.options.ignoreWidth)
-                    elem.style.width = this.renderLength(props.pageSize.width);
-                if (!this.options.ignoreHeight)
-                    elem.style.minHeight = this.renderLength(props.pageSize.height);
-            }
-            if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
-                elem.style.columnGap = this.renderLength(props.columns.space);
-                if (props.columns.separator) {
-                    elem.style.columnRule = "1px solid black";
-                }
+        if (!props) {
+            return elem;
+        }
+        if (props.pageMargins) {
+            elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+            elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+            elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+            elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+        }
+        if (props.pageSize) {
+            if (!this.options.ignoreWidth)
+                elem.style.width = this.renderLength(props.pageSize.width);
+            if (!this.options.ignoreHeight)
+                elem.style.minHeight = this.renderLength(props.pageSize.height);
+        }
+        if (props.columns && props.columns.numberOfColumns) {
+            elem.style.columnCount = "".concat(props.columns.numberOfColumns);
+            elem.style.columnGap = this.renderLength(props.columns.space);
+            if (props.columns.separator) {
+                elem.style.columnRule = "1px solid black";
             }
         }
         return elem;
@@ -2318,11 +2373,14 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSections = function (document) {
         var result = [];
         this.processElement(document);
-        for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.splitBySection(document.children, document.props); _i < _a.length; _i++) {
             var section = _a[_i];
-            var sectionElement = this.createSection(this.className, section.sectProps || document.props);
+            var sectionElement = this.createSection(this.className, section.sectProps);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            this.renderElements(section.elements, document, sectionElement);
+            this.renderElements(section.elements, sectionElement);
+            if (this.hasFooter(section.sectProps.footer)) {
+                sectionElement.appendChild(this.createFooter(this.className, section.sectProps));
+            }
             result.push(sectionElement);
         }
         return result;
@@ -2334,68 +2392,110 @@ var HtmlRenderer = (function () {
             return !this.options.ignoreLastRenderedPageBreak;
         return elem.break == "page";
     };
-    HtmlRenderer.prototype.splitBySection = function (elements) {
+    HtmlRenderer.prototype.splitBySection = function (elements, lastSectionProps) {
         var _this = this;
         var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
+        var sectProps;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
                 var styleName = elem.styleName;
                 var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
-                    current.sectProps = sectProps;
+                    current.sectProps = (0, utils_1.clone)(sectProps);
                     current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
             }
             current.elements.push(elem);
-            if (elem.type == dom_1.DomType.Paragraph) {
-                var p = elem;
-                var sectProps = p.sectionProps;
-                var pBreakIndex = -1;
-                var rBreakIndex = -1;
-                if (this.options.breakPages && p.children) {
-                    pBreakIndex = p.children.findIndex(function (r) {
-                        var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
-                        return rBreakIndex != -1;
-                    });
-                }
-                if (sectProps || pBreakIndex != -1) {
-                    current.sectProps = sectProps;
-                    current = { sectProps: null, elements: [] };
-                    result.push(current);
-                }
-                if (pBreakIndex != -1) {
-                    var breakRun = p.children[pBreakIndex];
-                    var splitRun = rBreakIndex < breakRun.children.length - 1;
-                    if (pBreakIndex < p.children.length - 1 || splitRun) {
-                        var children = elem.children;
-                        var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
-                        elem.children = children.slice(0, pBreakIndex);
-                        current.elements.push(newParagraph);
-                        if (splitRun) {
-                            var runChildren = breakRun.children;
-                            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
-                            elem.children.push(newRun);
-                            breakRun.children = runChildren.slice(rBreakIndex);
-                        }
+            if (elem.type != dom_1.DomType.Paragraph) {
+                continue;
+            }
+            var p = elem;
+            sectProps = (0, utils_1.clone)(p.sectionProps);
+            var pBreakIndex = -1;
+            var rBreakIndex = -1;
+            if (this.options.breakPages && p.children) {
+                pBreakIndex = p.children.findIndex(function (r) {
+                    var _a, _b;
+                    rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
+                    return rBreakIndex != -1;
+                });
+                if (pBreakIndex > 0) {
+                    while (pBreakIndex > 0 && p.children[pBreakIndex - 1].type === dom_1.DomType.BookmarkStart) {
+                        pBreakIndex--;
                     }
                 }
             }
+            if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
+                if (sectProps) {
+                    current.sectProps = (0, utils_1.clone)(sectProps);
+                }
+                current = { sectProps: null, elements: [] };
+                if (pBreakIndex === 0) {
+                    current.elements.push(elem);
+                    result[result.length - 1].elements.pop();
+                }
+                result.push(current);
+            }
+            if (pBreakIndex <= 0 ||
+                !p.children || p.children.length <= pBreakIndex) {
+                continue;
+            }
+            var breakRun = p.children[pBreakIndex];
+            if (!breakRun || !breakRun.children) {
+                continue;
+            }
+            var splitRun = rBreakIndex < breakRun.children.length - 1;
+            if (!(pBreakIndex < p.children.length - 1 || splitRun)) {
+                continue;
+            }
+            var children = elem.children;
+            var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
+            elem.children = children.slice(0, pBreakIndex);
+            current.elements.push(newParagraph);
+            if (!splitRun) {
+                continue;
+            }
+            var runChildren = breakRun.children;
+            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
+            elem.children.push(newRun);
+            breakRun.children = runChildren.slice(rBreakIndex);
+        }
+        if (result.length > 0) {
+            result[result.length - 1].sectProps = lastSectionProps;
         }
         var currentSectProps = null;
         for (var i = result.length - 1; i >= 0; i--) {
-            if (result[i].sectProps == null) {
-                result[i].sectProps = currentSectProps;
+            if (result[i].sectProps === null) {
+                result[i].sectProps = (0, utils_1.clone)(currentSectProps);
             }
             else {
-                currentSectProps = result[i].sectProps;
+                currentSectProps = (0, utils_1.clone)(result[i].sectProps);
             }
         }
+        this.addSectionInnerPageNums(result);
         return result;
+    };
+    HtmlRenderer.prototype.addSectionInnerPageNums = function (result) {
+        var lastSectionId = "";
+        var sectiontPageCount = 0;
+        for (var j = 0; j < result.length; j++) {
+            var sectProps = result[j].sectProps;
+            if (sectProps === null) {
+                continue;
+            }
+            if (sectProps.id !== lastSectionId) {
+                lastSectionId = sectProps.id;
+                sectiontPageCount = 1;
+            }
+            else {
+                sectiontPageCount++;
+            }
+            sectProps.pageWithinSection = sectiontPageCount;
+        }
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         return l ? "".concat(l.value).concat(l.type) : null;
@@ -2407,49 +2507,99 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }\n");
+        var styleText = ".".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; position: relative; }\n").concat(c, "-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%; padding: inherit; box-sizing: border-box; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }");
+        if (this.options.noStyleBlock) {
+            this.noCssDict[".".concat(c, "-wrapper")] = {
+                "background": { cssRuleCamel: "background", newVal: "gray" },
+                "padding": { cssRuleCamel: "padding", newVal: "30px" },
+                "padding-bottom": { cssRuleCamel: "paddingBottom", newVal: "0px" },
+                "display": { cssRuleCamel: "display", newVal: "flex" },
+                "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column" },
+                "align-items": { cssRuleCamel: "alignItems", newVal: "center" }
+            };
+            this.noCssDict[".".concat(c, "-wrapper section.").concat(c)] = {
+                "background": { cssRuleCamel: "background", newVal: "white" },
+                "box-shadow": { cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)" },
+                "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "30px" }
+            };
+            this.noCssDict[".".concat(c)] = {
+                "color": { cssRuleCamel: "color", newVal: "black" },
+            };
+            this.noCssDict["section.".concat(c)] = {
+                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
+                "position": { cssRuleCamel: "position", newVal: "relative" }
+            };
+            this.noCssDict[".".concat(c, "-footer-container")] = {
+                "bottom": { cssRuleCamel: "bottom", newVal: "0px" },
+                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
+                "left": { cssRuleCamel: "left", newVal: "0px" },
+                "padding": { cssRuleCamel: "padding", newVal: "inherit" },
+                "position": { cssRuleCamel: "position", newVal: "absolute" },
+                "width": { cssRuleCamel: "width", newVal: "100%" }
+            };
+            this.noCssDict[".".concat(c, " table")] = {
+                "border-collapse": { cssRuleCamel: "borderCollapse", newVal: "collapse" },
+            };
+            this.noCssDict[".".concat(c, " table td")] = {
+                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
+            };
+            this.noCssDict[".".concat(c, " table th")] = {
+                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
+            };
+            this.noCssDict[".".concat(c, " p")] = {
+                "margin": { cssRuleCamel: "margin", newVal: "0pt" },
+                "min-height": { cssRuleCamel: "minHeight", newVal: "1em" },
+            };
+            this.noCssDict[".".concat(c, " span")] = {
+                "white-space": { cssRuleCamel: "whiteSpace", newVal: "preWrap" },
+            };
+            if (this.options.experimental) {
+                styleText += "\n.".concat(c, " p { word-spacing: -0.54pt; }");
+                this.noCssDict[".".concat(c, " p")]["word-spacing"] = { cssRuleCamel: "wordSpacing", newVal: "-0.54pt" };
+            }
+        }
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
-        var _loop_3 = function () {
-            selector = "p.".concat(this_3.numberingClass(num.id, num.level));
+        var _loop_2 = function () {
+            selector = "p.".concat(this_2.numberingClass(num.id, num.level));
             listStyleType = "none";
             if (num.bullet) {
-                var valiable_1 = "--".concat(this_3.className, "-").concat(num.bullet.src).toLowerCase();
-                styleText += this_3.styleToString("".concat(selector, ":before"), {
+                var valiable_1 = "--".concat(this_2.className, "-").concat(num.bullet.src).toLowerCase();
+                styleText += this_2.styleToString("".concat(selector, ":before"), {
                     "content": "' '",
                     "display": "inline-block",
                     "background": "var(".concat(valiable_1, ")")
                 }, num.bullet.style);
-                this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
+                this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
                     var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else if (num.levelText) {
-                var counter = this_3.numberingCounter(num.id, num.level);
+                var counter = this_2.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_3.styleToString("p.".concat(this_3.numberingClass(num.id, num.level - 1)), {
+                    styleText += this_2.styleToString("p.".concat(this_2.numberingClass(num.id, num.level - 1)), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_3.styleToString("".concat(selector, ":before"), __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+                styleText += this_2.styleToString("".concat(selector, ":before"), __assign({ "content": this_2.levelTextToContent(num.levelText, num.suff, num.id, this_2.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
-                listStyleType = this_3.numFormatToCssValue(num.format);
+                listStyleType = this_2.numFormatToCssValue(num.format);
             }
-            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
+            styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
         };
-        var this_3 = this, selector, listStyleType;
+        var this_2 = this, selector, listStyleType;
         for (var _i = 0, numberings_1 = numberings; _i < numberings_1.length; _i++) {
             var num = numberings_1[_i];
-            _loop_3();
+            _loop_2();
         }
         if (rootCounters.length > 0) {
             styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
@@ -2487,7 +2637,7 @@ var HtmlRenderer = (function () {
         }
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderElement = function (elem, parent) {
+    HtmlRenderer.prototype.renderElement = function (elem) {
         switch (elem.type) {
             case dom_1.DomType.Paragraph:
                 return this.renderParagraph(elem);
@@ -2517,17 +2667,20 @@ var HtmlRenderer = (function () {
                 return this.renderSymbol(elem);
             case dom_1.DomType.Break:
                 return this.renderBreak(elem);
+            default:
+                console.warn("DomType ".concat(elem.type, " has no rendering implementation."));
+                return null;
         }
         return null;
     };
     HtmlRenderer.prototype.renderChildren = function (elem, into) {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     };
-    HtmlRenderer.prototype.renderElements = function (elems, parent, into) {
+    HtmlRenderer.prototype.renderElements = function (elems, into) {
         var _this = this;
         if (elems == null)
             return null;
-        var result = elems.map(function (e) { return _this.renderElement(e, parent); }).filter(function (e) { return e != null; });
+        var result = elems.map(function (e) { return _this.renderElement(e); }).filter(function (e) { return e != null; });
         if (into)
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var c = result_1[_i];
@@ -2612,7 +2765,7 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if (paragraph.tabs == null)
+                if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
@@ -2702,13 +2855,29 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
-        var result = selectors + " {\r\n";
-        for (var key in values) {
-            result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
+        if (!this.options.noStyleBlock) {
+            var result = selectors + " {\r\n";
+            for (var key in values) {
+                result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
+            }
+            if (cssText)
+                result += ";" + cssText;
+            return result + "}\r\n";
         }
-        if (cssText)
-            result += ";" + cssText;
-        return result + "}\r\n";
+        var selectorsplits = selectors.split(", ");
+        for (var i = 0; i < selectorsplits.length; i++) {
+            var split = selectorsplits[i];
+            if (this.noCssDict[split] === undefined) {
+                this.noCssDict[split] = {};
+            }
+            for (var key in values) {
+                var camelVal = key.replace(/-([a-z])/g, function (m, w) {
+                    return w.toUpperCase();
+                });
+                this.noCssDict[split][key] = { cssRuleCamel: camelVal, newVal: values[key] };
+            }
+        }
+        return "";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
         return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
@@ -2740,6 +2909,151 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.escapeClassName = function (className) {
         return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
+    };
+    HtmlRenderer.prototype.applyCss = function (dict, cont) {
+        var changeList = [];
+        for (var selector in dict) {
+            changeList.push({
+                selector: selector,
+                count: cont.querySelectorAll(selector).length,
+                styles: dict[selector]
+            });
+        }
+        changeList = changeList.sort(function (a, b) {
+            return a.count - b.count;
+        });
+        for (var i = 0; i < changeList.length; i++) {
+            var elements = cont.querySelectorAll(changeList[i].selector);
+            for (var j = 0; j < elements.length; j++) {
+                var element = elements[j];
+                var styles = element.getAttribute("style");
+                var hasStyles = styles !== null;
+                for (var style in changeList[i].styles) {
+                    if (!hasStyles || styles.indexOf(style) === -1) {
+                        var changeEntry = changeList[i].styles[style];
+                        element.style[changeEntry.cssRuleCamel] = changeEntry.newVal;
+                    }
+                }
+            }
+        }
+    };
+    HtmlRenderer.prototype.resolveBaseStyle = function (style, stylesMap) {
+        var baseStyle = stylesMap[style.basedOn];
+        if (!baseStyle) {
+            if (this.options.debug)
+                console.warn("Can't find base style ".concat(style.basedOn));
+            return;
+        }
+        if (baseStyle.basedOnResolved !== true) {
+            this.resolveBaseStyle(baseStyle, stylesMap);
+            baseStyle = stylesMap[style.basedOn];
+        }
+        this.copyStyle(baseStyle, style);
+        style.basedOnResolved = true;
+        stylesMap[style.id] = style;
+    };
+    HtmlRenderer.prototype.copyStyle = function (base, target, overideExistingEntries) {
+        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
+        var _loop_3 = function (baseStyleStyles) {
+            var styleStyleValues = target.styles.filter(function (x) { return x.target == baseStyleStyles.target; });
+            if (styleStyleValues && styleStyleValues.length > 0) {
+                styleStyleValues[0].values = this_3.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values, null, overideExistingEntries);
+            }
+            else {
+                target.styles.push((0, utils_1.clone)(baseStyleStyles));
+            }
+        };
+        var this_3 = this;
+        for (var _i = 0, _a = base.styles; _i < _a.length; _i++) {
+            var baseStyleStyles = _a[_i];
+            _loop_3(baseStyleStyles);
+        }
+    };
+    HtmlRenderer.prototype.replaceAsciiTheme = function (style, addDefault) {
+        var _a;
+        if (addDefault === void 0) { addDefault = false; }
+        var themePart = this.document.parts.find(function (x) { return x.path.indexOf("theme") >= 0; });
+        var translatedFonts = themePart.theme.fontScheme;
+        var minorLatinFont = translatedFonts.minorFont.latinTypeface;
+        var hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined;
+        for (var j = 0; j < style.styles.length; j++) {
+            var substyle = style.styles[j];
+            var value = substyle.values["asciiTheme"];
+            var hasFontFamily = substyle.values["font-family"] !== undefined;
+            if (!value) {
+                if (addDefault && !hasFontFamily && hasMinorLatin) {
+                    substyle.values["font-family"] = minorLatinFont;
+                }
+                continue;
+            }
+            delete substyle.values["asciiTheme"];
+            if (hasFontFamily) {
+                continue;
+            }
+            if (value === "minorHAnsi" && minorLatinFont) {
+                substyle.values["font-family"] = minorLatinFont;
+            }
+            else if (value === "majorHAnsi" && ((_a = translatedFonts.majorFont) === null || _a === void 0 ? void 0 : _a.latinTypeface)) {
+                substyle.values["font-family"] = translatedFonts.majorFont.latinTypeface;
+            }
+        }
+    };
+    HtmlRenderer.prototype.isFirstRenderElement = function (elements) {
+        if (elements.length === 1) {
+            return true;
+        }
+        for (var i = elements.length - 2; i >= 0; i--) {
+            var element = elements[i];
+            if (!element.children || element.children.length === 0) {
+                continue;
+            }
+            for (var j = element.children.length - 1; j >= 0; j--) {
+                var run = element.children[j];
+                if (run.type !== dom_1.DomType.Run || !run.children || run.children.length === 0) {
+                    continue;
+                }
+                for (var k = run.children.length - 1; k >= 0; k--) {
+                    var child = run.children[k];
+                    if (child.type === dom_1.DomType.BookmarkStart || child.type === dom_1.DomType.BookmarkEnd || child.type === dom_1.DomType.Break) {
+                        continue;
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+    HtmlRenderer.prototype.createFooter = function (className, sectProps) {
+        var elem = this.htmlDocument.createElement("div");
+        elem.className = "".concat(className, "-footer-container");
+        var footerElem = this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection);
+        if (!footerElem) {
+            return elem;
+        }
+        this.renderElements(footerElem.children, elem);
+        return elem;
+    };
+    HtmlRenderer.prototype.hasFooter = function (footer) {
+        return (footer.default !== undefined || footer.first !== undefined || footer.even !== undefined);
+    };
+    HtmlRenderer.prototype.getNeededFooter = function (footer, pageWithinSection) {
+        var footerId;
+        if (footer.forceFirstDifferent) {
+            footerId = footer.first;
+        }
+        else if (footer.first && pageWithinSection === 1) {
+            footerId = footer.first;
+        }
+        else if (footer.even && pageWithinSection % 2 === 0) {
+            footerId = footer.even;
+        }
+        else {
+            footerId = footer.default;
+        }
+        if (footerId === undefined || this.document.footer[footerId] === undefined) {
+            return undefined;
+        }
+        return this.document.footer[footerId];
     };
     return HtmlRenderer;
 }());
@@ -3287,7 +3601,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeDeep = exports.isObject = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.mergeDeep = exports.isObject = exports.clone = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
@@ -3321,6 +3635,22 @@ function keyBy(array, by) {
     }, {});
 }
 exports.keyBy = keyBy;
+function clone(object) {
+    if (object === undefined) {
+        return undefined;
+    }
+    if (object === null) {
+        return null;
+    }
+    try {
+        return JSON.parse(JSON.stringify(object));
+    }
+    catch (e) {
+        console.warn("Couldn't clone object:", object);
+        return object;
+    }
+}
+exports.clone = clone;
 function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
@@ -3374,14 +3704,15 @@ var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-pr
 var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
 var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
 var topLevelRels = [
-    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
-    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
-    { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml", id: "" },
+    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml", id: "" },
+    { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml", id: "" },
 ];
 var WordDocument = (function () {
     function WordDocument() {
         this.parts = [];
         this.partsMap = {};
+        this.footer = {};
     }
     WordDocument.load = function (blob, parser, options) {
         var d = new WordDocument();
@@ -3395,7 +3726,7 @@ var WordDocument = (function () {
             var tasks = topLevelRels.map(function (rel) {
                 var _a;
                 var r = (_a = rels.find(function (x) { return x.type === rel.type; })) !== null && _a !== void 0 ? _a : rel;
-                return d.loadRelationshipPart(r.target, r.type);
+                return d.loadRelationshipPart(r.target, r.type, r.id);
             });
             return Promise.all(tasks);
         }).then(function () { return d; });
@@ -3404,7 +3735,7 @@ var WordDocument = (function () {
         if (type === void 0) { type = "blob"; }
         return this._package.save(type);
     };
-    WordDocument.prototype.loadRelationshipPart = function (path, type) {
+    WordDocument.prototype.loadRelationshipPart = function (path, type, id) {
         var _this = this;
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
@@ -3445,11 +3776,16 @@ var WordDocument = (function () {
         this.partsMap[path] = part;
         this.parts.push(part);
         return part.load().then(function () {
+            if (type === relationship_1.RelationshipTypes.Footer) {
+                var footerElem = part.footerElement;
+                footerElem.id = id;
+                _this.footer[id] = footerElem;
+            }
             if (part.rels == null || part.rels.length == 0)
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
+                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type, rel.id);
             });
             return Promise.all(rels).then(function () { return part; });
         });
