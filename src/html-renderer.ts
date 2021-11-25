@@ -662,13 +662,21 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderFootnotes(footnoteIds: string[], into: HTMLElement) {
-        var footnotes = footnoteIds.map(id => this.footnoteMap[id]);
-        
-        if (footnotes.length > 0) {
-            var result = this.htmlDocument.createElement("ol");
-            this.renderElements(footnotes, result);
-            into.appendChild(result);
+        var mappedNotes = [];
+        for(let i = 0; i < footnoteIds.length; i++) {
+            const id = footnoteIds[i];
+            const note = this.footnoteMap[id];
+            if(note) {
+                mappedNotes.push(note);
+            }
         }
+
+        if (mappedNotes.length <= 0) {
+            return;
+        }
+        var result = this.htmlDocument.createElement("ol");
+        this.renderElements(mappedNotes, result);
+        into.appendChild(result);
     }
 
     renderElement(elem: OpenXmlElement): Node {
