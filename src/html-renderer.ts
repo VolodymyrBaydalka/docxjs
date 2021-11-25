@@ -17,7 +17,6 @@ import { IDomStyle } from './document/style';
 import { Part } from './common/part';
 import { HeaderPart } from './header/header-part';
 import { FooterPart } from './footer/footer-part';
-import { WmlFootnote } from './footnotes/footnote';
 
 export class HtmlRenderer {
 
@@ -168,7 +167,7 @@ export class HtmlRenderer {
     }
 
     createSection(className: string, props: SectionProperties) {
-        var elem = this.htmlDocument.createElement("section");
+        var elem = this.createElement("section");
 
         elem.className = className;
 
@@ -217,7 +216,7 @@ export class HtmlRenderer {
 
             headerPart && this.renderElements([headerPart.headerElement], sectionElement);
 
-            var contentElement = this.htmlDocument.createElement("article");
+            var contentElement = this.createElement("article");
             this.renderElements(section.elements,contentElement);
             sectionElement.appendChild(contentElement);
 
@@ -519,10 +518,10 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderFootnotes(footnoteIds: string[], into: HTMLElement) {
-        var footnotes = footnoteIds.map(id => this.footnoteMap[id]);
+        var footnotes = footnoteIds.map(id => this.footnoteMap[id]).filter(x => x);
         
         if (footnotes.length > 0) {
-            var result = this.htmlDocument.createElement("ol");
+            var result = this.createElement("ol");
             this.renderElements(footnotes, result);
             into.appendChild(result);
         }
@@ -606,13 +605,13 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderContainer(elem: OpenXmlElement, tagName: string) {
-        var result = this.htmlDocument.createElement(tagName);
+        var result = this.createElement(tagName);
         this.renderChildren(elem, result);
         return result;
     }
 
     renderParagraph(elem: ParagraphElement) {
-        var result = this.htmlDocument.createElement("p");
+        var result = this.createElement("p");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -651,7 +650,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderHyperlink(elem: IDomHyperlink) {
-        var result = this.htmlDocument.createElement("a");
+        var result = this.createElement<HTMLAnchorElement>("a");
 
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
@@ -663,7 +662,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderDrawing(elem: IDomImage) {
-        var result = this.htmlDocument.createElement("div");
+        var result = this.createElement("div");
 
         result.style.display = "inline-block";
         result.style.position = "relative";
@@ -676,7 +675,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderImage(elem: IDomImage) {
-        let result = this.htmlDocument.createElement("img");
+        let result = this.createElement<HTMLImageElement>("img");
 
         this.renderStyleValues(elem.cssStyle, result);
 
@@ -695,28 +694,28 @@ section.${c}>article { margin-bottom: auto; }
 
     renderBreak(elem: BreakElement) {
         if (elem.break == "textWrapping") {
-            return this.htmlDocument.createElement("br");
+            return this.createElement("br");
         }
 
         return null;
     }
 
     renderSymbol(elem: SymbolElement) {
-        var span = this.htmlDocument.createElement("span");
+        var span = this.createElement("span");
         span.style.fontFamily = elem.font;
         span.innerHTML = `&#x${elem.char};`
         return span;
     }
 
     renderFootnoteReference(elem: FootnoteReferenceElement) {
-        var result = this.htmlDocument.createElement("sup");
+        var result = this.createElement("sup");
         this.currentFootnoteIds.push(elem.id); 
         result.textContent = `${this.currentFootnoteIds.length}`;
         return result;
     }
 
     renderTab(elem: OpenXmlElement) {
-        var tabSpan = this.htmlDocument.createElement("span");
+        var tabSpan = this.createElement("span");
 
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
@@ -737,7 +736,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderBookmarkStart(elem: BookmarkStartElement): HTMLElement {
-        var result = this.htmlDocument.createElement("span");
+        var result = this.createElement("span");
         result.id = elem.name;
         return result;
     }
@@ -746,7 +745,7 @@ section.${c}>article { margin-bottom: auto; }
         if (elem.fldCharType || elem.instrText)
             return null;
 
-        var result = this.htmlDocument.createElement("span");
+        var result = this.createElement("span");
 
         if (elem.id)
             result.id = elem.id;
@@ -755,25 +754,16 @@ section.${c}>article { margin-bottom: auto; }
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        if (elem.href) {
-            var link = this.htmlDocument.createElement("a");
-
-            link.href = elem.href;
-            link.appendChild(result);
-
-            return link;
-        }
-        else if (elem.wrapper) {
-            var wrapper = this.htmlDocument.createElement(elem.wrapper);
-            wrapper.appendChild(result);
-            return wrapper;
+        if (elem.verticalAlign) {
+            result.style.verticalAlign = elem.verticalAlign;
+            result.style.fontSize ||= "small";
         }
 
         return result;
     }
 
     renderTable(elem: IDomTable) {
-        let result = this.htmlDocument.createElement("table");
+        let result = this.createElement("table");
 
         if (elem.columns)
             result.appendChild(this.renderTableColumns(elem.columns));
@@ -786,10 +776,10 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderTableColumns(columns: IDomTableColumn[]) {
-        let result = this.htmlDocument.createElement("colGroup");
+        let result = this.createElement("colGroup");
 
         for (let col of columns) {
-            let colElem = this.htmlDocument.createElement("col");
+            let colElem = this.createElement("col");
 
             if (col.width)
                 colElem.style.width = col.width;
@@ -801,7 +791,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderTableRow(elem: OpenXmlElement) {
-        let result = this.htmlDocument.createElement("tr");
+        let result = this.createElement("tr");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -811,7 +801,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderTableCell(elem: IDomTableCell) {
-        let result = this.htmlDocument.createElement("td");
+        let result = this.createElement<HTMLTableCellElement>("td");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -889,6 +879,10 @@ section.${c}>article { margin-bottom: auto; }
 
     escapeClassName(className: string) {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
+    }
+
+    createElement<T extends HTMLElement = HTMLElement>(tagName: string): T {
+        return this.htmlDocument.createElement(tagName) as T;
     }
 }
 
