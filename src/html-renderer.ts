@@ -167,9 +167,7 @@ export class HtmlRenderer {
     }
 
     createSection(className: string, props: SectionProperties) {
-        var elem = this.createElement("section");
-
-        elem.className = className;
+        var elem = this.createElement("section", { className });
 
         if (props) {
             if (props.pageMargins) {
@@ -326,7 +324,8 @@ export class HtmlRenderer {
     }
 
     renderLength(l: Length): string {
-        return l ? `${l.value}${l.type}` : null;
+        return l ? `${l.value.toFixed(2)}${l.type ?? ''}` : null;
+
     }
 
     renderWrapper() {
@@ -881,8 +880,8 @@ section.${c}>article { margin-bottom: auto; }
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
 
-    createElement<T extends HTMLElement = HTMLElement>(tagName: string): T {
-        return this.htmlDocument.createElement(tagName) as T;
+    createElement<T extends HTMLElement = HTMLElement>(tagName: string, props: any = undefined): T {
+        return Object.assign(this.htmlDocument.createElement(tagName), props);
     }
 }
 
@@ -892,9 +891,7 @@ function appentElements(container: HTMLElement, children: HTMLElement[]) {
 }
 
 function removeAllElements(elem: HTMLElement) {
-    while (elem.firstChild) {
-        elem.removeChild(elem.firstChild);
-    }
+    elem.innerHTML = '';
 }
 
 function createStyleElement(cssText: string) {
