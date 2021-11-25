@@ -5,7 +5,7 @@ import { Relationship, RelationshipTypes } from './common/relationship';
 import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
 import { OpenXmlPackage } from './common/open-xml-package';
-import { DocumentPart } from './dom/document-part';
+import { DocumentPart } from './document/document-part';
 import { resolvePath, splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
@@ -14,7 +14,7 @@ import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
 import { CorePropsPart } from "./document-props/core-props-part";
 import { ThemePart } from "./theme/theme-part";
-import { WmlFooter } from "./footer/footer";
+import { FootnotesPart } from "./footnotes/footnotes-part";
 
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml", id: "" },
@@ -34,9 +34,9 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
+    footnotesPart: FootnotesPart;
     corePropsPart: CorePropsPart;
     extendedPropsPart: ExtendedPropsPart;
-    footer: { [id: string]: WmlFooter } = {};
 
     static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
         var d = new WordDocument();
@@ -93,7 +93,7 @@ export class WordDocument {
             case RelationshipTypes.Theme:
                 part = new ThemePart(this._package, path);
                 break;
-    
+        
             case RelationshipTypes.Footer:
                 part = new FooterPart(this._package, path, this._parser);
                 break;
@@ -118,11 +118,6 @@ export class WordDocument {
         this.parts.push(part);
 
         return part.load().then(() => {
-            if(type === RelationshipTypes.Footer) {
-                const footerElem = (part as FooterPart).footerElement;
-                footerElem.id = id;
-                this.footer[id] = footerElem;
-            }
             if (part.rels == null || part.rels.length == 0)
                 return part;
 
@@ -148,6 +143,12 @@ export class WordDocument {
     loadFont(id: string, key: string): PromiseLike<string> {
         return this.loadResource(this.fontTablePart, id, "uint8array")
             .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
+    }
+
+    findPartByRelId(id: string, basePart: Part = null) {
+        var rel = (basePart.rels ?? this.rels).find(r => r.id == id);
+        const folder = basePart ? splitPath(basePart.path)[0] : ''; 
+        return rel ? this.partsMap[resolvePath(rel.target, folder)] : null;
     }
 
     getPathById(part: Part, id: string): string {

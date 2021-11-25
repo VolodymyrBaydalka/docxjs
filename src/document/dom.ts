@@ -15,7 +15,9 @@ export enum DomType {
     BookmarkStart = "bookmarkStart",
     BookmarkEnd = "bookmarkEnd",
     Footer = "footer",
-    Header = "header"
+    Header = "header",
+    FootnoteReference = "footnoteReference", 
+    Footnote = "footnote" 
 }
 
 export interface OpenXmlElement {
@@ -30,6 +32,9 @@ export interface IDomHyperlink extends OpenXmlElement {
     href?: string;
 }
 
+export interface FootnoteReferenceElement extends OpenXmlElement {
+    id: string;
+}
 
 export interface BreakElement extends OpenXmlElement{
     break: "page" | "lastRenderedPageBreak" | "textWrapping";

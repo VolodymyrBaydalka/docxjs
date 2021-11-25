@@ -1,12 +1,12 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
 import { DocumentParser } from "../document-parser";
-import { IDomStyle } from "../document/style";
+import { WmlFootnote } from "./footnote";
 
-export class StylesPart extends Part {
-    styles: IDomStyle[];
-
+export class FootnotesPart extends Part {
     private _documentParser: DocumentParser;
+
+    footnotes: WmlFootnote[]
 
     constructor(pkg: OpenXmlPackage, path: string, parser: DocumentParser) {
         super(pkg, path);
@@ -14,6 +14,6 @@ export class StylesPart extends Part {
     }
 
     parseXml(root: Element) {
-        this.styles = this._documentParser.parseStylesFile(root);     
+        this.footnotes = this._documentParser.parseFootnotes(root);
     }
 }

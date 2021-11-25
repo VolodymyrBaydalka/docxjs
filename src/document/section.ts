@@ -40,11 +40,9 @@ export enum SectionType {
     OddPage = "oddPage",
 }
 
-export interface SectionFooter {
-    forceFirstDifferent?: boolean;
-    default?: string;
-    first?: string;
-    even?: string;
+export interface FooterHeaderReference {
+    id: string;
+    type: string | "first" | "even" | "default";
 }
 
 export interface SectionProperties {
@@ -52,8 +50,10 @@ export interface SectionProperties {
     pageSize: PageSize,
     pageMargins: PageMargins,
     columns: Columns;
-    footer: SectionFooter;
     id: string;
+    footerRefs: FooterHeaderReference[];
+    headerRefs: FooterHeaderReference[];
+    forceFirstFooterHeaderDifferent: boolean;
 }
 
 export interface SectionRenderProperties extends SectionProperties {
@@ -66,7 +66,7 @@ export interface Section {
 }
 
 export function parseSectionProperties(elem: Element, xml: XmlParser): SectionProperties {
-    const section = <SectionProperties>{footer: {}};
+    const section = <SectionProperties>{footerRefs: [], headerRefs: []};
     section.id = xml.attr(elem, "rsidSect");
 
     for (let e of xml.elements(elem)) {
@@ -99,26 +99,20 @@ export function parseSectionProperties(elem: Element, xml: XmlParser): SectionPr
                 section.columns = parseColumns(e, xml);
                 break;
 
-            case "footerReference":
-                const footerType: string = xml.attr(e, "type");
-                const footerId: string = xml.attr(e, "id");
-                switch (footerType) {
-                    case "default":
-                        section.footer.default = footerId;
-                        break;
-                    case "first":
-                        section.footer.first = footerId;
-                        break;
-                    case "even":
-                        section.footer.even = footerId;
-                        break;
-                }
-                break;
             case "titlePg":
                 const titlePageVal: string = xml.attr(e, "val");
                 if(titlePageVal !== "false") {
-                    section.footer.forceFirstDifferent = true;
+                    section.forceFirstFooterHeaderDifferent = true;
                 }
+                break;
+
+            case "headerReference":
+                section.headerRefs.push(parseFooterHeaderReference(e, xml)); 
+                break;
+            
+            case "footerReference":
+                section.footerRefs.push(parseFooterHeaderReference(e, xml)); 
+                break;
         }
     }
 
@@ -137,4 +131,11 @@ function parseColumns(elem: Element, xml: XmlParser): Columns {
                 space: xml.lengthAttr(e, "space")
             })
     };
+}
+
+function parseFooterHeaderReference(elem: Element, xml: XmlParser): FooterHeaderReference {
+    return {
+        id: xml.attr(elem, "id"),
+        type: xml.attr(elem, "type"),
+    }
 }

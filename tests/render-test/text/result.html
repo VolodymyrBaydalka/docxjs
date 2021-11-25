@@ -1,8 +1,9 @@
 <!--docxjs library predefined styles--><style>
   .docx-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-  .docx-wrapper section.docx { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+  .docx-wrapper>section.docx { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
   .docx { color: black; }
-  section.docx { box-sizing: border-box; }
+  section.docx { box-sizing: border-box; display: flex; flex-flow: column nowrap; }
+  section.docx>article { margin-bottom: auto; }
   .docx table { border-collapse: collapse; }
   .docx table td, .docx table th { vertical-align: top; }
   .docx p { margin: 0pt; min-height: 1em; }
@@ -95,4 +96,4 @@
     padding-bottom: 0.00pt;
     padding-right: 5.40pt;
   }
-  </style><div class="docx-wrapper"><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><p class="docx docx_Normal"><span class="docx">Test</span></p><p class="docx docx_Normal"><span class="docx" style="color: rgb(196, 89, 17);">Test color</span></p><p class="docx docx_Normal"><span class="docx"><span> </span>Tab text</span></p><p class="docx docx_Normal" style="text-align: center;"><span class="docx">Text center</span></p><p class="docx docx_Normal" style="text-align: right;"><span class="docx">Text right</span></p><p class="docx docx_Normal" style="margin-top: 0pt; margin-bottom: 8pt; text-align: left;"><span class="docx">     </span><span class="docx">text          text               text</span></p></section></div>
+  </style><div class="docx-wrapper"><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><article><p class="docx docx_Normal"><span class="docx">Test</span></p><p class="docx docx_Normal"><span class="docx" style="color: rgb(196, 89, 17);">Test color</span></p><p class="docx docx_Normal"><span class="docx"><span> </span>Tab text</span></p><p class="docx docx_Normal" style="text-align: center;"><span class="docx">Text center</span></p><p class="docx docx_Normal" style="text-align: right;"><span class="docx">Text right</span></p><p class="docx docx_Normal" style="margin-top: 0pt; margin-bottom: 8pt; text-align: left;"><span class="docx">     </span><span class="docx">text          text               text</span></p></article></section></div>

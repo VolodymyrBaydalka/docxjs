@@ -1,22 +1,25 @@
 import { WordDocument } from './word-document';
 import {
     DomType, IDomTable, IDomNumbering,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement
-} from './dom/dom';
-import { Length, CommonProperties } from './dom/common';
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
+} from './document/dom';
+import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
-import { DocumentElement } from './dom/document';
-import { ParagraphElement } from './dom/paragraph';
+import { ThemePart } from "./theme/theme-part";
+import { WmlFooter } from "./footer/footer";
+import { DocumentElement } from './document/document';
+import { ParagraphElement } from './document/paragraph';
 import { appendClass, clone, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { Section, SectionFooter, SectionProperties, SectionRenderProperties } from './dom/section';
-import { RunElement, RunProperties } from './dom/run';
-import { BookmarkStartElement } from './dom/bookmark';
-import { IDomStyle } from './dom/style';
-import { FooterPart } from "./footer/footer-part";
-import { ThemePart } from "./theme/theme-part";
-import { WmlFooter } from "./footer/footer";
+import { FooterHeaderReference, Section, SectionProperties, SectionRenderProperties } from './document/section';
+import { RunElement, RunProperties } from './document/run';
+import { BookmarkStartElement } from './document/bookmark';
+import { IDomStyle } from './document/style';
+import { Part } from './common/part';
+import { HeaderPart } from './header/header-part';
+import { FooterPart } from './footer/footer-part';
+import { WmlFootnote } from './footnotes/footnote';
 
 interface CssChangeObject {
     cssRuleCamel: string;
@@ -34,6 +37,8 @@ export class HtmlRenderer {
     options: Options;
     noCssDict: { [selector: string]: noCssDictEntry } = {};
     styleMap: any;
+    footnoteMap: any = {};
+    currentFootnoteIds: string[];
 
     constructor(public htmlDocument: Document) {
     }
@@ -66,6 +71,10 @@ export class HtmlRenderer {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
             //styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
+        }
+
+        if (document.footnotesPart) {
+            this.footnoteMap = keyBy(document.footnotesPart.footnotes, x => x.id);
         }
 
         if (!options.ignoreFonts && document.fontTablePart) {
@@ -225,26 +234,48 @@ export class HtmlRenderer {
     }
 
     renderSections(document: DocumentElement): HTMLElement[] {
-        var result = [];
+        const result = [];
 
         this.processElement(document);
 
         for (let section of this.splitBySection(document.children, document.props)) {
-            var sectionElement = this.createSection(this.className, section.sectProps);
+            this.currentFootnoteIds = [];
+            
+            const sectionElement = this.createSection(this.className, section.sectProps);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            this.renderElements(section.elements, sectionElement);
-            if (this.hasFooter(section.sectProps.footer)) {
-                sectionElement.appendChild(
-                    this.createFooter(this.className, section.sectProps as SectionRenderProperties)
-                );
+            
+            var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
+            var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
+
+            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
+
+            var contentElement = this.htmlDocument.createElement("article");
+            this.renderElements(section.elements,contentElement);
+            sectionElement.appendChild(contentElement);
+
+            if (this.options.renderFootnotes) {
+                this.renderFootnotes(this.currentFootnoteIds, sectionElement);
             }
+
+            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
+
             result.push(sectionElement);
         }
 
         return result;
     }
 
-    
+    findHeaderFooter<T extends Part>(refs: FooterHeaderReference[], page: number): T {
+        var ref = refs ? ((page == 0 ? refs.find(x => x.type == "first") : null)
+            ?? (page % 2 ==0 ? refs.find(x => x.type == "even") : null)
+            ?? refs.find(x => x.type == "default")) : null;
+        
+        if (ref == null)
+            return null;
+
+        return this.document.findPartByRelId(ref.id, this.document.documentPart) as T;
+    }
+
     isPageBreakElement(elem: OpenXmlElement): boolean {
         if (elem.type != DomType.Break)
             return false;
@@ -385,10 +416,10 @@ export class HtmlRenderer {
     renderDefaultStyle() {
         var c = this.className;
         var styleText = `.${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-.${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; }
-section.${c} { box-sizing: border-box; position: relative; }
-${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%; padding: inherit; box-sizing: border-box; }
+section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; }
+section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
@@ -402,7 +433,7 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
                 "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column"},
                 "align-items": {cssRuleCamel: "alignItems", newVal: "center"}
             };
-            this.noCssDict[`.${c}-wrapper section.${c}`] = {
+            this.noCssDict[`.${c}-wrapper>section.${c}`] = {
                 "background": {cssRuleCamel: "background", newVal: "white"},
                 "box-shadow": {cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)"},
                 "margin-bottom": {cssRuleCamel: "marginBottom", newVal: "30px"}
@@ -412,15 +443,11 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             };
             this.noCssDict[`section.${c}`] = {
                 "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
-                "position": {cssRuleCamel: "position", newVal: "relative"}
+                "display": {cssRuleCamel: "display", newVal: "flex"},
+                "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column nowrap"},
             };
-            this.noCssDict[`.${c}-footer-container`] = {
-                "bottom": {cssRuleCamel: "bottom", newVal: "0px"},
-                "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
-                "left": {cssRuleCamel: "left", newVal: "0px"},
-                "padding": {cssRuleCamel: "padding", newVal: "inherit"},
-                "position": {cssRuleCamel: "position", newVal: "absolute"},
-                "width": {cssRuleCamel: "width", newVal: "100%"}
+            this.noCssDict[`section.${c}>article`] = {
+                "margin-bottom": {cssRuleCamel: "marginBottom", newVal: "auto"},
             };
             this.noCssDict[`.${c} table`] = {
                 "border-collapse": {cssRuleCamel: "borderCollapse", newVal: "collapse"},
@@ -576,6 +603,7 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
         var stylesMap = this.styleMap;
+        var defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
 
         for (let style of styles) {
             var subStyles = style.styles;
@@ -599,7 +627,7 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
                 else
                     selector += `.${style.cssName} ${subStyle.target}`;
 
-                if (style.isDefault && style.target)
+                if (defautStyles[style.target] == style)
                     selector = `.${this.className} ${style.target}, ` + selector;
 
                 styleText += this.styleToString(selector, subStyle.values);
@@ -607,6 +635,16 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
         }
 
         return createStyleElement(styleText);
+    }
+
+    renderFootnotes(footnoteIds: string[], into: HTMLElement) {
+        var footnotes = footnoteIds.map(id => this.footnoteMap[id]);
+        
+        if (footnotes.length > 0) {
+            var result = this.htmlDocument.createElement("ol");
+            this.renderElements(footnotes, result);
+            into.appendChild(result);
+        }
     }
 
     renderElement(elem: OpenXmlElement): Node {
@@ -653,6 +691,18 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             case DomType.Break:
                 return this.renderBreak(<BreakElement>elem);
 
+            case DomType.Footer:
+                return this.renderContainer(elem, "footer");
+
+            case DomType.Header:
+                return this.renderContainer(elem, "header");
+
+            case DomType.Footnote:
+                return this.renderContainer(elem, "li");
+    
+            case DomType.FootnoteReference:
+                return this.renderFootnoteReference(elem as FootnoteReferenceElement);
+                            
             default:
                 console.warn(`DomType ${elem.type} has no rendering implementation.`);
                 return null;
@@ -675,6 +725,12 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             for (let c of result)
                 into.appendChild(c);
 
+        return result;
+    }
+
+    renderContainer(elem: OpenXmlElement, tagName: string) {
+        var result = this.htmlDocument.createElement(tagName);
+        this.renderChildren(elem, result);
         return result;
     }
 
@@ -773,6 +829,13 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
         span.style.fontFamily = elem.font;
         span.innerHTML = `&#x${elem.char};`
         return span;
+    }
+
+    renderFootnoteReference(elem: FootnoteReferenceElement) {
+        var result = this.htmlDocument.createElement("sup");
+        this.currentFootnoteIds.push(elem.id); 
+        result.textContent = `${this.currentFootnoteIds.length}`;
+        return result;
     }
 
     renderTab(elem: OpenXmlElement) {
@@ -1081,46 +1144,6 @@ ${c}-footer-container { position: absolute; bottom: 0px; left: 0px; width: 100%;
             }
         }
         return true;
-    }
-
-
-
-    private createFooter(className: string, sectProps: SectionRenderProperties): HTMLElement {
-        const elem = this.htmlDocument.createElement("div");
-        elem.className = `${className}-footer-container`;
-        const footerElem: WmlFooter =
-            this.getNeededFooter(sectProps.footer, sectProps.pageWithinSection)
-        if(!footerElem) {
-            return elem;
-        }
-        this.renderElements(footerElem.children, elem);
-
-        return elem;
-    }
-
-
-
-    hasFooter(footer: SectionFooter): boolean {
-        return (footer.default !== undefined || footer.first !== undefined || footer.even !== undefined);
-    }
-
-    getNeededFooter(footer: SectionFooter, pageWithinSection: number): WmlFooter {
-        let footerId: string | undefined;
-        if(footer.forceFirstDifferent) {
-            footerId = footer.first;
-        }
-        else if (footer.first && pageWithinSection === 1) {
-            footerId = footer.first;
-        }
-        else if (footer.even && pageWithinSection % 2 === 0) {
-            footerId = footer.even;
-        } else {
-            footerId = footer.default;
-        }
-        if(footerId === undefined || this.document.footer[footerId] === undefined) {
-            return undefined;
-        }
-        return  this.document.footer[footerId];
     }
 }
 

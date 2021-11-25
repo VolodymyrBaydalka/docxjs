@@ -1,18 +1,19 @@
 import {
     DomType, IDomTable, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement
-} from './dom/dom';
+    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
+} from './document/dom';
 import * as utils from './utils';
-import { DocumentElement } from './dom/document';
-import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './dom/paragraph';
-import { parseSectionProperties } from './dom/section';
+import { DocumentElement } from './document/document';
+import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
+import { parseSectionProperties } from './document/section';
 import globalXmlParser from './parser/xml-parser';
-import { RunElement } from './dom/run';
-import { parseBookmarkEnd, parseBookmarkStart } from './dom/bookmark';
-import { IDomStyle, IDomSubStyle } from './dom/style';
+import { RunElement } from './document/run';
+import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmark';
+import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFooter } from './footer/footer';
 import { WmlHeader } from './header/header';
+import { WmlFootnote } from './footnotes/footnote';
 
 export var autos = {
     shd: "white",
@@ -34,6 +35,20 @@ export class DocumentParser {
             debug: false,
             ...options   
         };
+    }
+
+    parseFootnotes(xmlDoc: Element): WmlFootnote[] {
+        var result = [];
+
+        for (let el of globalXmlParser.elements(xmlDoc, "footnote")) {
+            const footnote = new WmlFootnote();
+            footnote.id = globalXmlParser.attr(el, "id");
+            footnote.footnoteType = globalXmlParser.attr(el, "type");
+            footnote.children = this.parseBodyElements(el);
+            result.push(footnote);
+        }
+
+        return result;
     }
 
     parseFooter(xmlDoc: Element): WmlFooter {
@@ -500,6 +515,13 @@ export class DocumentParser {
 
                 case "tab":
                     result.children.push({ type: DomType.Tab, parent: result });
+                    break;
+
+                case "footnoteReference":
+                    result.children.push(<FootnoteReferenceElement>{ 
+                        type: DomType.FootnoteReference, 
+                        id: xml.stringAttr(c, "id")
+                    });
                     break;
 
                 case "instrText":
