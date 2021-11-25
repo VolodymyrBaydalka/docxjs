@@ -240,14 +240,17 @@ export class HtmlRenderer {
 
         for (let section of this.splitBySection(document.children, document.props)) {
             this.currentFootnoteIds = [];
+            const sectProps: SectionRenderProperties = section.sectProps as SectionRenderProperties;
             
-            const sectionElement = this.createSection(this.className, section.sectProps);
+            const sectionElement = this.createSection(this.className, sectProps);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            
-            var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
-            var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
 
-            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
+            if(this.options.renderHeaders) {
+                const headerPart =  this.findHeaderFooter<HeaderPart>(sectProps, false);
+                if(headerPart && headerPart.headerElement) {
+                    this.renderElements([headerPart.headerElement], sectionElement);
+                }
+            }
 
             var contentElement = this.htmlDocument.createElement("article");
             this.renderElements(section.elements,contentElement);
@@ -257,7 +260,13 @@ export class HtmlRenderer {
                 this.renderFootnotes(this.currentFootnoteIds, sectionElement);
             }
 
-            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
+
+            if(this.options.renderFooters) {
+                const footerPart =  this.findHeaderFooter<FooterPart>(sectProps, true);
+                if(footerPart && footerPart.footerElement) {
+                    this.renderElements([footerPart.footerElement], sectionElement);
+                }
+            }
 
             result.push(sectionElement);
         }
@@ -265,15 +274,30 @@ export class HtmlRenderer {
         return result;
     }
 
-    findHeaderFooter<T extends Part>(refs: FooterHeaderReference[], page: number): T {
-        var ref = refs ? ((page == 0 ? refs.find(x => x.type == "first") : null)
-            ?? (page % 2 ==0 ? refs.find(x => x.type == "even") : null)
-            ?? refs.find(x => x.type == "default")) : null;
+    findHeaderFooter<T extends Part>(sectProps: SectionRenderProperties, getFooter = true): T {
+        const refs = getFooter ? sectProps.footerRefs : sectProps.headerRefs;
+        const page: number = sectProps.pageWithinSection;
+        const first = refs.find(x => x.type == "first") ?? null;
+        const even = refs.find(x => x.type == "even") ?? null;
+        const def = refs.find(x => x.type == "default") ?? null;
+        let refToUse = null;
+        if (sectProps.forceFirstFooterHeaderDifferent && page === 1) {
+            refToUse = first;
+        }
+        else if (page === 1 && first) {
+            refToUse = first;
+        }
+        else if (even && page % 2 === 0) {
+            refToUse = even;
+        }
+        else {
+            refToUse = def;
+        }
         
-        if (ref == null)
+        if (refToUse == null)
             return null;
 
-        return this.document.findPartByRelId(ref.id, this.document.documentPart) as T;
+        return this.document.findPartByRelId(refToUse.id, this.document.documentPart) as T;
     }
 
     isPageBreakElement(elem: OpenXmlElement): boolean {
