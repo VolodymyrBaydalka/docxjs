@@ -3,47 +3,52 @@ import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
 
 export interface Options {
-    trimXmlDeclaration: boolean;
     inWrapper: boolean;
     ignoreWidth: boolean;
     ignoreHeight: boolean;
     ignoreFonts: boolean;
     breakPages: boolean;
-    ignoreLastRenderedPageBreak: boolean;
     debug: boolean;
     experimental: boolean;
     className: string;
+    trimXmlDeclaration: boolean;
+    renderHeaders: boolean;
+    renderFooters: boolean;
+    renderFootnotes: boolean;
+    ignoreLastRenderedPageBreak: boolean;
     keepOrigin: boolean;
 }
 
-export const defaults = {
-    trimXmlDeclaration: false,
-    keepOrigin: false,
+export const defaultOptions: Options = {
     ignoreHeight: false,
     ignoreWidth: false,
     ignoreFonts: false,
     breakPages: true,
-    ignoreLastRenderedPageBreak: true,
     debug: false,
     experimental: false,
     className: "docx",
     inWrapper: true,
+    trimXmlDeclaration: true,
+    ignoreLastRenderedPageBreak: true,
+    renderHeaders: true,
+    renderFooters: true,
+    renderFootnotes: true,
+    keepOrigin: false
 }
 
-export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null) {
-    var parser = new DocumentParser();
-    var renderer = new HtmlRenderer(window.document);
+export function praseAsync(data: Blob | any, userOptions: Partial<Options> = null): Promise<any>  {
+    const ops = { ...defaultOptions, ...userOptions };
+    return WordDocument.load(data, new DocumentParser(ops), ops);
+}
 
-    var options: Options = { 
-        ...defaults,
-        ...userOptions
-    };
+export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null): Promise<any> {
+    const ops = { ...defaultOptions, ...userOptions };
+    const renderer = new HtmlRenderer(window.document);
 
-    Object.assign(parser, options);
-    Object.assign(renderer, options);
-
-    return WordDocument.load(data, parser, options).then(doc => {
-        renderer.render(doc, bodyContainer, styleContainer, options);
-        return doc;
-    })
+    return WordDocument
+        .load(data, new DocumentParser(ops), ops)
+        .then(doc => {
+            renderer.render(doc, bodyContainer, styleContainer, ops);
+            return doc;
+        });
 }

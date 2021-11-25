@@ -40,7 +40,7 @@ export enum SectionType {
 
 export interface FooterHeaderReference {
     id: string;
-    type: string;
+    type: string | "first" | "even" | "default";
 }
 
 export interface SectionProperties {

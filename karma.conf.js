@@ -3,8 +3,8 @@ module.exports = (config) => {
     basePath: '',
     frameworks: ['jasmine'],
     files: [
-      'https://unpkg.com/jszip/dist/jszip.js',
-      'https://unpkg.com/diff',
+      'node_modules/jszip/dist/jszip.js',
+      'node_modules/diff/dist/diff.js',
       'dist/docx-preview.js',
       'tests/**/*spec.js',
       { pattern: 'tests/**/*.docx', included: false },

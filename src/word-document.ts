@@ -14,6 +14,7 @@ import { HeaderPart } from "./header/header-part";
 import { ExtendedPropsPart } from "./document-props/extended-props-part";
 import { CorePropsPart } from "./document-props/core-props-part";
 import { ThemePart } from "./theme/theme-part";
+import { FootnotesPart } from "./footnotes/footnotes-part";
 
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
@@ -33,6 +34,7 @@ export class WordDocument {
     fontTablePart: FontTablePart;
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
+    footnotesPart: FootnotesPart;
     corePropsPart: CorePropsPart;
     extendedPropsPart: ExtendedPropsPart;
 
@@ -92,6 +94,10 @@ export class WordDocument {
                 part = new ThemePart(this._package, path);
                 break;
     
+            case RelationshipTypes.Footnotes:
+                this.footnotesPart = part = new FootnotesPart(this._package, path, this._parser);
+                break;
+        
             case RelationshipTypes.Footer:
                 part = new FooterPart(this._package, path, this._parser);
                 break;
@@ -141,6 +147,12 @@ export class WordDocument {
     loadFont(id: string, key: string): PromiseLike<string> {
         return this.loadResource(this.fontTablePart, id, "uint8array")
             .then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
+    }
+
+    findPartByRelId(id: string, basePart: Part = null) {
+        var rel = (basePart.rels ?? this.rels).find(r => r.id == id);
+        const folder = basePart ? splitPath(basePart.path)[0] : ''; 
+        return rel ? this.partsMap[resolvePath(rel.target, folder)] : null;
     }
 
     getPathById(part: Part, id: string): string {

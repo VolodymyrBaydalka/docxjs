@@ -19,8 +19,14 @@ export class WmlSymbol extends DocxElement {
 export class WmlTab extends DocxElement {
 }
 
+@element("footnoteReference")
+export class WmlFootnoteReference extends DocxElement {
+    @fromAttribute("id")
+    id: string;
+}
 @element("instrText")
 export class WmlInstructionText extends DocxElement {
     @fromText()
     text: string;
 }
+

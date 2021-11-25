@@ -24,13 +24,8 @@ export class DocxEditorCore {
     constructor() {
         this.mutationObserver = new MutationObserver(this.mutationCallback.bind(this)); 
 
-        this.parser = new DocumentParser();
+        this.parser = new DocumentParser({ keepOrigin: true });
         this.renderer = new HtmlRenderer(window.document);
-
-        this.parser.keepOrigin = true;
-        this.renderer.keepOrigin = true;
-
-        //this.renderer.inWrapper = false;
     }
 
     init(contentContainer: HTMLElement, styleContainer: HTMLElement) {
@@ -52,7 +47,8 @@ export class DocxEditorCore {
         });
         this.renderer.render(this.document, this.contentContainer, this.styleContainer, {
             ignoreHeight: true,
-            breakPages: false
+            breakPages: false,
+            keepOrigin: true
         } as any);
 
         this.mutationObserver.observe(this.contentContainer, {

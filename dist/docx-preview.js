@@ -54,14 +54,14 @@ var OpenXmlPackage = (function () {
         if (path === void 0) { path = null; }
         var relsPath = "_rels/.rels";
         if (path != null) {
-            var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
+            var _a = utils_1.splitPath(path), f = _a[0], fn = _a[1];
             relsPath = f + "_rels/" + fn + ".rels";
         }
         return this.load(relsPath)
-            .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
+            .then(function (txt) { return txt ? relationship_1.parseRelationships(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
     };
     OpenXmlPackage.prototype.parseXmlDocument = function (txt) {
-        return (0, xml_parser_1.parseXmlString)(txt, this.options.trimXmlDeclaration);
+        return xml_parser_1.parseXmlString(txt, this.options.trimXmlDeclaration);
     };
     return OpenXmlPackage;
 }());
@@ -104,7 +104,7 @@ var Part = (function () {
         ]);
     };
     Part.prototype.save = function () {
-        this._package.update(this.path, (0, xml_parser_1.serializeXmlString)(this._xmlDocument));
+        this._package.update(this.path, xml_parser_1.serializeXmlString(this._xmlDocument));
     };
     Part.prototype.parseXml = function (root) {
     };
@@ -136,6 +136,7 @@ var RelationshipTypes;
     RelationshipTypes["Settings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings";
     RelationshipTypes["WebSettings"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings";
     RelationshipTypes["Hyperlink"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
+    RelationshipTypes["Footnotes"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes";
     RelationshipTypes["Footer"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer";
     RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
@@ -163,6 +164,7 @@ exports.parseRelationships = parseRelationships;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var document_1 = __webpack_require__(/*! ./document/document */ "./src/document/document.ts");
 var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/document/paragraph.ts");
@@ -176,20 +178,18 @@ var table_row_1 = __webpack_require__(/*! ./document/table-row */ "./src/documen
 var xml_serialize_1 = __webpack_require__(/*! ./parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
+var footnote_1 = __webpack_require__(/*! ./footnotes/footnote */ "./src/footnotes/footnote.ts");
 exports.autos = {
     shd: "white",
     color: "black",
     highlight: "transparent"
 };
 var DocumentParser = (function () {
-    function DocumentParser() {
-        this.skipDeclaration = true;
-        this.ignoreWidth = false;
-        this.debug = false;
-        this.keepOrigin = false;
+    function DocumentParser(options) {
+        this.options = tslib_1.__assign({ ignoreWidth: false, debug: false, keepOrigin: false }, options);
     }
     DocumentParser.prototype.deserialize = function (elem, output) {
-        return (0, xml_serialize_1.deserializeElement)(elem, output, { keepOrigin: this.keepOrigin });
+        return xml_serialize_1.deserializeElement(elem, output, { keepOrigin: this.options.keepOrigin });
     };
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
         var xbody = xml_parser_1.default.element(xmlDoc, "body");
@@ -203,6 +203,16 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseHeader = function (xmlDoc) {
         return this.parseBodyElements(xmlDoc, new header_1.WmlHeader());
+    };
+    DocumentParser.prototype.parseFootnotes = function (xmlDoc) {
+        var result = [];
+        for (var _i = 0, _a = xml_parser_1.default.elements(xmlDoc, "footnote"); _i < _a.length; _i++) {
+            var el = _a[_i];
+            var footnote = this.deserialize(el, new footnote_1.WmlFootnote());
+            this.parseBodyElements(el, footnote);
+            result.push(footnote);
+        }
+        return result;
     };
     DocumentParser.prototype.parseBodyElements = function (elem, output) {
         for (var _i = 0, _a = xml_parser_1.default.elements(elem); _i < _a.length; _i++) {
@@ -259,7 +269,7 @@ var DocumentParser = (function () {
                             target: "p",
                             values: _this.parseDefaultProperties(pPr, {})
                         });
-                        result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(pPr, xml_parser_1.default);
+                        result.paragraphProps = paragraph_1.parseParagraphProperties(pPr, xml_parser_1.default);
                     }
                     break;
             }
@@ -310,14 +320,14 @@ var DocumentParser = (function () {
                         target: "p",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(n, xml_parser_1.default);
+                    result.paragraphProps = paragraph_1.parseParagraphProperties(n, xml_parser_1.default);
                     break;
                 case "rPr":
                     result.styles.push({
                         target: "span",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = (0, run_1.parseRunProperties)(n, xml_parser_1.default);
+                    result.runProps = run_1.parseRunProperties(n, xml_parser_1.default);
                     break;
                 case "tblPr":
                 case "tcPr":
@@ -341,7 +351,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.debug && console.warn("DOCX: Unknown style element: " + n.localName);
+                    _this.options.debug && console.warn("DOCX: Unknown style element: " + n.localName);
             }
         });
         return result;
@@ -505,7 +515,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
         var _this = this;
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, function (c) {
-            if ((0, paragraph_1.parseParagraphProperty)(c, paragraph.props, xml_parser_1.default))
+            if (paragraph_1.parseParagraphProperty(c, paragraph.props, xml_parser_1.default))
                 return true;
             switch (c.localName) {
                 case "pStyle":
@@ -560,7 +570,7 @@ var DocumentParser = (function () {
         return result;
     };
     DocumentParser.prototype.parseRunProperties = function (elem, run) {
-        Object.assign(run.props, (0, run_1.parseRunProperties)(elem, xml_parser_1.default));
+        Object.assign(run.props, run_1.parseRunProperties(elem, xml_parser_1.default));
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, function (c) {
             switch (c.localName) {
                 case "rStyle":
@@ -828,7 +838,7 @@ var DocumentParser = (function () {
                     style["background-color"] = xml.colorAttr(c, "val", null, exports.autos.highlight);
                     break;
                 case "tcW":
-                    if (_this.ignoreWidth)
+                    if (_this.options.ignoreWidth)
                         break;
                 case "tblW":
                     style["width"] = values.valueOfSize(c, "w");
@@ -893,7 +903,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.debug && console.warn("DOCX: Unknown document element: " + c.localName);
+                        _this.options.debug && console.warn("DOCX: Unknown document element: " + c.localName);
                     break;
             }
         });
@@ -1236,12 +1246,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var core_props_1 = __webpack_require__(/*! ./core-props */ "./src/document-props/core-props.ts");
 var CorePropsPart = (function (_super) {
-    (0, tslib_1.__extends)(CorePropsPart, _super);
+    tslib_1.__extends(CorePropsPart, _super);
     function CorePropsPart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     CorePropsPart.prototype.parseXml = function (root) {
-        this.props = (0, core_props_1.parseCoreProps)(root, this._package.xmlParser);
+        this.props = core_props_1.parseCoreProps(root, this._package.xmlParser);
     };
     return CorePropsPart;
 }(part_1.Part));
@@ -1310,12 +1320,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var extended_props_1 = __webpack_require__(/*! ./extended-props */ "./src/document-props/extended-props.ts");
 var ExtendedPropsPart = (function (_super) {
-    (0, tslib_1.__extends)(ExtendedPropsPart, _super);
+    tslib_1.__extends(ExtendedPropsPart, _super);
     function ExtendedPropsPart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     ExtendedPropsPart.prototype.parseXml = function (root) {
-        this.props = (0, extended_props_1.parseExtendedProps)(root, this._package.xmlParser);
+        this.props = extended_props_1.parseExtendedProps(root, this._package.xmlParser);
     };
     return ExtendedPropsPart;
 }(part_1.Part));
@@ -1392,38 +1402,38 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlBookmarkStart = (function (_super) {
-    (0, tslib_1.__extends)(WmlBookmarkStart, _super);
+    tslib_1.__extends(WmlBookmarkStart, _super);
     function WmlBookmarkStart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("id")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("id")
     ], WmlBookmarkStart.prototype, "id", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("name")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("name")
     ], WmlBookmarkStart.prototype, "name", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("colFirst")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("colFirst")
     ], WmlBookmarkStart.prototype, "colFirst", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("colLast")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("colLast")
     ], WmlBookmarkStart.prototype, "colLast", void 0);
-    WmlBookmarkStart = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("bookmarkStart")
+    WmlBookmarkStart = tslib_1.__decorate([
+        xml_serialize_1.element("bookmarkStart")
     ], WmlBookmarkStart);
     return WmlBookmarkStart;
 }(dom_1.DocxElement));
 exports.WmlBookmarkStart = WmlBookmarkStart;
 var WmlBookmarkEnd = (function (_super) {
-    (0, tslib_1.__extends)(WmlBookmarkEnd, _super);
+    tslib_1.__extends(WmlBookmarkEnd, _super);
     function WmlBookmarkEnd() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("id")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("id")
     ], WmlBookmarkEnd.prototype, "id", void 0);
-    WmlBookmarkEnd = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("bookmarkEnd")
+    WmlBookmarkEnd = tslib_1.__decorate([
+        xml_serialize_1.element("bookmarkEnd")
     ], WmlBookmarkEnd);
     return WmlBookmarkEnd;
 }(dom_1.DocxElement));
@@ -1492,31 +1502,31 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlBreak = (function (_super) {
-    (0, tslib_1.__extends)(WmlBreak, _super);
+    tslib_1.__extends(WmlBreak, _super);
     function WmlBreak() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.type = "textWrapping";
         return _this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("type")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("type")
     ], WmlBreak.prototype, "type", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("clear")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("clear")
     ], WmlBreak.prototype, "clear", void 0);
-    WmlBreak = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('br')
+    WmlBreak = tslib_1.__decorate([
+        xml_serialize_1.element('br')
     ], WmlBreak);
     return WmlBreak;
 }(dom_1.DocxElement));
 exports.WmlBreak = WmlBreak;
 var WmlLastRenderedPageBreak = (function (_super) {
-    (0, tslib_1.__extends)(WmlLastRenderedPageBreak, _super);
+    tslib_1.__extends(WmlLastRenderedPageBreak, _super);
     function WmlLastRenderedPageBreak() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlLastRenderedPageBreak = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('lastRenderedPageBreak')
+    WmlLastRenderedPageBreak = tslib_1.__decorate([
+        xml_serialize_1.element('lastRenderedPageBreak')
     ], WmlLastRenderedPageBreak);
     return WmlLastRenderedPageBreak;
 }(dom_1.DocxElement));
@@ -1577,7 +1587,7 @@ function convertPercentage(val) {
 }
 exports.convertPercentage = convertPercentage;
 function parseElementValue(elem) {
-    return (0, xml_parser_1.attr)(elem, "val");
+    return xml_parser_1.attr(elem, "val");
 }
 exports.parseElementValue = parseElementValue;
 
@@ -1596,7 +1606,7 @@ exports.DocumentPart = void 0;
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var DocumentPart = (function (_super) {
-    (0, tslib_1.__extends)(DocumentPart, _super);
+    tslib_1.__extends(DocumentPart, _super);
     function DocumentPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -1626,26 +1636,26 @@ var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var section_1 = __webpack_require__(/*! ./section */ "./src/document/section.ts");
 var WmlDocument = (function (_super) {
-    (0, tslib_1.__extends)(WmlDocument, _super);
+    tslib_1.__extends(WmlDocument, _super);
     function WmlDocument() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlDocument = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("document")
+    WmlDocument = tslib_1.__decorate([
+        xml_serialize_1.element("document")
     ], WmlDocument);
     return WmlDocument;
 }(dom_1.DocxElement));
 exports.WmlDocument = WmlDocument;
 var WmlBody = (function (_super) {
-    (0, tslib_1.__extends)(WmlBody, _super);
+    tslib_1.__extends(WmlBody, _super);
     function WmlBody() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromElement)("sectPr", section_1.parseSectionProperties)
+    tslib_1.__decorate([
+        xml_serialize_1.fromElement("sectPr", section_1.parseSectionProperties)
     ], WmlBody.prototype, "sectionProps", void 0);
-    WmlBody = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("body")
+    WmlBody = tslib_1.__decorate([
+        xml_serialize_1.element("body")
     ], WmlBody);
     return WmlBody;
 }(dom_1.DocxContainer));
@@ -1674,7 +1684,7 @@ var DocxElement = (function () {
 }());
 exports.DocxElement = DocxElement;
 var DocxContainer = (function (_super) {
-    (0, tslib_1.__extends)(DocxContainer, _super);
+    tslib_1.__extends(DocxContainer, _super);
     function DocxContainer() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.children = [];
@@ -1701,18 +1711,18 @@ var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlDrawing = (function (_super) {
-    (0, tslib_1.__extends)(WmlDrawing, _super);
+    tslib_1.__extends(WmlDrawing, _super);
     function WmlDrawing() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlDrawing = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('drawing')
+    WmlDrawing = tslib_1.__decorate([
+        xml_serialize_1.element('drawing')
     ], WmlDrawing);
     return WmlDrawing;
 }(dom_1.DocxContainer));
 exports.WmlDrawing = WmlDrawing;
 var DmlPicture = (function (_super) {
-    (0, tslib_1.__extends)(DmlPicture, _super);
+    tslib_1.__extends(DmlPicture, _super);
     function DmlPicture() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
@@ -1744,35 +1754,35 @@ var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/
 var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlFieldChar = (function (_super) {
-    (0, tslib_1.__extends)(WmlFieldChar, _super);
+    tslib_1.__extends(WmlFieldChar, _super);
     function WmlFieldChar() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)('fldCharType')
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute('fldCharType')
     ], WmlFieldChar.prototype, "type", void 0);
-    WmlFieldChar = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('fldChar')
+    WmlFieldChar = tslib_1.__decorate([
+        xml_serialize_1.element('fldChar')
     ], WmlFieldChar);
     return WmlFieldChar;
 }(dom_1.DocxElement));
 exports.WmlFieldChar = WmlFieldChar;
 var WmlFieldSimple = (function (_super) {
-    (0, tslib_1.__extends)(WmlFieldSimple, _super);
+    tslib_1.__extends(WmlFieldSimple, _super);
     function WmlFieldSimple() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("dirty", common_1.convertBoolean)
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("dirty", common_1.convertBoolean)
     ], WmlFieldSimple.prototype, "dirty", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("fldLock", common_1.convertBoolean)
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("fldLock", common_1.convertBoolean)
     ], WmlFieldSimple.prototype, "lock", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("instr")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("instr")
     ], WmlFieldSimple.prototype, "instruction", void 0);
-    WmlFieldSimple = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('fldSimple')
+    WmlFieldSimple = tslib_1.__decorate([
+        xml_serialize_1.element('fldSimple')
     ], WmlFieldSimple);
     return WmlFieldSimple;
 }(dom_1.DocxContainer));
@@ -1795,18 +1805,18 @@ var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlHyperlink = (function (_super) {
-    (0, tslib_1.__extends)(WmlHyperlink, _super);
+    tslib_1.__extends(WmlHyperlink, _super);
     function WmlHyperlink() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     WmlHyperlink.prototype.parse = function (elem) {
         this.anchor = xml_parser_1.default.attr(elem, "anchor");
     };
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)('anchor')
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute('anchor')
     ], WmlHyperlink.prototype, "anchor", void 0);
-    WmlHyperlink = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('hyperlink')
+    WmlHyperlink = tslib_1.__decorate([
+        xml_serialize_1.element('hyperlink')
     ], WmlHyperlink);
     return WmlHyperlink;
 }(dom_1.DocxContainer));
@@ -1881,15 +1891,15 @@ var bookmarks_1 = __webpack_require__(/*! ./bookmarks */ "./src/document/bookmar
 var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
 var indentation_1 = __webpack_require__(/*! ./indentation */ "./src/document/indentation.ts");
 var WmlParagraph = (function (_super) {
-    (0, tslib_1.__extends)(WmlParagraph, _super);
+    tslib_1.__extends(WmlParagraph, _super);
     function WmlParagraph() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.props = {};
         return _this;
     }
-    WmlParagraph = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("p"),
-        (0, xml_serialize_1.children)(bookmarks_1.WmlBookmarkStart, bookmarks_1.WmlBookmarkEnd, fields_1.WmlFieldSimple)
+    WmlParagraph = tslib_1.__decorate([
+        xml_serialize_1.element("p"),
+        xml_serialize_1.children(bookmarks_1.WmlBookmarkStart, bookmarks_1.WmlBookmarkEnd, fields_1.WmlFieldSimple)
     ], WmlParagraph);
     return WmlParagraph;
 }(dom_1.DocxContainer));
@@ -1911,16 +1921,16 @@ function parseParagraphProperty(elem, props, xml) {
             props.tabs = parseTabs(elem, xml);
             break;
         case "sectPr":
-            props.sectionProps = (0, section_1.parseSectionProperties)(elem, xml);
+            props.sectionProps = section_1.parseSectionProperties(elem, xml);
             break;
         case "numPr":
             props.numbering = parseNumbering(elem, xml);
             break;
         case "spacing":
-            props.lineSpacing = (0, line_spacing_1.parseLineSpacing)(elem, xml);
+            props.lineSpacing = line_spacing_1.parseLineSpacing(elem, xml);
             break;
         case "ind":
-            props.indentation = (0, indentation_1.parseIndentation)(elem, xml);
+            props.indentation = indentation_1.parseIndentation(elem, xml);
             return false;
             break;
         case "textAlignment":
@@ -1942,7 +1952,7 @@ function parseParagraphProperty(elem, props, xml) {
             props.styleId = xml.attr(elem, "val");
             break;
         case "rPr":
-            props.runProps = (0, run_1.parseRunProperties)(elem, xml);
+            props.runProps = run_1.parseRunProperties(elem, xml);
             break;
         default:
             return false;
@@ -1998,15 +2008,15 @@ var drawing_1 = __webpack_require__(/*! ./drawing */ "./src/document/drawing.ts"
 var fields_1 = __webpack_require__(/*! ./fields */ "./src/document/fields.ts");
 var text_1 = __webpack_require__(/*! ./text */ "./src/document/text.ts");
 var WmlRun = (function (_super) {
-    (0, tslib_1.__extends)(WmlRun, _super);
+    tslib_1.__extends(WmlRun, _super);
     function WmlRun() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.props = {};
         return _this;
     }
-    WmlRun = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('r'),
-        (0, xml_serialize_1.children)(text_1.WmlText, text_1.WmlSymbol, text_1.WmlTab, breaks_1.WmlBreak, text_1.WmlInstructionText, fields_1.WmlFieldChar, breaks_1.WmlLastRenderedPageBreak, drawing_1.WmlDrawing)
+    WmlRun = tslib_1.__decorate([
+        xml_serialize_1.element('r'),
+        xml_serialize_1.children(text_1.WmlText, text_1.WmlSymbol, text_1.WmlTab, breaks_1.WmlBreak, text_1.WmlFootnoteReference, text_1.WmlInstructionText, fields_1.WmlFieldChar, breaks_1.WmlLastRenderedPageBreak, drawing_1.WmlDrawing)
     ], WmlRun);
     return WmlRun;
 }(dom_1.DocxContainer));
@@ -2026,7 +2036,7 @@ function parseRunProperty(elem, props, xml) {
             props.styleName = xml.attr(elem, 'val');
             break;
         case 'bdr':
-            props.border = (0, border_1.parseBorder)(elem, xml);
+            props.border = border_1.parseBorder(elem, xml);
             break;
         case 'rFonts':
             props.fonts = parseRunFonts(elem, xml);
@@ -2208,12 +2218,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlTableCell = (function (_super) {
-    (0, tslib_1.__extends)(WmlTableCell, _super);
+    tslib_1.__extends(WmlTableCell, _super);
     function WmlTableCell() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlTableCell = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("tc")
+    WmlTableCell = tslib_1.__decorate([
+        xml_serialize_1.element("tc")
     ], WmlTableCell);
     return WmlTableCell;
 }(dom_1.DocxContainer));
@@ -2235,12 +2245,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlTableRow = (function (_super) {
-    (0, tslib_1.__extends)(WmlTableRow, _super);
+    tslib_1.__extends(WmlTableRow, _super);
     function WmlTableRow() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlTableRow = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("tr")
+    WmlTableRow = tslib_1.__decorate([
+        xml_serialize_1.element("tr")
     ], WmlTableRow);
     return WmlTableRow;
 }(dom_1.DocxContainer));
@@ -2263,32 +2273,32 @@ var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlTable = (function (_super) {
-    (0, tslib_1.__extends)(WmlTable, _super);
+    tslib_1.__extends(WmlTable, _super);
     function WmlTable() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromElement)("tblGrid", parseTableColumns)
+    tslib_1.__decorate([
+        xml_serialize_1.fromElement("tblGrid", parseTableColumns)
     ], WmlTable.prototype, "columns", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromElement)("tblPr", parseTableProperties)
+    tslib_1.__decorate([
+        xml_serialize_1.fromElement("tblPr", parseTableProperties)
     ], WmlTable.prototype, "props", void 0);
-    WmlTable = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("tbl")
+    WmlTable = tslib_1.__decorate([
+        xml_serialize_1.element("tbl")
     ], WmlTable);
     return WmlTable;
 }(dom_1.DocxContainer));
 exports.WmlTable = WmlTable;
 function parseTableProperties(elem) {
     var result = {};
-    for (var _i = 0, _a = (0, xml_parser_1.elements)(elem); _i < _a.length; _i++) {
+    for (var _i = 0, _a = xml_parser_1.elements(elem); _i < _a.length; _i++) {
         var e = _a[_i];
         switch (e.localName) {
             case "jc":
-                result.alignment = (0, xml_parser_1.attr)(e, "val");
+                result.alignment = xml_parser_1.attr(e, "val");
                 break;
             case "tblCaption":
-                result.caption = (0, xml_parser_1.attr)(e, "val");
+                result.caption = xml_parser_1.attr(e, "val");
                 break;
             case "tblLook":
                 result.tableLook = parseTableLook(e);
@@ -2330,62 +2340,76 @@ exports.parseTableColumns = parseTableColumns;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WmlInstructionText = exports.WmlTab = exports.WmlSymbol = exports.WmlText = void 0;
+exports.WmlInstructionText = exports.WmlFootnoteReference = exports.WmlTab = exports.WmlSymbol = exports.WmlText = void 0;
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 var WmlText = (function (_super) {
-    (0, tslib_1.__extends)(WmlText, _super);
+    tslib_1.__extends(WmlText, _super);
     function WmlText() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromText)()
+    tslib_1.__decorate([
+        xml_serialize_1.fromText()
     ], WmlText.prototype, "text", void 0);
-    WmlText = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('t')
+    WmlText = tslib_1.__decorate([
+        xml_serialize_1.element('t')
     ], WmlText);
     return WmlText;
 }(dom_1.DocxElement));
 exports.WmlText = WmlText;
 var WmlSymbol = (function (_super) {
-    (0, tslib_1.__extends)(WmlSymbol, _super);
+    tslib_1.__extends(WmlSymbol, _super);
     function WmlSymbol() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)('font')
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute('font')
     ], WmlSymbol.prototype, "font", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)('char')
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute('char')
     ], WmlSymbol.prototype, "char", void 0);
-    WmlSymbol = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('sym')
+    WmlSymbol = tslib_1.__decorate([
+        xml_serialize_1.element('sym')
     ], WmlSymbol);
     return WmlSymbol;
 }(dom_1.DocxElement));
 exports.WmlSymbol = WmlSymbol;
 var WmlTab = (function (_super) {
-    (0, tslib_1.__extends)(WmlTab, _super);
+    tslib_1.__extends(WmlTab, _super);
     function WmlTab() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlTab = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)('tab')
+    WmlTab = tslib_1.__decorate([
+        xml_serialize_1.element('tab')
     ], WmlTab);
     return WmlTab;
 }(dom_1.DocxElement));
 exports.WmlTab = WmlTab;
+var WmlFootnoteReference = (function (_super) {
+    tslib_1.__extends(WmlFootnoteReference, _super);
+    function WmlFootnoteReference() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("id")
+    ], WmlFootnoteReference.prototype, "id", void 0);
+    WmlFootnoteReference = tslib_1.__decorate([
+        xml_serialize_1.element("footnoteReference")
+    ], WmlFootnoteReference);
+    return WmlFootnoteReference;
+}(dom_1.DocxElement));
+exports.WmlFootnoteReference = WmlFootnoteReference;
 var WmlInstructionText = (function (_super) {
-    (0, tslib_1.__extends)(WmlInstructionText, _super);
+    tslib_1.__extends(WmlInstructionText, _super);
     function WmlInstructionText() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromText)()
+    tslib_1.__decorate([
+        xml_serialize_1.fromText()
     ], WmlInstructionText.prototype, "text", void 0);
-    WmlInstructionText = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("instrText")
+    WmlInstructionText = tslib_1.__decorate([
+        xml_serialize_1.element("instrText")
     ], WmlInstructionText);
     return WmlInstructionText;
 }(dom_1.DocxElement));
@@ -2402,34 +2426,42 @@ exports.WmlInstructionText = WmlInstructionText;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.renderAsync = exports.defaults = void 0;
+exports.renderAsync = exports.praseAsync = exports.defaultOptions = void 0;
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 var document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 var html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
-exports.defaults = {
-    trimXmlDeclaration: false,
-    keepOrigin: false,
+exports.defaultOptions = {
     ignoreHeight: false,
     ignoreWidth: false,
     ignoreFonts: false,
     breakPages: true,
-    ignoreLastRenderedPageBreak: true,
     debug: false,
     experimental: false,
     className: "docx",
     inWrapper: true,
+    trimXmlDeclaration: true,
+    ignoreLastRenderedPageBreak: true,
+    renderHeaders: true,
+    renderFooters: true,
+    renderFootnotes: true,
+    keepOrigin: false
 };
+function praseAsync(data, userOptions) {
+    if (userOptions === void 0) { userOptions = null; }
+    var ops = tslib_1.__assign(tslib_1.__assign({}, exports.defaultOptions), userOptions);
+    return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
+}
+exports.praseAsync = praseAsync;
 function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     if (styleContainer === void 0) { styleContainer = null; }
     if (userOptions === void 0) { userOptions = null; }
-    var parser = new document_parser_1.DocumentParser();
+    var ops = tslib_1.__assign(tslib_1.__assign({}, exports.defaultOptions), userOptions);
     var renderer = new html_renderer_1.HtmlRenderer(window.document);
-    var options = (0, tslib_1.__assign)((0, tslib_1.__assign)({}, exports.defaults), userOptions);
-    Object.assign(parser, options);
-    Object.assign(renderer, options);
-    return word_document_1.WordDocument.load(data, parser, options).then(function (doc) {
-        renderer.render(doc, bodyContainer, styleContainer, options);
+    return word_document_1.WordDocument
+        .load(data, new document_parser_1.DocumentParser(ops), ops)
+        .then(function (doc) {
+        renderer.render(doc, bodyContainer, styleContainer, ops);
         return doc;
     });
 }
@@ -2451,12 +2483,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var fonts_1 = __webpack_require__(/*! ./fonts */ "./src/font-table/fonts.ts");
 var FontTablePart = (function (_super) {
-    (0, tslib_1.__extends)(FontTablePart, _super);
+    tslib_1.__extends(FontTablePart, _super);
     function FontTablePart() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     FontTablePart.prototype.parseXml = function (root) {
-        this.fonts = (0, fonts_1.parseFonts)(root, this._package.xmlParser);
+        this.fonts = fonts_1.parseFonts(root, this._package.xmlParser);
     };
     return FontTablePart;
 }(part_1.Part));
@@ -2516,7 +2548,7 @@ exports.FooterPart = void 0;
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var FooterPart = (function (_super) {
-    (0, tslib_1.__extends)(FooterPart, _super);
+    tslib_1.__extends(FooterPart, _super);
     function FooterPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -2545,16 +2577,77 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var WmlFooter = (function (_super) {
-    (0, tslib_1.__extends)(WmlFooter, _super);
+    tslib_1.__extends(WmlFooter, _super);
     function WmlFooter() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlFooter = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("ftr")
+    WmlFooter = tslib_1.__decorate([
+        xml_serialize_1.element("ftr")
     ], WmlFooter);
     return WmlFooter;
 }(dom_1.DocxContainer));
 exports.WmlFooter = WmlFooter;
+
+
+/***/ }),
+
+/***/ "./src/footnotes/footnote.ts":
+/*!***********************************!*\
+  !*** ./src/footnotes/footnote.ts ***!
+  \***********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WmlFootnote = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
+var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
+var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
+var WmlFootnote = (function (_super) {
+    tslib_1.__extends(WmlFootnote, _super);
+    function WmlFootnote() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("id")
+    ], WmlFootnote.prototype, "id", void 0);
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("type")
+    ], WmlFootnote.prototype, "type", void 0);
+    WmlFootnote = tslib_1.__decorate([
+        xml_serialize_1.element("footnote")
+    ], WmlFootnote);
+    return WmlFootnote;
+}(dom_1.DocxContainer));
+exports.WmlFootnote = WmlFootnote;
+
+
+/***/ }),
+
+/***/ "./src/footnotes/footnotes-part.ts":
+/*!*****************************************!*\
+  !*** ./src/footnotes/footnotes-part.ts ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FootnotesPart = void 0;
+var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var FootnotesPart = (function (_super) {
+    tslib_1.__extends(FootnotesPart, _super);
+    function FootnotesPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    FootnotesPart.prototype.parseXml = function (root) {
+        this.footnotes = this._documentParser.parseFootnotes(root);
+    };
+    return FootnotesPart;
+}(part_1.Part));
+exports.FootnotesPart = FootnotesPart;
 
 
 /***/ }),
@@ -2571,7 +2664,7 @@ exports.HeaderPart = void 0;
 var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var HeaderPart = (function (_super) {
-    (0, tslib_1.__extends)(HeaderPart, _super);
+    tslib_1.__extends(HeaderPart, _super);
     function HeaderPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -2600,12 +2693,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/parser/xml-serialize.ts");
 var WmlHeader = (function (_super) {
-    (0, tslib_1.__extends)(WmlHeader, _super);
+    tslib_1.__extends(WmlHeader, _super);
     function WmlHeader() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WmlHeader = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("hdr")
+    WmlHeader = tslib_1.__decorate([
+        xml_serialize_1.element("hdr")
     ], WmlHeader);
     return WmlHeader;
 }(dom_1.DocxContainer));
@@ -2638,6 +2731,7 @@ var breaks_1 = __webpack_require__(/*! ./document/breaks */ "./src/document/brea
 var text_1 = __webpack_require__(/*! ./document/text */ "./src/document/text.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
+var footnote_1 = __webpack_require__(/*! ./footnotes/footnote */ "./src/footnotes/footnote.ts");
 var knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
 exports.autos = {
     shd: "white",
@@ -2647,16 +2741,14 @@ exports.autos = {
 var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
-        this.inWrapper = true;
         this.className = "docx";
-        this.keepOrigin = false;
-        this.renderHeaders = true;
-        this.renderFooters = true;
+        this.footnoteMap = {};
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
         this.document = document;
         this.options = options;
+        this.className = options.className;
         this.domStyleMap = null;
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
@@ -2673,10 +2765,13 @@ var HtmlRenderer = (function () {
             appendComment(styleContainer, "docx document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
+        if (document.footnotesPart) {
+            this.footnoteMap = utils_1.keyBy(document.footnotesPart.footnotes, function (x) { return x.id; });
+        }
         if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
         var sectionElements = this.renderSections(document.documentPart.documentElement.body);
-        if (this.inWrapper) {
+        if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
@@ -2705,13 +2800,13 @@ var HtmlRenderer = (function () {
         return this.className + "_" + className;
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
-        var styleMap = (0, utils_1.keyBy)(styles, function (s) { return s.id; });
+        var styleMap = utils_1.keyBy(styles, function (s) { return s.id; });
         for (var _i = 0, _a = styles.filter(function (s) { return s.basedOn; }); _i < _a.length; _i++) {
             var style = _a[_i];
             var baseStyle = styleMap[style.basedOn];
             if (baseStyle) {
-                style.paragraphProps = (0, utils_1.mergeDeep)(style.paragraphProps, baseStyle.paragraphProps);
-                style.runProps = (0, utils_1.mergeDeep)(style.runProps, baseStyle.runProps);
+                style.paragraphProps = utils_1.mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = utils_1.mergeDeep(style.runProps, baseStyle.runProps);
             }
             else if (this.options.debug) {
                 console.warn("Can't find base style " + style.basedOn);
@@ -2720,7 +2815,7 @@ var HtmlRenderer = (function () {
         return styleMap;
     };
     HtmlRenderer.prototype.processDomStyles = function (styles) {
-        var domStylesMap = (0, utils_1.keyBy)(styles, function (x) { return x.id; });
+        var domStylesMap = utils_1.keyBy(styles, function (x) { return x.id; });
         for (var _i = 0, _a = styles.filter(function (x) { return x.basedOn; }); _i < _a.length; _i++) {
             var style = _a[_i];
             var baseStyle = domStylesMap[style.basedOn];
@@ -2788,13 +2883,9 @@ var HtmlRenderer = (function () {
         }
         return output;
     };
-    HtmlRenderer.prototype.createElement = function (tagName, props) {
-        if (props === void 0) { props = undefined; }
-        return Object.assign(this.htmlDocument.createElement(tagName), props);
-    };
     HtmlRenderer.prototype.renderContainer = function (elem, tagName) {
         var result = this.createElement(tagName);
-        this.renderElements(elem.children, elem, result);
+        this.renderElements(elem.children, result);
         return result;
     };
     HtmlRenderer.prototype.createSection = function (className, props) {
@@ -2827,12 +2918,29 @@ var HtmlRenderer = (function () {
         this.processElement(document);
         for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
-            var sectionProps = section.sectProps || document.sectionProps;
-            var sectionElement = this.createSection(this.className, sectionProps);
-            this.renderElements(section.elements, document, sectionElement);
+            this.currentFootnoteIds = [];
+            var props = section.sectProps || document.sectionProps;
+            var sectionElement = this.createSection(this.className, props);
+            var headerPart = this.options.renderHeaders ? this.findHeaderFooter(props.headerRefs, result.length) : null;
+            var footerPart = this.options.renderFooters ? this.findHeaderFooter(props.footerRefs, result.length) : null;
+            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
+            var contentElement = this.createElement("article");
+            this.renderElements(section.elements, contentElement);
+            sectionElement.appendChild(contentElement);
+            if (this.options.renderFootnotes) {
+                this.renderFootnotes(this.currentFootnoteIds, sectionElement);
+            }
+            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
             result.push(sectionElement);
         }
         return result;
+    };
+    HtmlRenderer.prototype.findHeaderFooter = function (refs, page) {
+        var _a, _b;
+        var ref = refs ? ((_b = (_a = (page == 0 ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 0 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; })) : null;
+        if (ref == null)
+            return null;
+        return this.document.findPartByRelId(ref.id, this.document.documentPart);
     };
     HtmlRenderer.prototype.isPageBreakElement = function (elem) {
         if (elem instanceof breaks_1.WmlLastRenderedPageBreak)
@@ -2919,7 +3027,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n";
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2951,12 +3059,12 @@ var HtmlRenderer = (function () {
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_3.styleToString(selector + ":before", (0, tslib_1.__assign)({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+                styleText += this_3.styleToString(selector + ":before", tslib_1.__assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
                 listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_3.styleToString(selector, (0, tslib_1.__assign)({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
+            styleText += this_3.styleToString(selector, tslib_1.__assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
         };
         var this_3 = this, selector, listStyleType;
         for (var _i = 0, numberings_1 = numberings; _i < numberings_1.length; _i++) {
@@ -2973,6 +3081,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
         var stylesMap = this.domStyleMap;
+        var defautStyles = utils_1.keyBy(styles.filter(function (s) { return s.isDefault; }), function (s) { return s.target; });
         for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
             var style = styles_2[_i];
             var subStyles = style.styles;
@@ -2992,7 +3101,7 @@ var HtmlRenderer = (function () {
                     selector += style.target + "." + style.cssName + " " + subStyle.target;
                 else
                     selector += "." + style.cssName + " " + subStyle.target;
-                if (style.isDefault && style.target)
+                if (defautStyles[style.target] == style)
                     selector = "." + this.className + " " + style.target + ", " + selector;
                 if (style.paragraphProps && subStyle.target == "p") {
                     this.renderParagraphProperties(subStyle.values, style.paragraphProps);
@@ -3002,7 +3111,16 @@ var HtmlRenderer = (function () {
         }
         return createStyleElement(styleText);
     };
-    HtmlRenderer.prototype.renderElement = function (elem, parent) {
+    HtmlRenderer.prototype.renderFootnotes = function (footnoteIds, into) {
+        var _this = this;
+        var footnotes = footnoteIds.map(function (id) { return _this.footnoteMap[id]; }).filter(function (x) { return x; });
+        if (footnotes.length > 0) {
+            var result = this.createElement("ol");
+            this.renderElements(footnotes, result);
+            into.appendChild(result);
+        }
+    };
+    HtmlRenderer.prototype.renderElement = function (elem) {
         if (elem instanceof paragraph_1.WmlParagraph) {
             return this.renderParagraph(elem);
         }
@@ -3048,18 +3166,24 @@ var HtmlRenderer = (function () {
         else if (elem instanceof footer_1.WmlFooter) {
             return this.renderFooter(elem);
         }
+        else if (elem instanceof text_1.WmlFootnoteReference) {
+            return this.renderFootnoteReference(elem);
+        }
+        else if (elem instanceof footnote_1.WmlFootnote) {
+            return this.renderFootnote(elem);
+        }
         return null;
     };
     HtmlRenderer.prototype.renderChildren = function (elem, into) {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     };
-    HtmlRenderer.prototype.renderElements = function (elems, parent, into) {
+    HtmlRenderer.prototype.renderElements = function (elems, into) {
         var _this = this;
         if (elems == null)
             return null;
         var result = elems.map(function (e) {
-            var n = _this.renderElement(e, parent);
-            if (n && _this.keepOrigin)
+            var n = _this.renderElement(e);
+            if (n && _this.options.keepOrigin)
                 n.$$docxElement = e;
             return n;
         }).filter(function (e) { return e != null; });
@@ -3080,11 +3204,11 @@ var HtmlRenderer = (function () {
         var numbering = (_b = elem.props.numbering) !== null && _b !== void 0 ? _b : (_c = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _c === void 0 ? void 0 : _c.numbering;
         if (numbering) {
             var numberingClass = this.numberingClass(numbering.id, (_d = numbering.level) !== null && _d !== void 0 ? _d : 0);
-            result.className = (0, utils_1.appendClass)(result.className, numberingClass);
+            result.className = utils_1.appendClass(result.className, numberingClass);
         }
         if (elem.props.styleId) {
             var styleClassName = this.processClassName(this.escapeClassName(elem.props.styleId));
-            result.className = (0, utils_1.appendClass)(result.className, styleClassName);
+            result.className = utils_1.appendClass(result.className, styleClassName);
         }
         return result;
     };
@@ -3271,6 +3395,15 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderFooter = function (elem) {
         return this.renderContainer(elem, "footer");
     };
+    HtmlRenderer.prototype.renderFootnote = function (elem) {
+        return this.renderContainer(elem, "li");
+    };
+    HtmlRenderer.prototype.renderFootnoteReference = function (elem) {
+        var result = this.createElement("sup");
+        this.currentFootnoteIds.push(elem.id);
+        result.textContent = "" + this.currentFootnoteIds.length;
+        return result;
+    };
     HtmlRenderer.prototype.renderText = function (elem) {
         return this.htmlDocument.createTextNode(elem.text);
     };
@@ -3292,11 +3425,11 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, paragraph_1.WmlParagraph);
-                if (paragraph.props.tabs == null)
+                if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.props.tabs) == null)
                     return;
                 paragraph.props.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 tabSpan.style.display = "inline-block";
-                (0, javascript_1.updateTabStop)(tabSpan, paragraph.props.tabs);
+                javascript_1.updateTabStop(tabSpan, paragraph.props.tabs);
             }, 0);
         }
         return tabSpan;
@@ -3410,6 +3543,10 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.escapeClassName = function (className) {
         return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
+    HtmlRenderer.prototype.createElement = function (tagName, props) {
+        if (props === void 0) { props = undefined; }
+        return Object.assign(this.htmlDocument.createElement(tagName), props);
+    };
     return HtmlRenderer;
 }());
 exports.HtmlRenderer = HtmlRenderer;
@@ -3490,14 +3627,14 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var numbering_1 = __webpack_require__(/*! ./numbering */ "./src/numbering/numbering.ts");
 var NumberingPart = (function (_super) {
-    (0, tslib_1.__extends)(NumberingPart, _super);
+    tslib_1.__extends(NumberingPart, _super);
     function NumberingPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
     NumberingPart.prototype.parseXml = function (root) {
-        Object.assign(this, (0, numbering_1.parseNumberingPart)(root, this._package.xmlParser));
+        Object.assign(this, numbering_1.parseNumberingPart(root, this._package.xmlParser));
         this.domNumberings = this._documentParser.parseNumberingFile(root);
     };
     return NumberingPart;
@@ -3614,10 +3751,10 @@ function parseNumberingLevel(elem, xml) {
                 result.bulletPictureId = xml.attr(e, "val");
                 break;
             case "pPr":
-                result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(e, xml);
+                result.paragraphProps = paragraph_1.parseParagraphProperties(e, xml);
                 break;
             case "rPr":
-                result.runProps = (0, run_1.parseRunProperties)(e, xml);
+                result.runProps = run_1.parseRunProperties(e, xml);
                 break;
         }
     }
@@ -3735,14 +3872,14 @@ var XmlParser = (function () {
     };
     XmlParser.prototype.boolAttr = function (node, attrName, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }
-        return (0, common_1.convertBoolean)(this.attr(node, attrName), defaultValue);
+        return common_1.convertBoolean(this.attr(node, attrName), defaultValue);
     };
     XmlParser.prototype.percentageAttr = function (node, attrName) {
-        return (0, common_1.convertPercentage)(this.attr(node, attrName));
+        return common_1.convertPercentage(this.attr(node, attrName));
     };
     XmlParser.prototype.lengthAttr = function (node, attrName, usage) {
         if (usage === void 0) { usage = common_1.LengthUsage.Dxa; }
-        return (0, common_1.convertLength)(this.attr(node, attrName), usage);
+        return common_1.convertLength(this.attr(node, attrName), usage);
     };
     return XmlParser;
 }());
@@ -3903,12 +4040,12 @@ function parseDocumentDefaults(elem, xml) {
             case "pPrDefault":
                 var pPrElem = xml.element(e, 'pPr');
                 if (pPrElem)
-                    result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(pPrElem, xml);
+                    result.paragraphProps = paragraph_1.parseParagraphProperties(pPrElem, xml);
                 break;
             case "rPrDefault":
                 var rPrElem = xml.element(e, 'rPr');
                 if (rPrElem)
-                    result.runProps = (0, run_1.parseRunProperties)(rPrElem, xml);
+                    result.runProps = run_1.parseRunProperties(rPrElem, xml);
                 break;
         }
     }
@@ -3936,34 +4073,34 @@ var xml_serialize_1 = __webpack_require__(/*! ../parser/xml-serialize */ "./src/
 var WmlStyle = (function () {
     function WmlStyle() {
     }
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("styleId")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("styleId")
     ], WmlStyle.prototype, "id", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("type")
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("type")
     ], WmlStyle.prototype, "type", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("customStyle", common_1.convertBoolean)
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("customStyle", common_1.convertBoolean)
     ], WmlStyle.prototype, "customStyle", void 0);
-    (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.fromAttribute)("default", common_1.convertBoolean)
+    tslib_1.__decorate([
+        xml_serialize_1.fromAttribute("default", common_1.convertBoolean)
     ], WmlStyle.prototype, "default", void 0);
-    WmlStyle = (0, tslib_1.__decorate)([
-        (0, xml_serialize_1.element)("style")
+    WmlStyle = tslib_1.__decorate([
+        xml_serialize_1.element("style")
     ], WmlStyle);
     return WmlStyle;
 }());
 exports.WmlStyle = WmlStyle;
 function parseStyle(elem, xml) {
-    var result = (0, xml_serialize_1.deserializeElement)(elem, new WmlStyle(), null);
+    var result = xml_serialize_1.deserializeElement(elem, new WmlStyle(), null);
     for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
         var e = _a[_i];
         switch (e.localName) {
             case "pPr":
-                result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(e, xml);
+                result.paragraphProps = paragraph_1.parseParagraphProperties(e, xml);
                 break;
             case "rPr":
-                result.runProps = (0, run_1.parseRunProperties)(e, xml);
+                result.runProps = run_1.parseRunProperties(e, xml);
                 break;
             case "name":
                 result.name = xml.attr(e, 'val');
@@ -4019,7 +4156,7 @@ var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var document_defaults_1 = __webpack_require__(/*! ./document-defaults */ "./src/styles/document-defaults.ts");
 var style_1 = __webpack_require__(/*! ./style */ "./src/styles/style.ts");
 var StylesPart = (function (_super) {
-    (0, tslib_1.__extends)(StylesPart, _super);
+    tslib_1.__extends(StylesPart, _super);
     function StylesPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
@@ -4040,10 +4177,10 @@ function parseStylesPart(elem, xml) {
         var e = _a[_i];
         switch (e.localName) {
             case "docDefaults":
-                result.defaults = (0, document_defaults_1.parseDocumentDefaults)(e, xml);
+                result.defaults = document_defaults_1.parseDocumentDefaults(e, xml);
                 break;
             case "style":
-                result.styles.push((0, style_1.parseStyle)(e, xml));
+                result.styles.push(style_1.parseStyle(e, xml));
                 break;
         }
     }
@@ -4067,12 +4204,12 @@ var tslib_1 = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.j
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
 var theme_1 = __webpack_require__(/*! ./theme */ "./src/theme/theme.ts");
 var ThemePart = (function (_super) {
-    (0, tslib_1.__extends)(ThemePart, _super);
+    tslib_1.__extends(ThemePart, _super);
     function ThemePart(pkg, path) {
         return _super.call(this, pkg, path) || this;
     }
     ThemePart.prototype.parseXml = function (root) {
-        this.theme = (0, theme_1.parseTheme)(root, this._package.xmlParser);
+        this.theme = theme_1.parseTheme(root, this._package.xmlParser);
     };
     return ThemePart;
 }(part_1.Part));
@@ -4229,7 +4366,7 @@ function mergeDeep(target) {
             }
         }
     }
-    return mergeDeep.apply(void 0, (0, tslib_1.__spreadArray)([target], sources, false));
+    return mergeDeep.apply(void 0, tslib_1.__spreadArray([target], sources));
 }
 exports.mergeDeep = mergeDeep;
 
@@ -4257,6 +4394,7 @@ var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/heade
 var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
 var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
+var footnotes_part_1 = __webpack_require__(/*! ./footnotes/footnotes-part */ "./src/footnotes/footnotes-part.ts");
 var topLevelRels = [
     { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
@@ -4311,6 +4449,9 @@ var WordDocument = (function () {
             case relationship_1.RelationshipTypes.Theme:
                 part = new theme_part_1.ThemePart(this._package, path);
                 break;
+            case relationship_1.RelationshipTypes.Footnotes:
+                this.footnotesPart = part = new footnotes_part_1.FootnotesPart(this._package, path, this._parser);
+                break;
             case relationship_1.RelationshipTypes.Footer:
                 part = new footer_part_1.FooterPart(this._package, path, this._parser);
                 break;
@@ -4331,9 +4472,9 @@ var WordDocument = (function () {
         return part.load().then(function () {
             if (part.rels == null || part.rels.length == 0)
                 return part;
-            var folder = (0, utils_1.splitPath)(part.path)[0];
+            var folder = utils_1.splitPath(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
+                return _this.loadRelationshipPart(utils_1.resolvePath(rel.target, folder), rel.type);
             });
             return Promise.all(rels).then(function () { return part; });
         });
@@ -4350,10 +4491,17 @@ var WordDocument = (function () {
         return this.loadResource(this.fontTablePart, id, "uint8array")
             .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
     };
+    WordDocument.prototype.findPartByRelId = function (id, basePart) {
+        var _a;
+        if (basePart === void 0) { basePart = null; }
+        var rel = ((_a = basePart.rels) !== null && _a !== void 0 ? _a : this.rels).find(function (r) { return r.id == id; });
+        var folder = basePart ? utils_1.splitPath(basePart.path)[0] : '';
+        return rel ? this.partsMap[utils_1.resolvePath(rel.target, folder)] : null;
+    };
     WordDocument.prototype.getPathById = function (part, id) {
         var rel = part.rels.find(function (x) { return x.id == id; });
-        var folder = (0, utils_1.splitPath)(part.path)[0];
-        return rel ? (0, utils_1.resolvePath)(rel.target, folder) : null;
+        var folder = utils_1.splitPath(part.path)[0];
+        return rel ? utils_1.resolvePath(rel.target, folder) : null;
     };
     WordDocument.prototype.loadResource = function (part, id, outputType) {
         var path = this.getPathById(part, id);

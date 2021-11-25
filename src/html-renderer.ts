@@ -6,7 +6,7 @@ import { WmlParagraph, ParagraphProperties } from './document/paragraph';
 import { appendClass, keyBy, mergeDeep } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { SectionProperties } from './document/section';
+import { FooterHeaderReference, SectionProperties } from './document/section';
 import { WmlRun, RunFonts, RunProperties, Shading } from './document/run';
 import { WmlBookmarkStart } from './document/bookmarks';
 import { IDomStyle } from './document/style';
@@ -18,12 +18,16 @@ import { WmlTableCell } from './document/table-cell';
 import { WmlHyperlink } from './document/hyperlink';
 import { WmlDrawing, DmlPicture } from './document/drawing';
 import { WmlBreak, WmlLastRenderedPageBreak } from './document/breaks';
-import { WmlSymbol, WmlTab, WmlText } from './document/text';
+import { WmlFootnoteReference, WmlSymbol, WmlTab, WmlText } from './document/text';
 import { LineSpacing } from './document/line-spacing';
 import { WmlStyle } from './styles/style';
 import { WmlHeader } from './header/header';
 import { WmlFooter } from './footer/footer';
 import { WmlBody } from './document/document';
+import { Part } from './common/part';
+import { HeaderPart } from './header/header-part';
+import { FooterPart } from './footer/footer-part';
+import { WmlFootnote } from './footnotes/footnote';
 
 const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
 
@@ -35,15 +39,13 @@ export var autos = {
 
 export class HtmlRenderer {
 
-    inWrapper: boolean = true;
     className: string = "docx";
     document: WordDocument;
     options: Options;
     domStyleMap: Record<string, IDomStyle>;
     styleMap: Record<string, WmlStyle>;
-    keepOrigin: boolean = false;
-    renderHeaders: boolean = true;
-    renderFooters: boolean = true;
+    footnoteMap: any = {};
+    currentFootnoteIds: string[];
 
     constructor(private htmlDocument: HTMLDocument) {
     }
@@ -51,6 +53,7 @@ export class HtmlRenderer {
     render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
         this.document = document;
         this.options = options;
+        this.className = options.className;
         this.domStyleMap = null;
 
         styleContainer = styleContainer || bodyContainer;
@@ -75,12 +78,16 @@ export class HtmlRenderer {
             //styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
         }
 
+        if (document.footnotesPart) {
+            this.footnoteMap = keyBy(document.footnotesPart.footnotes, x => x.id);
+        }
+
         if(!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
 
         var sectionElements = this.renderSections(document.documentPart.documentElement.body);
 
-        if (this.inWrapper) {
+        if (this.options.inWrapper) {
             var wrapper = this.renderWrapper();
             appentElements(wrapper, sectionElements);
             bodyContainer.appendChild(wrapper);
@@ -197,13 +204,9 @@ export class HtmlRenderer {
         return output;
     }
 
-    private createElement(tagName, props = undefined) {
-        return Object.assign(this.htmlDocument.createElement(tagName), props);
-    }
-
     private renderContainer(elem: DocxContainer, tagName: string): HTMLElement {
         const result = this.createElement(tagName);
-        this.renderElements(elem.children, elem, result);
+        this.renderElements(elem.children, result);
         return result;
     }
 
@@ -244,25 +247,25 @@ export class HtmlRenderer {
         this.processElement(document);
 
         for(let section of this.splitBySection(document.children)) {
-            const sectionProps = section.sectProps || document.sectionProps;
-            var sectionElement = this.createSection(this.className, sectionProps);
+        	this.currentFootnoteIds = [];
+        	
+            const props = section.sectProps || document.sectionProps;
+            const sectionElement = this.createSection(this.className, props);
 
-            // if(this.renderHeaders && sectionProps.headerRefs) {
-            //     for(const headerRef of sectionProps.headerRefs) {
-            //     }
-            // }
+            var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
+            var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
 
-            this.renderElements(section.elements, document, sectionElement);
+            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
 
-            // if(this.renderFooters && sectionProps.footerRefs) {
-            //     for(const headerRef of sectionProps.footerRefs) {
-            //         const partPath = this.document.getPathById(this.document.documentPart, headerRef.id);
-            //         const part = this.document.partsMap[partPath] as FooterPart;
+            var contentElement = this.createElement("article");
+            this.renderElements(section.elements,contentElement);
+            sectionElement.appendChild(contentElement);
 
-            //         this.processElement(part.footerElement);
-            //         sectionElement.appendChild(this.renderElement(part.footerElement, null))
-            //     }
-            // }
+            if (this.options.renderFootnotes) {
+                this.renderFootnotes(this.currentFootnoteIds, sectionElement);
+            }
+
+            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
 
             result.push(sectionElement);
         }
@@ -270,6 +273,17 @@ export class HtmlRenderer {
         return result;
     }
 
+    findHeaderFooter<T extends Part>(refs: FooterHeaderReference[], page: number): T {
+        var ref = refs ? ((page == 0 ? refs.find(x => x.type == "first") : null)
+            ?? (page % 2 ==0 ? refs.find(x => x.type == "even") : null)
+            ?? refs.find(x => x.type == "default")) : null;
+        
+        if (ref == null)
+            return null;
+
+        return this.document.findPartByRelId(ref.id, this.document.documentPart) as T;
+    }
+    
     isPageBreakElement(elem: DocxElement): boolean {
         if (elem instanceof WmlLastRenderedPageBreak)
             return !this.options.ignoreLastRenderedPageBreak;
@@ -373,12 +387,14 @@ export class HtmlRenderer {
         var c = this.className;
         var styleText = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-.${c}-wrapper section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; }
-section.${c} { box-sizing: border-box; }
+section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; }
+section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
+.${c} span { white-space: pre-wrap; }
 `;
 
         return createStyleElement(styleText);
@@ -513,6 +529,7 @@ section.${c} { box-sizing: border-box; }
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
         var stylesMap = this.domStyleMap;
+        var defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
 
         for (let style of styles) {
             var subStyles =  style.styles;
@@ -536,7 +553,7 @@ section.${c} { box-sizing: border-box; }
                 else
                     selector += `.${style.cssName} ${subStyle.target}`;
 
-                if (style.isDefault && style.target)
+                if (defautStyles[style.target] == style)
                     selector = `.${this.className} ${style.target}, ` + selector;
 
                 if (style.paragraphProps && subStyle.target == "p") {
@@ -550,7 +567,17 @@ section.${c} { box-sizing: border-box; }
         return createStyleElement(styleText);
     }
 
-    renderElement(elem: DocxElement, parent: DocxElement): Node {
+    renderFootnotes(footnoteIds: string[], into: HTMLElement) {
+        var footnotes = footnoteIds.map(id => this.footnoteMap[id]).filter(x => x);
+        
+        if (footnotes.length > 0) {
+            var result = this.createElement("ol");
+            this.renderElements(footnotes, result);
+            into.appendChild(result);
+        }
+    }
+    
+    renderElement(elem: DocxElement): Node {
         if (elem instanceof WmlParagraph) {
             return this.renderParagraph(elem);
         } else if (elem instanceof WmlBookmarkStart) {
@@ -581,23 +608,27 @@ section.${c} { box-sizing: border-box; }
             return this.renderHeader(elem);
         } else if (elem instanceof WmlFooter) {
             return this.renderFooter(elem);
+        } else if (elem instanceof WmlFootnoteReference) {
+            return this.renderFootnoteReference(elem);
+        } else if (elem instanceof WmlFootnote) {
+            return this.renderFootnote(elem);
         }
 
         return null;
     }
 
     renderChildren(elem: DocxContainer, into?: HTMLElement): Node[] {
-        return this.renderElements(elem.children, elem, into);
+        return this.renderElements(elem.children, into);
     }
 
-    renderElements(elems: DocxElement[], parent: DocxElement, into?: HTMLElement): Node[] {
+    renderElements(elems: DocxElement[], into?: HTMLElement): Node[] {
         if(elems == null)
             return null;
 
         var result = elems.map(e => {
-            let n = this.renderElement(e, parent);
+            let n = this.renderElement(e);
 
-            if(n && this.keepOrigin)
+            if(n && this.options.keepOrigin)
                 (n as any).$$docxElement = e;
 
             return n;
@@ -821,7 +852,7 @@ section.${c} { box-sizing: border-box; }
     }
 
     renderHyperlink(elem: WmlHyperlink) {
-        var result = this.createElement("a");
+        var result = this.createElement<HTMLAnchorElement>("a");
 
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
@@ -846,7 +877,7 @@ section.${c} { box-sizing: border-box; }
     }
 
     renderImage(elem: DmlPicture) {
-        let result = this.createElement("img");
+        let result = this.createElement<HTMLImageElement>("img");
 
         this.renderStyleValues(elem.cssStyle, result);
 
@@ -865,6 +896,17 @@ section.${c} { box-sizing: border-box; }
 
     renderFooter(elem: WmlHeader) {
         return this.renderContainer(elem, "footer");
+    }
+    
+    renderFootnote(elem: WmlFootnote) {
+        return this.renderContainer(elem, "li");
+    }
+
+    renderFootnoteReference(elem: WmlFootnoteReference) {
+        var result = this.createElement("sup");
+        this.currentFootnoteIds.push(elem.id); 
+        result.textContent = `${this.currentFootnoteIds.length}`;
+        return result;
     }
 
     renderText(elem: WmlText) {
@@ -895,7 +937,7 @@ section.${c} { box-sizing: border-box; }
             setTimeout(() => {
                 var paragraph = findParent<WmlParagraph>(elem, WmlParagraph);
                 
-                if(paragraph.props.tabs == null)
+                if (paragraph?.props.tabs == null)
                     return;
 
                 paragraph.props.tabs.sort((a, b) => a.position.value - b.position.value);
@@ -967,7 +1009,7 @@ section.${c} { box-sizing: border-box; }
     }
 
     renderTableCell(elem: WmlTableCell) {
-        let result = this.createElement("td");
+        let result = this.createElement<HTMLTableCellElement>("td");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -1043,6 +1085,10 @@ section.${c} { box-sizing: border-box; }
 
     escapeClassName(className: string) {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
+    }
+
+    createElement<T extends HTMLElement = HTMLElement>(tagName: string, props: any = undefined): T {
+        return Object.assign(this.htmlDocument.createElement(tagName), props);
     }
 }
 

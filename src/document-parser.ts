@@ -2,7 +2,7 @@ import { DocxContainer, DocxElement, IDomNumbering, NumberingPicBullet } from '.
 import * as utils from './utils';
 import { WmlBody, WmlDocument } from './document/document';
 import { WmlParagraph, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
-import globalXmlParser from './parser/xml-parser';
+import globalXmlParser, { elements } from './parser/xml-parser';
 import { parseRunProperties, WmlRun } from './document/run';
 import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlHyperlink } from './document/hyperlink';
@@ -13,6 +13,7 @@ import { WmlTableRow } from './document/table-row';
 import { deserializeElement } from './parser/xml-serialize';
 import { WmlFooter } from './footer/footer';
 import { WmlHeader } from './header/header';
+import { WmlFootnote } from './footnotes/footnote';
 
 export var autos = {
     shd: "white",
@@ -20,17 +21,26 @@ export var autos = {
     highlight: "transparent"
 };
 
-export class DocumentParser {
-    // removes XML declaration 
-    skipDeclaration: boolean = true;
+export interface DocumentParserOptions {
+    ignoreWidth: boolean;
+    debug: boolean;
+    keepOrigin: boolean;
+}
 
-    // ignores page and table sizes
-    ignoreWidth: boolean = false;
-    debug: boolean = false;
-    keepOrigin: boolean = false;
+export class DocumentParser {
+    options: DocumentParserOptions;
+
+    constructor(options?: Partial<DocumentParserOptions>) {
+        this.options = {
+            ignoreWidth: false,
+            debug: false,
+            keepOrigin: false,
+            ...options   
+        };
+    }
 
     private deserialize<T>(elem: Element, output: T): T {
-        return deserializeElement(elem, output, { keepOrigin: this.keepOrigin });
+        return deserializeElement(elem, output, { keepOrigin: this.options.keepOrigin });
     }
 
     parseDocumentFile(xmlDoc: Element): WmlDocument {
@@ -49,6 +59,19 @@ export class DocumentParser {
     parseHeader(xmlDoc: Element): WmlHeader {
         return this.parseBodyElements(xmlDoc, new WmlHeader());
     }
+
+    parseFootnotes(xmlDoc: Element): WmlFootnote[] {
+        var result = [];
+
+        for (let el of globalXmlParser.elements(xmlDoc, "footnote")) {
+            const footnote = this.deserialize(el, new WmlFootnote());
+            this.parseBodyElements(el, footnote);
+            result.push(footnote);
+        }
+
+        return result;
+    }
+
 
     parseBodyElements<T extends DocxContainer>(elem: Element, output: T): T {
         for(let e of globalXmlParser.elements(elem)) {
@@ -201,7 +224,7 @@ export class DocumentParser {
                     break;
 
                 default:
-                    this.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
+                    this.options.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
             }
         });
 
@@ -780,7 +803,7 @@ export class DocumentParser {
                     break;
 
                 case "tcW":
-                    if (this.ignoreWidth)
+                    if (this.options.ignoreWidth)
                         break;
 
                 case "tblW":
@@ -868,7 +891,7 @@ export class DocumentParser {
 
                 default:
                     if (handler != null && !handler(c))
-                        this.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
+                        this.options.debug && console.warn(`DOCX: Unknown document element: ${c.localName}`);
                     break;
             }
         });
