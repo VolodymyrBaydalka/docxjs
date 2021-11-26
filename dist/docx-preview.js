@@ -1589,6 +1589,9 @@ exports.LengthUsage = {
 };
 function convertLength(val, usage) {
     if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
+    if (val.indexOf("pt") > 0) {
+        return { value: parseInt(val), type: "pt" };
+    }
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 exports.convertLength = convertLength;

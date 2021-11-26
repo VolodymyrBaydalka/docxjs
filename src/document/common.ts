@@ -34,6 +34,9 @@ export const LengthUsage: Record<string, LengthUsageType> = {
 }
 
 export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
+    if(val.indexOf("pt") > 0) {
+        return { value: parseInt(val), type: "pt" };
+    }
     return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
 }
 
