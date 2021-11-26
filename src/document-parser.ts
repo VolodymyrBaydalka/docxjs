@@ -369,7 +369,7 @@ export class DocumentParser {
 
                 case "lvlPicBulletId":
                     var id = xml.intAttr(n, "val");
-                    result.bullet = bullets.filter(x => x.id == id)[0];
+                    result.bullet = bullets.find(x => x.id == id);
                     break;
 
                 case "lvlText":
@@ -563,8 +563,8 @@ export class DocumentParser {
 
                 case "vertAlign":
                     switch (xml.stringAttr(c, "val")) {
-                        case "subscript": run.wrapper = "sub"; break;
-                        case "superscript": run.wrapper = "sup"; break;
+                        case "subscript": run.verticalAlign = "sub"; break;
+                        case "superscript": run.verticalAlign = "super"; break;
                     }
                     break;
 

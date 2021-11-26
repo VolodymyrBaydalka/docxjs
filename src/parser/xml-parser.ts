@@ -22,13 +22,6 @@ export function serializeXmlString(elem: Node): string {
 }
 
 export class XmlParser {
-    parse(xmlString: string, skipDeclaration: boolean = true): Element {
-        if (skipDeclaration)
-            xmlString = xmlString.replace(/<[?].*[?]>/, "");
-
-        return <Element>new DOMParser().parseFromString(xmlString, "application/xml").firstChild;
-    }
-
     elements(elem: Element, localName: string = null): Element[] {
         const result = [];
 
