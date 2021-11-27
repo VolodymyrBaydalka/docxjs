@@ -35,6 +35,7 @@ export class WordDocument {
     numberingPart: NumberingPart;
     stylesPart: StylesPart;
     footnotesPart: FootnotesPart;
+    themePart: ThemePart;
     corePropsPart: CorePropsPart;
     extendedPropsPart: ExtendedPropsPart;
 
@@ -91,7 +92,7 @@ export class WordDocument {
                 break;
 
             case RelationshipTypes.Theme:
-                part = new ThemePart(this._package, path);
+                this.themePart = part = new ThemePart(this._package, path);
                 break;
 
             case RelationshipTypes.Footnotes:

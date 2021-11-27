@@ -55,7 +55,7 @@ var OpenXmlPackage = (function () {
         var relsPath = "_rels/.rels";
         if (path != null) {
             var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
-            relsPath = "".concat(f, "_rels/").concat(fn, ".rels");
+            relsPath = f + "_rels/" + fn + ".rels";
         }
         return this.load(relsPath)
             .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
@@ -180,6 +180,7 @@ var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/document/paragraph.ts");
 var section_1 = __webpack_require__(/*! ./document/section */ "./src/document/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
+var run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts");
 var bookmark_1 = __webpack_require__(/*! ./document/bookmark */ "./src/document/bookmark.ts");
 var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
 var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
@@ -346,7 +347,7 @@ var DocumentParser = (function () {
                         target: "span",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = (0, paragraph_1.parseParagraphProperties)(n, xml_parser_1.default);
+                    result.runProps = (0, run_1.parseRunProperties)(n, xml_parser_1.default);
                     break;
                 case "tblPr":
                 case "tcPr":
@@ -370,7 +371,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.options.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
+                    _this.options.debug && console.warn("DOCX: Unknown style element: " + n.localName);
             }
         });
         return result;
@@ -593,6 +594,9 @@ var DocumentParser = (function () {
                     break;
                 case "fldChar":
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
+                    break;
+                case "noBreakHyphen":
+                    result.children.push({ type: dom_1.DomType.NoBreakHyphen });
                     break;
                 case "br":
                     result.children.push({
@@ -1002,7 +1006,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.options.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
+                        _this.options.debug && console.warn("DOCX: Unknown document element: " + c.localName);
                     break;
             }
         });
@@ -1049,8 +1053,10 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseFont = function (node, style) {
         var ascii = xml.stringAttr(node, "ascii");
-        if (ascii)
-            style["font-family"] = ascii;
+        var asciiTheme = values.themeValue(node, "asciiTheme");
+        var fonts = [ascii, asciiTheme].filter(function (x) { return x; }).join(', ');
+        if (fonts.length > 0)
+            style["font-family"] = fonts;
     };
     DocumentParser.prototype.parseIndentation = function (node, style) {
         var firstLine = xml.sizeAttr(node, "firstLine");
@@ -1062,7 +1068,7 @@ var DocumentParser = (function () {
         if (firstLine)
             style["text-indent"] = firstLine;
         if (hanging)
-            style["text-indent"] = "-".concat(hanging);
+            style["text-indent"] = "-" + hanging;
         if (left || start)
             style["margin-left"] = left || start;
         if (right || end)
@@ -1080,13 +1086,13 @@ var DocumentParser = (function () {
         if (line !== null) {
             switch (lineRule) {
                 case "auto":
-                    style["line-height"] = "".concat((line / 240).toFixed(2));
+                    style["line-height"] = "" + (line / 240).toFixed(2);
                     break;
                 case "atLeast":
-                    style["line-height"] = "calc(100% + ".concat(line / 20, "pt)");
+                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
                     break;
                 default:
-                    style["line-height"] = style["min-height"] = "".concat(line / 20, "pt");
+                    style["line-height"] = style["min-height"] = line / 20 + "pt";
                     break;
             }
         }
@@ -1151,13 +1157,14 @@ var SizeType;
     SizeType[SizeType["Border"] = 3] = "Border";
     SizeType[SizeType["Percent"] = 4] = "Percent";
 })(SizeType || (SizeType = {}));
+var knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
 var xml = (function () {
     function xml() {
     }
     xml.foreach = function (node, cb) {
         for (var i = 0; i < node.childNodes.length; i++) {
             var n = node.childNodes[i];
-            if (n.nodeType == 1)
+            if (n.nodeType == Node.ELEMENT_NODE)
                 cb(n);
         }
     };
@@ -1172,13 +1179,17 @@ var xml = (function () {
         if (defValue === void 0) { defValue = null; }
         if (autoColor === void 0) { autoColor = 'black'; }
         var v = xml.stringAttr(node, attrName);
-        switch (v) {
-            case "yellow":
-                return v;
-            case "auto":
+        if (v) {
+            if (v == "auto") {
                 return autoColor;
+            }
+            else if (knownColors.includes(v)) {
+                return v;
+            }
+            return "#" + v;
         }
-        return v ? "#".concat(v) : defValue;
+        var themeColor = xml.stringAttr(node, "themeColor");
+        return themeColor ? "var(--docx-" + themeColor + "-color)" : defValue;
     };
     xml.boolAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = false; }
@@ -1186,8 +1197,7 @@ var xml = (function () {
     };
     xml.intAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = 0; }
-        var val = xml.stringAttr(node, attrName);
-        return val ? parseInt(xml.stringAttr(node, attrName)) : defValue;
+        return xml_parser_1.default.intAttr(node, attrName, defValue);
     };
     xml.sizeAttr = function (node, attrName, type) {
         if (type === void 0) { type = SizeType.Dxa; }
@@ -1220,6 +1230,10 @@ var xml = (function () {
 var values = (function () {
     function values() {
     }
+    values.themeValue = function (c, attr) {
+        var val = xml.stringAttr(c, attr);
+        return val ? "var(--docx-" + val + "-font)" : null;
+    };
     values.valueOfBold = function (c) {
         return xml.boolAttr(c, "val", true) ? "bold" : "normal";
     };
@@ -1246,7 +1260,7 @@ var values = (function () {
             return "none";
         var color = xml.colorAttr(c, "color");
         var size = xml.sizeAttr(c, "sz", SizeType.Border);
-        return "".concat(size, " solid ").concat(color == "auto" ? "black" : color);
+        return size + " solid " + (color == "auto" ? "black" : color);
     };
     values.valueOfTblLayout = function (c) {
         var type = xml.stringAttr(c, "val");
@@ -1309,7 +1323,7 @@ var values = (function () {
             return b;
         if (b == null)
             return a;
-        return "calc(".concat(a, " + ").concat(b, ")");
+        return "calc(" + a + " + " + b + ")";
     };
     values.checkMask = function (num, mask) {
         return (num & mask) == mask;
@@ -1559,9 +1573,11 @@ exports.parseBookmarkEnd = parseBookmarkEnd;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parseCommonProperty = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
+exports.parseCommonProperty = exports.convertPercentage = exports.convertBoolean = exports.convertLength = exports.LengthUsage = exports.ns = void 0;
 exports.ns = {
-    wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
+    picture: "http://schemas.openxmlformats.org/drawingml/2006/picture"
 };
 exports.LengthUsage = {
     Dxa: { mul: 0.05, unit: "pt" },
@@ -1574,9 +1590,33 @@ exports.LengthUsage = {
 };
 function convertLength(val, usage) {
     if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+    if (!val) {
+        return null;
+    }
+    if (val.endsWith('pt')) {
+        return { value: parseFloat(val), type: 'pt' };
+    }
+    if (val.endsWith('%')) {
+        return { value: parseFloat(val), type: '%' };
+    }
+    return { value: parseInt(val) * usage.mul, type: usage.unit };
 }
 exports.convertLength = convertLength;
+function convertBoolean(v, defaultValue) {
+    if (defaultValue === void 0) { defaultValue = false; }
+    switch (v) {
+        case "1": return true;
+        case "0": return false;
+        case "true": return true;
+        case "false": return false;
+        default: return defaultValue;
+    }
+}
+exports.convertBoolean = convertBoolean;
+function convertPercentage(val) {
+    return val ? parseInt(val) / 100 : null;
+}
+exports.convertPercentage = convertPercentage;
 function parseCommonProperty(elem, props, xml) {
     if (elem.namespaceURI != exports.ns.wordml)
         return false;
@@ -1654,6 +1694,7 @@ var DomType;
     DomType["Paragraph"] = "paragraph";
     DomType["Run"] = "run";
     DomType["Break"] = "break";
+    DomType["NoBreakHyphen"] = "noBreakHyphen";
     DomType["Table"] = "table";
     DomType["Row"] = "row";
     DomType["Cell"] = "cell";
@@ -2014,33 +2055,50 @@ exports.FontTablePart = FontTablePart;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parseFont = exports.parseFonts = void 0;
-function parseFonts(root, xmlParser) {
-    return xmlParser.elements(root).map(function (el) { return parseFont(el, xmlParser); });
+exports.parseEmbedFontRef = exports.parseFont = exports.parseFonts = void 0;
+var embedFontTypeMap = {
+    embedRegular: 'regular',
+    embedBold: 'bold',
+    embedItalic: 'italic',
+    embedBoldItalic: 'boldItalic',
+};
+function parseFonts(root, xml) {
+    return xml.elements(root).map(function (el) { return parseFont(el, xml); });
 }
 exports.parseFonts = parseFonts;
-function parseFont(elem, xmlParser) {
+function parseFont(elem, xml) {
     var result = {
-        name: xmlParser.attr(elem, "name")
+        name: xml.attr(elem, "name"),
+        embedFontRefs: []
     };
-    for (var _i = 0, _a = xmlParser.elements(elem); _i < _a.length; _i++) {
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
         var el = _a[_i];
         switch (el.localName) {
             case "family":
-                result.family = xmlParser.attr(el, "val");
+                result.family = xml.attr(el, "val");
                 break;
             case "altName":
-                result.altName = xmlParser.attr(el, "val");
+                result.altName = xml.attr(el, "val");
                 break;
             case "embedRegular":
-                result.fontKey = xmlParser.attr(el, "fontKey");
-                result.refId = xmlParser.attr(el, "id");
+            case "embedBold":
+            case "embedItalic":
+            case "embedBoldItalic":
+                result.embedFontRefs.push(parseEmbedFontRef(el, xml));
                 break;
         }
     }
     return result;
 }
 exports.parseFont = parseFont;
+function parseEmbedFontRef(elem, xml) {
+    return {
+        id: xml.attr(elem, "id"),
+        key: xml.attr(elem, "fontKey"),
+        type: embedFontTypeMap[elem.localName]
+    };
+}
+exports.parseEmbedFontRef = parseEmbedFontRef;
 
 
 /***/ }),
@@ -2280,6 +2338,10 @@ var HtmlRenderer = (function () {
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
+        if (document.themePart) {
+            appendComment(styleContainer, "docx document theme values");
+            this.renderTheme(document.themePart, styleContainer);
+        }
         if (document.stylesPart != null) {
             this.styleMap = this.processStyles(document.stylesPart.styles);
             appendComment(styleContainer, "docx document styles");
@@ -2304,16 +2366,55 @@ var HtmlRenderer = (function () {
             appentElements(bodyContainer, sectionElements);
         }
     };
+    HtmlRenderer.prototype.renderTheme = function (themePart, styleContainer) {
+        var _a, _b;
+        var variables = {};
+        var fontScheme = (_a = themePart.theme) === null || _a === void 0 ? void 0 : _a.fontScheme;
+        if (fontScheme) {
+            if (fontScheme.majorFont) {
+                variables['--docx-majorHAnsi-font'] = fontScheme.majorFont.latinTypeface;
+            }
+            if (fontScheme.minorFont) {
+                variables['--docx-minorHAnsi-font'] = fontScheme.minorFont.latinTypeface;
+            }
+        }
+        var colorScheme = (_b = themePart.theme) === null || _b === void 0 ? void 0 : _b.colorScheme;
+        if (colorScheme) {
+            for (var _i = 0, _c = Object.entries(colorScheme.colors); _i < _c.length; _i++) {
+                var _d = _c[_i], k = _d[0], v = _d[1];
+                variables["--docx-" + k + "-color"] = "#" + v;
+            }
+        }
+        var cssText = this.styleToString("." + this.className, variables);
+        styleContainer.appendChild(createStyleElement(cssText));
+    };
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
+        var _this = this;
         var _loop_1 = function (f) {
-            this_1.document.loadFont(f.refId, f.fontKey).then(function (fontData) {
-                var cssTest = "@font-face {\n                    font-family: \"".concat(f.name, "\";\n                    src: url(").concat(fontData, ");\n                }");
-                appendComment(styleContainer, "Font ".concat(f.name));
-                styleContainer.appendChild(createStyleElement(cssTest));
-            });
+            var _loop_2 = function (ref) {
+                this_1.document.loadFont(ref.id, ref.key).then(function (fontData) {
+                    var cssValues = {
+                        'font-family': f.name,
+                        'src': "url(" + fontData + ")"
+                    };
+                    if (ref.type == "bold" || ref.type == "boldItalic") {
+                        cssValues['font-weight'] = 'bold';
+                    }
+                    if (ref.type == "italic" || ref.type == "boldItalic") {
+                        cssValues['font-style'] = 'italic';
+                    }
+                    appendComment(styleContainer, "Font " + f.name);
+                    var cssText = _this.styleToString("@font-face", cssValues);
+                    styleContainer.appendChild(createStyleElement(cssText));
+                });
+            };
+            for (var _b = 0, _c = f.embedFontRefs; _b < _c.length; _b++) {
+                var ref = _c[_b];
+                _loop_2(ref);
+            }
         };
         var this_1 = this;
-        for (var _i = 0, _a = fontsPart.fonts.filter(function (x) { return x.refId; }); _i < _a.length; _i++) {
+        for (var _i = 0, _a = fontsPart.fonts; _i < _a.length; _i++) {
             var f = _a[_i];
             _loop_1(f);
         }
@@ -2321,7 +2422,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.processClassName = function (className) {
         if (!className)
             return this.className;
-        return "".concat(this.className, "_").concat(className);
+        return this.className + "_" + className;
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
         var stylesMap = (0, utils_1.keyBy)(styles.filter(function (x) { return x.id != null; }), function (x) { return x.id; });
@@ -2329,7 +2430,7 @@ var HtmlRenderer = (function () {
             var style = _a[_i];
             var baseStyle = stylesMap[style.basedOn];
             if (baseStyle) {
-                var _loop_2 = function (styleValues) {
+                var _loop_3 = function (styleValues) {
                     baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
                     if (baseValues && baseValues.length > 0)
                         this_2.copyStyleProperties(baseValues[0].values, styleValues.values);
@@ -2337,11 +2438,11 @@ var HtmlRenderer = (function () {
                 var this_2 = this, baseValues;
                 for (var _b = 0, _c = style.styles; _b < _c.length; _b++) {
                     var styleValues = _c[_b];
-                    _loop_2(styleValues);
+                    _loop_3(styleValues);
                 }
             }
             else if (this.options.debug)
-                console.warn("Can't find base style ".concat(style.basedOn));
+                console.warn("Can't find base style " + style.basedOn);
         }
         for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
             var style = styles_1[_d];
@@ -2408,7 +2509,7 @@ var HtmlRenderer = (function () {
                     elem.style.minHeight = this.renderLength(props.pageSize.height);
             }
             if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
+                elem.style.columnCount = "" + props.columns.numberOfColumns;
                 elem.style.columnGap = this.renderLength(props.columns.space);
                 if (props.columns.separator) {
                     elem.style.columnRule = "1px solid black";
@@ -2519,48 +2620,48 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         var _a;
-        return l ? "".concat(l.value.toFixed(2)).concat((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
+        return l ? "" + l.value.toFixed(2) + ((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
     };
     HtmlRenderer.prototype.renderWrapper = function () {
         var wrapper = document.createElement("div");
-        wrapper.className = "".concat(this.className, "-wrapper");
+        wrapper.className = this.className + "-wrapper";
         return wrapper;
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper>section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; display: flex; flex-flow: column nowrap; }\nsection.").concat(c, ">article { margin-bottom: auto; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }\n");
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
-        var _loop_3 = function () {
-            selector = "p.".concat(this_3.numberingClass(num.id, num.level));
+        var _loop_4 = function () {
+            selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
             if (num.bullet) {
-                var valiable_1 = "--".concat(this_3.className, "-").concat(num.bullet.src).toLowerCase();
-                styleText += this_3.styleToString("".concat(selector, ":before"), {
+                var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString(selector + ":before", {
                     "content": "' '",
                     "display": "inline-block",
-                    "background": "var(".concat(valiable_1, ")")
+                    "background": "var(" + valiable_1 + ")"
                 }, num.bullet.style);
                 this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
-                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
+                    var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else if (num.levelText) {
                 var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_3.styleToString("p.".concat(this_3.numberingClass(num.id, num.level - 1)), {
+                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_3.styleToString("".concat(selector, ":before"), __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+                styleText += this_3.styleToString(selector + ":before", __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
                 listStyleType = this_3.numFormatToCssValue(num.format);
@@ -2570,10 +2671,10 @@ var HtmlRenderer = (function () {
         var this_3 = this, selector, listStyleType;
         for (var _i = 0, numberings_1 = numberings; _i < numberings_1.length; _i++) {
             var num = numberings_1[_i];
-            _loop_3();
+            _loop_4();
         }
         if (rootCounters.length > 0) {
-            styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
+            styleText += this.styleToString("." + this.className + "-wrapper", {
                 "counter-reset": rootCounters.join(" ")
             });
         }
@@ -2591,19 +2692,19 @@ var HtmlRenderer = (function () {
                 if (linkedStyle)
                     subStyles = subStyles.concat(linkedStyle.styles);
                 else if (this.options.debug)
-                    console.warn("Can't find linked style ".concat(style.linked));
+                    console.warn("Can't find linked style " + style.linked);
             }
             for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
                 var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
-                    selector += "".concat(style.target, ".").concat(style.cssName);
+                    selector += style.target + "." + style.cssName;
                 else if (style.target)
-                    selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
+                    selector += style.target + "." + style.cssName + " " + subStyle.target;
                 else
-                    selector += ".".concat(style.cssName, " ").concat(subStyle.target);
+                    selector += "." + style.cssName + " " + subStyle.target;
                 if (defautStyles[style.target] == style)
-                    selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
+                    selector = "." + this.className + " " + style.target + ", " + selector;
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
@@ -2613,8 +2714,7 @@ var HtmlRenderer = (function () {
         var _this = this;
         var footnotes = footnoteIds.map(function (id) { return _this.footnoteMap[id]; }).filter(function (x) { return x; });
         if (footnotes.length > 0) {
-            var result = this.createElement("ol");
-            this.renderElements(footnotes, result);
+            var result = this.createElement("ol", null, this.renderElements(footnotes));
             into.appendChild(result);
         }
     };
@@ -2656,6 +2756,8 @@ var HtmlRenderer = (function () {
                 return this.renderContainer(elem, "li");
             case dom_1.DomType.FootnoteReference:
                 return this.renderFootnoteReference(elem);
+            case dom_1.DomType.NoBreakHyphen:
+                return this.createElement("wbr");
         }
         return null;
     };
@@ -2675,9 +2777,7 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderContainer = function (elem, tagName) {
-        var result = this.createElement(tagName);
-        this.renderChildren(elem, result);
-        return result;
+        return this.createElement(tagName, null, this.renderChildren(elem));
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
         var result = this.createElement("p");
@@ -2747,13 +2847,13 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSymbol = function (elem) {
         var span = this.createElement("span");
         span.style.fontFamily = elem.font;
-        span.innerHTML = "&#x".concat(elem.char, ";");
+        span.innerHTML = "&#x" + elem.char + ";";
         return span;
     };
     HtmlRenderer.prototype.renderFootnoteReference = function (elem) {
         var result = this.createElement("sup");
         this.currentFootnoteIds.push(elem.id);
-        result.textContent = "".concat(this.currentFootnoteIds.length);
+        result.textContent = "" + this.currentFootnoteIds.length;
         return result;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
@@ -2802,7 +2902,7 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderTableColumns = function (columns) {
-        var result = this.createElement("colGroup");
+        var result = this.createElement("colgroup");
         for (var _i = 0, columns_1 = columns; _i < columns_1.length; _i++) {
             var col = columns_1[_i];
             var colElem = this.createElement("col");
@@ -2842,20 +2942,20 @@ var HtmlRenderer = (function () {
             ouput.className = input.className;
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
-        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
+        return this.className + "-num-" + id + "-" + lvl;
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
         var result = selectors + " {\r\n";
         for (var key in values) {
-            result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
+            result += "  " + key + ": " + values[key] + ";\r\n";
         }
         if (cssText)
-            result += ";" + cssText;
+            result += cssText;
         return result + "}\r\n";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
-        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
+        return this.className + "-num-" + id + "-" + lvl;
     };
     HtmlRenderer.prototype.levelTextToContent = function (text, suff, id, numformat) {
         var _this = this;
@@ -2866,9 +2966,9 @@ var HtmlRenderer = (function () {
         };
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(".concat(_this.numberingCounter(id, lvl), ", ").concat(numformat, ")\"");
+            return "\"counter(" + _this.numberingCounter(id, lvl) + ", " + numformat + ")\"";
         });
-        return "\"".concat(result).concat((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "", "\"");
+        return "\"" + result + ((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "") + "\"";
     };
     HtmlRenderer.prototype.numFormatToCssValue = function (format) {
         var mapping = {
@@ -2885,9 +2985,12 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.escapeClassName = function (className) {
         return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
-    HtmlRenderer.prototype.createElement = function (tagName, props) {
+    HtmlRenderer.prototype.createElement = function (tagName, props, children) {
         if (props === void 0) { props = undefined; }
-        return Object.assign(this.htmlDocument.createElement(tagName), props);
+        if (children === void 0) { children = undefined; }
+        var result = Object.assign(this.htmlDocument.createElement(tagName), props);
+        children && children.forEach(function (c) { return result.appendChild(c); });
+        return result;
     };
     return HtmlRenderer;
 }());
@@ -2938,7 +3041,7 @@ function updateTabStop(elem, tabs, pixelToPoint) {
     if (tab == null)
         return;
     elem.style.display = "inline-block";
-    elem.style.width = "".concat((tab.position.value - left), "pt");
+    elem.style.width = (tab.position.value - left) + "pt";
     switch (tab.leader) {
         case "dot":
         case "middleDot":
@@ -3224,14 +3327,7 @@ var XmlParser = (function () {
     };
     XmlParser.prototype.boolAttr = function (node, attrName, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }
-        var v = this.attr(node, attrName);
-        switch (v) {
-            case "true": return true;
-            case "false": return false;
-            case "1": return true;
-            case "0": return false;
-            default: return defaultValue;
-        }
+        return (0, common_1.convertBoolean)(this.attr(node, attrName), defaultValue);
     };
     XmlParser.prototype.lengthAttr = function (node, attrName, usage) {
         if (usage === void 0) { usage = common_1.LengthUsage.Dxa; }
@@ -3433,7 +3529,7 @@ function addElementClass(element, className) {
 }
 exports.addElementClass = addElementClass;
 function appendClass(classList, className) {
-    return (!classList) ? className : "".concat(classList, " ").concat(className);
+    return (!classList) ? className : classList + " " + className;
 }
 exports.appendClass = appendClass;
 function splitPath(path) {
@@ -3450,7 +3546,7 @@ function resolvePath(path, base) {
         return url.substr(prefix.length);
     }
     catch (_a) {
-        return "".concat(base).concat(path);
+        return "" + base + path;
     }
 }
 exports.resolvePath = resolvePath;
@@ -3566,7 +3662,7 @@ var WordDocument = (function () {
                 this.stylesPart = part = new styles_part_1.StylesPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Theme:
-                part = new theme_part_1.ThemePart(this._package, path);
+                this.themePart = part = new theme_part_1.ThemePart(this._package, path);
                 break;
             case relationship_1.RelationshipTypes.Footnotes:
                 this.footnotesPart = part = new footnotes_part_1.FootnotesPart(this._package, path, this._parser);

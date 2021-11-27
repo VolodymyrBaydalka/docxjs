@@ -5,38 +5,43 @@ const PATHS = {
   build: path.join(__dirname, './dist')
 }
 
-var config = {
-  mode: 'development',
-  entry: {
-    'docx-preview': PATHS.src + '/docx-preview.ts'
-  },
-  output: {
-    path: PATHS.build,
-    filename: '[name].js',
-    library: 'docx',
-    libraryTarget: 'umd'
-  },
-  devtool: 'source-map',
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        use: 'ts-loader'
-      }
-    ]
-  },
-  resolve: {
-    extensions: ['.ts', '.js']
-  },
-  externals: {
-    "jszip": "JSZip",
+function buildConfig(prod, es6) {
+  const outputFilename = `[name]${es6 ? '.es6' : ''}${prod ? '.min' : ''}.js`;
+  const tsLoaderOptions = es6 ? { compilerOptions: { target: "es6" } } : {};
+
+  return {
+    mode: 'development',
+    entry: {
+      'docx-preview': PATHS.src + '/docx-preview.ts'
+    },
+    output: {
+      path: PATHS.build,
+      filename: outputFilename,
+      library: 'docx',
+      libraryTarget: 'umd'
+    },
+    devtool: 'source-map',
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          use: [{
+            loader: 'ts-loader',
+            options: tsLoaderOptions
+          }]
+        }
+      ]
+    },
+    resolve: {
+      extensions: ['.ts', '.js']
+    },
+    externals: {
+      "jszip": "JSZip",
+    }
   }
 }
 
-module.exports = (env, argv) => {
-  if (argv.mode === 'production') {
-    config.output.filename = '[name].min.js'
-  }
 
-  return config;
+module.exports = (env, argv) => {
+  return buildConfig(argv.mode === 'production', false);
 };

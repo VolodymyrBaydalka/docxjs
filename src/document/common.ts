@@ -1,7 +1,9 @@
 import { XmlParser } from "../parser/xml-parser";
 
 export const ns = {
-    wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
+    picture: "http://schemas.openxmlformats.org/drawingml/2006/picture"
 }
 
 export type LengthType = "px" | "pt" | "%";
@@ -34,7 +36,34 @@ export const LengthUsage: Record<string, LengthUsageType> = {
 }
 
 export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+    if (!val) {
+        return null;
+    }
+
+    //"simplified" docx documents use pt's as units
+    if (val.endsWith('pt')) {
+        return { value: parseFloat(val), type: 'pt' };
+    }
+
+    if (val.endsWith('%')) {
+        return { value: parseFloat(val), type: '%' };
+    }
+
+    return { value: parseInt(val) * usage.mul, type: usage.unit };
+}
+
+export function convertBoolean(v: string, defaultValue = false): boolean {
+    switch (v) {
+        case "1": return true;
+        case "0": return false;
+        case "true": return true;
+        case "false": return false;
+        default: return defaultValue;
+    }
+}
+
+export function convertPercentage(val: string): number {
+    return val ? parseInt(val) / 100 : null;
 }
 
 export function parseCommonProperty(elem: Element, props: CommonProperties, xml: XmlParser): boolean {

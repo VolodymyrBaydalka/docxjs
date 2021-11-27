@@ -8,8 +8,24 @@
   .docx table td, .docx table th { vertical-align: top; }
   .docx p { margin: 0pt; min-height: 1em; }
   .docx span { white-space: pre-wrap; }
+  </style><!--docx document theme values--><style>.docx {
+    --docx-majorHAnsi-font: Calibri Light;
+    --docx-minorHAnsi-font: Calibri;
+    --docx-dk1-color: #000000;
+    --docx-lt1-color: #FFFFFF;
+    --docx-dk2-color: #44546A;
+    --docx-lt2-color: #E7E6E6;
+    --docx-accent1-color: #4472C4;
+    --docx-accent2-color: #ED7D31;
+    --docx-accent3-color: #A5A5A5;
+    --docx-accent4-color: #FFC000;
+    --docx-accent5-color: #5B9BD5;
+    --docx-accent6-color: #70AD47;
+    --docx-hlink-color: #0563C1;
+    --docx-folHlink-color: #954F72;
+  }
   </style><!--docx document styles--><style>.docx span {
-    font-family: Calibri;
+    font-family: Calibri, var(--docx-minorHAnsi-font);
     min-height: 11.00pt;
     font-size: 11.00pt;
   }
@@ -22,7 +38,7 @@
     text-align: left;
   }
   .docx p, p.docx_Normal span {
-    font-family: Calibri;
+    font-family: Calibri, var(--docx-minorHAnsi-font);
     color: black;
     min-height: 11.00pt;
     font-size: 11.00pt;
@@ -48,7 +64,7 @@
     text-align: left;
   }
   p.docx_Style15 span {
-    font-family: Calibri;
+    font-family: Calibri, var(--docx-minorHAnsi-font);
     color: black;
     min-height: 11.00pt;
     font-size: 11.00pt;
@@ -60,7 +76,7 @@
     text-align: left;
   }
   p.docx_Style16 span {
-    font-family: Calibri;
+    font-family: Calibri, var(--docx-minorHAnsi-font);
     color: black;
     min-height: 11.00pt;
     font-size: 11.00pt;
@@ -75,7 +91,7 @@
     font-style: italic;
     min-height: 12.00pt;
     font-size: 12.00pt;
-    font-family: Calibri;
+    font-family: Calibri, var(--docx-minorHAnsi-font);
     color: black;
   }
   p.docx_Style18 {
@@ -85,7 +101,7 @@
     text-align: left;
   }
   p.docx_Style18 span {
-    font-family: Calibri;
+    font-family: Calibri, var(--docx-minorHAnsi-font);
     color: black;
     min-height: 11.00pt;
     font-size: 11.00pt;

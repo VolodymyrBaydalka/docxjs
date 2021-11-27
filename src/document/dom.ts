@@ -3,6 +3,7 @@ export enum DomType {
     Paragraph = "paragraph",
     Run = "run",
     Break = "break",
+    NoBreakHyphen = "noBreakHyphen",
     Table = "table",
     Row = "row",
     Cell = "cell",
