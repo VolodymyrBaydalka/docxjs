@@ -24,28 +24,32 @@ export interface CommonProperties {
 export type LengthUsageType = { mul: number, unit: LengthType };
 
 export const LengthUsage: Record<string, LengthUsageType> = {
-    Dxa: { mul: 0.05, unit: "pt" }, //twips
-    Emu: { mul: 1 / 12700, unit: "pt" },
-    FontSize: { mul: 0.5, unit: "pt" },
-    Border: { mul: 0.125, unit: "pt" },
-    Point: { mul: 1, unit: "pt" },
-    Percent: { mul: 0.02, unit: "%" },
-    LineHeight: { mul: 1 / 240, unit: null }
+    Dxa: {mul: 0.05, unit: "pt"}, //twips
+    Emu: {mul: 1 / 12700, unit: "pt"},
+    FontSize: {mul: 0.5, unit: "pt"},
+    Border: {mul: 0.125, unit: "pt"},
+    Point: {mul: 1, unit: "pt"},
+    Percent: {mul: 0.02, unit: "%"},
+    LineHeight: {mul: 1 / 240, unit: null}
 }
 
 export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
-    if(val.indexOf("pt") > 0) {
-        return { value: parseInt(val), type: "pt" };
+    if (!val) {
+        return null;
     }
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+
+    if (val.indexOf("pt") > 0) {
+        return {value: parseInt(val), type: "pt"};
+    }
+    return {value: parseInt(val) * usage.mul, type: usage.unit};
 }
 
 export function parseCommonProperty(elem: Element, props: CommonProperties, xml: XmlParser): boolean {
-    if(elem.namespaceURI != ns.wordml)
+    if (elem.namespaceURI != ns.wordml)
         return false;
 
-    switch(elem.localName) {
-        case "color": 
+    switch (elem.localName) {
+        case "color":
             props.color = xml.attr(elem, "val");
             break;
 

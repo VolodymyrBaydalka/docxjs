@@ -1589,10 +1589,13 @@ exports.LengthUsage = {
 };
 function convertLength(val, usage) {
     if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
+    if (!val) {
+        return null;
+    }
     if (val.indexOf("pt") > 0) {
         return { value: parseInt(val), type: "pt" };
     }
-    return val ? { value: parseInt(val) * usage.mul, type: usage.unit } : null;
+    return { value: parseInt(val) * usage.mul, type: usage.unit };
 }
 exports.convertLength = convertLength;
 function parseCommonProperty(elem, props, xml) {
