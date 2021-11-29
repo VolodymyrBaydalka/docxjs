@@ -38,6 +38,7 @@ export interface NumberingLevel {
     text: string;
     justification: string;
     bulletPictureId: string;
+    paragraphStyle: string;
     paragraphProps: ParagraphProperties;
     runProps: RunProperties;
 }
@@ -145,6 +146,9 @@ export function parseNumberingLevel(elem: Element, xml: XmlParser): NumberingLev
                 break;
             case "lvlPicBulletId":
                 result.bulletPictureId = xml.attr(e, "val");
+                break;
+            case "pStyle":
+                result.paragraphStyle = xml.attr(e, "val");
                 break;
             case "pPr":
                 result.paragraphProps = parseParagraphProperties(e, xml);

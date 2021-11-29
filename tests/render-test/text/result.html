@@ -2,13 +2,13 @@
   .docx-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
   .docx-wrapper>section.docx { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
   .docx { color: black; }
-  section.docx { box-sizing: border-box; display: flex; flex-flow: column nowrap; }
+  section.docx { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; }
   section.docx>article { margin-bottom: auto; }
   .docx table { border-collapse: collapse; }
   .docx table td, .docx table th { vertical-align: top; }
   .docx p { margin: 0pt; min-height: 1em; }
   .docx span { white-space: pre-wrap; }
-  </style><!--docx document theme values--><style>.docx {
+  </style><!--docxjs document theme values--><style>.docx {
     --docx-majorHAnsi-font: Calibri Light;
     --docx-minorHAnsi-font: Calibri;
     --docx-dk1-color: #000000;
@@ -24,7 +24,7 @@
     --docx-hlink-color: #0563C1;
     --docx-folHlink-color: #954F72;
   }
-  </style><!--docx document styles--><style>.docx span {
+  </style><!--docxjs document styles--><style>.docx span {
     font-family: Calibri, var(--docx-minorHAnsi-font);
     min-height: 11.00pt;
     font-size: 11.00pt;

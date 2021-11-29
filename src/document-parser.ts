@@ -353,6 +353,7 @@ export class DocumentParser {
         var result: IDomNumbering = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
+            pStyleName: undefined,
             pStyle: {},
             rStyle: {},
             suff: "tab"
@@ -375,6 +376,10 @@ export class DocumentParser {
 
                 case "lvlText":
                     result.levelText = xml.stringAttr(n, "val");
+                    break;
+
+                case "pStyle":
+                    result.pStyleName = xml.stringAttr(n, "val");
                     break;
 
                 case "numFmt":
@@ -972,6 +977,11 @@ export class DocumentParser {
                     this.parseBorderProperties(c, style);
                     break;
 
+                case "vanish":
+                    if (xml.boolAttr(c, "val", true))
+                        style["display"] = "none";
+                    break;
+
                 case "noWrap":
                     //TODO
                     //style["white-space"] = "nowrap";
@@ -1014,7 +1024,7 @@ export class DocumentParser {
     parseUnderline(node: Element, style: Record<string, string>) {
         var val = xml.stringAttr(node, "val");
 
-        if (val == null || val == "none")
+        if (val == null)
             return;
 
         switch (val) {
@@ -1051,6 +1061,10 @@ export class DocumentParser {
 
             case "words":
                 style["text-decoration"] = "underline";
+                break;
+
+            case "none":
+                style["text-decoration"] = "none";
                 break;
         }
 

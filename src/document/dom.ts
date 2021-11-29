@@ -73,6 +73,7 @@ export interface IDomTableColumn {
 export interface IDomNumbering {
     id: string;
     level: number;
+    pStyleName: string;
     pStyle: Record<string, string>;
     rStyle: Record<string, string>;
     levelText?: string;

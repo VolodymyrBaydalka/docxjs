@@ -485,6 +485,7 @@ var DocumentParser = (function () {
         var result = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
+            pStyleName: undefined,
             pStyle: {},
             rStyle: {},
             suff: "tab"
@@ -503,6 +504,9 @@ var DocumentParser = (function () {
                     break;
                 case "lvlText":
                     result.levelText = xml.stringAttr(n, "val");
+                    break;
+                case "pStyle":
+                    result.pStyleName = xml.stringAttr(n, "val");
                     break;
                 case "numFmt":
                     result.format = xml.stringAttr(n, "val");
@@ -984,6 +988,10 @@ var DocumentParser = (function () {
                 case "tcBorders":
                     _this.parseBorderProperties(c, style);
                     break;
+                case "vanish":
+                    if (xml.boolAttr(c, "val", true))
+                        style["display"] = "none";
+                    break;
                 case "noWrap":
                     break;
                 case "tblCellMar":
@@ -1014,7 +1022,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseUnderline = function (node, style) {
         var val = xml.stringAttr(node, "val");
-        if (val == null || val == "none")
+        if (val == null)
             return;
         switch (val) {
             case "dash":
@@ -1045,6 +1053,9 @@ var DocumentParser = (function () {
                 break;
             case "words":
                 style["text-decoration"] = "underline";
+                break;
+            case "none":
+                style["text-decoration"] = "none";
                 break;
         }
         var col = xml.colorAttr(node, "color");
@@ -2325,7 +2336,9 @@ var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
         this.className = "docx";
+        this.styleMap = {};
         this.footnoteMap = {};
+        this.createElement = createElement;
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
@@ -2339,16 +2352,17 @@ var HtmlRenderer = (function () {
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.themePart) {
-            appendComment(styleContainer, "docx document theme values");
+            appendComment(styleContainer, "docxjs document theme values");
             this.renderTheme(document.themePart, styleContainer);
         }
         if (document.stylesPart != null) {
             this.styleMap = this.processStyles(document.stylesPart.styles);
-            appendComment(styleContainer, "docx document styles");
+            appendComment(styleContainer, "docxjs document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
         if (document.numberingPart) {
-            appendComment(styleContainer, "docx document numbering styles");
+            this.prodessNumberings(document.numberingPart.domNumberings);
+            appendComment(styleContainer, "docxjs document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
         if (document.footnotesPart) {
@@ -2358,12 +2372,10 @@ var HtmlRenderer = (function () {
             this.renderFontTable(document.fontTablePart, styleContainer);
         var sectionElements = this.renderSections(document.documentPart.body);
         if (this.options.inWrapper) {
-            var wrapper = this.renderWrapper();
-            appentElements(wrapper, sectionElements);
-            bodyContainer.appendChild(wrapper);
+            bodyContainer.appendChild(this.renderWrapper(sectionElements));
         }
         else {
-            appentElements(bodyContainer, sectionElements);
+            appendChildren(bodyContainer, sectionElements);
         }
     };
     HtmlRenderer.prototype.renderTheme = function (themePart, styleContainer) {
@@ -2403,7 +2415,7 @@ var HtmlRenderer = (function () {
                     if (ref.type == "italic" || ref.type == "boldItalic") {
                         cssValues['font-style'] = 'italic';
                     }
-                    appendComment(styleContainer, "Font " + f.name);
+                    appendComment(styleContainer, "docxjs " + f.name + " font");
                     var cssText = _this.styleToString("@font-face", cssValues);
                     styleContainer.appendChild(createStyleElement(cssText));
                 });
@@ -2430,10 +2442,13 @@ var HtmlRenderer = (function () {
             var style = _a[_i];
             var baseStyle = stylesMap[style.basedOn];
             if (baseStyle) {
+                style.paragraphProps = (0, utils_1.mergeDeep)(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = (0, utils_1.mergeDeep)(style.runProps, baseStyle.runProps);
                 var _loop_3 = function (styleValues) {
-                    baseValues = baseStyle.styles.filter(function (x) { return x.target == styleValues.target; });
-                    if (baseValues && baseValues.length > 0)
-                        this_2.copyStyleProperties(baseValues[0].values, styleValues.values);
+                    baseValues = baseStyle.styles.find(function (x) { return x.target == styleValues.target; });
+                    if (baseValues) {
+                        this_2.copyStyleProperties(baseValues.values, styleValues.values);
+                    }
                 };
                 var this_2 = this, baseValues;
                 for (var _b = 0, _c = style.styles; _b < _c.length; _b++) {
@@ -2449,6 +2464,16 @@ var HtmlRenderer = (function () {
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
         return stylesMap;
+    };
+    HtmlRenderer.prototype.prodessNumberings = function (numberings) {
+        var _a;
+        for (var _i = 0, _b = numberings.filter(function (n) { return n.pStyleName; }); _i < _b.length; _i++) {
+            var num = _b[_i];
+            var style = this.styleMap[num.pStyleName];
+            if ((_a = style.paragraphProps) === null || _a === void 0 ? void 0 : _a.numbering) {
+                style.paragraphProps.numbering.level = num.level;
+            }
+        }
     };
     HtmlRenderer.prototype.processElement = function (element) {
         if (element.children) {
@@ -2622,14 +2647,12 @@ var HtmlRenderer = (function () {
         var _a;
         return l ? "" + l.value.toFixed(2) + ((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
     };
-    HtmlRenderer.prototype.renderWrapper = function () {
-        var wrapper = document.createElement("div");
-        wrapper.className = this.className + "-wrapper";
-        return wrapper;
+    HtmlRenderer.prototype.renderWrapper = function (children) {
+        return this.createElement("div", { className: this.className + "-wrapper" }, children);
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2780,13 +2803,16 @@ var HtmlRenderer = (function () {
         return this.createElement(tagName, null, this.renderChildren(elem));
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
+        var _a, _b;
         var result = this.createElement("p");
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         this.renderCommonProeprties(result.style, elem);
-        if (elem.numbering) {
-            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
+        var style = elem.styleName && this.styleMap[elem.styleName];
+        var numbering = (_a = elem.numbering) !== null && _a !== void 0 ? _a : (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.numbering;
+        if (numbering) {
+            var numberingClass = this.numberingClass(numbering.id, numbering.level);
             result.className = (0, utils_1.appendClass)(result.className, numberingClass);
         }
         if (elem.styleName) {
@@ -2865,9 +2891,8 @@ var HtmlRenderer = (function () {
                 if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
-                tabSpan.style.display = "inline-block";
                 (0, javascript_1.updateTabStop)(tabSpan, paragraph.tabs);
-            }, 0);
+            }, 1500);
         }
         return tabSpan;
     };
@@ -2985,29 +3010,24 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.escapeClassName = function (className) {
         return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
-    HtmlRenderer.prototype.createElement = function (tagName, props, children) {
-        if (props === void 0) { props = undefined; }
-        if (children === void 0) { children = undefined; }
-        var result = Object.assign(this.htmlDocument.createElement(tagName), props);
-        children && children.forEach(function (c) { return result.appendChild(c); });
-        return result;
-    };
     return HtmlRenderer;
 }());
 exports.HtmlRenderer = HtmlRenderer;
-function appentElements(container, children) {
-    for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
-        var c = children_1[_i];
-        container.appendChild(c);
-    }
+function createElement(tagName, props, children) {
+    if (props === void 0) { props = undefined; }
+    if (children === void 0) { children = undefined; }
+    var result = Object.assign(document.createElement(tagName), props);
+    children && appendChildren(result, children);
+    return result;
 }
 function removeAllElements(elem) {
     elem.innerHTML = '';
 }
+function appendChildren(elem, children) {
+    children.forEach(function (c) { return elem.appendChild(c); });
+}
 function createStyleElement(cssText) {
-    var styleElement = document.createElement("style");
-    styleElement.innerHTML = cssText;
-    return styleElement;
+    return createElement("style", { innerHTML: cssText });
 }
 function appendComment(elem, comment) {
     elem.appendChild(document.createComment(comment));
@@ -3036,21 +3056,39 @@ function updateTabStop(elem, tabs, pixelToPoint) {
     var p = elem.closest("p");
     var tbb = elem.getBoundingClientRect();
     var pbb = p.getBoundingClientRect();
-    var left = (tbb.left - pbb.left) * pixelToPoint;
+    var pcs = getComputedStyle(p);
+    var marginLeft = parseFloat(pcs.marginLeft);
+    var textIntent = parseFloat(pcs.textIndent);
+    var pOffset = pbb.left + marginLeft;
+    var left = (tbb.left - pOffset) * pixelToPoint;
     var tab = tabs.find(function (t) { return t.style != "clear" && t.position.value > left; });
     if (tab == null)
         return;
-    elem.style.display = "inline-block";
-    elem.style.width = (tab.position.value - left) + "pt";
+    var width = 1;
+    if (tab.style == "right") {
+        var range = document.createRange();
+        range.setStart(p.firstChild, 0);
+        range.setEndAfter(p);
+        var nextBB = range.getBoundingClientRect();
+        var prevRight = (nextBB.width + marginLeft + textIntent) * pixelToPoint;
+        width = Math.floor(tab.position.value - prevRight) + "pt";
+    }
+    else {
+        width = (tab.position.value - left) + "pt";
+    }
+    elem.innerHTML = "&nbsp;";
+    elem.style.textDecoration = "inherit";
+    elem.style.wordSpacing = width;
     switch (tab.leader) {
         case "dot":
         case "middleDot":
-            elem.style.borderBottom = "1px black dotted";
+            elem.style.textDecoration = "underline";
+            elem.style.textDecorationStyle = "dotted";
             break;
         case "hyphen":
         case "heavy":
         case "underscore":
-            elem.style.borderBottom = "1px black solid";
+            elem.style.textDecoration = "underline";
             break;
     }
 }
@@ -3208,6 +3246,9 @@ function parseNumberingLevel(elem, xml) {
                 break;
             case "lvlPicBulletId":
                 result.bulletPictureId = xml.attr(e, "val");
+                break;
+            case "pStyle":
+                result.paragraphStyle = xml.attr(e, "val");
                 break;
             case "pPr":
                 result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(e, xml);

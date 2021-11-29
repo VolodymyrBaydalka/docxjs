@@ -7,7 +7,7 @@ import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { ParagraphElement } from './document/paragraph';
-import { appendClass, keyBy } from './utils';
+import { appendClass, keyBy, mergeDeep } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -25,7 +25,7 @@ export class HtmlRenderer {
     className: string = "docx";
     document: WordDocument;
     options: Options;
-    styleMap: any;
+    styleMap: Record<string, IDomStyle> = {};
 
     footnoteMap: Record<string, WmlFootnote> = {};
     currentFootnoteIds: string[];
@@ -48,19 +48,21 @@ export class HtmlRenderer {
         styleContainer.appendChild(this.renderDefaultStyle());
 
         if (document.themePart) {
-            appendComment(styleContainer, "docx document theme values");
+            appendComment(styleContainer, "docxjs document theme values");
             this.renderTheme(document.themePart, styleContainer);
         }
 
         if (document.stylesPart != null) {
             this.styleMap = this.processStyles(document.stylesPart.styles);
 
-            appendComment(styleContainer, "docx document styles");
+            appendComment(styleContainer, "docxjs document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
 
         if (document.numberingPart) {
-            appendComment(styleContainer, "docx document numbering styles");
+            this.prodessNumberings(document.numberingPart.domNumberings);
+
+            appendComment(styleContainer, "docxjs document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
             //styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
         }
@@ -75,18 +77,15 @@ export class HtmlRenderer {
         var sectionElements = this.renderSections(document.documentPart.body);
 
         if (this.options.inWrapper) {
-            var wrapper = this.renderWrapper();
-            appentElements(wrapper, sectionElements);
-            bodyContainer.appendChild(wrapper);
-        }
-        else {
-            appentElements(bodyContainer, sectionElements);
+            bodyContainer.appendChild(this.renderWrapper(sectionElements));
+        } else {
+            appendChildren(bodyContainer, sectionElements);
         }
     }
 
     renderTheme(themePart: ThemePart, styleContainer: HTMLElement) {
         const variables = {};
-        const fontScheme = themePart.theme?.fontScheme; 
+        const fontScheme = themePart.theme?.fontScheme;
 
         if (fontScheme) {
             if (fontScheme.majorFont) {
@@ -98,7 +97,7 @@ export class HtmlRenderer {
             }
         }
 
-        const colorScheme = themePart.theme?.colorScheme; 
+        const colorScheme = themePart.theme?.colorScheme;
 
         if (colorScheme) {
             for (let [k, v] of Object.entries(colorScheme.colors)) {
@@ -127,7 +126,7 @@ export class HtmlRenderer {
                         cssValues['font-style'] = 'italic';
                     }
 
-                    appendComment(styleContainer, `Font ${f.name}`);
+                    appendComment(styleContainer, `docxjs ${f.name} font`);
                     const cssText = this.styleToString("@font-face", cssValues);
                     styleContainer.appendChild(createStyleElement(cssText));
                 });
@@ -144,16 +143,20 @@ export class HtmlRenderer {
 
     processStyles(styles: IDomStyle[]) {
         const stylesMap = keyBy(styles.filter(x => x.id != null), x => x.id);
-        
+
         for (let style of styles.filter(x => x.basedOn)) {
             var baseStyle = stylesMap[style.basedOn];
 
             if (baseStyle) {
-                for (let styleValues of style.styles) {
-                    var baseValues = baseStyle.styles.filter(x => x.target == styleValues.target);
+                style.paragraphProps = mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = mergeDeep(style.runProps, baseStyle.runProps);
 
-                    if (baseValues && baseValues.length > 0)
-                        this.copyStyleProperties(baseValues[0].values, styleValues.values);
+                for (let styleValues of style.styles) {
+                    var baseValues = baseStyle.styles.find(x => x.target == styleValues.target);
+
+                    if (baseValues) {
+                        this.copyStyleProperties(baseValues.values, styleValues.values);
+                    }
                 }
             }
             else if (this.options.debug)
@@ -165,6 +168,16 @@ export class HtmlRenderer {
         }
 
         return stylesMap;
+    }
+
+    prodessNumberings(numberings: IDomNumbering[]) {
+        for (let num of numberings.filter(n => n.pStyleName)) {
+            const style = this.styleMap[num.pStyleName];
+
+            if (style.paragraphProps?.numbering) {
+                style.paragraphProps.numbering.level = num.level;
+            }
+        }
     }
 
     processElement(element: OpenXmlElement) {
@@ -253,14 +266,14 @@ export class HtmlRenderer {
             const props = section.sectProps || document.props;
             const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            
+
             var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
             var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
 
             headerPart && this.renderElements([headerPart.headerElement], sectionElement);
 
             var contentElement = this.createElement("article");
-            this.renderElements(section.elements,contentElement);
+            this.renderElements(section.elements, contentElement);
             sectionElement.appendChild(contentElement);
 
             if (this.options.renderFootnotes) {
@@ -277,9 +290,9 @@ export class HtmlRenderer {
 
     findHeaderFooter<T extends Part>(refs: FooterHeaderReference[], page: number): T {
         var ref = refs ? ((page == 0 ? refs.find(x => x.type == "first") : null)
-            ?? (page % 2 ==0 ? refs.find(x => x.type == "even") : null)
+            ?? (page % 2 == 0 ? refs.find(x => x.type == "even") : null)
             ?? refs.find(x => x.type == "default")) : null;
-        
+
         if (ref == null)
             return null;
 
@@ -293,7 +306,7 @@ export class HtmlRenderer {
         if ((elem as BreakElement).break == "lastRenderedPageBreak")
             return !this.options.ignoreLastRenderedPageBreak;
 
-        return (elem as BreakElement).break == "page";  
+        return (elem as BreakElement).break == "page";
     }
 
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
@@ -372,12 +385,8 @@ export class HtmlRenderer {
         return l ? `${l.value.toFixed(2)}${l.type ?? ''}` : null;
     }
 
-    renderWrapper() {
-        var wrapper = document.createElement("div");
-
-        wrapper.className = `${this.className}-wrapper`
-
-        return wrapper;
+    renderWrapper(children: HTMLElement[]) {
+        return this.createElement("div", { className: `${this.className}-wrapper` }, children);
     }
 
     renderDefaultStyle() {
@@ -386,7 +395,7 @@ export class HtmlRenderer {
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; }
-section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; }
+section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; }
 section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
@@ -562,7 +571,7 @@ section.${c}>article { margin-bottom: auto; }
 
     renderFootnotes(footnoteIds: string[], into: HTMLElement) {
         var footnotes = footnoteIds.map(id => this.footnoteMap[id]).filter(x => x);
-        
+
         if (footnotes.length > 0) {
             var result = this.createElement("ol", null, this.renderElements(footnotes));
             into.appendChild(result);
@@ -621,7 +630,7 @@ section.${c}>article { margin-bottom: auto; }
 
             case DomType.Footnote:
                 return this.renderContainer(elem, "li");
-    
+
             case DomType.FootnoteReference:
                 return this.renderFootnoteReference(elem as FootnoteReferenceElement);
 
@@ -662,8 +671,11 @@ section.${c}>article { margin-bottom: auto; }
 
         this.renderCommonProeprties(result.style, elem);
 
-        if (elem.numbering) {
-            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
+        const style = elem.styleName && this.styleMap[elem.styleName];
+        const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
+
+        if (numbering) {
+            var numberingClass = this.numberingClass(numbering.id, numbering.level);
             result.className = appendClass(result.className, numberingClass);
         }
 
@@ -752,7 +764,7 @@ section.${c}>article { margin-bottom: auto; }
 
     renderFootnoteReference(elem: FootnoteReferenceElement) {
         var result = this.createElement("sup");
-        this.currentFootnoteIds.push(elem.id); 
+        this.currentFootnoteIds.push(elem.id);
         result.textContent = `${this.currentFootnoteIds.length}`;
         return result;
     }
@@ -770,9 +782,8 @@ section.${c}>article { margin-bottom: auto; }
                     return;
 
                 paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
-                tabSpan.style.display = "inline-block";
                 updateTabStop(tabSpan, paragraph.tabs);
-            }, 0);
+            }, 1500);
         }
 
         return tabSpan;
@@ -895,7 +906,7 @@ section.${c}>article { margin-bottom: auto; }
     levelTextToContent(text: string, suff: string, id: string, numformat: string) {
         const suffMap = {
             "tab": "\\9",
-            "space": "\\a0",            
+            "space": "\\a0",
         };
 
         var result = text.replace(/%\d*/g, s => {
@@ -924,30 +935,29 @@ section.${c}>article { margin-bottom: auto; }
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
 
-    createElement<T extends keyof HTMLElementTagNameMap>(
-        tagName: T, 
-        props: Partial<Record<keyof HTMLElementTagNameMap[T], any>> = undefined,
-        children: Node[] = undefined
-    ): HTMLElementTagNameMap[T] {
-        var result = Object.assign(this.htmlDocument.createElement(tagName), props);
-        children && children.forEach(c => result.appendChild(c));
-        return result;
-    }
+    createElement = createElement;
 }
 
-function appentElements(container: HTMLElement, children: HTMLElement[]) {
-    for (let c of children)
-        container.appendChild(c);
+function createElement<T extends keyof HTMLElementTagNameMap>(
+    tagName: T,
+    props: Partial<Record<keyof HTMLElementTagNameMap[T], any>> = undefined,
+    children: Node[] = undefined
+): HTMLElementTagNameMap[T] {
+    var result = Object.assign(document.createElement(tagName), props);
+    children && appendChildren(result, children);
+    return result;
 }
 
 function removeAllElements(elem: HTMLElement) {
     elem.innerHTML = '';
 }
 
+function appendChildren(elem: HTMLElement, children: Node[]) {
+    children.forEach(c => elem.appendChild(c));
+}
+
 function createStyleElement(cssText: string) {
-    var styleElement = document.createElement("style");
-    styleElement.innerHTML = cssText;
-    return styleElement;
+    return createElement("style", { innerHTML: cssText });
 }
 
 function appendComment(elem: HTMLElement, comment: string) {

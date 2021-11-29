@@ -40,7 +40,7 @@ renderAsync(
         ignoreFonts: boolean = false, //disables fonts rendering
         breakPages: boolean = true, //enables page breaking on page breaks
         ignoreLastRenderedPageBreak: boolean = true, //disables page breaking on lastRenderedPageBreak elements
-        experimental: boolean = false, //enables experimental features
+        experimental: boolean = false, //enables experimental features (tab stops calculation)
         trimXmlDeclaration: boolean = true, //if true, xml declaration will be removed from xml documents before parsing
         debug: boolean = false, //enables additional logging
     }
