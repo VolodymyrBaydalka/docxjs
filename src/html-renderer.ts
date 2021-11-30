@@ -5,14 +5,12 @@ import {
 } from './document/dom';
 import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
-import { ThemePart } from "./theme/theme-part";
-import { WmlFooter } from "./footer/footer";
 import { DocumentElement } from './document/document';
 import { ParagraphElement } from './document/paragraph';
 import { appendClass, clone, keyBy } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
-import { FooterHeaderReference, Section, SectionProperties, SectionRenderProperties } from './document/section';
+import { Section, SectionProperties, SectionRenderProperties } from './document/section';
 import { RunElement, RunProperties } from './document/run';
 import { BookmarkStartElement } from './document/bookmark';
 import { IDomStyle } from './document/style';
@@ -1151,13 +1149,13 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     private replaceAsciiTheme(style: IDomStyle, addDefault: boolean = false) {
-        const themePart = this.document.parts.find((x) => x.path.indexOf("theme")>=0) as ThemePart;
-        var translatedFonts = themePart.theme.fontScheme;
+        const themePart = this.document.themePart;
+        const translatedFonts = themePart.theme.fontScheme;
         const minorLatinFont = translatedFonts.minorFont.latinTypeface;
         const hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined
-        for (var j = 0; j < style.styles.length; j++) {
-            var substyle = style.styles[j];
-            var value = substyle.values["asciiTheme"];
+        for (let j = 0; j < style.styles.length; j++) {
+            const substyle = style.styles[j];
+            const value = substyle.values["asciiTheme"];
             const hasFontFamily = substyle.values["font-family"] !== undefined;
             if (!value) {
                 if (addDefault && !hasFontFamily && hasMinorLatin) {
