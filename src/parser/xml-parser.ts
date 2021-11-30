@@ -1,4 +1,4 @@
-import { Length,  LengthUsage, LengthUsageType, convertLength  } from "../document/common";
+import { Length,  LengthUsage, LengthUsageType, convertLength, convertBoolean  } from "../document/common";
 
 export function parseXmlString(xmlString: string, trimXmlDeclaration: boolean = false): Document {
     if (trimXmlDeclaration)
@@ -73,15 +73,7 @@ export class XmlParser {
     }
 
     boolAttr(node: Element, attrName: string, defaultValue: boolean = null) {
-        var v = this.attr(node, attrName);
-
-        switch (v) {
-            case "true": return true;
-            case "false": return false;
-            case "1": return true;
-            case "0": return false;
-            default: return defaultValue;
-        }
+        return convertBoolean(this.attr(node, attrName), defaultValue);
     }
 
     lengthAttr(node: Element, attrName: string, usage: LengthUsageType = LengthUsage.Dxa): Length {

@@ -8,7 +8,7 @@ import { DocumentElement } from './document/document';
 import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
 import { parseSectionProperties } from './document/section';
 import globalXmlParser from './parser/xml-parser';
-import { RunElement } from './document/run';
+import { parseRunProperties, RunElement } from './document/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmark';
 import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFooter } from './footer/footer';
@@ -174,6 +174,7 @@ export class DocumentParser {
             case "paragraph": result.target = "p"; break;
             case "table": result.target = "table"; break;
             case "character": result.target = "span"; break;
+            //case "numbering": result.target = "p"; break;
         }
 
         xml.foreach(node, n => {
@@ -211,7 +212,7 @@ export class DocumentParser {
                         target: "span",
                         values: this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = parseParagraphProperties(n, globalXmlParser);
+                    result.runProps = parseRunProperties(n, globalXmlParser);
                     break;
 
                 case "tblPr":
@@ -489,6 +490,10 @@ export class DocumentParser {
                 
                 case "fldChar":
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
+                    break;
+
+                case "noBreakHyphen":
+                    result.children.push({ type: DomType.NoBreakHyphen });
                     break;
 
                 case "br":
@@ -1187,12 +1192,14 @@ enum SizeType {
     Percent
 }
 
+const knownColors = ['black','blue','cyan','darkBlue','darkCyan','darkGray','darkGreen','darkMagenta','darkRed','darkYellow','green','lightGray','magenta','none','red','white','yellow'];
+
 class xml {
     static foreach(node: Element, cb: (n: Element) => void) {
         for (var i = 0; i < node.childNodes.length; i++) {
             let n = node.childNodes[i];
 
-            if (n.nodeType == 1)
+            if (n.nodeType == Node.ELEMENT_NODE)
                 cb(<Element>n);
         }
     }
@@ -1209,15 +1216,19 @@ class xml {
     static colorAttr(node: Element, attrName: string, defValue: string = null, autoColor: string = 'black') {
         var v = xml.stringAttr(node, attrName);
 
-        switch (v) {
-            case "yellow":
-                return v;
-
-            case "auto":
+        if (v) {
+            if (v == "auto") {
                 return autoColor;
+            } else if (knownColors.includes(v)) {
+                return v;
+            }
+
+            return `#${v}`;
         }
 
-        return v ? `#${v}` : defValue;
+        var themeColor = xml.stringAttr(node, "themeColor");
+
+        return themeColor ? `var(--docx-${themeColor}-color)` : defValue;
     }
 
     static boolAttr(node: Element, attrName: string, defValue: boolean = false) {
@@ -1225,8 +1236,7 @@ class xml {
     }
 
     static intAttr(node: Element, attrName: string, defValue: number = 0) {
-        var val = xml.stringAttr(node, attrName);
-        return val ? parseInt(xml.stringAttr(node, attrName)) : defValue;
+        return globalXmlParser.intAttr(node, attrName, defValue);
     }
 
     static sizeAttr(node: Element, attrName: string, type: SizeType = SizeType.Dxa) {
@@ -1262,6 +1272,11 @@ class xml {
 }
 
 class values {
+    static themeValue(c: Element, attr: string) {
+        var val = xml.stringAttr(c, attr); 
+        return val ? `var(--docx-${val}-font)` : null;
+    }
+    
     static valueOfBold(c: Element) {
         return xml.boolAttr(c, "val", true) ? "bold" : "normal"
     }

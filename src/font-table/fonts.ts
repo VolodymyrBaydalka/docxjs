@@ -1,38 +1,61 @@
 import { XmlParser } from "../parser/xml-parser";
 
+const embedFontTypeMap = {
+    embedRegular: 'regular',
+    embedBold: 'bold',
+    embedItalic: 'italic',
+    embedBoldItalic: 'boldItalic',
+}
+
 export interface FontDeclaration {
     name: string,
     altName: string,
     family: string,
-    fontKey: string,
-    refId: string
+    embedFontRefs: EmbedFontRef[];
 }
 
-export function parseFonts(root: Element, xmlParser: XmlParser): FontDeclaration[] {
-    return xmlParser.elements(root).map(el => parseFont(el, xmlParser));
+export interface EmbedFontRef {
+    id: string;
+    key: string;
+    type: 'regular' | 'bold' | 'italic' | 'boldItalic';
 }
 
-export function parseFont(elem: Element, xmlParser: XmlParser): FontDeclaration {
+export function parseFonts(root: Element, xml: XmlParser): FontDeclaration[] {
+    return xml.elements(root).map(el => parseFont(el, xml));
+}
+
+export function parseFont(elem: Element, xml: XmlParser): FontDeclaration {
     let result = <FontDeclaration>{
-        name: xmlParser.attr(elem, "name")
+        name: xml.attr(elem, "name"),
+        embedFontRefs: []
     };
 
-    for (let el of xmlParser.elements(elem)) {
+    for (let el of xml.elements(elem)) {
         switch (el.localName) {
             case "family":
-                result.family = xmlParser.attr(el, "val");
+                result.family = xml.attr(el, "val");
                 break;
 
             case "altName":
-                result.altName = xmlParser.attr(el, "val");
+                result.altName = xml.attr(el, "val");
                 break;
 
             case "embedRegular":
-                result.fontKey = xmlParser.attr(el, "fontKey");
-                result.refId = xmlParser.attr(el, "id");
+            case "embedBold":
+            case "embedItalic":
+            case "embedBoldItalic":
+                result.embedFontRefs.push(parseEmbedFontRef(el, xml));
                 break;
         }
     }
 
     return result;
+}
+
+export function parseEmbedFontRef(elem: Element, xml: XmlParser): EmbedFontRef {
+    return { 
+        id: xml.attr(elem, "id"), 
+        key: xml.attr(elem, "fontKey"),
+        type: embedFontTypeMap[elem.localName]
+    };
 }

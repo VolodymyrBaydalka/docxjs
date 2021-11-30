@@ -19,6 +19,8 @@ import { IDomStyle } from './document/style';
 import { Part } from './common/part';
 import { HeaderPart } from './header/header-part';
 import { FooterPart } from './footer/footer-part';
+import { WmlFootnote } from './footnotes/footnote';
+import { ThemePart } from './theme/theme-part';
 
 interface CssChangeObject {
     cssRuleCamel: string;
@@ -36,7 +38,8 @@ export class HtmlRenderer {
     options: Options;
     noCssDict: { [selector: string]: noCssDictEntry } = {};
     styleMap: any;
-    footnoteMap: any = {};
+
+    footnoteMap: Record<string, WmlFootnote> = {};
     currentFootnoteIds: string[];
 
     constructor(public htmlDocument: Document) {
@@ -58,6 +61,11 @@ export class HtmlRenderer {
 
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
+
+        if (document.themePart) {
+            appendComment(styleContainer, "docx document theme values");
+            this.renderTheme(document.themePart, styleContainer);
+        }
 
         if (document.stylesPart != null) {
             this.styleMap = this.processStyles(document.stylesPart.styles);
@@ -95,17 +103,54 @@ export class HtmlRenderer {
         }
     }
 
-    renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
-        for (let f of fontsPart.fonts.filter(x => x.refId)) {
-            this.document.loadFont(f.refId, f.fontKey).then(fontData => {
-                var cssTest = `@font-face {
-                    font-family: "${f.name}";
-                    src: url(${fontData});
-                }`;
+    renderTheme(themePart: ThemePart, styleContainer: HTMLElement) {
+        const variables = {};
+        const fontScheme = themePart.theme?.fontScheme; 
 
-                appendComment(styleContainer, `Font ${f.name}`);
-                styleContainer.appendChild(createStyleElement(cssTest));
-            });
+        if (fontScheme) {
+            if (fontScheme.majorFont) {
+                variables['--docx-majorHAnsi-font'] = fontScheme.majorFont.latinTypeface;
+            }
+
+            if (fontScheme.minorFont) {
+                variables['--docx-minorHAnsi-font'] = fontScheme.minorFont.latinTypeface;
+            }
+        }
+
+        const colorScheme = themePart.theme?.colorScheme; 
+
+        if (colorScheme) {
+            for (let [k, v] of Object.entries(colorScheme.colors)) {
+                variables[`--docx-${k}-color`] = `#${v}`;
+            }
+        }
+
+        const cssText = this.styleToString(`.${this.className}`, variables);
+        styleContainer.appendChild(createStyleElement(cssText));
+    }
+
+    renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
+        for (let f of fontsPart.fonts) {
+            for (let ref of f.embedFontRefs) {
+                this.document.loadFont(ref.id, ref.key).then(fontData => {
+                    var cssValues = {
+                        'font-family': f.name,
+                        'src': `url(${fontData})`
+                    };
+
+                    if (ref.type == "bold" || ref.type == "boldItalic") {
+                        cssValues['font-weight'] = 'bold';
+                    }
+
+                    if (ref.type == "italic" || ref.type == "boldItalic") {
+                        cssValues['font-style'] = 'italic';
+                    }
+
+                    appendComment(styleContainer, `Font ${f.name}`);
+                    const cssText = this.styleToString("@font-face", cssValues);
+                    styleContainer.appendChild(createStyleElement(cssText));
+                });
+            }
         }
     }
 
@@ -424,7 +469,6 @@ export class HtmlRenderer {
 
     renderLength(l: Length): string {
         return l ? `${l.value.toFixed(2)}${l.type ?? ''}` : null;
-
     }
 
     renderWrapper() {
@@ -660,21 +704,12 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderFootnotes(footnoteIds: string[], into: HTMLElement) {
-        var mappedNotes = [];
-        for(let i = 0; i < footnoteIds.length; i++) {
-            const id = footnoteIds[i];
-            const note = this.footnoteMap[id];
-            if(note) {
-                mappedNotes.push(note);
-            }
+        var footnotes = footnoteIds.map(id => this.footnoteMap[id]).filter(x => x);
+        
+        if (footnotes.length > 0) {
+            var result = this.createElement("ol", null, this.renderElements(footnotes));
+            into.appendChild(result);
         }
-
-        if (mappedNotes.length <= 0) {
-            return;
-        }
-        var result = this.htmlDocument.createElement("ol");
-        this.renderElements(mappedNotes, result);
-        into.appendChild(result);
     }
 
     renderElement(elem: OpenXmlElement): Node {
@@ -732,6 +767,9 @@ section.${c}>article { margin-bottom: auto; }
     
             case DomType.FootnoteReference:
                 return this.renderFootnoteReference(elem as FootnoteReferenceElement);
+
+            case DomType.NoBreakHyphen:
+                return this.createElement("wbr");
                             
             default:
                 console.warn(`DomType ${elem.type} has no rendering implementation.`);
@@ -758,10 +796,8 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
 
-    renderContainer(elem: OpenXmlElement, tagName: string) {
-        var result = this.createElement(tagName);
-        this.renderChildren(elem, result);
-        return result;
+    renderContainer(elem: OpenXmlElement, tagName: keyof HTMLElementTagNameMap) {
+        return this.createElement(tagName, null, this.renderChildren(elem));
     }
 
     renderParagraph(elem: ParagraphElement) {
@@ -804,7 +840,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderHyperlink(elem: IDomHyperlink) {
-        var result = this.createElement<HTMLAnchorElement>("a");
+        var result = this.createElement("a");
 
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
@@ -829,7 +865,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderImage(elem: IDomImage) {
-        let result = this.createElement<HTMLImageElement>("img");
+        let result = this.createElement("img");
 
         this.renderStyleValues(elem.cssStyle, result);
 
@@ -930,7 +966,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderTableColumns(columns: IDomTableColumn[]) {
-        let result = this.createElement("colGroup");
+        let result = this.createElement("colgroup");
 
         for (let col of columns) {
             let colElem = this.createElement("col");
@@ -955,7 +991,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderTableCell(elem: IDomTableCell) {
-        let result = this.createElement<HTMLTableCellElement>("td");
+        let result = this.createElement("td");
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
@@ -994,8 +1030,9 @@ section.${c}>article { margin-bottom: auto; }
                 result += `  ${key}: ${values[key]};\r\n`;
             }
 
-            if (cssText)
-                result += ";" + cssText;
+            if (cssText) {
+                result += cssText;
+            }
 
             return result + "}\r\n";
         }
@@ -1166,9 +1203,14 @@ section.${c}>article { margin-bottom: auto; }
         }
         return true; 
     }
-    
-    createElement<T extends HTMLElement = HTMLElement>(tagName: string, props: any = undefined): T {
-        return Object.assign(this.htmlDocument.createElement(tagName), props);
+    createElement<T extends keyof HTMLElementTagNameMap>(
+        tagName: T, 
+        props: Partial<Record<keyof HTMLElementTagNameMap[T], any>> = undefined,
+        children: Node[] = undefined
+    ): HTMLElementTagNameMap[T] {
+        var result = Object.assign(this.htmlDocument.createElement(tagName), props);
+        children && children.forEach(c => result.appendChild(c));
+        return result;
     }
 }
 
