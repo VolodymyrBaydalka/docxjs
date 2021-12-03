@@ -1,4 +1,5 @@
-import { XmlParser } from "../parser/xml-parser";
+import globalXmlParser, { XmlParser } from "../parser/xml-parser";
+import { Borders, parseBorders } from "./border";
 import { Length } from "./common";
 
 export interface Column {
@@ -47,12 +48,14 @@ export interface SectionProperties {
     type: SectionType | string;
     pageSize: PageSize,
     pageMargins: PageMargins,
+    pageBorders: Borders;
     columns: Columns;
     footerRefs: FooterHeaderReference[];
     headerRefs: FooterHeaderReference[];
+    titlePage: boolean;
 }
 
-export function parseSectionProperties(elem: Element, xml: XmlParser): SectionProperties {
+export function parseSectionProperties(elem: Element, xml: XmlParser = globalXmlParser): SectionProperties {
     var section = <SectionProperties>{};
 
     for (let e of xml.elements(elem)) {
@@ -91,6 +94,14 @@ export function parseSectionProperties(elem: Element, xml: XmlParser): SectionPr
             
             case "footerReference":
                 (section.footerRefs ?? (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
+                break;
+
+            case "titlePg":
+                section.titlePage = xml.boolAttr(e, "val", true);
+                break;
+
+            case "pgBorders":
+                section.pageBorders = parseBorders(e, xml);
                 break;
         }
     }

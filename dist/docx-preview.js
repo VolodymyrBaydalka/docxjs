@@ -181,9 +181,7 @@ var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/documen
 var section_1 = __webpack_require__(/*! ./document/section */ "./src/document/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
 var run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts");
-var bookmark_1 = __webpack_require__(/*! ./document/bookmark */ "./src/document/bookmark.ts");
-var footer_1 = __webpack_require__(/*! ./footer/footer */ "./src/footer/footer.ts");
-var header_1 = __webpack_require__(/*! ./header/header */ "./src/header/header.ts");
+var bookmarks_1 = __webpack_require__(/*! ./document/bookmarks */ "./src/document/bookmarks.ts");
 var footnote_1 = __webpack_require__(/*! ./footnotes/footnote */ "./src/footnotes/footnote.ts");
 exports.autos = {
     shd: "white",
@@ -204,16 +202,6 @@ var DocumentParser = (function () {
             footnote.children = this.parseBodyElements(el);
             result.push(footnote);
         }
-        return result;
-    };
-    DocumentParser.prototype.parseFooter = function (xmlDoc) {
-        var result = new footer_1.WmlFooter();
-        result.children = this.parseBodyElements(xmlDoc);
-        return result;
-    };
-    DocumentParser.prototype.parseHeader = function (xmlDoc) {
-        var result = new header_1.WmlHeader();
-        result.children = this.parseBodyElements(xmlDoc);
         return result;
     };
     DocumentParser.prototype.parseDocumentFile = function (xmlDoc) {
@@ -530,10 +518,10 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseHyperlink(c, result));
                     break;
                 case "bookmarkStart":
-                    result.children.push((0, bookmark_1.parseBookmarkStart)(c, xml_parser_1.default));
+                    result.children.push((0, bookmarks_1.parseBookmarkStart)(c, xml_parser_1.default));
                     break;
                 case "bookmarkEnd":
-                    result.children.push((0, bookmark_1.parseBookmarkEnd)(c, xml_parser_1.default));
+                    result.children.push((0, bookmarks_1.parseBookmarkEnd)(c, xml_parser_1.default));
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
@@ -678,14 +666,15 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseDrawingWrapper = function (node) {
+        var _a;
         var result = { type: dom_1.DomType.Drawing, children: [], cssStyle: {} };
         var isAnchor = node.localName == "anchor";
         var wrapType = null;
         var simplePos = xml.boolAttr(node, "simplePos");
         var posX = { relative: "page", align: "left", offset: "0" };
         var posY = { relative: "page", align: "top", offset: "0" };
-        for (var _i = 0, _a = xml_parser_1.default.elements(node); _i < _a.length; _i++) {
-            var n = _a[_i];
+        for (var _i = 0, _b = xml_parser_1.default.elements(node); _i < _b.length; _i++) {
+            var n = _b[_i];
             switch (n.localName) {
                 case "simplePos":
                     if (simplePos) {
@@ -703,6 +692,7 @@ var DocumentParser = (function () {
                         var pos = n.localName == "positionH" ? posX : posY;
                         var alignNode = xml_parser_1.default.element(n, "align");
                         var offsetNode = xml_parser_1.default.element(n, "posOffset");
+                        pos.relative = (_a = xml_parser_1.default.attr(n, "relativeFrom")) !== null && _a !== void 0 ? _a : pos.relative;
                         if (alignNode)
                             pos.align = alignNode.textContent;
                         if (offsetNode)
@@ -1545,10 +1535,10 @@ function safeParseToInt(value) {
 
 /***/ }),
 
-/***/ "./src/document/bookmark.ts":
-/*!**********************************!*\
-  !*** ./src/document/bookmark.ts ***!
-  \**********************************/
+/***/ "./src/document/bookmarks.ts":
+/*!***********************************!*\
+  !*** ./src/document/bookmarks.ts ***!
+  \***********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -1572,6 +1562,53 @@ function parseBookmarkEnd(elem, xml) {
     };
 }
 exports.parseBookmarkEnd = parseBookmarkEnd;
+
+
+/***/ }),
+
+/***/ "./src/document/border.ts":
+/*!********************************!*\
+  !*** ./src/document/border.ts ***!
+  \********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseBorders = exports.parseBorder = void 0;
+var common_1 = __webpack_require__(/*! ./common */ "./src/document/common.ts");
+function parseBorder(elem, xml) {
+    return {
+        type: xml.attr(elem, "val"),
+        color: xml.attr(elem, "color"),
+        size: xml.lengthAttr(elem, "sz", common_1.LengthUsage.Border),
+        offset: xml.lengthAttr(elem, "space", common_1.LengthUsage.Point),
+        frame: xml.boolAttr(elem, 'frame'),
+        shadow: xml.boolAttr(elem, 'shadow')
+    };
+}
+exports.parseBorder = parseBorder;
+function parseBorders(elem, xml) {
+    var result = {};
+    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
+        var e = _a[_i];
+        switch (e.localName) {
+            case "left":
+                result.left = parseBorder(e, xml);
+                break;
+            case "top":
+                result.top = parseBorder(e, xml);
+                break;
+            case "right":
+                result.right = parseBorder(e, xml);
+                break;
+            case "bottom":
+                result.bottom = parseBorder(e, xml);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseBorders = parseBorders;
 
 
 /***/ }),
@@ -1879,11 +1916,13 @@ exports.parseRunProperty = parseRunProperty;
 /*!*********************************!*\
   !*** ./src/document/section.ts ***!
   \*********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseSectionProperties = exports.SectionType = void 0;
+var xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+var border_1 = __webpack_require__(/*! ./border */ "./src/document/border.ts");
 var SectionType;
 (function (SectionType) {
     SectionType["Continuous"] = "continuous";
@@ -1894,6 +1933,7 @@ var SectionType;
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
     var _a, _b;
+    if (xml === void 0) { xml = xml_parser_1.default; }
     var section = {};
     for (var _i = 0, _c = xml.elements(elem); _i < _c.length; _i++) {
         var e = _c[_i];
@@ -1927,6 +1967,12 @@ function parseSectionProperties(elem, xml) {
                 break;
             case "footerReference":
                 ((_b = section.footerRefs) !== null && _b !== void 0 ? _b : (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml));
+                break;
+            case "titlePg":
+                section.titlePage = xml.boolAttr(e, "val", true);
+                break;
+            case "pgBorders":
+                section.pageBorders = (0, border_1.parseBorders)(e, xml);
                 break;
         }
     }
@@ -2114,71 +2160,6 @@ exports.parseEmbedFontRef = parseEmbedFontRef;
 
 /***/ }),
 
-/***/ "./src/footer/footer-part.ts":
-/*!***********************************!*\
-  !*** ./src/footer/footer-part.ts ***!
-  \***********************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FooterPart = void 0;
-var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
-var FooterPart = (function (_super) {
-    __extends(FooterPart, _super);
-    function FooterPart(pkg, path, parser) {
-        var _this = _super.call(this, pkg, path) || this;
-        _this._documentParser = parser;
-        return _this;
-    }
-    FooterPart.prototype.parseXml = function (root) {
-        this.footerElement = this._documentParser.parseFooter(root);
-    };
-    return FooterPart;
-}(part_1.Part));
-exports.FooterPart = FooterPart;
-
-
-/***/ }),
-
-/***/ "./src/footer/footer.ts":
-/*!******************************!*\
-  !*** ./src/footer/footer.ts ***!
-  \******************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WmlFooter = void 0;
-var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
-var WmlFooter = (function () {
-    function WmlFooter() {
-        this.type = dom_1.DomType.Footer;
-        this.children = [];
-        this.cssStyle = {};
-    }
-    return WmlFooter;
-}());
-exports.WmlFooter = WmlFooter;
-
-
-/***/ }),
-
 /***/ "./src/footnotes/footnote.ts":
 /*!***********************************!*\
   !*** ./src/footnotes/footnote.ts ***!
@@ -2244,10 +2225,42 @@ exports.FootnotesPart = FootnotesPart;
 
 /***/ }),
 
-/***/ "./src/header/header-part.ts":
-/*!***********************************!*\
-  !*** ./src/header/header-part.ts ***!
-  \***********************************/
+/***/ "./src/header-footer/elements.ts":
+/*!***************************************!*\
+  !*** ./src/header-footer/elements.ts ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WmlFooter = exports.WmlHeader = void 0;
+var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
+var WmlHeader = (function () {
+    function WmlHeader() {
+        this.type = dom_1.DomType.Header;
+        this.children = [];
+        this.cssStyle = {};
+    }
+    return WmlHeader;
+}());
+exports.WmlHeader = WmlHeader;
+var WmlFooter = (function () {
+    function WmlFooter() {
+        this.type = dom_1.DomType.Footer;
+        this.children = [];
+        this.cssStyle = {};
+    }
+    return WmlFooter;
+}());
+exports.WmlFooter = WmlFooter;
+
+
+/***/ }),
+
+/***/ "./src/header-footer/parts.ts":
+/*!************************************!*\
+  !*** ./src/header-footer/parts.ts ***!
+  \************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2267,44 +2280,45 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.HeaderPart = void 0;
+exports.FooterPart = exports.HeaderPart = exports.BaseHeaderFooterPart = void 0;
 var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
-var HeaderPart = (function (_super) {
-    __extends(HeaderPart, _super);
-    function HeaderPart(pkg, path, parser) {
+var elements_1 = __webpack_require__(/*! ./elements */ "./src/header-footer/elements.ts");
+var BaseHeaderFooterPart = (function (_super) {
+    __extends(BaseHeaderFooterPart, _super);
+    function BaseHeaderFooterPart(pkg, path, parser) {
         var _this = _super.call(this, pkg, path) || this;
         _this._documentParser = parser;
         return _this;
     }
-    HeaderPart.prototype.parseXml = function (root) {
-        this.headerElement = this._documentParser.parseHeader(root);
+    BaseHeaderFooterPart.prototype.parseXml = function (root) {
+        this.rootElement = this.createRootElement();
+        this.rootElement.children = this._documentParser.parseBodyElements(root);
+    };
+    return BaseHeaderFooterPart;
+}(part_1.Part));
+exports.BaseHeaderFooterPart = BaseHeaderFooterPart;
+var HeaderPart = (function (_super) {
+    __extends(HeaderPart, _super);
+    function HeaderPart() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    HeaderPart.prototype.createRootElement = function () {
+        return new elements_1.WmlHeader();
     };
     return HeaderPart;
-}(part_1.Part));
+}(BaseHeaderFooterPart));
 exports.HeaderPart = HeaderPart;
-
-
-/***/ }),
-
-/***/ "./src/header/header.ts":
-/*!******************************!*\
-  !*** ./src/header/header.ts ***!
-  \******************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WmlHeader = void 0;
-var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
-var WmlHeader = (function () {
-    function WmlHeader() {
-        this.type = dom_1.DomType.Header;
-        this.children = [];
-        this.cssStyle = {};
+var FooterPart = (function (_super) {
+    __extends(FooterPart, _super);
+    function FooterPart() {
+        return _super !== null && _super.apply(this, arguments) || this;
     }
-    return WmlHeader;
-}());
-exports.WmlHeader = WmlHeader;
+    FooterPart.prototype.createRootElement = function () {
+        return new elements_1.WmlFooter();
+    };
+    return FooterPart;
+}(BaseHeaderFooterPart));
+exports.FooterPart = FooterPart;
 
 
 /***/ }),
@@ -2338,6 +2352,7 @@ var HtmlRenderer = (function () {
         this.className = "docx";
         this.styleMap = {};
         this.footnoteMap = {};
+        this.usedHederFooterParts = [];
         this.createElement = createElement;
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
@@ -2552,26 +2567,32 @@ var HtmlRenderer = (function () {
             var props = section.sectProps || document.props;
             var sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            var headerPart = this.options.renderHeaders ? this.findHeaderFooter(props.headerRefs, result.length) : null;
-            var footerPart = this.options.renderFooters ? this.findHeaderFooter(props.footerRefs, result.length) : null;
-            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
+            this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, sectionElement);
             var contentElement = this.createElement("article");
             this.renderElements(section.elements, contentElement);
             sectionElement.appendChild(contentElement);
             if (this.options.renderFootnotes) {
                 this.renderFootnotes(this.currentFootnoteIds, sectionElement);
             }
-            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
+            this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, sectionElement);
             result.push(sectionElement);
         }
         return result;
     };
-    HtmlRenderer.prototype.findHeaderFooter = function (refs, page) {
+    HtmlRenderer.prototype.renderHeaderFooter = function (refs, props, page, into) {
         var _a, _b;
-        var ref = refs ? ((_b = (_a = (page == 0 ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 0 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; })) : null;
-        if (ref == null)
-            return null;
-        return this.document.findPartByRelId(ref.id, this.document.documentPart);
+        if (!refs)
+            return;
+        var ref = props.titlePage ? refs.find(function (x) { return x.type == "first"; })
+            : (_b = (_a = (page == 0 ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 0 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; });
+        var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart);
+        if (part) {
+            if (!this.usedHederFooterParts.includes(part.path)) {
+                this.processElement(part.rootElement);
+                this.usedHederFooterParts.push(part.path);
+            }
+            this.renderElements([part.rootElement], into);
+        }
     };
     HtmlRenderer.prototype.isPageBreakElement = function (elem) {
         if (elem.type != dom_1.DomType.Break)
@@ -2652,7 +2673,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2888,7 +2909,7 @@ var HtmlRenderer = (function () {
         if (this.options.experimental) {
             setTimeout(function () {
                 var paragraph = findParent(elem, dom_1.DomType.Paragraph);
-                if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
+                if (paragraph.tabs == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
                 (0, javascript_1.updateTabStop)(tabSpan, paragraph.tabs);
@@ -2956,10 +2977,9 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderStyleValues = function (style, ouput) {
         if (style == null)
             return;
-        for (var key in style) {
-            if (style.hasOwnProperty(key)) {
-                ouput.style[key] = style[key];
-            }
+        for (var _i = 0, _a = Object.getOwnPropertyNames(style); _i < _a.length; _i++) {
+            var key = _a[_i];
+            ouput.style[key] = style[key];
         }
     };
     HtmlRenderer.prototype.renderClass = function (input, ouput) {
@@ -3645,8 +3665,7 @@ var document_part_1 = __webpack_require__(/*! ./document/document-part */ "./src
 var utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var numbering_part_1 = __webpack_require__(/*! ./numbering/numbering-part */ "./src/numbering/numbering-part.ts");
 var styles_part_1 = __webpack_require__(/*! ./styles/styles-part */ "./src/styles/styles-part.ts");
-var footer_part_1 = __webpack_require__(/*! ./footer/footer-part */ "./src/footer/footer-part.ts");
-var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/header/header-part.ts");
+var parts_1 = __webpack_require__(/*! ./header-footer/parts */ "./src/header-footer/parts.ts");
 var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
 var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
@@ -3709,10 +3728,10 @@ var WordDocument = (function () {
                 this.footnotesPart = part = new footnotes_part_1.FootnotesPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Footer:
-                part = new footer_part_1.FooterPart(this._package, path, this._parser);
+                part = new parts_1.FooterPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Header:
-                part = new header_part_1.HeaderPart(this._package, path, this._parser);
+                part = new parts_1.HeaderPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.CoreProperties:
                 this.corePropsPart = part = new core_props_part_1.CorePropsPart(this._package, path);

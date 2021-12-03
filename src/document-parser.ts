@@ -5,14 +5,12 @@ import {
 } from './document/dom';
 import * as utils from './utils';
 import { DocumentElement } from './document/document';
-import { ParagraphElement, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
+import { WmlParagraph, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
 import { parseSectionProperties } from './document/section';
 import globalXmlParser from './parser/xml-parser';
-import { parseRunProperties, RunElement } from './document/run';
-import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmark';
+import { parseRunProperties, WmlRun } from './document/run';
+import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmarks';
 import { IDomStyle, IDomSubStyle } from './document/style';
-import { WmlFooter } from './footer/footer';
-import { WmlHeader } from './header/header';
 import { WmlFootnote } from './footnotes/footnote';
 
 export var autos = {
@@ -48,18 +46,6 @@ export class DocumentParser {
             result.push(footnote);
         }
 
-        return result;
-    }
-
-    parseFooter(xmlDoc: Element): WmlFooter {
-        var result = new WmlFooter();
-        result.children = this.parseBodyElements(xmlDoc);
-        return result;
-    }
-
-    parseHeader(xmlDoc: Element): WmlHeader {
-        var result = new WmlHeader();
-        result.children = this.parseBodyElements(xmlDoc);
         return result;
     }
 
@@ -397,7 +383,7 @@ export class DocumentParser {
 
 
     parseParagraph(node: Element): OpenXmlElement {
-        var result = <ParagraphElement>{ type: DomType.Paragraph, children: [] };
+        var result = <WmlParagraph>{ type: DomType.Paragraph, children: [] };
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -426,7 +412,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseParagraphProperties(elem: Element, paragraph: ParagraphElement) {
+    parseParagraphProperties(elem: Element, paragraph: WmlParagraph) {
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, c => {
             if(parseParagraphProperty(c, paragraph, globalXmlParser))
                 return true;
@@ -456,7 +442,7 @@ export class DocumentParser {
         });
     }
 
-    parseFrame(node: Element, paragraph: ParagraphElement) {
+    parseFrame(node: Element, paragraph: WmlParagraph) {
         var dropCap = xml.stringAttr(node, "dropCap");
 
         if (dropCap == "drop")
@@ -481,8 +467,8 @@ export class DocumentParser {
         return result;
     }
 
-    parseRun(node: Element, parent?: OpenXmlElement): RunElement {
-        var result: RunElement = <RunElement>{ type: DomType.Run, parent: parent, children: [] };
+    parseRun(node: Element, parent?: OpenXmlElement): WmlRun {
+        var result: WmlRun = <WmlRun>{ type: DomType.Run, parent: parent, children: [] };
 
         xml.foreach(node, c => {
             switch (c.localName) {
@@ -554,7 +540,7 @@ export class DocumentParser {
         return result;
     }
 
-    parseRunProperties(elem: Element, run: RunElement) {
+    parseRunProperties(elem: Element, run: WmlRun) {
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, c => {
             switch (c.localName) {
                 case "rStyle":
@@ -622,6 +608,8 @@ export class DocumentParser {
                         let pos = n.localName == "positionH" ? posX : posY;
                         var alignNode = globalXmlParser.element(n, "align");
                         var offsetNode = globalXmlParser.element(n, "posOffset");
+
+                        pos.relative = globalXmlParser.attr(n, "relativeFrom") ?? pos.relative;
 
                         if (alignNode)
                             pos.align = alignNode.textContent;

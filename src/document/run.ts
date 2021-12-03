@@ -2,7 +2,7 @@ import { XmlParser } from "../parser/xml-parser";
 import { CommonProperties, parseCommonProperty } from "./common";
 import { OpenXmlElement } from "./dom";
 
-export interface RunElement extends OpenXmlElement, RunProperties {
+export interface WmlRun extends OpenXmlElement, RunProperties {
     id?: string;
     verticalAlign?: string;
     fldCharType?: "begin" | "end" | "separate" | string;

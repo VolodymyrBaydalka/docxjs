@@ -6,19 +6,18 @@ import {
 import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
-import { ParagraphElement } from './document/paragraph';
+import { WmlParagraph } from './document/paragraph';
 import { appendClass, keyBy, mergeDeep } from './utils';
 import { updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
-import { RunElement, RunProperties } from './document/run';
-import { BookmarkStartElement } from './document/bookmark';
+import { WmlRun, RunProperties } from './document/run';
+import { WmlBookmarkStart } from './document/bookmarks';
 import { IDomStyle } from './document/style';
 import { Part } from './common/part';
-import { HeaderPart } from './header/header-part';
-import { FooterPart } from './footer/footer-part';
 import { WmlFootnote } from './footnotes/footnote';
 import { ThemePart } from './theme/theme-part';
+import { BaseHeaderFooterPart } from './header-footer/parts';
 
 export class HtmlRenderer {
 
@@ -29,6 +28,7 @@ export class HtmlRenderer {
 
     footnoteMap: Record<string, WmlFootnote> = {};
     currentFootnoteIds: string[];
+    usedHederFooterParts: any[] = [];
 
     constructor(public htmlDocument: Document) {
     }
@@ -267,10 +267,7 @@ export class HtmlRenderer {
             const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
 
-            var headerPart = this.options.renderHeaders ? this.findHeaderFooter<HeaderPart>(props.headerRefs, result.length) : null;
-            var footerPart = this.options.renderFooters ? this.findHeaderFooter<FooterPart>(props.footerRefs, result.length) : null;
-
-            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
+            this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, sectionElement);
 
             var contentElement = this.createElement("article");
             this.renderElements(section.elements, contentElement);
@@ -280,7 +277,7 @@ export class HtmlRenderer {
                 this.renderFootnotes(this.currentFootnoteIds, sectionElement);
             }
 
-            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
+            this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, sectionElement);
 
             result.push(sectionElement);
         }
@@ -288,15 +285,23 @@ export class HtmlRenderer {
         return result;
     }
 
-    findHeaderFooter<T extends Part>(refs: FooterHeaderReference[], page: number): T {
-        var ref = refs ? ((page == 0 ? refs.find(x => x.type == "first") : null)
+    renderHeaderFooter(refs: FooterHeaderReference[], props: SectionProperties, page: number, into: HTMLElement) {
+        if (!refs) return;
+
+        var ref = props.titlePage ? refs.find(x => x.type == "first") 
+            : (page == 0 ? refs.find(x => x.type == "first") : null)
             ?? (page % 2 == 0 ? refs.find(x => x.type == "even") : null)
-            ?? refs.find(x => x.type == "default")) : null;
+            ?? refs.find(x => x.type == "default");
 
-        if (ref == null)
-            return null;
+        var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart) as BaseHeaderFooterPart;
 
-        return this.document.findPartByRelId(ref.id, this.document.documentPart) as T;
+        if (part) {
+            if (!this.usedHederFooterParts.includes(part.path)) {
+                this.processElement(part.rootElement);
+                this.usedHederFooterParts.push(part.path);
+            }
+            this.renderElements([part.rootElement], into);
+        }
     }
 
     isPageBreakElement(elem: OpenXmlElement): boolean {
@@ -315,7 +320,7 @@ export class HtmlRenderer {
 
         for (let elem of elements) {
             if (elem.type == DomType.Paragraph) {
-                const styleName = (elem as ParagraphElement).styleName;
+                const styleName = (elem as WmlParagraph).styleName;
                 const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
 
                 if (s?.paragraphProps?.pageBreakBefore) {
@@ -328,7 +333,7 @@ export class HtmlRenderer {
             current.elements.push(elem);
 
             if (elem.type == DomType.Paragraph) {
-                const p = elem as ParagraphElement;
+                const p = elem as WmlParagraph;
 
                 var sectProps = p.sectionProps;
                 var pBreakIndex = -1;
@@ -395,7 +400,7 @@ export class HtmlRenderer {
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; }
-section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; }
+section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
@@ -581,16 +586,16 @@ section.${c}>article { margin-bottom: auto; }
     renderElement(elem: OpenXmlElement): Node {
         switch (elem.type) {
             case DomType.Paragraph:
-                return this.renderParagraph(<ParagraphElement>elem);
+                return this.renderParagraph(<WmlParagraph>elem);
 
             case DomType.BookmarkStart:
-                return this.renderBookmarkStart(<BookmarkStartElement>elem);
+                return this.renderBookmarkStart(<WmlBookmarkStart>elem);
 
             case DomType.BookmarkEnd:
                 return null;
 
             case DomType.Run:
-                return this.renderRun(<RunElement>elem);
+                return this.renderRun(<WmlRun>elem);
 
             case DomType.Table:
                 return this.renderTable(elem);
@@ -662,7 +667,7 @@ section.${c}>article { margin-bottom: auto; }
         return this.createElement(tagName, null, this.renderChildren(elem));
     }
 
-    renderParagraph(elem: ParagraphElement) {
+    renderParagraph(elem: WmlParagraph) {
         var result = this.createElement("p");
 
         this.renderClass(elem, result);
@@ -776,9 +781,9 @@ section.${c}>article { margin-bottom: auto; }
 
         if (this.options.experimental) {
             setTimeout(() => {
-                var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
+                var paragraph = findParent<WmlParagraph>(elem, DomType.Paragraph);
 
-                if (paragraph?.tabs == null)
+                if (paragraph.tabs == null)
                     return;
 
                 paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
@@ -789,13 +794,13 @@ section.${c}>article { margin-bottom: auto; }
         return tabSpan;
     }
 
-    renderBookmarkStart(elem: BookmarkStartElement): HTMLElement {
+    renderBookmarkStart(elem: WmlBookmarkStart): HTMLElement {
         var result = this.createElement("span");
         result.id = elem.name;
         return result;
     }
 
-    renderRun(elem: RunElement) {
+    renderRun(elem: WmlRun) {
         if (elem.fldCharType || elem.instrText)
             return null;
 
@@ -870,10 +875,8 @@ section.${c}>article { margin-bottom: auto; }
         if (style == null)
             return;
 
-        for (let key in style) {
-            if (style.hasOwnProperty(key)) {
-                ouput.style[key] = style[key];
-            }
+        for (let key of Object.getOwnPropertyNames(style)) {
+            ouput.style[key] = style[key];
         }
     }
 
@@ -887,7 +890,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
-        let result = selectors + " {\r\n";
+        let result = `${selectors} {\r\n`;
 
         for (const key in values) {
             result += `  ${key}: ${values[key]};\r\n`;

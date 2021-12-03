@@ -77,8 +77,8 @@ export interface IDomNumbering {
     pStyle: Record<string, string>;
     rStyle: Record<string, string>;
     levelText?: string;
+    suff: string;
     format?: string;
-    suff?: string;
     bullet?: NumberingPicBullet;
 }
 
