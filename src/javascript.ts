@@ -49,3 +49,38 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], pixelToPo
             break;
     }
 }
+
+export function updateDefaultTabStop(elem: HTMLElement, tabDefaultPtWidth: number, iterations: number = 3) {
+    const pixelToPoint = 72 / 96;
+    const p = elem.closest("p");
+    const art = elem.closest("article");
+    const pMarginLeft = parseFloat(p.style.marginLeft);
+    const abb = art.getBoundingClientRect();
+    const pbb = p.getBoundingClientRect();
+    const tbb = elem.getBoundingClientRect();
+    let tabLeft = (tbb.x - pbb.x) * pixelToPoint;
+
+    let nextTabStopPosition: number = tabDefaultPtWidth;
+    if(!Number.isNaN(pMarginLeft) && tabLeft < 0) {
+        tabLeft = (tbb.x - abb.x) * pixelToPoint;
+        nextTabStopPosition = (pbb.x - abb.x) * pixelToPoint;
+    } else {
+        if(tabLeft < 0 || tabDefaultPtWidth < 0) {
+            return;
+        }
+        // +1 to avoid rounding errors.
+        while (nextTabStopPosition < tabLeft + 1) {
+            nextTabStopPosition += tabDefaultPtWidth;
+        }
+    }
+    const desiredWidth: number = nextTabStopPosition - tabLeft;
+    elem.style.display = "inline-block";
+    elem.style.width = `${desiredWidth}pt`;
+
+    // Changing the positions we might have to recalculate these one more time
+    if(iterations-- > 0) {
+        setTimeout(() => {
+            updateDefaultTabStop(elem, tabDefaultPtWidth, iterations);
+        }, 25);
+    }
+}

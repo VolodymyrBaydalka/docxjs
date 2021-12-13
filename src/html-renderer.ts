@@ -929,8 +929,10 @@ section.${c}>article { margin-bottom: auto; }
             setTimeout(() => {
                 var paragraph = findParent<ParagraphElement>(elem, DomType.Paragraph);
 
-                if (paragraph?.tabs == null)
+                if (paragraph?.tabs == null) {
+                    updateDefaultTabStop(tabSpan, this.document.settingsPart.settings.defaultTabStopWidth.value);
                     return;
+                }
 
                 paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
                 updateTabStop(tabSpan, paragraph.tabs);
