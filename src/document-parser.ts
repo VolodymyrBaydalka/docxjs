@@ -487,12 +487,15 @@ export class DocumentParser {
         xml.foreach(node, c => {
             switch (c.localName) {
                 case "t":
-                    result.children.push(<TextElement>{ 
-                        type: DomType.Text, 
-                        text: c.textContent 
-                    });//.replace(" ", "\u00A0"); // TODO
+                    const tElement: TextElement = <TextElement>{
+                        type: DomType.Text,
+                        text: c.textContent
+                    };
+                    if(xml.stringAttr(c, 'space') === 'preserve') {
+                        tElement.text = tElement.text.replace(/  /g, "\u00A0 ");
+                    }
+                    result.children.push(tElement);
                     break;
-                
                 case "fldChar":
                     result.fldCharType = xml.stringAttr(c, "fldCharType");
                     break;
