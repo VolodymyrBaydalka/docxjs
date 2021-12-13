@@ -1,14 +1,24 @@
 import { WordDocument } from './word-document';
 import {
-    DomType, IDomTable, IDomNumbering,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
+    DomType,
+    IDomTable,
+    IDomNumbering,
+    IDomHyperlink,
+    IDomImage,
+    OpenXmlElement,
+    IDomTableColumn,
+    IDomTableCell,
+    TextElement,
+    SymbolElement,
+    BreakElement,
+    FootnoteReferenceElement
 } from './document/dom';
 import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { ParagraphElement } from './document/paragraph';
 import { appendClass, clone, keyBy, mergeDeep } from './utils';
-import { updateTabStop } from './javascript';
+import { updateDefaultTabStop, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { Section, SectionProperties, SectionRenderProperties } from './document/section';
 import { RunElement, RunProperties } from './document/run';
@@ -92,7 +102,8 @@ export class HtmlRenderer {
 
         if (this.options.inWrapper) {
             bodyContainer.appendChild(this.renderWrapper(sectionElements));
-        } else {
+        }
+        else {
             appendChildren(bodyContainer, sectionElements);
         }
         if (options.noStyleBlock) {
@@ -293,9 +304,9 @@ export class HtmlRenderer {
             const sectionElement = this.createSection(this.className, sectProps);
             this.renderStyleValues(document.cssStyle, sectionElement);
 
-            if(this.options.renderHeaders) {
-                const headerPart =  this.findHeaderFooter<HeaderPart>(sectProps, false);
-                if(headerPart && headerPart.headerElement) {
+            if (this.options.renderHeaders) {
+                const headerPart = this.findHeaderFooter<HeaderPart>(sectProps, false);
+                if (headerPart && headerPart.headerElement) {
                     this.renderElements([headerPart.headerElement], sectionElement);
                 }
             }
@@ -309,9 +320,9 @@ export class HtmlRenderer {
             }
 
 
-            if(this.options.renderFooters) {
-                const footerPart =  this.findHeaderFooter<FooterPart>(sectProps, true);
-                if(footerPart && footerPart.footerElement) {
+            if (this.options.renderFooters) {
+                const footerPart = this.findHeaderFooter<FooterPart>(sectProps, true);
+                if (footerPart && footerPart.footerElement) {
                     this.renderElements([footerPart.footerElement], sectionElement);
                 }
             }
@@ -341,7 +352,7 @@ export class HtmlRenderer {
         else {
             refToUse = def;
         }
-        
+
         if (refToUse == null) {
             return null;
         }
@@ -360,7 +371,7 @@ export class HtmlRenderer {
     }
 
     splitBySection(elements: OpenXmlElement[], lastSectionProps: SectionProperties): Section[] {
-        let current: Section = {sectProps: null, elements: []};
+        let current: Section = { sectProps: null, elements: [] };
         var result = [current];
         let sectProps: SectionProperties;
 
@@ -371,7 +382,7 @@ export class HtmlRenderer {
 
                 if (s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = clone(sectProps);
-                    current = {sectProps: null, elements: []};
+                    current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
             }
@@ -401,7 +412,7 @@ export class HtmlRenderer {
                 if (sectProps) {
                     current.sectProps = clone(sectProps);
                 }
-                current = {sectProps: null, elements: []};
+                current = { sectProps: null, elements: [] };
                 if (pBreakIndex === 0) {
                     current.elements.push(elem);
                     result[result.length - 1].elements.pop();
@@ -422,14 +433,14 @@ export class HtmlRenderer {
                 continue;
             }
             var children = elem.children;
-            var newParagraph = {...elem, children: children.slice(pBreakIndex)};
+            var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
             elem.children = children.slice(0, pBreakIndex);
             current.elements.push(newParagraph);
             if (!splitRun) {
                 continue;
             }
             let runChildren = breakRun.children;
-            let newRun = {...breakRun, children: runChildren.slice(0, rBreakIndex)};
+            let newRun = { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
             elem.children.push(newRun);
             breakRun.children = runChildren.slice(rBreakIndex);
         }
@@ -491,53 +502,52 @@ section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; 
 section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
-.${c} p { margin: 0pt; min-height: 1em; }
+.${c} p { margin: 0pt; min-height: 1em; margin-block-start: 0; margin-block-end: 0; }
 .${c} span { white-space: pre-wrap; }`;
         if (this.options.noStyleBlock) {
             this.noCssDict[`.${c}-wrapper`] = {
-                "background": {cssRuleCamel: "background", newVal: "gray"},
-                "padding": {cssRuleCamel: "padding", newVal: "30px"},
-                "padding-bottom": {cssRuleCamel: "paddingBottom", newVal: "0px"},
-                "display": {cssRuleCamel: "display", newVal: "flex"},
-                "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column"},
-                "align-items": {cssRuleCamel: "alignItems", newVal: "center"}
+                "background": { cssRuleCamel: "background", newVal: "gray" },
+                "padding": { cssRuleCamel: "padding", newVal: "30px" },
+                "padding-bottom": { cssRuleCamel: "paddingBottom", newVal: "0px" },
+                "display": { cssRuleCamel: "display", newVal: "flex" },
+                "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column" },
+                "align-items": { cssRuleCamel: "alignItems", newVal: "center" }
             };
             this.noCssDict[`.${c}-wrapper>section.${c}`] = {
-                "background": {cssRuleCamel: "background", newVal: "white"},
-                "box-shadow": {cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)"},
-                "margin-bottom": {cssRuleCamel: "marginBottom", newVal: "30px"}
+                "background": { cssRuleCamel: "background", newVal: "white" },
+                "box-shadow": { cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)" },
+                "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "30px" }
             };
             this.noCssDict[`.${c}`] = {
-                "color": {cssRuleCamel: "color", newVal: "black"},
+                "color": { cssRuleCamel: "color", newVal: "black" },
             };
             this.noCssDict[`section.${c}`] = {
-                "box-sizing": {cssRuleCamel: "boxSizing", newVal: "border-box"},
-                "display": {cssRuleCamel: "display", newVal: "flex"},
-                "flex-flow": {cssRuleCamel: "flexFlow", newVal: "column nowrap"},
+                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
+                "display": { cssRuleCamel: "display", newVal: "flex" },
+                "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column nowrap" },
+                "position": { cssRuleCamel: "position", newVal: "relative" },
             };
             this.noCssDict[`section.${c}>article`] = {
-                "margin-bottom": {cssRuleCamel: "marginBottom", newVal: "auto"},
+                "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "auto" },
             };
             this.noCssDict[`.${c} table`] = {
-                "border-collapse": {cssRuleCamel: "borderCollapse", newVal: "collapse"},
+                "border-collapse": { cssRuleCamel: "borderCollapse", newVal: "collapse" },
             };
             this.noCssDict[`.${c} table td`] = {
-                "vertical-align": {cssRuleCamel: "verticalAlign", newVal: "top"},
+                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
             };
             this.noCssDict[`.${c} table th`] = {
-                "vertical-align": {cssRuleCamel: "verticalAlign", newVal: "top"},
+                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
             };
             this.noCssDict[`.${c} p`] = {
-                "margin": {cssRuleCamel: "margin", newVal: "0pt"},
-                "min-height": {cssRuleCamel: "minHeight", newVal: "1em"},
+                "margin": { cssRuleCamel: "margin", newVal: "0pt" },
+                "margin-block-start": { cssRuleCamel: "marginBlockStart", newVal: "0" },
+                "margin-block-end": { cssRuleCamel: "marginBlockEnd", newVal: "0" },
+                "min-height": { cssRuleCamel: "minHeight", newVal: "1em" },
             };
             this.noCssDict[`.${c} span`] = {
-                "white-space": {cssRuleCamel: "whiteSpace", newVal: "preWrap"},
+                "white-space": { cssRuleCamel: "whiteSpace", newVal: "preWrap" },
             };
-            if(this.options.experimental) {
-                styleText +=`\n.${c} p { word-spacing: -0.54pt; }`;
-                this.noCssDict[`.${c} p`]["word-spacing"] = {cssRuleCamel: "wordSpacing", newVal: "-0.54pt"};
-            }
         }
 
         return createStyleElement(styleText);
@@ -773,7 +783,7 @@ section.${c}>article { margin-bottom: auto; }
 
             case DomType.NoBreakHyphen:
                 return this.createElement("wbr");
-                            
+
             default:
                 console.warn(`DomType ${elem.type} has no rendering implementation.`);
                 return null;
@@ -1051,7 +1061,7 @@ section.${c}>article { margin-bottom: auto; }
                 const camelVal = key.replace(/-([a-z])/g, function (m, w) {
                     return w.toUpperCase();
                 });
-                this.noCssDict[split][key] = {cssRuleCamel: camelVal, newVal: values[key]};
+                this.noCssDict[split][key] = { cssRuleCamel: camelVal, newVal: values[key] };
             }
         }
         return "";
@@ -1206,9 +1216,9 @@ section.${c}>article { margin-bottom: auto; }
                 }
             }
         }
-        return true; 
+        return true;
     }
-    
+
 
     createElement = createElement;
 }
