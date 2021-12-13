@@ -55,7 +55,7 @@ var OpenXmlPackage = (function () {
         var relsPath = "_rels/.rels";
         if (path != null) {
             var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
-            relsPath = "".concat(f, "_rels/").concat(fn, ".rels");
+            relsPath = f + "_rels/" + fn + ".rels";
         }
         return this.load(relsPath)
             .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
@@ -371,7 +371,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.options.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
+                    _this.options.debug && console.warn("DOCX: Unknown style element: " + n.localName);
             }
         });
         return result;
@@ -485,6 +485,7 @@ var DocumentParser = (function () {
         var result = {
             id: id,
             level: xml.intAttr(node, "ilvl"),
+            pStyleName: undefined,
             pStyle: {},
             rStyle: {},
             suff: "tab"
@@ -503,6 +504,9 @@ var DocumentParser = (function () {
                     break;
                 case "lvlText":
                     result.levelText = xml.stringAttr(n, "val");
+                    break;
+                case "pStyle":
+                    result.pStyleName = xml.stringAttr(n, "val");
                     break;
                 case "numFmt":
                     result.format = xml.stringAttr(n, "val");
@@ -618,7 +622,7 @@ var DocumentParser = (function () {
                     });
                     break;
                 case "tab":
-                    result.children.push({ type: dom_1.DomType.Tab, parent: result });
+                    result.children.push({ type: dom_1.DomType.Tab });
                     break;
                 case "footnoteReference":
                     result.children.push({
@@ -631,17 +635,8 @@ var DocumentParser = (function () {
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
-                    if (d) {
-                        var newChildren = [];
-                        for (var i = 0; i < result.children.length; i++) {
-                            var rItem = result.children[i];
-                            if (rItem.type === dom_1.DomType.Break) {
-                                newChildren.push(rItem);
-                            }
-                        }
-                        newChildren.push(d);
-                        result.children = newChildren;
-                    }
+                    if (d)
+                        result.children = [d];
                     break;
                 case "rPr":
                     _this.parseRunProperties(c, result);
@@ -993,6 +988,10 @@ var DocumentParser = (function () {
                 case "tcBorders":
                     _this.parseBorderProperties(c, style);
                     break;
+                case "vanish":
+                    if (xml.boolAttr(c, "val", true))
+                        style["display"] = "none";
+                    break;
                 case "noWrap":
                     break;
                 case "tblCellMar":
@@ -1015,7 +1014,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.options.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
+                        _this.options.debug && console.warn("DOCX: Unknown document element: " + c.localName);
                     break;
             }
         });
@@ -1023,7 +1022,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseUnderline = function (node, style) {
         var val = xml.stringAttr(node, "val");
-        if (val == null || val == "none")
+        if (val == null)
             return;
         switch (val) {
             case "dash":
@@ -1055,6 +1054,9 @@ var DocumentParser = (function () {
             case "words":
                 style["text-decoration"] = "underline";
                 break;
+            case "none":
+                style["text-decoration"] = "none";
+                break;
         }
         var col = xml.colorAttr(node, "color");
         if (col)
@@ -1062,14 +1064,10 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseFont = function (node, style) {
         var ascii = xml.stringAttr(node, "ascii");
-        if (ascii) {
-            style["font-family"] = ascii;
-            return;
-        }
-        var asciiTheme = xml.stringAttr(node, "asciiTheme");
-        if (asciiTheme) {
-            style["asciiTheme"] = asciiTheme;
-        }
+        var asciiTheme = values.themeValue(node, "asciiTheme");
+        var fonts = [ascii, asciiTheme].filter(function (x) { return x; }).join(', ');
+        if (fonts.length > 0)
+            style["font-family"] = fonts;
     };
     DocumentParser.prototype.parseIndentation = function (node, style) {
         var firstLine = xml.sizeAttr(node, "firstLine");
@@ -1081,7 +1079,7 @@ var DocumentParser = (function () {
         if (firstLine)
             style["text-indent"] = firstLine;
         if (hanging)
-            style["text-indent"] = "-".concat(hanging);
+            style["text-indent"] = "-" + hanging;
         if (left || start)
             style["margin-left"] = left || start;
         if (right || end)
@@ -1099,13 +1097,13 @@ var DocumentParser = (function () {
         if (line !== null) {
             switch (lineRule) {
                 case "auto":
-                    style["line-height"] = "".concat((line / 240).toFixed(2));
+                    style["line-height"] = "" + (line / 240).toFixed(2);
                     break;
                 case "atLeast":
-                    style["line-height"] = "calc(100% + ".concat(line / 20, "pt)");
+                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
                     break;
                 default:
-                    style["line-height"] = style["min-height"] = "".concat(line / 20, "pt");
+                    style["line-height"] = style["min-height"] = line / 20 + "pt";
                     break;
             }
         }
@@ -1199,10 +1197,10 @@ var xml = (function () {
             else if (knownColors.includes(v)) {
                 return v;
             }
-            return "#".concat(v);
+            return "#" + v;
         }
         var themeColor = xml.stringAttr(node, "themeColor");
-        return themeColor ? "var(--docx-".concat(themeColor, "-color)") : defValue;
+        return themeColor ? "var(--docx-" + themeColor + "-color)" : defValue;
     };
     xml.boolAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = false; }
@@ -1245,7 +1243,7 @@ var values = (function () {
     }
     values.themeValue = function (c, attr) {
         var val = xml.stringAttr(c, attr);
-        return val ? "var(--docx-".concat(val, "-font)") : null;
+        return val ? "var(--docx-" + val + "-font)" : null;
     };
     values.valueOfBold = function (c) {
         return xml.boolAttr(c, "val", true) ? "bold" : "normal";
@@ -1273,7 +1271,7 @@ var values = (function () {
             return "none";
         var color = xml.colorAttr(c, "color");
         var size = xml.sizeAttr(c, "sz", SizeType.Border);
-        return "".concat(size, " solid ").concat(color == "auto" ? "black" : color);
+        return size + " solid " + (color == "auto" ? "black" : color);
     };
     values.valueOfTblLayout = function (c) {
         var type = xml.stringAttr(c, "val");
@@ -1336,7 +1334,7 @@ var values = (function () {
             return b;
         if (b == null)
             return a;
-        return "calc(".concat(a, " + ").concat(b, ")");
+        return "calc(" + a + " + " + b + ")";
     };
     values.checkMask = function (num, mask) {
         return (num & mask) == mask;
@@ -1895,10 +1893,10 @@ var SectionType;
     SectionType["OddPage"] = "oddPage";
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml) {
-    var section = { footerRefs: [], headerRefs: [] };
-    section.id = xml.attr(elem, "rsidSect");
-    for (var _i = 0, _a = xml.elements(elem); _i < _a.length; _i++) {
-        var e = _a[_i];
+    var _a, _b;
+    var section = {};
+    for (var _i = 0, _c = xml.elements(elem); _i < _c.length; _i++) {
+        var e = _c[_i];
         switch (e.localName) {
             case "pgSz":
                 section.pageSize = {
@@ -1924,17 +1922,11 @@ function parseSectionProperties(elem, xml) {
             case "cols":
                 section.columns = parseColumns(e, xml);
                 break;
-            case "titlePg":
-                var titlePageVal = xml.attr(e, "val");
-                if (titlePageVal !== "false") {
-                    section.forceFirstFooterHeaderDifferent = true;
-                }
-                break;
             case "headerReference":
-                section.headerRefs.push(parseFooterHeaderReference(e, xml));
+                ((_a = section.headerRefs) !== null && _a !== void 0 ? _a : (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml));
                 break;
             case "footerReference":
-                section.footerRefs.push(parseFooterHeaderReference(e, xml));
+                ((_b = section.footerRefs) !== null && _b !== void 0 ? _b : (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml));
                 break;
         }
     }
@@ -1998,7 +1990,6 @@ exports.defaultOptions = {
     inWrapper: true,
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
-    noStyleBlock: false,
     renderHeaders: true,
     renderFooters: true,
     renderFootnotes: true
@@ -2177,7 +2168,6 @@ exports.WmlFooter = void 0;
 var dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 var WmlFooter = (function () {
     function WmlFooter() {
-        this.id = "";
         this.type = dom_1.DomType.Footer;
         this.children = [];
         this.cssStyle = {};
@@ -2208,6 +2198,48 @@ var WmlFootnote = (function () {
     return WmlFootnote;
 }());
 exports.WmlFootnote = WmlFootnote;
+
+
+/***/ }),
+
+/***/ "./src/footnotes/footnotes-part.ts":
+/*!*****************************************!*\
+  !*** ./src/footnotes/footnotes-part.ts ***!
+  \*****************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FootnotesPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var FootnotesPart = (function (_super) {
+    __extends(FootnotesPart, _super);
+    function FootnotesPart(pkg, path, parser) {
+        var _this = _super.call(this, pkg, path) || this;
+        _this._documentParser = parser;
+        return _this;
+    }
+    FootnotesPart.prototype.parseXml = function (root) {
+        this.footnotes = this._documentParser.parseFootnotes(root);
+    };
+    return FootnotesPart;
+}(part_1.Part));
+exports.FootnotesPart = FootnotesPart;
 
 
 /***/ }),
@@ -2304,8 +2336,9 @@ var HtmlRenderer = (function () {
     function HtmlRenderer(htmlDocument) {
         this.htmlDocument = htmlDocument;
         this.className = "docx";
-        this.noCssDict = {};
+        this.styleMap = {};
         this.footnoteMap = {};
+        this.createElement = createElement;
     }
     HtmlRenderer.prototype.render = function (document, bodyContainer, styleContainer, options) {
         if (styleContainer === void 0) { styleContainer = null; }
@@ -2314,43 +2347,35 @@ var HtmlRenderer = (function () {
         this.className = options.className;
         this.styleMap = null;
         styleContainer = styleContainer || bodyContainer;
-        if (options.noStyleBlock) {
-            styleContainer = window.document.createElement("div");
-        }
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
         if (document.themePart) {
-            appendComment(styleContainer, "docx document theme values");
+            appendComment(styleContainer, "docxjs document theme values");
             this.renderTheme(document.themePart, styleContainer);
         }
         if (document.stylesPart != null) {
             this.styleMap = this.processStyles(document.stylesPart.styles);
-            appendComment(styleContainer, "docx document styles");
+            appendComment(styleContainer, "docxjs document styles");
             styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
         }
         if (document.numberingPart) {
-            appendComment(styleContainer, "docx document numbering styles");
+            this.prodessNumberings(document.numberingPart.domNumberings);
+            appendComment(styleContainer, "docxjs document numbering styles");
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
         if (document.footnotesPart) {
             this.footnoteMap = (0, utils_1.keyBy)(document.footnotesPart.footnotes, function (x) { return x.id; });
         }
-        if (!options.ignoreFonts && document.fontTablePart) {
+        if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
-        }
         var sectionElements = this.renderSections(document.documentPart.body);
         if (this.options.inWrapper) {
-            var wrapper = this.renderWrapper();
-            appentElements(wrapper, sectionElements);
-            bodyContainer.appendChild(wrapper);
+            bodyContainer.appendChild(this.renderWrapper(sectionElements));
         }
         else {
-            appentElements(bodyContainer, sectionElements);
-        }
-        if (options.noStyleBlock) {
-            this.applyCss(this.noCssDict, bodyContainer);
+            appendChildren(bodyContainer, sectionElements);
         }
     };
     HtmlRenderer.prototype.renderTheme = function (themePart, styleContainer) {
@@ -2369,10 +2394,10 @@ var HtmlRenderer = (function () {
         if (colorScheme) {
             for (var _i = 0, _c = Object.entries(colorScheme.colors); _i < _c.length; _i++) {
                 var _d = _c[_i], k = _d[0], v = _d[1];
-                variables["--docx-".concat(k, "-color")] = "#".concat(v);
+                variables["--docx-" + k + "-color"] = "#" + v;
             }
         }
-        var cssText = this.styleToString(".".concat(this.className), variables);
+        var cssText = this.styleToString("." + this.className, variables);
         styleContainer.appendChild(createStyleElement(cssText));
     };
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
@@ -2382,7 +2407,7 @@ var HtmlRenderer = (function () {
                 this_1.document.loadFont(ref.id, ref.key).then(function (fontData) {
                     var cssValues = {
                         'font-family': f.name,
-                        'src': "url(".concat(fontData, ")")
+                        'src': "url(" + fontData + ")"
                     };
                     if (ref.type == "bold" || ref.type == "boldItalic") {
                         cssValues['font-weight'] = 'bold';
@@ -2390,7 +2415,7 @@ var HtmlRenderer = (function () {
                     if (ref.type == "italic" || ref.type == "boldItalic") {
                         cssValues['font-style'] = 'italic';
                     }
-                    appendComment(styleContainer, "Font ".concat(f.name));
+                    appendComment(styleContainer, "docxjs " + f.name + " font");
                     var cssText = _this.styleToString("@font-face", cssValues);
                     styleContainer.appendChild(createStyleElement(cssText));
                 });
@@ -2409,40 +2434,46 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.processClassName = function (className) {
         if (!className)
             return this.className;
-        return "".concat(this.className, "_").concat(className);
+        return this.className + "_" + className;
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
-        var stylesMap = {};
-        for (var _i = 0, _a = styles.filter(function (x) { return x.id != null; }); _i < _a.length; _i++) {
+        var stylesMap = (0, utils_1.keyBy)(styles.filter(function (x) { return x.id != null; }), function (x) { return x.id; });
+        for (var _i = 0, _a = styles.filter(function (x) { return x.basedOn; }); _i < _a.length; _i++) {
             var style = _a[_i];
-            this.replaceAsciiTheme(style);
-            style.basedOnResolved = !style.basedOn;
-            stylesMap[style.id] = style;
-        }
-        for (var _b = 0, _c = styles.filter(function (x) { return x.basedOn; }); _b < _c.length; _b++) {
-            var style = _c[_b];
-            if (style.basedOnResolved) {
-                continue;
+            var baseStyle = stylesMap[style.basedOn];
+            if (baseStyle) {
+                style.paragraphProps = (0, utils_1.mergeDeep)(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = (0, utils_1.mergeDeep)(style.runProps, baseStyle.runProps);
+                var _loop_3 = function (styleValues) {
+                    baseValues = baseStyle.styles.find(function (x) { return x.target == styleValues.target; });
+                    if (baseValues) {
+                        this_2.copyStyleProperties(baseValues.values, styleValues.values);
+                    }
+                };
+                var this_2 = this, baseValues;
+                for (var _b = 0, _c = style.styles; _b < _c.length; _b++) {
+                    var styleValues = _c[_b];
+                    _loop_3(styleValues);
+                }
             }
-            this.resolveBaseStyle(style, stylesMap);
+            else if (this.options.debug)
+                console.warn("Can't find base style " + style.basedOn);
         }
         for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
             var style = styles_1[_d];
-            this.replaceAsciiTheme(style, true);
             style.cssName = this.processClassName(this.escapeClassName(style.id));
         }
-        var defaultStyles = styles.filter(function (x) { return x.isDefault; });
-        var defaultOverride = (0, utils_1.clone)(defaultStyles[0]);
-        defaultOverride.styles = [];
-        for (var _e = 0, defaultStyles_1 = defaultStyles; _e < defaultStyles_1.length; _e++) {
-            var defaultStyle = defaultStyles_1[_e];
-            this.copyStyle(defaultStyle, defaultOverride);
-        }
-        for (var _f = 0, _g = styles.filter(function (x) { return x.id === null; }); _f < _g.length; _f++) {
-            var style = _g[_f];
-            this.copyStyle(defaultOverride, style, true);
-        }
         return stylesMap;
+    };
+    HtmlRenderer.prototype.prodessNumberings = function (numberings) {
+        var _a;
+        for (var _i = 0, _b = numberings.filter(function (n) { return n.pStyleName; }); _i < _b.length; _i++) {
+            var num = _b[_i];
+            var style = this.styleMap[num.pStyleName];
+            if ((_a = style.paragraphProps) === null || _a === void 0 ? void 0 : _a.numbering) {
+                style.paragraphProps.numbering.level = num.level;
+            }
+        }
     };
     HtmlRenderer.prototype.processElement = function (element) {
         if (element.children) {
@@ -2472,9 +2503,8 @@ var HtmlRenderer = (function () {
             }
         }
     };
-    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs, overideExistingEntries) {
+    HtmlRenderer.prototype.copyStyleProperties = function (input, output, attrs) {
         if (attrs === void 0) { attrs = null; }
-        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
         if (!input)
             return output;
         if (output == null)
@@ -2483,34 +2513,32 @@ var HtmlRenderer = (function () {
             attrs = Object.getOwnPropertyNames(input);
         for (var _i = 0, attrs_1 = attrs; _i < attrs_1.length; _i++) {
             var key = attrs_1[_i];
-            if (input.hasOwnProperty(key) && (overideExistingEntries || !output.hasOwnProperty(key))) {
+            if (input.hasOwnProperty(key) && !output.hasOwnProperty(key))
                 output[key] = input[key];
-            }
         }
         return output;
     };
     HtmlRenderer.prototype.createSection = function (className, props) {
         var elem = this.createElement("section", { className: className });
-        if (!props) {
-            return elem;
-        }
-        if (props.pageMargins) {
-            elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-            elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-            elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-            elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
-        }
-        if (props.pageSize) {
-            if (!this.options.ignoreWidth)
-                elem.style.width = this.renderLength(props.pageSize.width);
-            if (!this.options.ignoreHeight)
-                elem.style.minHeight = this.renderLength(props.pageSize.height);
-        }
-        if (props.columns && props.columns.numberOfColumns) {
-            elem.style.columnCount = "".concat(props.columns.numberOfColumns);
-            elem.style.columnGap = this.renderLength(props.columns.space);
-            if (props.columns.separator) {
-                elem.style.columnRule = "1px solid black";
+        if (props) {
+            if (props.pageMargins) {
+                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
+                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
+                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
+                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+            }
+            if (props.pageSize) {
+                if (!this.options.ignoreWidth)
+                    elem.style.width = this.renderLength(props.pageSize.width);
+                if (!this.options.ignoreHeight)
+                    elem.style.minHeight = this.renderLength(props.pageSize.height);
+            }
+            if (props.columns && props.columns.numberOfColumns) {
+                elem.style.columnCount = "" + props.columns.numberOfColumns;
+                elem.style.columnGap = this.renderLength(props.columns.space);
+                if (props.columns.separator) {
+                    elem.style.columnRule = "1px solid black";
+                }
             }
         }
         return elem;
@@ -2518,58 +2546,32 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSections = function (document) {
         var result = [];
         this.processElement(document);
-        for (var _i = 0, _a = this.splitBySection(document.children, document.props); _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.splitBySection(document.children); _i < _a.length; _i++) {
             var section = _a[_i];
             this.currentFootnoteIds = [];
-            var sectProps = section.sectProps;
-            var sectionElement = this.createSection(this.className, sectProps);
+            var props = section.sectProps || document.props;
+            var sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            if (this.options.renderHeaders) {
-                var headerPart = this.findHeaderFooter(sectProps, false);
-                if (headerPart && headerPart.headerElement) {
-                    this.renderElements([headerPart.headerElement], sectionElement);
-                }
-            }
+            var headerPart = this.options.renderHeaders ? this.findHeaderFooter(props.headerRefs, result.length) : null;
+            var footerPart = this.options.renderFooters ? this.findHeaderFooter(props.footerRefs, result.length) : null;
+            headerPart && this.renderElements([headerPart.headerElement], sectionElement);
             var contentElement = this.createElement("article");
             this.renderElements(section.elements, contentElement);
             sectionElement.appendChild(contentElement);
             if (this.options.renderFootnotes) {
                 this.renderFootnotes(this.currentFootnoteIds, sectionElement);
             }
-            if (this.options.renderFooters) {
-                var footerPart = this.findHeaderFooter(sectProps, true);
-                if (footerPart && footerPart.footerElement) {
-                    this.renderElements([footerPart.footerElement], sectionElement);
-                }
-            }
+            footerPart && this.renderElements([footerPart.footerElement], sectionElement);
             result.push(sectionElement);
         }
         return result;
     };
-    HtmlRenderer.prototype.findHeaderFooter = function (sectProps, getFooter) {
-        var _a, _b, _c;
-        if (getFooter === void 0) { getFooter = true; }
-        var refs = getFooter ? sectProps.footerRefs : sectProps.headerRefs;
-        var page = sectProps.pageWithinSection;
-        var first = (_a = refs.find(function (x) { return x.type == "first"; })) !== null && _a !== void 0 ? _a : null;
-        var even = (_b = refs.find(function (x) { return x.type == "even"; })) !== null && _b !== void 0 ? _b : null;
-        var def = (_c = refs.find(function (x) { return x.type == "default"; })) !== null && _c !== void 0 ? _c : null;
-        var refToUse = null;
-        if (sectProps.forceFirstFooterHeaderDifferent && page === 1) {
-            refToUse = first;
-        }
-        else if (page === 1 && first) {
-            refToUse = first;
-        }
-        else if (even && page % 2 === 0) {
-            refToUse = even;
-        }
-        else {
-            refToUse = def;
-        }
-        if (refToUse == null)
+    HtmlRenderer.prototype.findHeaderFooter = function (refs, page) {
+        var _a, _b;
+        var ref = refs ? ((_b = (_a = (page == 0 ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 0 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; })) : null;
+        if (ref == null)
             return null;
-        return this.document.findPartByRelId(refToUse.id, this.document.documentPart);
+        return this.document.findPartByRelId(ref.id, this.document.documentPart);
     };
     HtmlRenderer.prototype.isPageBreakElement = function (elem) {
         if (elem.type != dom_1.DomType.Break)
@@ -2578,214 +2580,124 @@ var HtmlRenderer = (function () {
             return !this.options.ignoreLastRenderedPageBreak;
         return elem.break == "page";
     };
-    HtmlRenderer.prototype.splitBySection = function (elements, lastSectionProps) {
+    HtmlRenderer.prototype.splitBySection = function (elements) {
         var _this = this;
         var _a;
         var current = { sectProps: null, elements: [] };
         var result = [current];
-        var sectProps;
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
                 var styleName = elem.styleName;
                 var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
-                    current.sectProps = (0, utils_1.clone)(sectProps);
+                    current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
                     result.push(current);
                 }
             }
             current.elements.push(elem);
-            if (elem.type != dom_1.DomType.Paragraph) {
-                continue;
-            }
-            var p = elem;
-            sectProps = (0, utils_1.clone)(p.sectionProps);
-            var pBreakIndex = -1;
-            var rBreakIndex = -1;
-            if (this.options.breakPages && p.children) {
-                pBreakIndex = p.children.findIndex(function (r) {
-                    var _a, _b;
-                    rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
-                    return rBreakIndex != -1;
-                });
-                if (pBreakIndex > 0) {
-                    while (pBreakIndex > 0 && p.children[pBreakIndex - 1].type === dom_1.DomType.BookmarkStart) {
-                        pBreakIndex--;
+            if (elem.type == dom_1.DomType.Paragraph) {
+                var p = elem;
+                var sectProps = p.sectionProps;
+                var pBreakIndex = -1;
+                var rBreakIndex = -1;
+                if (this.options.breakPages && p.children) {
+                    pBreakIndex = p.children.findIndex(function (r) {
+                        var _a, _b;
+                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(_this.isPageBreakElement.bind(_this))) !== null && _b !== void 0 ? _b : -1;
+                        return rBreakIndex != -1;
+                    });
+                }
+                if (sectProps || pBreakIndex != -1) {
+                    current.sectProps = sectProps;
+                    current = { sectProps: null, elements: [] };
+                    result.push(current);
+                }
+                if (pBreakIndex != -1) {
+                    var breakRun = p.children[pBreakIndex];
+                    var splitRun = rBreakIndex < breakRun.children.length - 1;
+                    if (pBreakIndex < p.children.length - 1 || splitRun) {
+                        var children = elem.children;
+                        var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
+                        elem.children = children.slice(0, pBreakIndex);
+                        current.elements.push(newParagraph);
+                        if (splitRun) {
+                            var runChildren = breakRun.children;
+                            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
+                            elem.children.push(newRun);
+                            breakRun.children = runChildren.slice(rBreakIndex);
+                        }
                     }
                 }
             }
-            if (sectProps || (pBreakIndex > -1 && pBreakIndex > (this.isFirstRenderElement(current.elements) ? 0 : -1))) {
-                if (sectProps) {
-                    current.sectProps = (0, utils_1.clone)(sectProps);
-                }
-                current = { sectProps: null, elements: [] };
-                if (pBreakIndex === 0) {
-                    current.elements.push(elem);
-                    result[result.length - 1].elements.pop();
-                }
-                result.push(current);
-            }
-            if (pBreakIndex <= 0 ||
-                !p.children || p.children.length <= pBreakIndex) {
-                continue;
-            }
-            var breakRun = p.children[pBreakIndex];
-            if (!breakRun || !breakRun.children) {
-                continue;
-            }
-            var splitRun = rBreakIndex < breakRun.children.length - 1;
-            if (!(pBreakIndex < p.children.length - 1 || splitRun)) {
-                continue;
-            }
-            var children = elem.children;
-            var newParagraph = __assign(__assign({}, elem), { children: children.slice(pBreakIndex) });
-            elem.children = children.slice(0, pBreakIndex);
-            current.elements.push(newParagraph);
-            if (!splitRun) {
-                continue;
-            }
-            var runChildren = breakRun.children;
-            var newRun = __assign(__assign({}, breakRun), { children: runChildren.slice(0, rBreakIndex) });
-            elem.children.push(newRun);
-            breakRun.children = runChildren.slice(rBreakIndex);
-        }
-        if (result.length > 0) {
-            result[result.length - 1].sectProps = lastSectionProps;
         }
         var currentSectProps = null;
         for (var i = result.length - 1; i >= 0; i--) {
-            if (result[i].sectProps === null) {
-                result[i].sectProps = (0, utils_1.clone)(currentSectProps);
+            if (result[i].sectProps == null) {
+                result[i].sectProps = currentSectProps;
             }
             else {
-                currentSectProps = (0, utils_1.clone)(result[i].sectProps);
+                currentSectProps = result[i].sectProps;
             }
         }
-        this.addSectionInnerPageNums(result);
         return result;
-    };
-    HtmlRenderer.prototype.addSectionInnerPageNums = function (result) {
-        var lastSectionId = "";
-        var sectiontPageCount = 0;
-        for (var j = 0; j < result.length; j++) {
-            var sectProps = result[j].sectProps;
-            if (sectProps === null) {
-                continue;
-            }
-            if (sectProps.id !== lastSectionId) {
-                lastSectionId = sectProps.id;
-                sectiontPageCount = 1;
-            }
-            else {
-                sectiontPageCount++;
-            }
-            sectProps.pageWithinSection = sectiontPageCount;
-        }
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         var _a;
-        return l ? "".concat(l.value.toFixed(2)).concat((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
+        return l ? "" + l.value.toFixed(2) + ((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
     };
-    HtmlRenderer.prototype.renderWrapper = function () {
-        var wrapper = document.createElement("div");
-        wrapper.className = "".concat(this.className, "-wrapper");
-        return wrapper;
+    HtmlRenderer.prototype.renderWrapper = function (children) {
+        return this.createElement("div", { className: this.className + "-wrapper" }, children);
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = ".".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper>section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; display: flex; flex-flow: column nowrap; }\nsection.").concat(c, ">article { margin-bottom: auto; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; }");
-        if (this.options.noStyleBlock) {
-            this.noCssDict[".".concat(c, "-wrapper")] = {
-                "background": { cssRuleCamel: "background", newVal: "gray" },
-                "padding": { cssRuleCamel: "padding", newVal: "30px" },
-                "padding-bottom": { cssRuleCamel: "paddingBottom", newVal: "0px" },
-                "display": { cssRuleCamel: "display", newVal: "flex" },
-                "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column" },
-                "align-items": { cssRuleCamel: "alignItems", newVal: "center" }
-            };
-            this.noCssDict[".".concat(c, "-wrapper>section.").concat(c)] = {
-                "background": { cssRuleCamel: "background", newVal: "white" },
-                "box-shadow": { cssRuleCamel: "boxShadow", newVal: "0 0 10px rgba(0, 0, 0, 0.5)" },
-                "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "30px" }
-            };
-            this.noCssDict[".".concat(c)] = {
-                "color": { cssRuleCamel: "color", newVal: "black" },
-            };
-            this.noCssDict["section.".concat(c)] = {
-                "box-sizing": { cssRuleCamel: "boxSizing", newVal: "border-box" },
-                "display": { cssRuleCamel: "display", newVal: "flex" },
-                "flex-flow": { cssRuleCamel: "flexFlow", newVal: "column nowrap" },
-            };
-            this.noCssDict["section.".concat(c, ">article")] = {
-                "margin-bottom": { cssRuleCamel: "marginBottom", newVal: "auto" },
-            };
-            this.noCssDict[".".concat(c, " table")] = {
-                "border-collapse": { cssRuleCamel: "borderCollapse", newVal: "collapse" },
-            };
-            this.noCssDict[".".concat(c, " table td")] = {
-                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
-            };
-            this.noCssDict[".".concat(c, " table th")] = {
-                "vertical-align": { cssRuleCamel: "verticalAlign", newVal: "top" },
-            };
-            this.noCssDict[".".concat(c, " p")] = {
-                "margin": { cssRuleCamel: "margin", newVal: "0pt" },
-                "min-height": { cssRuleCamel: "minHeight", newVal: "1em" },
-            };
-            this.noCssDict[".".concat(c, " span")] = {
-                "white-space": { cssRuleCamel: "whiteSpace", newVal: "preWrap" },
-            };
-            if (this.options.experimental) {
-                styleText += "\n.".concat(c, " p { word-spacing: -0.54pt; }");
-                this.noCssDict[".".concat(c, " p")]["word-spacing"] = { cssRuleCamel: "wordSpacing", newVal: "-0.54pt" };
-            }
-        }
+        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; }\n";
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
         var _this = this;
         var styleText = "";
         var rootCounters = [];
-        var _loop_3 = function () {
-            selector = "p.".concat(this_2.numberingClass(num.id, num.level));
+        var _loop_4 = function () {
+            selector = "p." + this_3.numberingClass(num.id, num.level);
             listStyleType = "none";
             if (num.bullet) {
-                var valiable_1 = "--".concat(this_2.className, "-").concat(num.bullet.src).toLowerCase();
-                styleText += this_2.styleToString("".concat(selector, ":before"), {
+                var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString(selector + ":before", {
                     "content": "' '",
                     "display": "inline-block",
-                    "background": "var(".concat(valiable_1, ")")
+                    "background": "var(" + valiable_1 + ")"
                 }, num.bullet.style);
-                this_2.document.loadNumberingImage(num.bullet.src).then(function (data) {
-                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
+                this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
+                    var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else if (num.levelText) {
-                var counter = this_2.numberingCounter(num.id, num.level);
+                var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_2.styleToString("p.".concat(this_2.numberingClass(num.id, num.level - 1)), {
+                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_2.styleToString("".concat(selector, ":before"), __assign({ "content": this_2.levelTextToContent(num.levelText, num.suff, num.id, this_2.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+                styleText += this_3.styleToString(selector + ":before", __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
-                listStyleType = this_2.numFormatToCssValue(num.format);
+                listStyleType = this_3.numFormatToCssValue(num.format);
             }
-            styleText += this_2.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
+            styleText += this_3.styleToString(selector, __assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
         };
-        var this_2 = this, selector, listStyleType;
+        var this_3 = this, selector, listStyleType;
         for (var _i = 0, numberings_1 = numberings; _i < numberings_1.length; _i++) {
             var num = numberings_1[_i];
-            _loop_3();
+            _loop_4();
         }
         if (rootCounters.length > 0) {
-            styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
+            styleText += this.styleToString("." + this.className + "-wrapper", {
                 "counter-reset": rootCounters.join(" ")
             });
         }
@@ -2803,19 +2715,19 @@ var HtmlRenderer = (function () {
                 if (linkedStyle)
                     subStyles = subStyles.concat(linkedStyle.styles);
                 else if (this.options.debug)
-                    console.warn("Can't find linked style ".concat(style.linked));
+                    console.warn("Can't find linked style " + style.linked);
             }
             for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
                 var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
-                    selector += "".concat(style.target, ".").concat(style.cssName);
+                    selector += style.target + "." + style.cssName;
                 else if (style.target)
-                    selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
+                    selector += style.target + "." + style.cssName + " " + subStyle.target;
                 else
-                    selector += ".".concat(style.cssName, " ").concat(subStyle.target);
+                    selector += "." + style.cssName + " " + subStyle.target;
                 if (defautStyles[style.target] == style)
-                    selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
+                    selector = "." + this.className + " " + style.target + ", " + selector;
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
@@ -2869,9 +2781,6 @@ var HtmlRenderer = (function () {
                 return this.renderFootnoteReference(elem);
             case dom_1.DomType.NoBreakHyphen:
                 return this.createElement("wbr");
-            default:
-                console.warn("DomType ".concat(elem.type, " has no rendering implementation."));
-                return null;
         }
         return null;
     };
@@ -2894,13 +2803,16 @@ var HtmlRenderer = (function () {
         return this.createElement(tagName, null, this.renderChildren(elem));
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
+        var _a, _b;
         var result = this.createElement("p");
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         this.renderCommonProeprties(result.style, elem);
-        if (elem.numbering) {
-            var numberingClass = this.numberingClass(elem.numbering.id, elem.numbering.level);
+        var style = elem.styleName && this.styleMap[elem.styleName];
+        var numbering = (_a = elem.numbering) !== null && _a !== void 0 ? _a : (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.numbering;
+        if (numbering) {
+            var numberingClass = this.numberingClass(numbering.id, numbering.level);
             result.className = (0, utils_1.appendClass)(result.className, numberingClass);
         }
         if (elem.styleName) {
@@ -2961,13 +2873,13 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSymbol = function (elem) {
         var span = this.createElement("span");
         span.style.fontFamily = elem.font;
-        span.innerHTML = "&#x".concat(elem.char, ";");
+        span.innerHTML = "&#x" + elem.char + ";";
         return span;
     };
     HtmlRenderer.prototype.renderFootnoteReference = function (elem) {
         var result = this.createElement("sup");
         this.currentFootnoteIds.push(elem.id);
-        result.textContent = "".concat(this.currentFootnoteIds.length);
+        result.textContent = "" + this.currentFootnoteIds.length;
         return result;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
@@ -2979,9 +2891,8 @@ var HtmlRenderer = (function () {
                 if ((paragraph === null || paragraph === void 0 ? void 0 : paragraph.tabs) == null)
                     return;
                 paragraph.tabs.sort(function (a, b) { return a.position.value - b.position.value; });
-                tabSpan.style.display = "inline-block";
                 (0, javascript_1.updateTabStop)(tabSpan, paragraph.tabs);
-            }, 0);
+            }, 1500);
         }
         return tabSpan;
     };
@@ -3056,37 +2967,20 @@ var HtmlRenderer = (function () {
             ouput.className = input.className;
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
-        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
+        return this.className + "-num-" + id + "-" + lvl;
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
-        if (!this.options.noStyleBlock) {
-            var result = selectors + " {\r\n";
-            for (var key in values) {
-                result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
-            }
-            if (cssText) {
-                result += cssText;
-            }
-            return result + "}\r\n";
+        var result = selectors + " {\r\n";
+        for (var key in values) {
+            result += "  " + key + ": " + values[key] + ";\r\n";
         }
-        var selectorsplits = selectors.split(", ");
-        for (var i = 0; i < selectorsplits.length; i++) {
-            var split = selectorsplits[i];
-            if (this.noCssDict[split] === undefined) {
-                this.noCssDict[split] = {};
-            }
-            for (var key in values) {
-                var camelVal = key.replace(/-([a-z])/g, function (m, w) {
-                    return w.toUpperCase();
-                });
-                this.noCssDict[split][key] = { cssRuleCamel: camelVal, newVal: values[key] };
-            }
-        }
-        return "";
+        if (cssText)
+            result += cssText;
+        return result + "}\r\n";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
-        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
+        return this.className + "-num-" + id + "-" + lvl;
     };
     HtmlRenderer.prototype.levelTextToContent = function (text, suff, id, numformat) {
         var _this = this;
@@ -3097,9 +2991,9 @@ var HtmlRenderer = (function () {
         };
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(".concat(_this.numberingCounter(id, lvl), ", ").concat(numformat, ")\"");
+            return "\"counter(" + _this.numberingCounter(id, lvl) + ", " + numformat + ")\"";
         });
-        return "\"".concat(result).concat((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "", "\"");
+        return "\"" + result + ((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "") + "\"";
     };
     HtmlRenderer.prototype.numFormatToCssValue = function (format) {
         var mapping = {
@@ -3116,142 +3010,24 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.escapeClassName = function (className) {
         return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
-    HtmlRenderer.prototype.applyCss = function (dict, cont) {
-        var changeList = [];
-        for (var selector in dict) {
-            changeList.push({
-                selector: selector,
-                count: cont.querySelectorAll(selector).length,
-                styles: dict[selector]
-            });
-        }
-        changeList = changeList.sort(function (a, b) {
-            return a.count - b.count;
-        });
-        for (var i = 0; i < changeList.length; i++) {
-            var elements = cont.querySelectorAll(changeList[i].selector);
-            for (var j = 0; j < elements.length; j++) {
-                var element = elements[j];
-                var styles = element.getAttribute("style");
-                var hasStyles = styles !== null;
-                for (var style in changeList[i].styles) {
-                    if (!hasStyles || styles.indexOf(style) === -1) {
-                        var changeEntry = changeList[i].styles[style];
-                        element.style[changeEntry.cssRuleCamel] = changeEntry.newVal;
-                    }
-                }
-            }
-        }
-    };
-    HtmlRenderer.prototype.resolveBaseStyle = function (style, stylesMap) {
-        var baseStyle = stylesMap[style.basedOn];
-        if (!baseStyle) {
-            if (this.options.debug)
-                console.warn("Can't find base style ".concat(style.basedOn));
-            return;
-        }
-        if (baseStyle.basedOnResolved !== true) {
-            this.resolveBaseStyle(baseStyle, stylesMap);
-            baseStyle = stylesMap[style.basedOn];
-        }
-        this.copyStyle(baseStyle, style);
-        style.basedOnResolved = true;
-        stylesMap[style.id] = style;
-    };
-    HtmlRenderer.prototype.copyStyle = function (base, target, overideExistingEntries) {
-        if (overideExistingEntries === void 0) { overideExistingEntries = false; }
-        var _loop_4 = function (baseStyleStyles) {
-            var styleStyleValues = target.styles.filter(function (x) { return x.target == baseStyleStyles.target; });
-            if (styleStyleValues && styleStyleValues.length > 0) {
-                styleStyleValues[0].values = this_3.copyStyleProperties(baseStyleStyles.values, styleStyleValues[0].values, null, overideExistingEntries);
-            }
-            else {
-                target.styles.push((0, utils_1.clone)(baseStyleStyles));
-            }
-        };
-        var this_3 = this;
-        for (var _i = 0, _a = base.styles; _i < _a.length; _i++) {
-            var baseStyleStyles = _a[_i];
-            _loop_4(baseStyleStyles);
-        }
-    };
-    HtmlRenderer.prototype.replaceAsciiTheme = function (style, addDefault) {
-        var _a;
-        if (addDefault === void 0) { addDefault = false; }
-        var themePart = this.document.themePart;
-        var translatedFonts = themePart.theme.fontScheme;
-        var minorLatinFont = translatedFonts.minorFont.latinTypeface;
-        var hasMinorLatin = minorLatinFont !== "" && minorLatinFont !== undefined;
-        for (var j = 0; j < style.styles.length; j++) {
-            var substyle = style.styles[j];
-            var value = substyle.values["asciiTheme"];
-            var hasFontFamily = substyle.values["font-family"] !== undefined;
-            if (!value) {
-                if (addDefault && !hasFontFamily && hasMinorLatin) {
-                    substyle.values["font-family"] = minorLatinFont;
-                }
-                continue;
-            }
-            delete substyle.values["asciiTheme"];
-            if (hasFontFamily) {
-                continue;
-            }
-            if (value === "minorHAnsi" && minorLatinFont) {
-                substyle.values["font-family"] = minorLatinFont;
-            }
-            else if (value === "majorHAnsi" && ((_a = translatedFonts.majorFont) === null || _a === void 0 ? void 0 : _a.latinTypeface)) {
-                substyle.values["font-family"] = translatedFonts.majorFont.latinTypeface;
-            }
-        }
-    };
-    HtmlRenderer.prototype.isFirstRenderElement = function (elements) {
-        if (elements.length === 1) {
-            return true;
-        }
-        for (var i = elements.length - 2; i >= 0; i--) {
-            var element = elements[i];
-            if (!element.children || element.children.length === 0) {
-                continue;
-            }
-            for (var j = element.children.length - 1; j >= 0; j--) {
-                var run = element.children[j];
-                if (run.type !== dom_1.DomType.Run || !run.children || run.children.length === 0) {
-                    continue;
-                }
-                for (var k = run.children.length - 1; k >= 0; k--) {
-                    var child = run.children[k];
-                    if (child.type === dom_1.DomType.BookmarkStart || child.type === dom_1.DomType.BookmarkEnd || child.type === dom_1.DomType.Break) {
-                        continue;
-                    }
-                    return false;
-                }
-            }
-        }
-        return true;
-    };
-    HtmlRenderer.prototype.createElement = function (tagName, props, children) {
-        if (props === void 0) { props = undefined; }
-        if (children === void 0) { children = undefined; }
-        var result = Object.assign(this.htmlDocument.createElement(tagName), props);
-        children && children.forEach(function (c) { return result.appendChild(c); });
-        return result;
-    };
     return HtmlRenderer;
 }());
 exports.HtmlRenderer = HtmlRenderer;
-function appentElements(container, children) {
-    for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
-        var c = children_1[_i];
-        container.appendChild(c);
-    }
+function createElement(tagName, props, children) {
+    if (props === void 0) { props = undefined; }
+    if (children === void 0) { children = undefined; }
+    var result = Object.assign(document.createElement(tagName), props);
+    children && appendChildren(result, children);
+    return result;
 }
 function removeAllElements(elem) {
     elem.innerHTML = '';
 }
+function appendChildren(elem, children) {
+    children.forEach(function (c) { return elem.appendChild(c); });
+}
 function createStyleElement(cssText) {
-    var styleElement = document.createElement("style");
-    styleElement.innerHTML = cssText;
-    return styleElement;
+    return createElement("style", { innerHTML: cssText });
 }
 function appendComment(elem, comment) {
     elem.appendChild(document.createComment(comment));
@@ -3280,21 +3056,39 @@ function updateTabStop(elem, tabs, pixelToPoint) {
     var p = elem.closest("p");
     var tbb = elem.getBoundingClientRect();
     var pbb = p.getBoundingClientRect();
-    var left = (tbb.left - pbb.left) * pixelToPoint;
+    var pcs = getComputedStyle(p);
+    var marginLeft = parseFloat(pcs.marginLeft);
+    var textIntent = parseFloat(pcs.textIndent);
+    var pOffset = pbb.left + marginLeft;
+    var left = (tbb.left - pOffset) * pixelToPoint;
     var tab = tabs.find(function (t) { return t.style != "clear" && t.position.value > left; });
     if (tab == null)
         return;
-    elem.style.display = "inline-block";
-    elem.style.width = "".concat((tab.position.value - left), "pt");
+    var width = 1;
+    if (tab.style == "right") {
+        var range = document.createRange();
+        range.setStart(p.firstChild, 0);
+        range.setEndAfter(p);
+        var nextBB = range.getBoundingClientRect();
+        var prevRight = (nextBB.width + marginLeft + textIntent) * pixelToPoint;
+        width = Math.floor(tab.position.value - prevRight) + "pt";
+    }
+    else {
+        width = (tab.position.value - left) + "pt";
+    }
+    elem.innerHTML = "&nbsp;";
+    elem.style.textDecoration = "inherit";
+    elem.style.wordSpacing = width;
     switch (tab.leader) {
         case "dot":
         case "middleDot":
-            elem.style.borderBottom = "1px black dotted";
+            elem.style.textDecoration = "underline";
+            elem.style.textDecorationStyle = "dotted";
             break;
         case "hyphen":
         case "heavy":
         case "underscore":
-            elem.style.borderBottom = "1px black solid";
+            elem.style.textDecoration = "underline";
             break;
     }
 }
@@ -3452,6 +3246,9 @@ function parseNumberingLevel(elem, xml) {
                 break;
             case "lvlPicBulletId":
                 result.bulletPictureId = xml.attr(e, "val");
+                break;
+            case "pStyle":
+                result.paragraphStyle = xml.attr(e, "val");
                 break;
             case "pPr":
                 result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(e, xml);
@@ -3767,13 +3564,13 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeDeep = exports.isObject = exports.clone = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
+exports.mergeDeep = exports.isObject = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
 function addElementClass(element, className) {
     return element.className = appendClass(element.className, className);
 }
 exports.addElementClass = addElementClass;
 function appendClass(classList, className) {
-    return (!classList) ? className : "".concat(classList, " ").concat(className);
+    return (!classList) ? className : classList + " " + className;
 }
 exports.appendClass = appendClass;
 function splitPath(path) {
@@ -3790,7 +3587,7 @@ function resolvePath(path, base) {
         return url.substr(prefix.length);
     }
     catch (_a) {
-        return "".concat(base).concat(path);
+        return "" + base + path;
     }
 }
 exports.resolvePath = resolvePath;
@@ -3801,22 +3598,6 @@ function keyBy(array, by) {
     }, {});
 }
 exports.keyBy = keyBy;
-function clone(object) {
-    if (object === undefined) {
-        return undefined;
-    }
-    if (object === null) {
-        return null;
-    }
-    try {
-        return JSON.parse(JSON.stringify(object));
-    }
-    catch (e) {
-        console.warn("Couldn't clone object:", object);
-        return object;
-    }
-}
-exports.clone = clone;
 function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
@@ -3869,10 +3650,11 @@ var header_part_1 = __webpack_require__(/*! ./header/header-part */ "./src/heade
 var extended_props_part_1 = __webpack_require__(/*! ./document-props/extended-props-part */ "./src/document-props/extended-props-part.ts");
 var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part */ "./src/document-props/core-props-part.ts");
 var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
+var footnotes_part_1 = __webpack_require__(/*! ./footnotes/footnotes-part */ "./src/footnotes/footnotes-part.ts");
 var topLevelRels = [
-    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml", id: "" },
-    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml", id: "" },
-    { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml", id: "" },
+    { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
+    { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
+    { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
 ];
 var WordDocument = (function () {
     function WordDocument() {
@@ -3891,7 +3673,7 @@ var WordDocument = (function () {
             var tasks = topLevelRels.map(function (rel) {
                 var _a;
                 var r = (_a = rels.find(function (x) { return x.type === rel.type; })) !== null && _a !== void 0 ? _a : rel;
-                return d.loadRelationshipPart(r.target, r.type, r.id);
+                return d.loadRelationshipPart(r.target, r.type);
             });
             return Promise.all(tasks);
         }).then(function () { return d; });
@@ -3900,7 +3682,7 @@ var WordDocument = (function () {
         if (type === void 0) { type = "blob"; }
         return this._package.save(type);
     };
-    WordDocument.prototype.loadRelationshipPart = function (path, type, id) {
+    WordDocument.prototype.loadRelationshipPart = function (path, type) {
         var _this = this;
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
@@ -3922,6 +3704,9 @@ var WordDocument = (function () {
                 break;
             case relationship_1.RelationshipTypes.Theme:
                 this.themePart = part = new theme_part_1.ThemePart(this._package, path);
+                break;
+            case relationship_1.RelationshipTypes.Footnotes:
+                this.footnotesPart = part = new footnotes_part_1.FootnotesPart(this._package, path, this._parser);
                 break;
             case relationship_1.RelationshipTypes.Footer:
                 part = new footer_part_1.FooterPart(this._package, path, this._parser);
@@ -3945,7 +3730,7 @@ var WordDocument = (function () {
                 return part;
             var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type, rel.id);
+                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
             });
             return Promise.all(rels).then(function () { return part; });
         });
