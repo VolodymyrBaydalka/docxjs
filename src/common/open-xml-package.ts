@@ -23,7 +23,8 @@ export class OpenXmlPackage {
     }
 
     static load(input: Blob | any, options: OpenXmlPackageOptions): Promise<OpenXmlPackage> {
-        return JSZip.loadAsync(input).then(zip => new OpenXmlPackage(zip, options));
+        const jszipOptions: JSZip.JSZipLoadOptions = typeof input === "string" ? { base64: true } : undefined;
+        return JSZip.loadAsync(input, jszipOptions).then((zip) => new OpenXmlPackage(zip, options));
     }
 
     save(type: any = "blob"): Promise<any>  {

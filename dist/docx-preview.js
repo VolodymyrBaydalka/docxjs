@@ -38,7 +38,8 @@ var OpenXmlPackage = (function () {
         this._zip.file(path, content);
     };
     OpenXmlPackage.load = function (input, options) {
-        return JSZip.loadAsync(input).then(function (zip) { return new OpenXmlPackage(zip, options); });
+        var jszipOptions = typeof input === "string" ? { base64: true } : undefined;
+        return JSZip.loadAsync(input, jszipOptions).then(function (zip) { return new OpenXmlPackage(zip, options); });
     };
     OpenXmlPackage.prototype.save = function (type) {
         if (type === void 0) { type = "blob"; }
