@@ -172,9 +172,9 @@ export class HtmlRenderer {
 
     prodessNumberings(numberings: IDomNumbering[]) {
         for (let num of numberings.filter(n => n.pStyleName)) {
-            const style = this.styleMap[num.pStyleName];
+            const style = this.styleMap && this.styleMap[num.pStyleName];
 
-            if (style.paragraphProps?.numbering) {
+            if (style?.paragraphProps?.numbering) {
                 style.paragraphProps.numbering.level = num.level;
             }
         }
@@ -676,7 +676,7 @@ section.${c}>article { margin-bottom: auto; }
 
         this.renderCommonProeprties(result.style, elem);
 
-        const style = elem.styleName && this.styleMap[elem.styleName];
+        const style = elem.styleName && this.styleMap && this.styleMap[elem.styleName];
         const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
 
         if (numbering) {

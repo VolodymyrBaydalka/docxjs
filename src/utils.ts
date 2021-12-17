@@ -18,7 +18,7 @@ export function splitPath(path: string): [string, string] {
 
 export function resolvePath(path: string, base: string): string {
     try {
-        const prefix = "file://docx/";
+        const prefix = "http://docx/";
         const url = new URL(path, prefix + base).toString();
         return url.substr(prefix.length);
     } catch {

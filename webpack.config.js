@@ -36,7 +36,12 @@ function buildConfig(prod, es6) {
       extensions: ['.ts', '.js']
     },
     externals: {
-      "jszip": "JSZip",
+      "jszip": {
+        root: "JSZip",
+        commonjs: "jszip",
+        commonjs2: "jszip",
+        amd: "jszip"
+      },
     }
   }
 }

@@ -1,10 +1,10 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("JSZip"));
+		module.exports = factory(require("jszip"));
 	else if(typeof define === 'function' && define.amd)
-		define(["JSZip"], factory);
+		define(["jszip"], factory);
 	else if(typeof exports === 'object')
-		exports["docx"] = factory(require("JSZip"));
+		exports["docx"] = factory(require("jszip"));
 	else
 		root["docx"] = factory(root["JSZip"]);
 })(self, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
@@ -2484,8 +2484,8 @@ var HtmlRenderer = (function () {
         var _a;
         for (var _i = 0, _b = numberings.filter(function (n) { return n.pStyleName; }); _i < _b.length; _i++) {
             var num = _b[_i];
-            var style = this.styleMap[num.pStyleName];
-            if ((_a = style.paragraphProps) === null || _a === void 0 ? void 0 : _a.numbering) {
+            var style = this.styleMap && this.styleMap[num.pStyleName];
+            if ((_a = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _a === void 0 ? void 0 : _a.numbering) {
                 style.paragraphProps.numbering.level = num.level;
             }
         }
@@ -2830,7 +2830,7 @@ var HtmlRenderer = (function () {
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         this.renderCommonProeprties(result.style, elem);
-        var style = elem.styleName && this.styleMap[elem.styleName];
+        var style = elem.styleName && this.styleMap && this.styleMap[elem.styleName];
         var numbering = (_a = elem.numbering) !== null && _a !== void 0 ? _a : (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.numbering;
         if (numbering) {
             var numberingClass = this.numberingClass(numbering.id, numbering.level);
@@ -3602,7 +3602,7 @@ function splitPath(path) {
 exports.splitPath = splitPath;
 function resolvePath(path, base) {
     try {
-        var prefix = "file://docx/";
+        var prefix = "http://docx/";
         var url = new URL(path, prefix + base).toString();
         return url.substr(prefix.length);
     }
@@ -3801,9 +3801,9 @@ exports.deobfuscate = deobfuscate;
 /***/ }),
 
 /***/ "jszip":
-/*!************************!*\
-  !*** external "JSZip" ***!
-  \************************/
+/*!**************************************************************************************!*\
+  !*** external {"root":"JSZip","commonjs":"jszip","commonjs2":"jszip","amd":"jszip"} ***!
+  \**************************************************************************************/
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
