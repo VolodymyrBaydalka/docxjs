@@ -1,7 +1,7 @@
 import {
     DomType, IDomTable, IDomNumbering,
     IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell,
-    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
+    IDomTableRow, NumberingPicBullet, TextElement, SymbolElement, BreakElement, NoteReferenceElement
 } from './document/dom';
 import * as utils from './utils';
 import { DocumentElement } from './document/document';
@@ -11,7 +11,6 @@ import globalXmlParser from './parser/xml-parser';
 import { parseRunProperties, WmlRun } from './document/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmarks';
 import { IDomStyle, IDomSubStyle } from './document/style';
-import { WmlFootnote } from './footnotes/footnote';
 
 export var autos = {
     shd: "white",
@@ -35,15 +34,15 @@ export class DocumentParser {
         };
     }
 
-    parseFootnotes(xmlDoc: Element): WmlFootnote[] {
+    parseNotes(xmlDoc: Element, elemName: string, elemClass: any): any[] {
         var result = [];
 
-        for (let el of globalXmlParser.elements(xmlDoc, "footnote")) {
-            const footnote = new WmlFootnote();
-            footnote.id = globalXmlParser.attr(el, "id");
-            footnote.footnoteType = globalXmlParser.attr(el, "type");
-            footnote.children = this.parseBodyElements(el);
-            result.push(footnote);
+        for (let el of globalXmlParser.elements(xmlDoc, elemName)) {
+            const node = new elemClass();
+            node.id = globalXmlParser.attr(el, "id");
+            node.noteType = globalXmlParser.attr(el, "type");
+            node.children = this.parseBodyElements(el);
+            result.push(node);
         }
 
         return result;
@@ -514,12 +513,19 @@ export class DocumentParser {
                     break;
 
                 case "footnoteReference":
-                    result.children.push(<FootnoteReferenceElement>{ 
+                    result.children.push(<NoteReferenceElement>{ 
                         type: DomType.FootnoteReference, 
                         id: xml.stringAttr(c, "id")
                     });
                     break;
 
+				case "endnoteReference":
+					result.children.push(<NoteReferenceElement>{ 
+						type: DomType.EndnoteReference, 
+						id: xml.stringAttr(c, "id")
+					});
+					break;
+	
                 case "instrText":
                     result.instrText = c.textContent;
                     break;

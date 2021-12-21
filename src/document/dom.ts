@@ -18,7 +18,9 @@ export enum DomType {
     Footer = "footer",
     Header = "header",
     FootnoteReference = "footnoteReference", 
-    Footnote = "footnote" 
+	EndnoteReference = "endnoteReference",
+    Footnote = "footnote",
+    Endnote = "endnote",
 }
 
 export interface OpenXmlElement {
@@ -33,7 +35,7 @@ export interface IDomHyperlink extends OpenXmlElement {
     href?: string;
 }
 
-export interface FootnoteReferenceElement extends OpenXmlElement {
+export interface NoteReferenceElement extends OpenXmlElement {
     id: string;
 }
 

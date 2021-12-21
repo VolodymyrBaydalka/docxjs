@@ -19,6 +19,7 @@ export enum RelationshipTypes {
     WebSettings = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings",
     Hyperlink = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
     Footnotes = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
+	Endnotes = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes",
     Footer = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
     Header = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
     ExtendedProperties = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",

@@ -1,7 +1,7 @@
 import { WordDocument } from './word-document';
 import {
     DomType, IDomTable, IDomNumbering,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement, FootnoteReferenceElement
+    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement, NoteReferenceElement
 } from './document/dom';
 import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
@@ -14,8 +14,7 @@ import { FooterHeaderReference, SectionProperties } from './document/section';
 import { WmlRun, RunProperties } from './document/run';
 import { WmlBookmarkStart } from './document/bookmarks';
 import { IDomStyle } from './document/style';
-import { Part } from './common/part';
-import { WmlFootnote } from './footnotes/footnote';
+import { WmlBaseNote, WmlFootnote } from './notes/elements';
 import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 
@@ -27,8 +26,14 @@ export class HtmlRenderer {
     styleMap: Record<string, IDomStyle> = {};
 
     footnoteMap: Record<string, WmlFootnote> = {};
+	endnoteMap: Record<string, WmlFootnote> = {};
     currentFootnoteIds: string[];
+    currentEndnoteIds: string[] = [];
     usedHederFooterParts: any[] = [];
+
+	defaultTabSize: Length;	
+	currentTabs: any[] = [];
+	tabsTimeout: any = 0;
 
     constructor(public htmlDocument: Document) {
     }
@@ -68,8 +73,16 @@ export class HtmlRenderer {
         }
 
         if (document.footnotesPart) {
-            this.footnoteMap = keyBy(document.footnotesPart.footnotes, x => x.id);
+            this.footnoteMap = keyBy(document.footnotesPart.notes, x => x.id);
         }
+
+		if (document.endnotesPart) {
+            this.endnoteMap = keyBy(document.endnotesPart.notes, x => x.id);
+        }
+
+		if (document.settingsPart) {
+			this.defaultTabSize = document.settingsPart.settings?.defaultTabStop;
+		}
 
         if (!options.ignoreFonts && document.fontTablePart)
             this.renderFontTable(document.fontTablePart, styleContainer);
@@ -81,6 +94,8 @@ export class HtmlRenderer {
         } else {
             appendChildren(bodyContainer, sectionElements);
         }
+
+		this.refreshTabStops();
     }
 
     renderTheme(themePart: ThemePart, styleContainer: HTMLElement) {
@@ -129,6 +144,7 @@ export class HtmlRenderer {
                     appendComment(styleContainer, `docxjs ${f.name} font`);
                     const cssText = this.styleToString("@font-face", cssValues);
                     styleContainer.appendChild(createStyleElement(cssText));
+					this.refreshTabStops();
                 });
             }
         }
@@ -259,10 +275,12 @@ export class HtmlRenderer {
         const result = [];
 
         this.processElement(document);
+		const sections = this.splitBySection(document.children);
 
-        for (let section of this.splitBySection(document.children)) {
+        for (let i = 0, l = sections.length; i < l; i++) {
             this.currentFootnoteIds = [];
 
+			const section = sections[i];
             const props = section.sectProps || document.props;
             const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
@@ -274,8 +292,12 @@ export class HtmlRenderer {
             sectionElement.appendChild(contentElement);
 
             if (this.options.renderFootnotes) {
-                this.renderFootnotes(this.currentFootnoteIds, sectionElement);
+                this.renderNotes(this.currentFootnoteIds, this.footnoteMap, sectionElement);
             }
+
+			if (this.options.renderEndnotes && i == l - 1) {
+                this.renderNotes(this.currentEndnoteIds, this.endnoteMap, sectionElement);
+			}
 
             this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, sectionElement);
 
@@ -574,11 +596,11 @@ section.${c}>article { margin-bottom: auto; }
         return createStyleElement(styleText);
     }
 
-    renderFootnotes(footnoteIds: string[], into: HTMLElement) {
-        var footnotes = footnoteIds.map(id => this.footnoteMap[id]).filter(x => x);
+    renderNotes(noteIds: string[], notesMap: Record<string, WmlBaseNote>, into: HTMLElement) {
+        var notes = noteIds.map(id => notesMap[id]).filter(x => x);
 
-        if (footnotes.length > 0) {
-            var result = this.createElement("ol", null, this.renderElements(footnotes));
+        if (notes.length > 0) {
+            var result = this.createElement("ol", null, this.renderElements(notes));
             into.appendChild(result);
         }
     }
@@ -634,12 +656,16 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderContainer(elem, "header");
 
             case DomType.Footnote:
-                return this.renderContainer(elem, "li");
+			case DomType.Endnote:
+				return this.renderContainer(elem, "li");
 
             case DomType.FootnoteReference:
-                return this.renderFootnoteReference(elem as FootnoteReferenceElement);
+                return this.renderFootnoteReference(elem as NoteReferenceElement);
 
-            case DomType.NoBreakHyphen:
+			case DomType.EndnoteReference:
+				return this.renderEndnoteReference(elem as NoteReferenceElement);
+	
+			case DomType.NoBreakHyphen:
                 return this.createElement("wbr");
         }
 
@@ -767,10 +793,17 @@ section.${c}>article { margin-bottom: auto; }
         return span;
     }
 
-    renderFootnoteReference(elem: FootnoteReferenceElement) {
+    renderFootnoteReference(elem: NoteReferenceElement) {
         var result = this.createElement("sup");
         this.currentFootnoteIds.push(elem.id);
         result.textContent = `${this.currentFootnoteIds.length}`;
+        return result;
+    }
+
+	renderEndnoteReference(elem: NoteReferenceElement) {
+        var result = this.createElement("sup");
+        this.currentEndnoteIds.push(elem.id);
+        result.textContent = `${this.currentEndnoteIds.length}`;
         return result;
     }
 
@@ -780,15 +813,8 @@ section.${c}>article { margin-bottom: auto; }
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
         if (this.options.experimental) {
-            setTimeout(() => {
-                var paragraph = findParent<WmlParagraph>(elem, DomType.Paragraph);
-
-                if (paragraph.tabs == null)
-                    return;
-
-                paragraph.tabs.sort((a, b) => a.position.value - b.position.value);
-                updateTabStop(tabSpan, paragraph.tabs);
-            }, 1500);
+			var stops = findParent<WmlParagraph>(elem, DomType.Paragraph)?.tabs;
+			this.currentTabs.push({ stops, span: tabSpan });
         }
 
         return tabSpan;
@@ -937,6 +963,19 @@ section.${c}>article { margin-bottom: auto; }
     escapeClassName(className: string) {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
+
+	refreshTabStops() {
+		if (!this.options.experimental) 
+			return;
+
+		clearTimeout(this.tabsTimeout);
+
+		this.tabsTimeout = setTimeout(() => {
+			for (let tab of this.currentTabs) {
+				updateTabStop(tab.span, tab.stops, this.defaultTabSize);
+			}
+		}, 500);
+	}
 
     createElement = createElement;
 }

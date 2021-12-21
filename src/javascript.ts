@@ -1,12 +1,26 @@
+import { Length } from "./document/common";
 import { ParagraphTab } from "./document/paragraph";
 
-export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], pixelToPoint: number = 72 / 96) {
+const defaultTab: ParagraphTab = { position: { value: 0, type: "pt" }, leader: "none", style: "left" };
+const maxTabs = 50;
+
+export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTabSize: Length, pixelToPoint: number = 72 / 96) {
 
     const p = elem.closest("p");
 
     const tbb = elem.getBoundingClientRect();
     const pbb = p.getBoundingClientRect();
     const pcs = getComputedStyle(p);
+
+	tabs = tabs && tabs.length > 0 ? tabs.sort((a, b) => a.position.value - b.position.value) : [defaultTab];
+
+	const lastTab = tabs[tabs.length - 1];
+	const pWidthPt = pbb.width / pixelToPoint;
+	const size = defaultTabSize.value;
+
+	for (let pos = lastTab.position.value + defaultTabSize.value; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
+		tabs.push({ ...defaultTab, position: { value: pos, type: "pt" } });
+	}
 
     const marginLeft = parseFloat(pcs.marginLeft);
     const textIntent = parseFloat(pcs.textIndent);
