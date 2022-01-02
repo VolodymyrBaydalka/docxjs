@@ -21,6 +21,15 @@ export interface PageSize {
     orientation: "landscape" | string 
 }
 
+export interface PageNumber {
+    start: number;
+    chapSep: "colon" | "emDash" | "endash" | "hyphen" | "period" | string;
+    chapStyle: string;
+    format: "none" | "cardinalText" | "decimal" | "decimalEnclosedCircle" | "decimalEnclosedFullstop" 
+        | "decimalEnclosedParen" | "decimalZero" | "lowerLetter" | "lowerRoman"
+        | "ordinalText" | "upperLetter" | "upperRoman" | string;
+}
+
 export interface PageMargins {
     top: Length;
     right: Length;
@@ -49,6 +58,7 @@ export interface SectionProperties {
     pageSize: PageSize,
     pageMargins: PageMargins,
     pageBorders: Borders;
+    pageNumber: PageNumber;
     columns: Columns;
     footerRefs: FooterHeaderReference[];
     headerRefs: FooterHeaderReference[];
@@ -103,6 +113,10 @@ export function parseSectionProperties(elem: Element, xml: XmlParser = globalXml
             case "pgBorders":
                 section.pageBorders = parseBorders(e, xml);
                 break;
+
+            case "pgNumType":
+                section.pageNumber = parsePageNumber(e, xml);
+                break;
         }
     }
 
@@ -120,6 +134,15 @@ function parseColumns(elem: Element, xml: XmlParser): Columns {
                 width: xml.lengthAttr(e, "w"),
                 space: xml.lengthAttr(e, "space")
             })
+    };
+}
+
+function parsePageNumber(elem: Element, xml: XmlParser): PageNumber {
+    return {
+        chapSep: xml.attr(elem, "chapSep"),
+        chapStyle: xml.attr(elem, "chapStyle"),
+        format: xml.attr(elem, "fmt"),
+        start: xml.intAttr(elem, "start")
     };
 }
 

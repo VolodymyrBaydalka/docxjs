@@ -23,7 +23,8 @@ export enum RelationshipTypes {
     Footer = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
     Header = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
     ExtendedProperties = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
-    CoreProperties = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
+    CoreProperties = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+	CustomProperties = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties",
 }
 
 export function parseRelationships(root: Element, xml: XmlParser): Relationship[] {

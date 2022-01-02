@@ -15,18 +15,23 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
 	tabs = tabs && tabs.length > 0 ? tabs.sort((a, b) => a.position.value - b.position.value) : [defaultTab];
 
 	const lastTab = tabs[tabs.length - 1];
-	const pWidthPt = pbb.width / pixelToPoint;
+	const pWidthPt = pbb.width * pixelToPoint;
 	const size = defaultTabSize.value;
+    let pos = lastTab.position.value + defaultTabSize.value;
 
-	for (let pos = lastTab.position.value + defaultTabSize.value; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
-		tabs.push({ ...defaultTab, position: { value: pos, type: "pt" } });
-	}
+    if (pos < pWidthPt) {
+        tabs = [...tabs];
+
+        for (; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
+            tabs.push({ ...defaultTab, position: { value: pos, type: "pt" } });
+        }
+    }
 
     const marginLeft = parseFloat(pcs.marginLeft);
     const textIntent = parseFloat(pcs.textIndent);
     const pOffset = pbb.left + marginLeft;
-    let left = (tbb.left - pOffset) * pixelToPoint;
-    let tab = tabs.find(t => t.style != "clear" && t.position.value > left);
+    const left = (tbb.left - pOffset) * pixelToPoint;
+    const tab = tabs.find(t => t.style != "clear" && t.position.value > left);
 
     if(tab == null)
         return;

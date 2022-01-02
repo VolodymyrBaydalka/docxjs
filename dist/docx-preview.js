@@ -142,6 +142,7 @@ var RelationshipTypes;
     RelationshipTypes["Header"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header";
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
     RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
+    RelationshipTypes["CustomProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties";
 })(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
 function parseRelationships(root, xml) {
     return xml.elements(root).map(function (e) { return ({
@@ -584,8 +585,29 @@ var DocumentParser = (function () {
                         text: c.textContent
                     });
                     break;
+                case "fldSimple":
+                    result.children.push({
+                        type: dom_1.DomType.SimpleField,
+                        instruction: xml.stringAttr(c, "instr"),
+                        lock: xml.boolAttr(c, "lock", false),
+                        dirty: xml.boolAttr(c, "dirty", false)
+                    });
+                    break;
+                case "instrText":
+                    result.fieldRun = true;
+                    result.children.push({
+                        type: dom_1.DomType.Instruction,
+                        text: c.textContent
+                    });
+                    break;
                 case "fldChar":
-                    result.fldCharType = xml.stringAttr(c, "fldCharType");
+                    result.fieldRun = true;
+                    result.children.push({
+                        type: dom_1.DomType.ComplexField,
+                        charType: xml.stringAttr(c, "fldCharType"),
+                        lock: xml.boolAttr(c, "lock", false),
+                        dirty: xml.boolAttr(c, "dirty", false)
+                    });
                     break;
                 case "noBreakHyphen":
                     result.children.push({ type: dom_1.DomType.NoBreakHyphen });
@@ -623,9 +645,6 @@ var DocumentParser = (function () {
                         type: dom_1.DomType.EndnoteReference,
                         id: xml.stringAttr(c, "id")
                     });
-                    break;
-                case "instrText":
-                    result.instrText = c.textContent;
                     break;
                 case "drawing":
                     var d = _this.parseDrawing(c);
@@ -1445,6 +1464,72 @@ exports.parseCoreProps = parseCoreProps;
 
 /***/ }),
 
+/***/ "./src/document-props/custom-props-part.ts":
+/*!*************************************************!*\
+  !*** ./src/document-props/custom-props-part.ts ***!
+  \*************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CustomPropsPart = void 0;
+var part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+var custom_props_1 = __webpack_require__(/*! ./custom-props */ "./src/document-props/custom-props.ts");
+var CustomPropsPart = (function (_super) {
+    __extends(CustomPropsPart, _super);
+    function CustomPropsPart() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    CustomPropsPart.prototype.parseXml = function (root) {
+        this.props = (0, custom_props_1.parseCustomProps)(root, this._package.xmlParser);
+    };
+    return CustomPropsPart;
+}(part_1.Part));
+exports.CustomPropsPart = CustomPropsPart;
+
+
+/***/ }),
+
+/***/ "./src/document-props/custom-props.ts":
+/*!********************************************!*\
+  !*** ./src/document-props/custom-props.ts ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseCustomProps = void 0;
+function parseCustomProps(root, xml) {
+    return xml.elements(root, "property").map(function (e) {
+        var firstChild = e.firstChild;
+        return {
+            formatId: xml.attr(e, "fmtid"),
+            name: xml.attr(e, "name"),
+            type: firstChild.nodeName,
+            value: firstChild.textContent
+        };
+    });
+}
+exports.parseCustomProps = parseCustomProps;
+
+
+/***/ }),
+
 /***/ "./src/document-props/extended-props-part.ts":
 /*!***************************************************!*\
   !*** ./src/document-props/extended-props-part.ts ***!
@@ -1766,6 +1851,9 @@ var DomType;
     DomType["EndnoteReference"] = "endnoteReference";
     DomType["Footnote"] = "footnote";
     DomType["Endnote"] = "endnote";
+    DomType["SimpleField"] = "simpleField";
+    DomType["ComplexField"] = "complexField";
+    DomType["Instruction"] = "instruction";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -1982,6 +2070,9 @@ function parseSectionProperties(elem, xml) {
             case "pgBorders":
                 section.pageBorders = (0, border_1.parseBorders)(e, xml);
                 break;
+            case "pgNumType":
+                section.pageNumber = parsePageNumber(e, xml);
+                break;
         }
     }
     return section;
@@ -1998,6 +2089,14 @@ function parseColumns(elem, xml) {
             width: xml.lengthAttr(e, "w"),
             space: xml.lengthAttr(e, "space")
         }); })
+    };
+}
+function parsePageNumber(elem, xml) {
+    return {
+        chapSep: xml.attr(elem, "chapSep"),
+        chapStyle: xml.attr(elem, "chapStyle"),
+        format: xml.attr(elem, "fmt"),
+        start: xml.intAttr(elem, "start")
     };
 }
 function parseFooterHeaderReference(elem, xml) {
@@ -2295,6 +2394,7 @@ var HtmlRenderer = (function () {
         this.htmlDocument = htmlDocument;
         this.className = "docx";
         this.styleMap = {};
+        this.currentPart = null;
         this.footnoteMap = {};
         this.endnoteMap = {};
         this.currentEndnoteIds = [];
@@ -2519,13 +2619,14 @@ var HtmlRenderer = (function () {
         var result = [];
         this.processElement(document);
         var sections = this.splitBySection(document.children);
+        var prevProps = null;
         for (var i = 0, l = sections.length; i < l; i++) {
             this.currentFootnoteIds = [];
             var section = sections[i];
             var props = section.sectProps || document.props;
             var sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
-            this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, sectionElement);
+            this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, prevProps != props, sectionElement);
             var contentElement = this.createElement("article");
             this.renderElements(section.elements, contentElement);
             sectionElement.appendChild(contentElement);
@@ -2535,24 +2636,26 @@ var HtmlRenderer = (function () {
             if (this.options.renderEndnotes && i == l - 1) {
                 this.renderNotes(this.currentEndnoteIds, this.endnoteMap, sectionElement);
             }
-            this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, sectionElement);
+            this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, prevProps != props, sectionElement);
             result.push(sectionElement);
+            prevProps = props;
         }
         return result;
     };
-    HtmlRenderer.prototype.renderHeaderFooter = function (refs, props, page, into) {
+    HtmlRenderer.prototype.renderHeaderFooter = function (refs, props, page, firstOfSection, into) {
         var _a, _b;
         if (!refs)
             return;
-        var ref = props.titlePage ? refs.find(function (x) { return x.type == "first"; })
-            : (_b = (_a = (page == 0 ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 0 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; });
+        var ref = (_b = (_a = (props.titlePage && firstOfSection ? refs.find(function (x) { return x.type == "first"; }) : null)) !== null && _a !== void 0 ? _a : (page % 2 == 1 ? refs.find(function (x) { return x.type == "even"; }) : null)) !== null && _b !== void 0 ? _b : refs.find(function (x) { return x.type == "default"; });
         var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart);
         if (part) {
+            this.currentPart = part;
             if (!this.usedHederFooterParts.includes(part.path)) {
                 this.processElement(part.rootElement);
                 this.usedHederFooterParts.push(part.path);
             }
             this.renderElements([part.rootElement], into);
+            this.currentPart = null;
         }
     };
     HtmlRenderer.prototype.isPageBreakElement = function (elem) {
@@ -2839,7 +2942,7 @@ var HtmlRenderer = (function () {
         var result = this.createElement("img");
         this.renderStyleValues(elem.cssStyle, result);
         if (this.document) {
-            this.document.loadDocumentImage(elem.src).then(function (x) {
+            this.document.loadDocumentImage(elem.src, this.currentPart).then(function (x) {
                 result.src = x;
             });
         }
@@ -2889,7 +2992,7 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
         var _a;
-        if (elem.fldCharType || elem.instrText)
+        if (elem.fieldRun)
             return null;
         var result = this.createElement("span");
         if (elem.id)
@@ -3057,6 +3160,15 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updateTabStop = void 0;
 var defaultTab = { position: { value: 0, type: "pt" }, leader: "none", style: "left" };
@@ -3069,10 +3181,14 @@ function updateTabStop(elem, tabs, defaultTabSize, pixelToPoint) {
     var pcs = getComputedStyle(p);
     tabs = tabs && tabs.length > 0 ? tabs.sort(function (a, b) { return a.position.value - b.position.value; }) : [defaultTab];
     var lastTab = tabs[tabs.length - 1];
-    var pWidthPt = pbb.width / pixelToPoint;
+    var pWidthPt = pbb.width * pixelToPoint;
     var size = defaultTabSize.value;
-    for (var pos = lastTab.position.value + defaultTabSize.value; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
-        tabs.push(__assign(__assign({}, defaultTab), { position: { value: pos, type: "pt" } }));
+    var pos = lastTab.position.value + defaultTabSize.value;
+    if (pos < pWidthPt) {
+        tabs = __spreadArray([], tabs, true);
+        for (; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
+            tabs.push(__assign(__assign({}, defaultTab), { position: { value: pos, type: "pt" } }));
+        }
     }
     var marginLeft = parseFloat(pcs.marginLeft);
     var textIntent = parseFloat(pcs.textIndent);
@@ -3882,10 +3998,12 @@ var core_props_part_1 = __webpack_require__(/*! ./document-props/core-props-part
 var theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/theme-part.ts");
 var parts_2 = __webpack_require__(/*! ./notes/parts */ "./src/notes/parts.ts");
 var settings_part_1 = __webpack_require__(/*! ./settings/settings-part */ "./src/settings/settings-part.ts");
+var custom_props_part_1 = __webpack_require__(/*! ./document-props/custom-props-part */ "./src/document-props/custom-props-part.ts");
 var topLevelRels = [
     { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
     { type: relationship_1.RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+    { type: relationship_1.RelationshipTypes.CustomProperties, target: "docProps/custom.xml" },
 ];
 var WordDocument = (function () {
     function WordDocument() {
@@ -3954,6 +4072,9 @@ var WordDocument = (function () {
             case relationship_1.RelationshipTypes.ExtendedProperties:
                 this.extendedPropsPart = part = new extended_props_part_1.ExtendedPropsPart(this._package, path);
                 break;
+            case relationship_1.RelationshipTypes.CustomProperties:
+                part = new custom_props_part_1.CustomPropsPart(this._package, path);
+                break;
             case relationship_1.RelationshipTypes.Settings:
                 this.settingsPart = part = new settings_part_1.SettingsPart(this._package, path);
                 break;
@@ -3972,8 +4093,8 @@ var WordDocument = (function () {
             return Promise.all(rels).then(function () { return part; });
         });
     };
-    WordDocument.prototype.loadDocumentImage = function (id) {
-        return this.loadResource(this.documentPart, id, "blob")
+    WordDocument.prototype.loadDocumentImage = function (id, part) {
+        return this.loadResource(part !== null && part !== void 0 ? part : this.documentPart, id, "blob")
             .then(function (x) { return x ? URL.createObjectURL(x) : null; });
     };
     WordDocument.prototype.loadNumberingImage = function (id) {

@@ -17,6 +17,7 @@ import { IDomStyle } from './document/style';
 import { WmlBaseNote, WmlFootnote } from './notes/elements';
 import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
+import { Part } from './common/part';
 
 export class HtmlRenderer {
 
@@ -24,6 +25,7 @@ export class HtmlRenderer {
     document: WordDocument;
     options: Options;
     styleMap: Record<string, IDomStyle> = {};
+	currentPart: Part = null;
 
     footnoteMap: Record<string, WmlFootnote> = {};
 	endnoteMap: Record<string, WmlFootnote> = {};
@@ -276,6 +278,7 @@ export class HtmlRenderer {
 
         this.processElement(document);
 		const sections = this.splitBySection(document.children);
+		let prevProps = null;
 
         for (let i = 0, l = sections.length; i < l; i++) {
             this.currentFootnoteIds = [];
@@ -285,7 +288,8 @@ export class HtmlRenderer {
             const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
 
-            this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, sectionElement);
+            this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, 
+				result.length, prevProps != props, sectionElement);
 
             var contentElement = this.createElement("article");
             this.renderElements(section.elements, contentElement);
@@ -299,30 +303,33 @@ export class HtmlRenderer {
                 this.renderNotes(this.currentEndnoteIds, this.endnoteMap, sectionElement);
 			}
 
-            this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, sectionElement);
+            this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, 
+				result.length, prevProps != props, sectionElement);
 
             result.push(sectionElement);
+			prevProps = props;
         }
 
         return result;
     }
 
-    renderHeaderFooter(refs: FooterHeaderReference[], props: SectionProperties, page: number, into: HTMLElement) {
+    renderHeaderFooter(refs: FooterHeaderReference[], props: SectionProperties, page: number, firstOfSection: boolean, into: HTMLElement) {
         if (!refs) return;
 
-        var ref = props.titlePage ? refs.find(x => x.type == "first") 
-            : (page == 0 ? refs.find(x => x.type == "first") : null)
-            ?? (page % 2 == 0 ? refs.find(x => x.type == "even") : null)
+        var ref = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)
+            ?? (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
             ?? refs.find(x => x.type == "default");
 
         var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart) as BaseHeaderFooterPart;
 
         if (part) {
+			this.currentPart = part;
             if (!this.usedHederFooterParts.includes(part.path)) {
                 this.processElement(part.rootElement);
                 this.usedHederFooterParts.push(part.path);
             }
             this.renderElements([part.rootElement], into);
+			this.currentPart = null;
         }
     }
 
@@ -766,7 +773,7 @@ section.${c}>article { margin-bottom: auto; }
         this.renderStyleValues(elem.cssStyle, result);
 
         if (this.document) {
-            this.document.loadDocumentImage(elem.src).then(x => {
+            this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
                 result.src = x;
             });
         }
@@ -827,7 +834,7 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderRun(elem: WmlRun) {
-        if (elem.fldCharType || elem.instrText)
+		if (elem.fieldRun)
             return null;
 
         var result = this.createElement("span");

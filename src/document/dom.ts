@@ -21,6 +21,9 @@ export enum DomType {
 	EndnoteReference = "endnoteReference",
     Footnote = "footnote",
     Endnote = "endnote",
+    SimpleField = "simpleField",
+    ComplexField = "complexField",
+    Instruction = "instruction"
 }
 
 export interface OpenXmlElement {

@@ -11,6 +11,7 @@ import globalXmlParser from './parser/xml-parser';
 import { parseRunProperties, WmlRun } from './document/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmarks';
 import { IDomStyle, IDomSubStyle } from './document/style';
+import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fields';
 
 export var autos = {
     shd: "white",
@@ -478,8 +479,31 @@ export class DocumentParser {
                     });//.replace(" ", "\u00A0"); // TODO
                     break;
                 
+                case "fldSimple":
+                    result.children.push(<WmlFieldSimple>{
+                        type: DomType.SimpleField,
+                        instruction: xml.stringAttr(c, "instr"),
+                        lock: xml.boolAttr(c, "lock", false),
+                        dirty: xml.boolAttr(c, "dirty", false)
+                    });
+                    break;
+
+                case "instrText":
+					result.fieldRun = true;
+                    result.children.push(<WmlInstructionText>{
+                        type: DomType.Instruction,
+                        text: c.textContent
+                    });
+                    break;
+    
                 case "fldChar":
-                    result.fldCharType = xml.stringAttr(c, "fldCharType");
+					result.fieldRun = true;
+                    result.children.push(<WmlFieldChar>{
+                        type: DomType.ComplexField,
+                        charType: xml.stringAttr(c, "fldCharType"),
+                        lock: xml.boolAttr(c, "lock", false),
+                        dirty: xml.boolAttr(c, "dirty", false)
+                    });
                     break;
 
                 case "noBreakHyphen":
@@ -525,10 +549,6 @@ export class DocumentParser {
 						id: xml.stringAttr(c, "id")
 					});
 					break;
-	
-                case "instrText":
-                    result.instrText = c.textContent;
-                    break;
 
                 case "drawing":
                     let d = this.parseDrawing(c);

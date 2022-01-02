@@ -15,11 +15,13 @@ import { CorePropsPart } from "./document-props/core-props-part";
 import { ThemePart } from "./theme/theme-part";
 import { EndnotesPart, FootnotesPart } from "./notes/parts";
 import { SettingsPart } from "./settings/settings-part";
+import { CustomPropsPart } from "./document-props/custom-props-part";
 
 const topLevelRels = [
 	{ type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
 	{ type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
 	{ type: RelationshipTypes.CoreProperties, target: "docProps/core.xml" },
+	{ type: RelationshipTypes.CustomProperties, target: "docProps/custom.xml" },
 ];
 
 export class WordDocument {
@@ -121,6 +123,10 @@ export class WordDocument {
 				this.extendedPropsPart = part = new ExtendedPropsPart(this._package, path);
 				break;
 
+			case RelationshipTypes.CustomProperties:
+				part = new CustomPropsPart(this._package, path);
+				break;
+	
 			case RelationshipTypes.Settings:
 				this.settingsPart = part = new SettingsPart(this._package, path);
 				break;
@@ -145,8 +151,8 @@ export class WordDocument {
 		});
 	}
 
-	loadDocumentImage(id: string): PromiseLike<string> {
-		return this.loadResource(this.documentPart, id, "blob")
+	loadDocumentImage(id: string, part?: Part): PromiseLike<string> {
+		return this.loadResource(part ?? this.documentPart, id, "blob")
 			.then(x => x ? URL.createObjectURL(x) : null);
 	}
 
