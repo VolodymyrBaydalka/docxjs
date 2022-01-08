@@ -162,18 +162,20 @@ export class HtmlRenderer {
     processStyles(styles: IDomStyle[]) {
         const stylesMap = keyBy(styles.filter(x => x.id != null), x => x.id);
 
-        for (let style of styles.filter(x => x.basedOn)) {
+        for (const style of styles.filter(x => x.basedOn)) {
             var baseStyle = stylesMap[style.basedOn];
 
             if (baseStyle) {
                 style.paragraphProps = mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
                 style.runProps = mergeDeep(style.runProps, baseStyle.runProps);
 
-                for (let styleValues of style.styles) {
-                    var baseValues = baseStyle.styles.find(x => x.target == styleValues.target);
+                for (const baseValues of baseStyle.styles) {
+                    const styleValues = style.styles.find(x => x.target == baseValues.target);
 
-                    if (baseValues) {
+					if (styleValues) {
                         this.copyStyleProperties(baseValues.values, styleValues.values);
+					} else {
+						style.styles.push({ target: baseValues.target, values: { ...baseValues.values } });
                     }
                 }
             }
@@ -434,7 +436,7 @@ section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
-.${c} span { white-space: pre-wrap; }
+.${c} span { white-space: pre-wrap; overflow-wrap: break-word; }
 `;
 
         return createStyleElement(styleText);
