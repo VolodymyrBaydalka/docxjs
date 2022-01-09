@@ -85,7 +85,11 @@ export class DocumentParser {
                 case "tbl":
                     children.push(this.parseTable(elem));
                     break;
-            }
+
+				case "sdt":
+					this.parseSdt(elem).forEach(el => children.push(el));
+					break;
+			}
         });
 
         return children;
@@ -381,6 +385,10 @@ export class DocumentParser {
         return result;
     }
 
+	parseSdt(node: Element): OpenXmlElement[] {
+		const sdtContent = globalXmlParser.element(node, "sdtContent");
+		return sdtContent ? this.parseBodyElements(sdtContent) : [];
+	}
 
     parseParagraph(node: Element): OpenXmlElement {
         var result = <WmlParagraph>{ type: DomType.Paragraph, children: [] };

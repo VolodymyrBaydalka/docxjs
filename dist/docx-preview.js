@@ -54,14 +54,14 @@ var OpenXmlPackage = (function () {
         if (path === void 0) { path = null; }
         var relsPath = "_rels/.rels";
         if (path != null) {
-            var _a = utils_1.splitPath(path), f = _a[0], fn = _a[1];
-            relsPath = f + "_rels/" + fn + ".rels";
+            var _a = (0, utils_1.splitPath)(path), f = _a[0], fn = _a[1];
+            relsPath = "".concat(f, "_rels/").concat(fn, ".rels");
         }
         return this.load(relsPath)
-            .then(function (txt) { return txt ? relationship_1.parseRelationships(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
+            .then(function (txt) { return txt ? (0, relationship_1.parseRelationships)(_this.parseXmlDocument(txt).firstElementChild, _this.xmlParser) : null; });
     };
     OpenXmlPackage.prototype.parseXmlDocument = function (txt) {
-        return xml_parser_1.parseXmlString(txt, this.options.trimXmlDeclaration);
+        return (0, xml_parser_1.parseXmlString)(txt, this.options.trimXmlDeclaration);
     };
     return OpenXmlPackage;
 }());
@@ -104,7 +104,7 @@ var Part = (function () {
         ]);
     };
     Part.prototype.save = function () {
-        this._package.update(this.path, xml_parser_1.serializeXmlString(this._xmlDocument));
+        this._package.update(this.path, (0, xml_parser_1.serializeXmlString)(this._xmlDocument));
     };
     Part.prototype.parseXml = function (root) {
     };
@@ -212,7 +212,7 @@ var DocumentParser = (function () {
         return {
             type: dom_1.DomType.Document,
             children: this.parseBodyElements(xbody),
-            props: sectPr ? section_1.parseSectionProperties(sectPr, xml_parser_1.default) : null,
+            props: sectPr ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default) : null,
             cssStyle: background ? this.parseBackground(background) : {},
         };
     };
@@ -234,6 +234,9 @@ var DocumentParser = (function () {
                     break;
                 case "tbl":
                     children.push(_this.parseTable(elem));
+                    break;
+                case "sdt":
+                    _this.parseSdt(elem).forEach(function (el) { return children.push(el); });
                     break;
             }
         });
@@ -329,14 +332,14 @@ var DocumentParser = (function () {
                         target: "p",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.paragraphProps = paragraph_1.parseParagraphProperties(n, xml_parser_1.default);
+                    result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(n, xml_parser_1.default);
                     break;
                 case "rPr":
                     result.styles.push({
                         target: "span",
                         values: _this.parseDefaultProperties(n, {})
                     });
-                    result.runProps = run_1.parseRunProperties(n, xml_parser_1.default);
+                    result.runProps = (0, run_1.parseRunProperties)(n, xml_parser_1.default);
                     break;
                 case "tblPr":
                 case "tcPr":
@@ -360,7 +363,7 @@ var DocumentParser = (function () {
                 case "uiPriority":
                     break;
                 default:
-                    _this.options.debug && console.warn("DOCX: Unknown style element: " + n.localName);
+                    _this.options.debug && console.warn("DOCX: Unknown style element: ".concat(n.localName));
             }
         });
         return result;
@@ -507,6 +510,10 @@ var DocumentParser = (function () {
         });
         return result;
     };
+    DocumentParser.prototype.parseSdt = function (node) {
+        var sdtContent = xml_parser_1.default.element(node, "sdtContent");
+        return sdtContent ? this.parseBodyElements(sdtContent) : [];
+    };
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
         var result = { type: dom_1.DomType.Paragraph, children: [] };
@@ -519,10 +526,10 @@ var DocumentParser = (function () {
                     result.children.push(_this.parseHyperlink(c, result));
                     break;
                 case "bookmarkStart":
-                    result.children.push(bookmarks_1.parseBookmarkStart(c, xml_parser_1.default));
+                    result.children.push((0, bookmarks_1.parseBookmarkStart)(c, xml_parser_1.default));
                     break;
                 case "bookmarkEnd":
-                    result.children.push(bookmarks_1.parseBookmarkEnd(c, xml_parser_1.default));
+                    result.children.push((0, bookmarks_1.parseBookmarkEnd)(c, xml_parser_1.default));
                     break;
                 case "pPr":
                     _this.parseParagraphProperties(c, result);
@@ -534,7 +541,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraphProperties = function (elem, paragraph) {
         var _this = this;
         this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, function (c) {
-            if (paragraph_1.parseParagraphProperty(c, paragraph, xml_parser_1.default))
+            if ((0, paragraph_1.parseParagraphProperty)(c, paragraph, xml_parser_1.default))
                 return true;
             switch (c.localName) {
                 case "pStyle":
@@ -1029,7 +1036,7 @@ var DocumentParser = (function () {
                     break;
                 default:
                     if (handler != null && !handler(c))
-                        _this.options.debug && console.warn("DOCX: Unknown document element: " + c.localName);
+                        _this.options.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
                     break;
             }
         });
@@ -1094,7 +1101,7 @@ var DocumentParser = (function () {
         if (firstLine)
             style["text-indent"] = firstLine;
         if (hanging)
-            style["text-indent"] = "-" + hanging;
+            style["text-indent"] = "-".concat(hanging);
         if (left || start)
             style["margin-left"] = left || start;
         if (right || end)
@@ -1112,13 +1119,13 @@ var DocumentParser = (function () {
         if (line !== null) {
             switch (lineRule) {
                 case "auto":
-                    style["line-height"] = "" + (line / 240).toFixed(2);
+                    style["line-height"] = "".concat((line / 240).toFixed(2));
                     break;
                 case "atLeast":
-                    style["line-height"] = "calc(100% + " + line / 20 + "pt)";
+                    style["line-height"] = "calc(100% + ".concat(line / 20, "pt)");
                     break;
                 default:
-                    style["line-height"] = style["min-height"] = line / 20 + "pt";
+                    style["line-height"] = style["min-height"] = "".concat(line / 20, "pt");
                     break;
             }
         }
@@ -1212,10 +1219,10 @@ var xml = (function () {
             else if (knownColors.includes(v)) {
                 return v;
             }
-            return "#" + v;
+            return "#".concat(v);
         }
         var themeColor = xml.stringAttr(node, "themeColor");
-        return themeColor ? "var(--docx-" + themeColor + "-color)" : defValue;
+        return themeColor ? "var(--docx-".concat(themeColor, "-color)") : defValue;
     };
     xml.boolAttr = function (node, attrName, defValue) {
         if (defValue === void 0) { defValue = false; }
@@ -1258,7 +1265,7 @@ var values = (function () {
     }
     values.themeValue = function (c, attr) {
         var val = xml.stringAttr(c, attr);
-        return val ? "var(--docx-" + val + "-font)" : null;
+        return val ? "var(--docx-".concat(val, "-font)") : null;
     };
     values.valueOfBold = function (c) {
         return xml.boolAttr(c, "val", true) ? "bold" : "normal";
@@ -1286,7 +1293,7 @@ var values = (function () {
             return "none";
         var color = xml.colorAttr(c, "color");
         var size = xml.sizeAttr(c, "sz", SizeType.Border);
-        return size + " solid " + (color == "auto" ? "black" : color);
+        return "".concat(size, " solid ").concat(color == "auto" ? "black" : color);
     };
     values.valueOfTblLayout = function (c) {
         var type = xml.stringAttr(c, "val");
@@ -1349,7 +1356,7 @@ var values = (function () {
             return b;
         if (b == null)
             return a;
-        return "calc(" + a + " + " + b + ")";
+        return "calc(".concat(a, " + ").concat(b, ")");
     };
     values.checkMask = function (num, mask) {
         return (num & mask) == mask;
@@ -1408,7 +1415,7 @@ var CorePropsPart = (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     CorePropsPart.prototype.parseXml = function (root) {
-        this.props = core_props_1.parseCoreProps(root, this._package.xmlParser);
+        this.props = (0, core_props_1.parseCoreProps)(root, this._package.xmlParser);
     };
     return CorePropsPart;
 }(part_1.Part));
@@ -1496,7 +1503,7 @@ var CustomPropsPart = (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     CustomPropsPart.prototype.parseXml = function (root) {
-        this.props = custom_props_1.parseCustomProps(root, this._package.xmlParser);
+        this.props = (0, custom_props_1.parseCustomProps)(root, this._package.xmlParser);
     };
     return CustomPropsPart;
 }(part_1.Part));
@@ -1562,7 +1569,7 @@ var ExtendedPropsPart = (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     ExtendedPropsPart.prototype.parseXml = function (root) {
-        this.props = extended_props_1.parseExtendedProps(root, this._package.xmlParser);
+        this.props = (0, extended_props_1.parseExtendedProps)(root, this._package.xmlParser);
     };
     return ExtendedPropsPart;
 }(part_1.Part));
@@ -1906,20 +1913,20 @@ exports.parseParagraphProperties = parseParagraphProperties;
 function parseParagraphProperty(elem, props, xml) {
     if (elem.namespaceURI != common_1.ns.wordml)
         return false;
-    if (common_1.parseCommonProperty(elem, props, xml))
+    if ((0, common_1.parseCommonProperty)(elem, props, xml))
         return true;
     switch (elem.localName) {
         case "tabs":
             props.tabs = parseTabs(elem, xml);
             break;
         case "sectPr":
-            props.sectionProps = section_1.parseSectionProperties(elem, xml);
+            props.sectionProps = (0, section_1.parseSectionProperties)(elem, xml);
             break;
         case "numPr":
             props.numbering = parseNumbering(elem, xml);
             break;
         case "spacing":
-            props.lineSpacing = line_spacing_1.parseLineSpacing(elem, xml);
+            props.lineSpacing = (0, line_spacing_1.parseLineSpacing)(elem, xml);
             return false;
             break;
         case "textAlignment":
@@ -1942,7 +1949,7 @@ function parseParagraphProperty(elem, props, xml) {
             props.styleName = xml.attr(elem, "val");
             break;
         case "rPr":
-            props.runProps = run_1.parseRunProperties(elem, xml);
+            props.runProps = (0, run_1.parseRunProperties)(elem, xml);
             break;
         default:
             return false;
@@ -1999,7 +2006,7 @@ function parseRunProperties(elem, xml) {
 }
 exports.parseRunProperties = parseRunProperties;
 function parseRunProperty(elem, props, xml) {
-    if (common_1.parseCommonProperty(elem, props, xml))
+    if ((0, common_1.parseCommonProperty)(elem, props, xml))
         return true;
     return false;
 }
@@ -2068,7 +2075,7 @@ function parseSectionProperties(elem, xml) {
                 section.titlePage = xml.boolAttr(e, "val", true);
                 break;
             case "pgBorders":
-                section.pageBorders = border_1.parseBorders(e, xml);
+                section.pageBorders = (0, border_1.parseBorders)(e, xml);
                 break;
             case "pgNumType":
                 section.pageNumber = parsePageNumber(e, xml);
@@ -2203,7 +2210,7 @@ var FontTablePart = (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     FontTablePart.prototype.parseXml = function (root) {
-        this.fonts = fonts_1.parseFonts(root, this._package.xmlParser);
+        this.fonts = (0, fonts_1.parseFonts)(root, this._package.xmlParser);
     };
     return FontTablePart;
 }(part_1.Part));
@@ -2430,10 +2437,10 @@ var HtmlRenderer = (function () {
             styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
         }
         if (document.footnotesPart) {
-            this.footnoteMap = utils_1.keyBy(document.footnotesPart.notes, function (x) { return x.id; });
+            this.footnoteMap = (0, utils_1.keyBy)(document.footnotesPart.notes, function (x) { return x.id; });
         }
         if (document.endnotesPart) {
-            this.endnoteMap = utils_1.keyBy(document.endnotesPart.notes, function (x) { return x.id; });
+            this.endnoteMap = (0, utils_1.keyBy)(document.endnotesPart.notes, function (x) { return x.id; });
         }
         if (document.settingsPart) {
             this.defaultTabSize = (_a = document.settingsPart.settings) === null || _a === void 0 ? void 0 : _a.defaultTabStop;
@@ -2465,10 +2472,10 @@ var HtmlRenderer = (function () {
         if (colorScheme) {
             for (var _i = 0, _c = Object.entries(colorScheme.colors); _i < _c.length; _i++) {
                 var _d = _c[_i], k = _d[0], v = _d[1];
-                variables["--docx-" + k + "-color"] = "#" + v;
+                variables["--docx-".concat(k, "-color")] = "#".concat(v);
             }
         }
-        var cssText = this.styleToString("." + this.className, variables);
+        var cssText = this.styleToString(".".concat(this.className), variables);
         styleContainer.appendChild(createStyleElement(cssText));
     };
     HtmlRenderer.prototype.renderFontTable = function (fontsPart, styleContainer) {
@@ -2478,7 +2485,7 @@ var HtmlRenderer = (function () {
                 this_1.document.loadFont(ref.id, ref.key).then(function (fontData) {
                     var cssValues = {
                         'font-family': f.name,
-                        'src': "url(" + fontData + ")"
+                        'src': "url(".concat(fontData, ")")
                     };
                     if (ref.type == "bold" || ref.type == "boldItalic") {
                         cssValues['font-weight'] = 'bold';
@@ -2486,7 +2493,7 @@ var HtmlRenderer = (function () {
                     if (ref.type == "italic" || ref.type == "boldItalic") {
                         cssValues['font-style'] = 'italic';
                     }
-                    appendComment(styleContainer, "docxjs " + f.name + " font");
+                    appendComment(styleContainer, "docxjs ".concat(f.name, " font"));
                     var cssText = _this.styleToString("@font-face", cssValues);
                     styleContainer.appendChild(createStyleElement(cssText));
                     _this.refreshTabStops();
@@ -2506,16 +2513,16 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.processClassName = function (className) {
         if (!className)
             return this.className;
-        return this.className + "_" + className;
+        return "".concat(this.className, "_").concat(className);
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
-        var stylesMap = utils_1.keyBy(styles.filter(function (x) { return x.id != null; }), function (x) { return x.id; });
+        var stylesMap = (0, utils_1.keyBy)(styles.filter(function (x) { return x.id != null; }), function (x) { return x.id; });
         for (var _i = 0, _a = styles.filter(function (x) { return x.basedOn; }); _i < _a.length; _i++) {
             var style = _a[_i];
             var baseStyle = stylesMap[style.basedOn];
             if (baseStyle) {
-                style.paragraphProps = utils_1.mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
-                style.runProps = utils_1.mergeDeep(style.runProps, baseStyle.runProps);
+                style.paragraphProps = (0, utils_1.mergeDeep)(style.paragraphProps, baseStyle.paragraphProps);
+                style.runProps = (0, utils_1.mergeDeep)(style.runProps, baseStyle.runProps);
                 var _loop_3 = function (baseValues) {
                     var styleValues = style.styles.find(function (x) { return x.target == baseValues.target; });
                     if (styleValues) {
@@ -2532,7 +2539,7 @@ var HtmlRenderer = (function () {
                 }
             }
             else if (this.options.debug)
-                console.warn("Can't find base style " + style.basedOn);
+                console.warn("Can't find base style ".concat(style.basedOn));
         }
         for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
             var style = styles_1[_d];
@@ -2609,7 +2616,7 @@ var HtmlRenderer = (function () {
                     elem.style.minHeight = this.renderLength(props.pageSize.height);
             }
             if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = "" + props.columns.numberOfColumns;
+                elem.style.columnCount = "".concat(props.columns.numberOfColumns);
                 elem.style.columnGap = this.renderLength(props.columns.space);
                 if (props.columns.separator) {
                     elem.style.columnRule = "1px solid black";
@@ -2733,14 +2740,14 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderLength = function (l) {
         var _a;
-        return l ? "" + l.value.toFixed(2) + ((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
+        return l ? "".concat(l.value.toFixed(2)).concat((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
     };
     HtmlRenderer.prototype.renderWrapper = function (children) {
-        return this.createElement("div", { className: this.className + "-wrapper" }, children);
+        return this.createElement("div", { className: "".concat(this.className, "-wrapper") }, children);
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n." + c + "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n." + c + "-wrapper>section." + c + " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n." + c + " { color: black; }\nsection." + c + " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }\nsection." + c + ">article { margin-bottom: auto; }\n." + c + " table { border-collapse: collapse; }\n." + c + " table td, ." + c + " table th { vertical-align: top; }\n." + c + " p { margin: 0pt; min-height: 1em; }\n." + c + " span { white-space: pre-wrap; overflow-wrap: break-word; }\n";
+        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper>section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }\nsection.").concat(c, ">article { margin-bottom: auto; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; overflow-wrap: break-word; }\n");
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2748,31 +2755,31 @@ var HtmlRenderer = (function () {
         var styleText = "";
         var rootCounters = [];
         var _loop_4 = function () {
-            selector = "p." + this_3.numberingClass(num.id, num.level);
+            selector = "p.".concat(this_3.numberingClass(num.id, num.level));
             listStyleType = "none";
             if (num.bullet) {
-                var valiable_1 = ("--" + this_3.className + "-" + num.bullet.src).toLowerCase();
-                styleText += this_3.styleToString(selector + ":before", {
+                var valiable_1 = "--".concat(this_3.className, "-").concat(num.bullet.src).toLowerCase();
+                styleText += this_3.styleToString("".concat(selector, ":before"), {
                     "content": "' '",
                     "display": "inline-block",
-                    "background": "var(" + valiable_1 + ")"
+                    "background": "var(".concat(valiable_1, ")")
                 }, num.bullet.style);
                 this_3.document.loadNumberingImage(num.bullet.src).then(function (data) {
-                    var text = "." + _this.className + "-wrapper { " + valiable_1 + ": url(" + data + ") }";
+                    var text = ".".concat(_this.className, "-wrapper { ").concat(valiable_1, ": url(").concat(data, ") }");
                     styleContainer.appendChild(createStyleElement(text));
                 });
             }
             else if (num.levelText) {
                 var counter = this_3.numberingCounter(num.id, num.level);
                 if (num.level > 0) {
-                    styleText += this_3.styleToString("p." + this_3.numberingClass(num.id, num.level - 1), {
+                    styleText += this_3.styleToString("p.".concat(this_3.numberingClass(num.id, num.level - 1)), {
                         "counter-reset": counter
                     });
                 }
                 else {
                     rootCounters.push(counter);
                 }
-                styleText += this_3.styleToString(selector + ":before", __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
+                styleText += this_3.styleToString("".concat(selector, ":before"), __assign({ "content": this_3.levelTextToContent(num.levelText, num.suff, num.id, this_3.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
                 listStyleType = this_3.numFormatToCssValue(num.format);
@@ -2785,7 +2792,7 @@ var HtmlRenderer = (function () {
             _loop_4();
         }
         if (rootCounters.length > 0) {
-            styleText += this.styleToString("." + this.className + "-wrapper", {
+            styleText += this.styleToString(".".concat(this.className, "-wrapper"), {
                 "counter-reset": rootCounters.join(" ")
             });
         }
@@ -2794,7 +2801,7 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderStyles = function (styles) {
         var styleText = "";
         var stylesMap = this.styleMap;
-        var defautStyles = utils_1.keyBy(styles.filter(function (s) { return s.isDefault; }), function (s) { return s.target; });
+        var defautStyles = (0, utils_1.keyBy)(styles.filter(function (s) { return s.isDefault; }), function (s) { return s.target; });
         for (var _i = 0, styles_2 = styles; _i < styles_2.length; _i++) {
             var style = styles_2[_i];
             var subStyles = style.styles;
@@ -2803,19 +2810,19 @@ var HtmlRenderer = (function () {
                 if (linkedStyle)
                     subStyles = subStyles.concat(linkedStyle.styles);
                 else if (this.options.debug)
-                    console.warn("Can't find linked style " + style.linked);
+                    console.warn("Can't find linked style ".concat(style.linked));
             }
             for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
                 var subStyle = subStyles_1[_a];
                 var selector = "";
                 if (style.target == subStyle.target)
-                    selector += style.target + "." + style.cssName;
+                    selector += "".concat(style.target, ".").concat(style.cssName);
                 else if (style.target)
-                    selector += style.target + "." + style.cssName + " " + subStyle.target;
+                    selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
                 else
-                    selector += "." + style.cssName + " " + subStyle.target;
+                    selector += ".".concat(style.cssName, " ").concat(subStyle.target);
                 if (defautStyles[style.target] == style)
-                    selector = "." + this.className + " " + style.target + ", " + selector;
+                    selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
                 styleText += this.styleToString(selector, subStyle.values);
             }
         }
@@ -2903,11 +2910,11 @@ var HtmlRenderer = (function () {
         var numbering = (_a = elem.numbering) !== null && _a !== void 0 ? _a : (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.numbering;
         if (numbering) {
             var numberingClass = this.numberingClass(numbering.id, numbering.level);
-            result.className = utils_1.appendClass(result.className, numberingClass);
+            result.className = (0, utils_1.appendClass)(result.className, numberingClass);
         }
         if (elem.styleName) {
             var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
-            result.className = utils_1.appendClass(result.className, styleClassName);
+            result.className = (0, utils_1.appendClass)(result.className, styleClassName);
         }
         return result;
     };
@@ -2963,19 +2970,19 @@ var HtmlRenderer = (function () {
     HtmlRenderer.prototype.renderSymbol = function (elem) {
         var span = this.createElement("span");
         span.style.fontFamily = elem.font;
-        span.innerHTML = "&#x" + elem.char + ";";
+        span.innerHTML = "&#x".concat(elem.char, ";");
         return span;
     };
     HtmlRenderer.prototype.renderFootnoteReference = function (elem) {
         var result = this.createElement("sup");
         this.currentFootnoteIds.push(elem.id);
-        result.textContent = "" + this.currentFootnoteIds.length;
+        result.textContent = "".concat(this.currentFootnoteIds.length);
         return result;
     };
     HtmlRenderer.prototype.renderEndnoteReference = function (elem) {
         var result = this.createElement("sup");
         this.currentEndnoteIds.push(elem.id);
-        result.textContent = "" + this.currentEndnoteIds.length;
+        result.textContent = "".concat(this.currentEndnoteIds.length);
         return result;
     };
     HtmlRenderer.prototype.renderTab = function (elem) {
@@ -2983,6 +2990,7 @@ var HtmlRenderer = (function () {
         var tabSpan = this.createElement("span");
         tabSpan.innerHTML = "&emsp;";
         if (this.options.experimental) {
+            tabSpan.className = this.tabStopClass();
             var stops = (_a = findParent(elem, dom_1.DomType.Paragraph)) === null || _a === void 0 ? void 0 : _a.tabs;
             this.currentTabs.push({ stops: stops, span: tabSpan });
         }
@@ -3058,20 +3066,23 @@ var HtmlRenderer = (function () {
             ouput.className = input.className;
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
-        return this.className + "-num-" + id + "-" + lvl;
+        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
+    };
+    HtmlRenderer.prototype.tabStopClass = function () {
+        return "".concat(this.className, "-tab-stop");
     };
     HtmlRenderer.prototype.styleToString = function (selectors, values, cssText) {
         if (cssText === void 0) { cssText = null; }
-        var result = selectors + " {\r\n";
+        var result = "".concat(selectors, " {\r\n");
         for (var key in values) {
-            result += "  " + key + ": " + values[key] + ";\r\n";
+            result += "  ".concat(key, ": ").concat(values[key], ";\r\n");
         }
         if (cssText)
             result += cssText;
         return result + "}\r\n";
     };
     HtmlRenderer.prototype.numberingCounter = function (id, lvl) {
-        return this.className + "-num-" + id + "-" + lvl;
+        return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
     };
     HtmlRenderer.prototype.levelTextToContent = function (text, suff, id, numformat) {
         var _this = this;
@@ -3082,9 +3093,9 @@ var HtmlRenderer = (function () {
         };
         var result = text.replace(/%\d*/g, function (s) {
             var lvl = parseInt(s.substring(1), 10) - 1;
-            return "\"counter(" + _this.numberingCounter(id, lvl) + ", " + numformat + ")\"";
+            return "\"counter(".concat(_this.numberingCounter(id, lvl), ", ").concat(numformat, ")\"");
         });
-        return "\"" + result + ((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "") + "\"";
+        return "\"".concat(result).concat((_a = suffMap[suff]) !== null && _a !== void 0 ? _a : "", "\"");
     };
     HtmlRenderer.prototype.numFormatToCssValue = function (format) {
         var mapping = {
@@ -3107,9 +3118,10 @@ var HtmlRenderer = (function () {
             return;
         clearTimeout(this.tabsTimeout);
         this.tabsTimeout = setTimeout(function () {
+            var pixelToPoint = (0, javascript_1.computePixelToPoint)();
             for (var _i = 0, _a = _this.currentTabs; _i < _a.length; _i++) {
                 var tab = _a[_i];
-                javascript_1.updateTabStop(tab.span, tab.stops, _this.defaultTabSize);
+                (0, javascript_1.updateTabStop)(tab.span, tab.stops, _this.defaultTabSize, pixelToPoint);
             }
         }, 500);
     };
@@ -3163,19 +3175,33 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from) {
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-    return to;
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateTabStop = void 0;
+exports.updateTabStop = exports.computePixelToPoint = void 0;
 var defaultTab = { position: { value: 0, type: "pt" }, leader: "none", style: "left" };
 var maxTabs = 50;
+function computePixelToPoint(container) {
+    if (container === void 0) { container = document.body; }
+    var temp = document.createElement("div");
+    temp.style.width = '100pt';
+    container.appendChild(temp);
+    var result = 100 / temp.offsetWidth;
+    container.removeChild(temp);
+    return result;
+}
+exports.computePixelToPoint = computePixelToPoint;
 function updateTabStop(elem, tabs, defaultTabSize, pixelToPoint) {
     if (pixelToPoint === void 0) { pixelToPoint = 72 / 96; }
     var p = elem.closest("p");
-    var tbb = elem.getBoundingClientRect();
+    var ebb = elem.getBoundingClientRect();
     var pbb = p.getBoundingClientRect();
     var pcs = getComputedStyle(p);
     tabs = tabs && tabs.length > 0 ? tabs.sort(function (a, b) { return a.position.value - b.position.value; }) : [defaultTab];
@@ -3184,33 +3210,40 @@ function updateTabStop(elem, tabs, defaultTabSize, pixelToPoint) {
     var size = defaultTabSize.value;
     var pos = lastTab.position.value + defaultTabSize.value;
     if (pos < pWidthPt) {
-        tabs = __spreadArray([], tabs);
+        tabs = __spreadArray([], tabs, true);
         for (; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
             tabs.push(__assign(__assign({}, defaultTab), { position: { value: pos, type: "pt" } }));
         }
     }
     var marginLeft = parseFloat(pcs.marginLeft);
-    var textIntent = parseFloat(pcs.textIndent);
     var pOffset = pbb.left + marginLeft;
-    var left = (tbb.left - pOffset) * pixelToPoint;
+    var left = (ebb.left - pOffset) * pixelToPoint;
     var tab = tabs.find(function (t) { return t.style != "clear" && t.position.value > left; });
     if (tab == null)
         return;
     var width = 1;
-    if (tab.style == "right") {
+    if (tab.style == "right" || tab.style == "center") {
+        var tabStops = Array.from(p.querySelectorAll(".".concat(elem.className)));
+        var nextIdx = tabStops.indexOf(elem) + 1;
         var range = document.createRange();
-        range.setStart(p.firstChild, 0);
-        range.setEndAfter(p);
+        range.setStart(elem, 1);
+        if (nextIdx < tabStops.length) {
+            range.setEndBefore(tabStops[nextIdx]);
+        }
+        else {
+            range.setEndAfter(p);
+        }
+        var mul = tab.style == "center" ? 0.5 : 1;
         var nextBB = range.getBoundingClientRect();
-        var prevRight = (nextBB.width + marginLeft + textIntent) * pixelToPoint;
-        width = Math.floor(tab.position.value - prevRight) + "pt";
+        var offset = nextBB.left + mul * nextBB.width - (pbb.left - marginLeft);
+        width = tab.position.value - offset * pixelToPoint;
     }
     else {
-        width = (tab.position.value - left) + "pt";
+        width = tab.position.value - left;
     }
     elem.innerHTML = "&nbsp;";
     elem.style.textDecoration = "inherit";
-    elem.style.wordSpacing = width;
+    elem.style.wordSpacing = "".concat(width.toFixed(0), "pt");
     switch (tab.leader) {
         case "dot":
         case "middleDot":
@@ -3382,7 +3415,7 @@ var NumberingPart = (function (_super) {
         return _this;
     }
     NumberingPart.prototype.parseXml = function (root) {
-        Object.assign(this, numbering_1.parseNumberingPart(root, this._package.xmlParser));
+        Object.assign(this, (0, numbering_1.parseNumberingPart)(root, this._package.xmlParser));
         this.domNumberings = this._documentParser.parseNumberingFile(root);
     };
     return NumberingPart;
@@ -3502,10 +3535,10 @@ function parseNumberingLevel(elem, xml) {
                 result.paragraphStyle = xml.attr(e, "val");
                 break;
             case "pPr":
-                result.paragraphProps = paragraph_1.parseParagraphProperties(e, xml);
+                result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(e, xml);
                 break;
             case "rPr":
-                result.runProps = run_1.parseRunProperties(e, xml);
+                result.runProps = (0, run_1.parseRunProperties)(e, xml);
                 break;
         }
     }
@@ -3619,11 +3652,11 @@ var XmlParser = (function () {
     };
     XmlParser.prototype.boolAttr = function (node, attrName, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }
-        return common_1.convertBoolean(this.attr(node, attrName), defaultValue);
+        return (0, common_1.convertBoolean)(this.attr(node, attrName), defaultValue);
     };
     XmlParser.prototype.lengthAttr = function (node, attrName, usage) {
         if (usage === void 0) { usage = common_1.LengthUsage.Dxa; }
-        return common_1.convertLength(this.attr(node, attrName), usage);
+        return (0, common_1.convertLength)(this.attr(node, attrName), usage);
     };
     return XmlParser;
 }());
@@ -3666,7 +3699,7 @@ var SettingsPart = (function (_super) {
         return _super.call(this, pkg, path) || this;
     }
     SettingsPart.prototype.parseXml = function (root) {
-        this.settings = settings_1.parseSettings(root, this._package.xmlParser);
+        this.settings = (0, settings_1.parseSettings)(root, this._package.xmlParser);
     };
     return SettingsPart;
 }(part_1.Part));
@@ -3803,7 +3836,7 @@ var ThemePart = (function (_super) {
         return _super.call(this, pkg, path) || this;
     }
     ThemePart.prototype.parseXml = function (root) {
-        this.theme = theme_1.parseTheme(root, this._package.xmlParser);
+        this.theme = (0, theme_1.parseTheme)(root, this._package.xmlParser);
     };
     return ThemePart;
 }(part_1.Part));
@@ -3900,10 +3933,14 @@ exports.parseFontInfo = parseFontInfo;
 /***/ (function(__unused_webpack_module, exports) {
 
 
-var __spreadArray = (this && this.__spreadArray) || function (to, from) {
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-    return to;
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.mergeDeep = exports.isObject = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
@@ -3912,7 +3949,7 @@ function addElementClass(element, className) {
 }
 exports.addElementClass = addElementClass;
 function appendClass(classList, className) {
-    return (!classList) ? className : classList + " " + className;
+    return (!classList) ? className : "".concat(classList, " ").concat(className);
 }
 exports.appendClass = appendClass;
 function splitPath(path) {
@@ -3929,7 +3966,7 @@ function resolvePath(path, base) {
         return url.substr(prefix.length);
     }
     catch (_a) {
-        return "" + base + path;
+        return "".concat(base).concat(path);
     }
 }
 exports.resolvePath = resolvePath;
@@ -3964,7 +4001,7 @@ function mergeDeep(target) {
             }
         }
     }
-    return mergeDeep.apply(void 0, __spreadArray([target], sources));
+    return mergeDeep.apply(void 0, __spreadArray([target], sources, false));
 }
 exports.mergeDeep = mergeDeep;
 
@@ -4081,9 +4118,9 @@ var WordDocument = (function () {
         return part.load().then(function () {
             if (part.rels == null || part.rels.length == 0)
                 return part;
-            var folder = utils_1.splitPath(part.path)[0];
+            var folder = (0, utils_1.splitPath)(part.path)[0];
             var rels = part.rels.map(function (rel) {
-                return _this.loadRelationshipPart(utils_1.resolvePath(rel.target, folder), rel.type);
+                return _this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
             });
             return Promise.all(rels).then(function () { return part; });
         });
@@ -4104,13 +4141,13 @@ var WordDocument = (function () {
         var _a;
         if (basePart === void 0) { basePart = null; }
         var rel = ((_a = basePart.rels) !== null && _a !== void 0 ? _a : this.rels).find(function (r) { return r.id == id; });
-        var folder = basePart ? utils_1.splitPath(basePart.path)[0] : '';
-        return rel ? this.partsMap[utils_1.resolvePath(rel.target, folder)] : null;
+        var folder = basePart ? (0, utils_1.splitPath)(basePart.path)[0] : '';
+        return rel ? this.partsMap[(0, utils_1.resolvePath)(rel.target, folder)] : null;
     };
     WordDocument.prototype.getPathById = function (part, id) {
         var rel = part.rels.find(function (x) { return x.id == id; });
-        var folder = utils_1.splitPath(part.path)[0];
-        return rel ? utils_1.resolvePath(rel.target, folder) : null;
+        var folder = (0, utils_1.splitPath)(part.path)[0];
+        return rel ? (0, utils_1.resolvePath)(rel.target, folder) : null;
     };
     WordDocument.prototype.loadResource = function (part, id, outputType) {
         var path = this.getPathById(part, id);

@@ -4,11 +4,21 @@ import { ParagraphTab } from "./document/paragraph";
 const defaultTab: ParagraphTab = { position: { value: 0, type: "pt" }, leader: "none", style: "left" };
 const maxTabs = 50;
 
-export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTabSize: Length, pixelToPoint: number = 72 / 96) {
+export function computePixelToPoint(container: HTMLElement = document.body) {
+	const temp = document.createElement("div");
+	temp.style.width = '100pt';
+	
+	container.appendChild(temp);
+	const result = 100 / temp.offsetWidth;
+	container.removeChild(temp);
 
+	return result
+}
+
+export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTabSize: Length, pixelToPoint: number = 72 / 96) {
     const p = elem.closest("p");
 
-    const tbb = elem.getBoundingClientRect();
+    const ebb = elem.getBoundingClientRect();
     const pbb = p.getBoundingClientRect();
     const pcs = getComputedStyle(p);
 
@@ -28,31 +38,39 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
     }
 
     const marginLeft = parseFloat(pcs.marginLeft);
-    const textIntent = parseFloat(pcs.textIndent);
     const pOffset = pbb.left + marginLeft;
-    const left = (tbb.left - pOffset) * pixelToPoint;
+    const left = (ebb.left - pOffset) * pixelToPoint;
     const tab = tabs.find(t => t.style != "clear" && t.position.value > left);
 
     if(tab == null)
         return;
 
-    let width: any = 1;
+    let width: number = 1;
 
-    if (tab.style == "right") {
+    if (tab.style == "right" || tab.style == "center") {
+		const tabStops = Array.from(p.querySelectorAll(`.${elem.className}`));
+		const nextIdx = tabStops.indexOf(elem) + 1;
         const range = document.createRange();
-        range.setStart(p.firstChild, 0);
-        range.setEndAfter(p);
+        range.setStart(elem, 1);
 
+		if (nextIdx < tabStops.length) {
+			range.setEndBefore(tabStops[nextIdx]);
+		} else {
+			range.setEndAfter(p);
+		}
+
+		const mul = tab.style == "center" ? 0.5 : 1;
         const nextBB = range.getBoundingClientRect();
-        const prevRight = (nextBB.width + marginLeft + textIntent) * pixelToPoint;
-        width = `${Math.floor(tab.position.value - prevRight)}pt`;
+		const offset = nextBB.left + mul * nextBB.width - (pbb.left - marginLeft);
+
+		width = tab.position.value - offset * pixelToPoint;
     } else {
-        width = `${(tab.position.value - left)}pt`;
+        width = tab.position.value - left;
     }
 
     elem.innerHTML = "&nbsp;";
     elem.style.textDecoration = "inherit";
-    elem.style.wordSpacing = width;
+    elem.style.wordSpacing = `${width.toFixed(0)}pt`;
 
     switch (tab.leader) {
         case "dot":

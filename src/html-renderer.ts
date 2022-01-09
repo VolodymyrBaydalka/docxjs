@@ -8,7 +8,7 @@ import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
 import { appendClass, keyBy, mergeDeep } from './utils';
-import { updateTabStop } from './javascript';
+import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
 import { WmlRun, RunProperties } from './document/run';
@@ -130,7 +130,7 @@ export class HtmlRenderer {
         for (let f of fontsPart.fonts) {
             for (let ref of f.embedFontRefs) {
                 this.document.loadFont(ref.id, ref.key).then(fontData => {
-                    var cssValues = {
+                    const cssValues = {
                         'font-family': f.name,
                         'src': `url(${fontData})`
                     };
@@ -570,10 +570,10 @@ section.${c}>article { margin-bottom: auto; }
 
     renderStyles(styles: IDomStyle[]): HTMLElement {
         var styleText = "";
-        var stylesMap = this.styleMap;
-        var defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
+        const stylesMap = this.styleMap;
+        const defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
 
-        for (let style of styles) {
+        for (const style of styles) {
             var subStyles = style.styles;
 
             if (style.linked) {
@@ -585,7 +585,7 @@ section.${c}>article { margin-bottom: auto; }
                     console.warn(`Can't find linked style ${style.linked}`);
             }
 
-            for (var subStyle of subStyles) {
+            for (const subStyle of subStyles) {
                 var selector = "";
 
                 if (style.target == subStyle.target)
@@ -676,7 +676,7 @@ section.${c}>article { margin-bottom: auto; }
 	
 			case DomType.NoBreakHyphen:
                 return this.createElement("wbr");
-        }
+		}
 
         return null;
     }
@@ -822,6 +822,7 @@ section.${c}>article { margin-bottom: auto; }
         tabSpan.innerHTML = "&emsp;";//"&nbsp;";
 
         if (this.options.experimental) {
+			tabSpan.className = this.tabStopClass();
 			var stops = findParent<WmlParagraph>(elem, DomType.Paragraph)?.tabs;
 			this.currentTabs.push({ stops, span: tabSpan });
         }
@@ -837,9 +838,9 @@ section.${c}>article { margin-bottom: auto; }
 
     renderRun(elem: WmlRun) {
 		if (elem.fieldRun)
-            return null;
+			return null;
 
-        var result = this.createElement("span");
+        const result = this.createElement("span");
 
         if (elem.id)
             result.id = elem.id;
@@ -924,6 +925,10 @@ section.${c}>article { margin-bottom: auto; }
         return `${this.className}-num-${id}-${lvl}`;
     }
 
+	tabStopClass() {
+        return `${this.className}-tab-stop`;
+	}
+
     styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
         let result = `${selectors} {\r\n`;
 
@@ -980,8 +985,10 @@ section.${c}>article { margin-bottom: auto; }
 		clearTimeout(this.tabsTimeout);
 
 		this.tabsTimeout = setTimeout(() => {
+			const pixelToPoint = computePixelToPoint();
+
 			for (let tab of this.currentTabs) {
-				updateTabStop(tab.span, tab.stops, this.defaultTabSize);
+				updateTabStop(tab.span, tab.stops, this.defaultTabSize, pixelToPoint);
 			}
 		}, 500);
 	}
