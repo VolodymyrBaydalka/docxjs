@@ -1,13 +1,13 @@
 import { WordDocument } from './word-document';
 import {
-    DomType, IDomTable, IDomNumbering,
-    IDomHyperlink, IDomImage, OpenXmlElement, IDomTableColumn, IDomTableCell, TextElement, SymbolElement, BreakElement, NoteReferenceElement
+    DomType, WmlTable, IDomNumbering,
+    WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference
 } from './document/dom';
 import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
-import { appendClass, keyBy, mergeDeep } from './utils';
+import { escapeClassName, keyBy, mergeDeep } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -152,11 +152,8 @@ export class HtmlRenderer {
         }
     }
 
-    processClassName(className: string) {
-        if (!className)
-            return this.className;
-
-        return `${this.className}_${className}`;
+    processStyleName(className: string): string {
+        return className ? `${this.className}_${escapeClassName(className)}`: this.className;
     }
 
     processStyles(styles: IDomStyle[]) {
@@ -184,7 +181,7 @@ export class HtmlRenderer {
         }
 
         for (let style of styles) {
-            style.cssName = this.processClassName(this.escapeClassName(style.id));
+            style.cssName = this.processStyleName(style.id);
         }
 
         return stylesMap;
@@ -192,7 +189,7 @@ export class HtmlRenderer {
 
     prodessNumberings(numberings: IDomNumbering[]) {
         for (let num of numberings.filter(n => n.pStyleName)) {
-            const style = this.styleMap && this.styleMap[num.pStyleName];
+            const style = this.findStyle(num.pStyleName);
 
             if (style?.paragraphProps?.numbering) {
                 style.paragraphProps.numbering.level = num.level;
@@ -203,7 +200,6 @@ export class HtmlRenderer {
     processElement(element: OpenXmlElement) {
         if (element.children) {
             for (var e of element.children) {
-                e.className = this.processClassName(e.className);
                 e.parent = element;
 
                 if (e.type == DomType.Table) {
@@ -216,7 +212,7 @@ export class HtmlRenderer {
         }
     }
 
-    processTable(table: IDomTable) {
+    processTable(table: WmlTable) {
         for (var r of table.children) {
             for (var c of r.children) {
                 c.cssStyle = this.copyStyleProperties(table.cellStyle, c.cssStyle, [
@@ -249,22 +245,22 @@ export class HtmlRenderer {
 
         if (props) {
             if (props.pageMargins) {
-                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+                elem.style.paddingLeft = props.pageMargins.left;
+                elem.style.paddingRight = props.pageMargins.right;
+                elem.style.paddingTop = props.pageMargins.top;
+                elem.style.paddingBottom = props.pageMargins.bottom;
             }
 
             if (props.pageSize) {
                 if (!this.options.ignoreWidth)
-                    elem.style.width = this.renderLength(props.pageSize.width);
+                    elem.style.width = props.pageSize.width;
                 if (!this.options.ignoreHeight)
-                    elem.style.minHeight = this.renderLength(props.pageSize.height);
+                    elem.style.minHeight = props.pageSize.height;
             }
 
             if (props.columns && props.columns.numberOfColumns) {
                 elem.style.columnCount = `${props.columns.numberOfColumns}`;
-                elem.style.columnGap = this.renderLength(props.columns.space);
+                elem.style.columnGap = props.columns.space;
 
                 if (props.columns.separator) {
                     elem.style.columnRule = "1px solid black";
@@ -339,10 +335,10 @@ export class HtmlRenderer {
         if (elem.type != DomType.Break)
             return false;
 
-        if ((elem as BreakElement).break == "lastRenderedPageBreak")
+        if ((elem as WmlBreak).break == "lastRenderedPageBreak")
             return !this.options.ignoreLastRenderedPageBreak;
 
-        return (elem as BreakElement).break == "page";
+        return (elem as WmlBreak).break == "page";
     }
 
     splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
@@ -351,8 +347,7 @@ export class HtmlRenderer {
 
         for (let elem of elements) {
             if (elem.type == DomType.Paragraph) {
-                const styleName = (elem as WmlParagraph).styleName;
-                const s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                const s = this.findStyle((elem as WmlParagraph).styleName);
 
                 if (s?.paragraphProps?.pageBreakBefore) {
                     current.sectProps = sectProps;
@@ -417,10 +412,6 @@ export class HtmlRenderer {
         return result;
     }
 
-    renderLength(l: Length): string {
-        return l ? `${l.value.toFixed(2)}${l.type ?? ''}` : null;
-    }
-
     renderWrapper(children: HTMLElement[]) {
         return this.createElement("div", { className: `${this.className}-wrapper` }, children);
     }
@@ -437,6 +428,7 @@ section.${c}>article { margin-bottom: auto; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
 .${c} span { white-space: pre-wrap; overflow-wrap: break-word; }
+.${c} a { color: inherit; text-decoration: inherit; }
 `;
 
         return createStyleElement(styleText);
@@ -617,16 +609,16 @@ section.${c}>article { margin-bottom: auto; }
     renderElement(elem: OpenXmlElement): Node {
         switch (elem.type) {
             case DomType.Paragraph:
-                return this.renderParagraph(<WmlParagraph>elem);
+                return this.renderParagraph(elem as WmlParagraph);
 
             case DomType.BookmarkStart:
-                return this.renderBookmarkStart(<WmlBookmarkStart>elem);
+                return this.renderBookmarkStart(elem as WmlBookmarkStart);
 
             case DomType.BookmarkEnd:
-                return null;
+                return null; //ignore bookmark end
 
             case DomType.Run:
-                return this.renderRun(<WmlRun>elem);
+                return this.renderRun(elem as WmlRun);
 
             case DomType.Table:
                 return this.renderTable(elem);
@@ -641,22 +633,22 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderHyperlink(elem);
 
             case DomType.Drawing:
-                return this.renderDrawing(<IDomImage>elem);
+                return this.renderDrawing(elem);
 
             case DomType.Image:
-                return this.renderImage(<IDomImage>elem);
+                return this.renderImage(elem as IDomImage);
 
             case DomType.Text:
-                return this.renderText(<TextElement>elem);
+                return this.renderText(elem as WmlText);
 
             case DomType.Tab:
                 return this.renderTab(elem);
 
             case DomType.Symbol:
-                return this.renderSymbol(<SymbolElement>elem);
+                return this.renderSymbol(elem as WmlSymbol);
 
             case DomType.Break:
-                return this.renderBreak(<BreakElement>elem);
+                return this.renderBreak(elem as WmlBreak);
 
             case DomType.Footer:
                 return this.renderContainer(elem, "footer");
@@ -669,10 +661,10 @@ section.${c}>article { margin-bottom: auto; }
 				return this.renderContainer(elem, "li");
 
             case DomType.FootnoteReference:
-                return this.renderFootnoteReference(elem as NoteReferenceElement);
+                return this.renderFootnoteReference(elem as WmlNoteReference);
 
 			case DomType.EndnoteReference:
-				return this.renderEndnoteReference(elem as NoteReferenceElement);
+				return this.renderEndnoteReference(elem as WmlNoteReference);
 	
 			case DomType.NoBreakHyphen:
                 return this.createElement("wbr");
@@ -692,8 +684,7 @@ section.${c}>article { margin-bottom: auto; }
         var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
 
         if (into)
-            for (let c of result)
-                into.appendChild(c);
+			appendChildren(into, result);
 
         return result;
     }
@@ -705,33 +696,28 @@ section.${c}>article { margin-bottom: auto; }
     renderParagraph(elem: WmlParagraph) {
         var result = this.createElement("p");
 
+        const style = this.findStyle(elem.styleName);
+		elem.tabs ??= style?.paragraphProps?.tabs;  //TODO
+
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+        this.renderCommonProperties(result.style, elem);
 
-        this.renderCommonProeprties(result.style, elem);
-
-        const style = elem.styleName && this.styleMap && this.styleMap[elem.styleName];
         const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
 
         if (numbering) {
-            var numberingClass = this.numberingClass(numbering.id, numbering.level);
-            result.className = appendClass(result.className, numberingClass);
-        }
-
-        if (elem.styleName) {
-            var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
-            result.className = appendClass(result.className, styleClassName);
+            result.classList.add(this.numberingClass(numbering.id, numbering.level));
         }
 
         return result;
     }
 
     renderRunProperties(style: any, props: RunProperties) {
-        this.renderCommonProeprties(style, props);
+        this.renderCommonProperties(style, props);
     }
 
-    renderCommonProeprties(style: any, props: CommonProperties) {
+    renderCommonProperties(style: any, props: CommonProperties) {
         if (props == null)
             return;
 
@@ -740,11 +726,11 @@ section.${c}>article { margin-bottom: auto; }
         }
 
         if (props.fontSize) {
-            style["font-size"] = this.renderLength(props.fontSize);
+            style["font-size"] = props.fontSize;
         }
     }
 
-    renderHyperlink(elem: IDomHyperlink) {
+    renderHyperlink(elem: WmlHyperlink) {
         var result = this.createElement("a");
 
         this.renderChildren(elem, result);
@@ -756,7 +742,7 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
 
-    renderDrawing(elem: IDomImage) {
+    renderDrawing(elem: OpenXmlElement) {
         var result = this.createElement("div");
 
         result.style.display = "inline-block";
@@ -783,11 +769,11 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
 
-    renderText(elem: TextElement) {
+    renderText(elem: WmlText) {
         return this.htmlDocument.createTextNode(elem.text);
     }
 
-    renderBreak(elem: BreakElement) {
+    renderBreak(elem: WmlBreak) {
         if (elem.break == "textWrapping") {
             return this.createElement("br");
         }
@@ -795,21 +781,21 @@ section.${c}>article { margin-bottom: auto; }
         return null;
     }
 
-    renderSymbol(elem: SymbolElement) {
+    renderSymbol(elem: WmlSymbol) {
         var span = this.createElement("span");
         span.style.fontFamily = elem.font;
         span.innerHTML = `&#x${elem.char};`
         return span;
     }
 
-    renderFootnoteReference(elem: NoteReferenceElement) {
+    renderFootnoteReference(elem: WmlNoteReference) {
         var result = this.createElement("sup");
         this.currentFootnoteIds.push(elem.id);
         result.textContent = `${this.currentFootnoteIds.length}`;
         return result;
     }
 
-	renderEndnoteReference(elem: NoteReferenceElement) {
+	renderEndnoteReference(elem: WmlNoteReference) {
         var result = this.createElement("sup");
         this.currentEndnoteIds.push(elem.id);
         result.textContent = `${this.currentEndnoteIds.length}`;
@@ -846,18 +832,21 @@ section.${c}>article { margin-bottom: auto; }
             result.id = elem.id;
 
         this.renderClass(elem, result);
-        this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        if (elem.verticalAlign) {
-            result.style.verticalAlign = elem.verticalAlign;
-            result.style.fontSize ||= "small";
-        }
+		if (elem.verticalAlign) {
+			const wrapper = this.createElement(elem.verticalAlign as any);
+			this.renderChildren(elem, wrapper);
+			result.appendChild(wrapper);
+		}
+		else {
+			this.renderChildren(elem, result);
+		}
 
         return result;
     }
 
-    renderTable(elem: IDomTable) {
+    renderTable(elem: WmlTable) {
         let result = this.createElement("table");
 
         if (elem.columns)
@@ -870,7 +859,7 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
 
-    renderTableColumns(columns: IDomTableColumn[]) {
+    renderTableColumns(columns: WmlTableColumn[]) {
         let result = this.createElement("colgroup");
 
         for (let col of columns) {
@@ -895,7 +884,7 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
 
-    renderTableCell(elem: IDomTableCell) {
+    renderTableCell(elem: WmlTableCell) {
         let result = this.createElement("td");
 
         this.renderClass(elem, result);
@@ -908,18 +897,20 @@ section.${c}>article { margin-bottom: auto; }
     }
 
     renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
-        if (style == null)
-            return;
-
-        for (let key of Object.getOwnPropertyNames(style)) {
-            ouput.style[key] = style[key];
-        }
+		Object.assign(ouput.style, style);
     }
 
-    renderClass(input: OpenXmlElement, ouput: HTMLElement) {
-        if (input.className)
-            ouput.className = input.className;
-    }
+	renderClass(input: OpenXmlElement, ouput: HTMLElement) {
+		if (input.className) 
+			ouput.className = input.className;
+		
+		if (input.styleName)
+			ouput.classList.add(this.processStyleName(input.styleName));
+	}
+
+	findStyle(styleName: string) {
+		return styleName && this.styleMap?.[styleName];
+	}
 
     numberingClass(id: string, lvl: number) {
         return `${this.className}-num-${id}-${lvl}`;
@@ -972,10 +963,6 @@ section.${c}>article { margin-bottom: auto; }
         };
 
         return mapping[format] || format;
-    }
-
-    escapeClassName(className: string) {
-        return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     }
 
 	refreshTabStops() {

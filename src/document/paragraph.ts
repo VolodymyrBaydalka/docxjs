@@ -21,7 +21,7 @@ export interface ParagraphProperties extends CommonProperties {
     keepNext: boolean;
     pageBreakBefore: boolean;
     outlineLevel: number;
-    styleName: string;
+	styleName?: string;
 
     runProps: RunProperties;
 }

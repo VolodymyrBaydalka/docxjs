@@ -22,20 +22,20 @@ describe("Render document", function () {
 
       await docx.renderAsync(docBlob, div);
       
-      const actual = cleanUpText(div.innerHTML);
-      const expected = cleanUpText(resultText);
+      const actual = formatHTML(div.innerHTML);
+      const expected = formatHTML(resultText);
 
       expect(actual == expected).toBeTrue();
 
       if(actual != expected) {
-        const diffs = Diff.diffChars(actual, expected);
+        const diffs = Diff.diffLines(expected, actual);
 
         for(const diff of diffs) {
           if(diff.added)
-            console.log(diff.value);
+            console.log('[+] ' + diff.value);
 
           if(diff.removed)
-            console.error(diff.value);
+            console.log('[-] ' + diff.value);
         }
       }
 
@@ -44,6 +44,6 @@ describe("Render document", function () {
   }
 });
 
-function cleanUpText(text) {
-  return text.replace(/\t+|\s+/ig, ' ');
+function formatHTML(text) {
+  return text.replace(/\t+|\s+/ig, ' ').replace(/></ig, '>\n<');
 }

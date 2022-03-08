@@ -6,7 +6,7 @@ import { Part } from './common/part';
 import { FontTablePart } from './font-table/font-table';
 import { OpenXmlPackage } from './common/open-xml-package';
 import { DocumentPart } from './document/document-part';
-import { resolvePath, splitPath } from './utils';
+import { blobToBase64, resolvePath, splitPath } from './utils';
 import { NumberingPart } from './numbering/numbering-part';
 import { StylesPart } from './styles/styles-part';
 import { FooterPart, HeaderPart } from "./header-footer/parts";
@@ -27,6 +27,7 @@ const topLevelRels = [
 export class WordDocument {
 	private _package: OpenXmlPackage;
 	private _parser: DocumentParser;
+	private _options: any;
 
 	rels: Relationship[];
 	parts: Part[] = [];
@@ -46,6 +47,7 @@ export class WordDocument {
 	static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
 		var d = new WordDocument();
 
+		d._options = options;
 		d._parser = parser;
 
 		return OpenXmlPackage.load(blob, options)
@@ -153,17 +155,28 @@ export class WordDocument {
 
 	loadDocumentImage(id: string, part?: Part): PromiseLike<string> {
 		return this.loadResource(part ?? this.documentPart, id, "blob")
-			.then(x => x ? URL.createObjectURL(x) : null);
+			.then(x => this.blobToURL(x));
 	}
 
 	loadNumberingImage(id: string): PromiseLike<string> {
 		return this.loadResource(this.numberingPart, id, "blob")
-			.then(x => x ? URL.createObjectURL(x) : null);
+			.then(x => this.blobToURL(x));
 	}
 
 	loadFont(id: string, key: string): PromiseLike<string> {
 		return this.loadResource(this.fontTablePart, id, "uint8array")
-			.then(x => x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x);
+			.then(x => x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x);
+	}
+
+	private blobToURL(blob: Blob): string | PromiseLike<string> {
+		if (!blob)
+			return null;
+
+		if (this._options.useBase64URL) {
+			return blobToBase64(blob);
+		}
+
+		return URL.createObjectURL(blob);
 	}
 
 	findPartByRelId(id: string, basePart: Part = null) {

@@ -178,15 +178,16 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DocumentParser = exports.autos = void 0;
 var dom_1 = __webpack_require__(/*! ./document/dom */ "./src/document/dom.ts");
-var utils = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 var paragraph_1 = __webpack_require__(/*! ./document/paragraph */ "./src/document/paragraph.ts");
 var section_1 = __webpack_require__(/*! ./document/section */ "./src/document/section.ts");
 var xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parser/xml-parser.ts");
 var run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts");
 var bookmarks_1 = __webpack_require__(/*! ./document/bookmarks */ "./src/document/bookmarks.ts");
+var common_1 = __webpack_require__(/*! ./document/common */ "./src/document/common.ts");
 exports.autos = {
     shd: "white",
     color: "black",
+    borderColor: "black",
     highlight: "transparent"
 };
 var DocumentParser = (function () {
@@ -218,7 +219,7 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseBackground = function (elem) {
         var result = {};
-        var color = xml.colorAttr(elem, "color");
+        var color = xmlUtil.colorAttr(elem, "color");
         if (color) {
             result["background-color"] = color;
         }
@@ -227,7 +228,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseBodyElements = function (element) {
         var _this = this;
         var children = [];
-        xml.foreach(element, function (elem) {
+        xmlUtil.foreach(element, function (elem) {
             switch (elem.localName) {
                 case "p":
                     children.push(_this.parseParagraph(elem));
@@ -245,7 +246,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseStylesFile = function (xstyles) {
         var _this = this;
         var result = [];
-        xml.foreach(xstyles, function (n) {
+        xmlUtil.foreach(xstyles, function (n) {
             switch (n.localName) {
                 case "style":
                     result.push(_this.parseStyle(n));
@@ -266,7 +267,7 @@ var DocumentParser = (function () {
             basedOn: null,
             styles: []
         };
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "rPrDefault":
                     var rPr = xml_parser_1.default.element(c, "rPr");
@@ -291,15 +292,15 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseStyle = function (node) {
         var _this = this;
         var result = {
-            id: xml.stringAttr(node, "styleId"),
-            isDefault: xml.boolAttr(node, "default"),
+            id: xml_parser_1.default.attr(node, "styleId"),
+            isDefault: xml_parser_1.default.boolAttr(node, "default"),
             name: null,
             target: null,
             basedOn: null,
             styles: [],
             linked: null
         };
-        switch (xml.stringAttr(node, "type")) {
+        switch (xml_parser_1.default.attr(node, "type")) {
             case "paragraph":
                 result.target = "p";
                 break;
@@ -310,22 +311,22 @@ var DocumentParser = (function () {
                 result.target = "span";
                 break;
         }
-        xml.foreach(node, function (n) {
+        xmlUtil.foreach(node, function (n) {
             switch (n.localName) {
                 case "basedOn":
-                    result.basedOn = xml.className(n, "val");
+                    result.basedOn = xml_parser_1.default.attr(n, "val");
                     break;
                 case "name":
-                    result.name = xml.stringAttr(n, "val");
+                    result.name = xml_parser_1.default.attr(n, "val");
                     break;
                 case "link":
-                    result.linked = xml.className(n, "val");
+                    result.linked = xml_parser_1.default.attr(n, "val");
                     break;
                 case "next":
-                    result.next = xml.className(n, "val");
+                    result.next = xml_parser_1.default.attr(n, "val");
                     break;
                 case "aliases":
-                    result.aliases = xml.stringAttr(n, "val").split(",");
+                    result.aliases = xml_parser_1.default.attr(n, "val").split(",");
                     break;
                 case "pPr":
                     result.styles.push({
@@ -371,7 +372,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseTableStyle = function (node) {
         var _this = this;
         var result = [];
-        var type = xml.stringAttr(node, "type");
+        var type = xml_parser_1.default.attr(node, "type");
         var selector = "";
         switch (type) {
             case "firstRow":
@@ -400,7 +401,7 @@ var DocumentParser = (function () {
                 break;
             default: return [];
         }
-        xml.foreach(node, function (n) {
+        xmlUtil.foreach(node, function (n) {
             switch (n.localName) {
                 case "pPr":
                     result.push({
@@ -430,7 +431,7 @@ var DocumentParser = (function () {
         var result = [];
         var mapping = {};
         var bullets = [];
-        xml.foreach(xnums, function (n) {
+        xmlUtil.foreach(xnums, function (n) {
             switch (n.localName) {
                 case "abstractNum":
                     _this.parseAbstractNumbering(n, bullets)
@@ -440,8 +441,8 @@ var DocumentParser = (function () {
                     bullets.push(_this.parseNumberingPicBullet(n));
                     break;
                 case "num":
-                    var numId = xml.stringAttr(n, "numId");
-                    var abstractNumId = xml.elementStringAttr(n, "abstractNumId", "val");
+                    var numId = xml_parser_1.default.attr(n, "numId");
+                    var abstractNumId = xml_parser_1.default.elementAttr(n, "abstractNumId", "val");
                     mapping[abstractNumId] = numId;
                     break;
             }
@@ -454,16 +455,16 @@ var DocumentParser = (function () {
         var shape = pict && xml_parser_1.default.element(pict, "shape");
         var imagedata = shape && xml_parser_1.default.element(shape, "imagedata");
         return imagedata ? {
-            id: xml.intAttr(elem, "numPicBulletId"),
-            src: xml.stringAttr(imagedata, "id"),
-            style: xml.stringAttr(shape, "style")
+            id: xml_parser_1.default.intAttr(elem, "numPicBulletId"),
+            src: xml_parser_1.default.attr(imagedata, "id"),
+            style: xml_parser_1.default.attr(shape, "style")
         } : null;
     };
     DocumentParser.prototype.parseAbstractNumbering = function (node, bullets) {
         var _this = this;
         var result = [];
-        var id = xml.stringAttr(node, "abstractNumId");
-        xml.foreach(node, function (n) {
+        var id = xml_parser_1.default.attr(node, "abstractNumId");
+        xmlUtil.foreach(node, function (n) {
             switch (n.localName) {
                 case "lvl":
                     result.push(_this.parseNumberingLevel(id, n, bullets));
@@ -476,13 +477,13 @@ var DocumentParser = (function () {
         var _this = this;
         var result = {
             id: id,
-            level: xml.intAttr(node, "ilvl"),
+            level: xml_parser_1.default.intAttr(node, "ilvl"),
             pStyleName: undefined,
             pStyle: {},
             rStyle: {},
             suff: "tab"
         };
-        xml.foreach(node, function (n) {
+        xmlUtil.foreach(node, function (n) {
             switch (n.localName) {
                 case "pPr":
                     _this.parseDefaultProperties(n, result.pStyle);
@@ -491,20 +492,20 @@ var DocumentParser = (function () {
                     _this.parseDefaultProperties(n, result.rStyle);
                     break;
                 case "lvlPicBulletId":
-                    var id = xml.intAttr(n, "val");
+                    var id = xml_parser_1.default.intAttr(n, "val");
                     result.bullet = bullets.find(function (x) { return x.id == id; });
                     break;
                 case "lvlText":
-                    result.levelText = xml.stringAttr(n, "val");
+                    result.levelText = xml_parser_1.default.attr(n, "val");
                     break;
                 case "pStyle":
-                    result.pStyleName = xml.stringAttr(n, "val");
+                    result.pStyleName = xml_parser_1.default.attr(n, "val");
                     break;
                 case "numFmt":
-                    result.format = xml.stringAttr(n, "val");
+                    result.format = xml_parser_1.default.attr(n, "val");
                     break;
                 case "suff":
-                    result.suff = xml.stringAttr(n, "val");
+                    result.suff = xml_parser_1.default.attr(n, "val");
                     break;
             }
         });
@@ -517,7 +518,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseParagraph = function (node) {
         var _this = this;
         var result = { type: dom_1.DomType.Paragraph, children: [] };
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
                     result.children.push(_this.parseRun(c, result));
@@ -545,10 +546,10 @@ var DocumentParser = (function () {
                 return true;
             switch (c.localName) {
                 case "pStyle":
-                    utils.addElementClass(paragraph, xml.className(c, "val"));
+                    paragraph.styleName = xml_parser_1.default.attr(c, "val");
                     break;
                 case "cnfStyle":
-                    utils.addElementClass(paragraph, values.classNameOfCnfStyle(c));
+                    paragraph.className = values.classNameOfCnfStyle(c);
                     break;
                 case "framePr":
                     _this.parseFrame(c, paragraph);
@@ -562,17 +563,17 @@ var DocumentParser = (function () {
         });
     };
     DocumentParser.prototype.parseFrame = function (node, paragraph) {
-        var dropCap = xml.stringAttr(node, "dropCap");
+        var dropCap = xml_parser_1.default.attr(node, "dropCap");
         if (dropCap == "drop")
             paragraph.cssStyle["float"] = "left";
     };
     DocumentParser.prototype.parseHyperlink = function (node, parent) {
         var _this = this;
         var result = { type: dom_1.DomType.Hyperlink, parent: parent, children: [] };
-        var anchor = xml.stringAttr(node, "anchor");
+        var anchor = xml_parser_1.default.attr(node, "anchor");
         if (anchor)
             result.href = "#" + anchor;
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "r":
                     result.children.push(_this.parseRun(c, result));
@@ -584,7 +585,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseRun = function (node, parent) {
         var _this = this;
         var result = { type: dom_1.DomType.Run, parent: parent, children: [] };
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "t":
                     result.children.push({
@@ -595,9 +596,9 @@ var DocumentParser = (function () {
                 case "fldSimple":
                     result.children.push({
                         type: dom_1.DomType.SimpleField,
-                        instruction: xml.stringAttr(c, "instr"),
-                        lock: xml.boolAttr(c, "lock", false),
-                        dirty: xml.boolAttr(c, "dirty", false)
+                        instruction: xml_parser_1.default.attr(c, "instr"),
+                        lock: xml_parser_1.default.boolAttr(c, "lock", false),
+                        dirty: xml_parser_1.default.boolAttr(c, "dirty", false)
                     });
                     break;
                 case "instrText":
@@ -611,9 +612,9 @@ var DocumentParser = (function () {
                     result.fieldRun = true;
                     result.children.push({
                         type: dom_1.DomType.ComplexField,
-                        charType: xml.stringAttr(c, "fldCharType"),
-                        lock: xml.boolAttr(c, "lock", false),
-                        dirty: xml.boolAttr(c, "dirty", false)
+                        charType: xml_parser_1.default.attr(c, "fldCharType"),
+                        lock: xml_parser_1.default.boolAttr(c, "lock", false),
+                        dirty: xml_parser_1.default.boolAttr(c, "dirty", false)
                     });
                     break;
                 case "noBreakHyphen":
@@ -622,7 +623,7 @@ var DocumentParser = (function () {
                 case "br":
                     result.children.push({
                         type: dom_1.DomType.Break,
-                        break: xml.stringAttr(c, "type") || "textWrapping"
+                        break: xml_parser_1.default.attr(c, "type") || "textWrapping"
                     });
                     break;
                 case "lastRenderedPageBreak":
@@ -634,8 +635,8 @@ var DocumentParser = (function () {
                 case "sym":
                     result.children.push({
                         type: dom_1.DomType.Symbol,
-                        font: xml.stringAttr(c, "font"),
-                        char: xml.stringAttr(c, "char")
+                        font: xml_parser_1.default.attr(c, "font"),
+                        char: xml_parser_1.default.attr(c, "char")
                     });
                     break;
                 case "tab":
@@ -644,13 +645,13 @@ var DocumentParser = (function () {
                 case "footnoteReference":
                     result.children.push({
                         type: dom_1.DomType.FootnoteReference,
-                        id: xml.stringAttr(c, "id")
+                        id: xml_parser_1.default.attr(c, "id")
                     });
                     break;
                 case "endnoteReference":
                     result.children.push({
                         type: dom_1.DomType.EndnoteReference,
-                        id: xml.stringAttr(c, "id")
+                        id: xml_parser_1.default.attr(c, "id")
                     });
                     break;
                 case "drawing":
@@ -669,17 +670,10 @@ var DocumentParser = (function () {
         this.parseDefaultProperties(elem, run.cssStyle = {}, null, function (c) {
             switch (c.localName) {
                 case "rStyle":
-                    run.className = xml.className(c, "val");
+                    run.styleName = xml_parser_1.default.attr(c, "val");
                     break;
                 case "vertAlign":
-                    switch (xml.stringAttr(c, "val")) {
-                        case "subscript":
-                            run.verticalAlign = "sub";
-                            break;
-                        case "superscript":
-                            run.verticalAlign = "super";
-                            break;
-                    }
+                    run.verticalAlign = values.valueOfVertAlign(c, true);
                     break;
                 default:
                     return false;
@@ -702,7 +696,7 @@ var DocumentParser = (function () {
         var result = { type: dom_1.DomType.Drawing, children: [], cssStyle: {} };
         var isAnchor = node.localName == "anchor";
         var wrapType = null;
-        var simplePos = xml.boolAttr(node, "simplePos");
+        var simplePos = xml_parser_1.default.boolAttr(node, "simplePos");
         var posX = { relative: "page", align: "left", offset: "0" };
         var posY = { relative: "page", align: "top", offset: "0" };
         for (var _i = 0, _b = xml_parser_1.default.elements(node); _i < _b.length; _i++) {
@@ -710,13 +704,13 @@ var DocumentParser = (function () {
             switch (n.localName) {
                 case "simplePos":
                     if (simplePos) {
-                        posX.offset = xml.sizeAttr(n, "x", SizeType.Emu);
-                        posY.offset = xml.sizeAttr(n, "y", SizeType.Emu);
+                        posX.offset = xml_parser_1.default.lengthAttr(n, "x", common_1.LengthUsage.Emu);
+                        posY.offset = xml_parser_1.default.lengthAttr(n, "y", common_1.LengthUsage.Emu);
                     }
                     break;
                 case "extent":
-                    result.cssStyle["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
-                    result.cssStyle["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                    result.cssStyle["width"] = xml_parser_1.default.lengthAttr(n, "cx", common_1.LengthUsage.Emu);
+                    result.cssStyle["height"] = xml_parser_1.default.lengthAttr(n, "cy", common_1.LengthUsage.Emu);
                     break;
                 case "positionH":
                 case "positionV":
@@ -728,7 +722,7 @@ var DocumentParser = (function () {
                         if (alignNode)
                             pos.align = alignNode.textContent;
                         if (offsetNode)
-                            pos.offset = xml.sizeValue(offsetNode, SizeType.Emu);
+                            pos.offset = xmlUtil.sizeValue(offsetNode, common_1.LengthUsage.Emu);
                     }
                     break;
                 case "wrapTopAndBottom":
@@ -781,7 +775,7 @@ var DocumentParser = (function () {
         var result = { type: dom_1.DomType.Image, src: "", cssStyle: {} };
         var blipFill = xml_parser_1.default.element(elem, "blipFill");
         var blip = xml_parser_1.default.element(blipFill, "blip");
-        result.src = xml.stringAttr(blip, "embed");
+        result.src = xml_parser_1.default.attr(blip, "embed");
         var spPr = xml_parser_1.default.element(elem, "spPr");
         var xfrm = xml_parser_1.default.element(spPr, "xfrm");
         result.cssStyle["position"] = "relative";
@@ -789,12 +783,12 @@ var DocumentParser = (function () {
             var n = _a[_i];
             switch (n.localName) {
                 case "ext":
-                    result.cssStyle["width"] = xml.sizeAttr(n, "cx", SizeType.Emu);
-                    result.cssStyle["height"] = xml.sizeAttr(n, "cy", SizeType.Emu);
+                    result.cssStyle["width"] = xml_parser_1.default.lengthAttr(n, "cx", common_1.LengthUsage.Emu);
+                    result.cssStyle["height"] = xml_parser_1.default.lengthAttr(n, "cy", common_1.LengthUsage.Emu);
                     break;
                 case "off":
-                    result.cssStyle["left"] = xml.sizeAttr(n, "x", SizeType.Emu);
-                    result.cssStyle["top"] = xml.sizeAttr(n, "y", SizeType.Emu);
+                    result.cssStyle["left"] = xml_parser_1.default.lengthAttr(n, "x", common_1.LengthUsage.Emu);
+                    result.cssStyle["top"] = xml_parser_1.default.lengthAttr(n, "y", common_1.LengthUsage.Emu);
                     break;
             }
         }
@@ -803,7 +797,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseTable = function (node) {
         var _this = this;
         var result = { type: dom_1.DomType.Table, children: [] };
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "tr":
                     result.children.push(_this.parseTableRow(c));
@@ -820,10 +814,10 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableColumns = function (node) {
         var result = [];
-        xml.foreach(node, function (n) {
+        xmlUtil.foreach(node, function (n) {
             switch (n.localName) {
                 case "gridCol":
-                    result.push({ width: xml.sizeAttr(n, "w") });
+                    result.push({ width: xml_parser_1.default.lengthAttr(n, "w") });
                     break;
             }
         });
@@ -836,13 +830,19 @@ var DocumentParser = (function () {
         this.parseDefaultProperties(elem, table.cssStyle, table.cellStyle, function (c) {
             switch (c.localName) {
                 case "tblStyle":
-                    table.className = xml.className(c, "val");
+                    table.styleName = xml_parser_1.default.attr(c, "val");
                     break;
                 case "tblLook":
-                    utils.addElementClass(table, values.classNameOftblLook(c));
+                    table.className = values.classNameOftblLook(c);
                     break;
                 case "tblpPr":
                     _this.parseTablePosition(c, table);
+                    break;
+                case "tblStyleColBandSize":
+                    table.colBandSize = xml_parser_1.default.intAttr(c, "val");
+                    break;
+                case "tblStyleRowBandSize":
+                    table.rowBandSize = xml_parser_1.default.intAttr(c, "val");
                     break;
                 default:
                     return false;
@@ -862,10 +862,10 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseTablePosition = function (node, table) {
-        var topFromText = xml.sizeAttr(node, "topFromText");
-        var bottomFromText = xml.sizeAttr(node, "bottomFromText");
-        var rightFromText = xml.sizeAttr(node, "rightFromText");
-        var leftFromText = xml.sizeAttr(node, "leftFromText");
+        var topFromText = xml_parser_1.default.lengthAttr(node, "topFromText");
+        var bottomFromText = xml_parser_1.default.lengthAttr(node, "bottomFromText");
+        var rightFromText = xml_parser_1.default.lengthAttr(node, "rightFromText");
+        var leftFromText = xml_parser_1.default.lengthAttr(node, "leftFromText");
         table.cssStyle["float"] = 'left';
         table.cssStyle["margin-bottom"] = values.addSize(table.cssStyle["margin-bottom"], bottomFromText);
         table.cssStyle["margin-left"] = values.addSize(table.cssStyle["margin-left"], leftFromText);
@@ -875,7 +875,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseTableRow = function (node) {
         var _this = this;
         var result = { type: dom_1.DomType.Row, children: [] };
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "tc":
                     result.children.push(_this.parseTableCell(c));
@@ -902,7 +902,7 @@ var DocumentParser = (function () {
     DocumentParser.prototype.parseTableCell = function (node) {
         var _this = this;
         var result = { type: dom_1.DomType.Cell, children: [] };
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "tbl":
                     result.children.push(_this.parseTable(c));
@@ -921,7 +921,7 @@ var DocumentParser = (function () {
         cell.cssStyle = this.parseDefaultProperties(elem, {}, null, function (c) {
             switch (c.localName) {
                 case "gridSpan":
-                    cell.span = xml.intAttr(c, "val", null);
+                    cell.span = xml_parser_1.default.intAttr(c, "val", null);
                     break;
                 case "vMerge":
                     break;
@@ -940,7 +940,9 @@ var DocumentParser = (function () {
         if (childStyle === void 0) { childStyle = null; }
         if (handler === void 0) { handler = null; }
         style = style || {};
-        xml.foreach(elem, function (c) {
+        xmlUtil.foreach(elem, function (c) {
+            if (handler === null || handler === void 0 ? void 0 : handler(c))
+                return;
             switch (c.localName) {
                 case "jc":
                     style["text-align"] = values.valueOfJc(c);
@@ -949,16 +951,21 @@ var DocumentParser = (function () {
                     style["vertical-align"] = values.valueOfTextAlignment(c);
                     break;
                 case "color":
-                    style["color"] = xml.colorAttr(c, "val", null, exports.autos.color);
+                    style["color"] = xmlUtil.colorAttr(c, "val", null, exports.autos.color);
                     break;
                 case "sz":
-                    style["font-size"] = style["min-height"] = xml.sizeAttr(c, "val", SizeType.FontSize);
+                    style["font-size"] = style["min-height"] = xml_parser_1.default.lengthAttr(c, "val", common_1.LengthUsage.FontSize);
                     break;
                 case "shd":
-                    style["background-color"] = xml.colorAttr(c, "fill", null, exports.autos.shd);
+                    style["background-color"] = xmlUtil.colorAttr(c, "fill", null, exports.autos.shd);
                     break;
                 case "highlight":
-                    style["background-color"] = xml.colorAttr(c, "val", null, exports.autos.highlight);
+                    style["background-color"] = xmlUtil.colorAttr(c, "val", null, exports.autos.highlight);
+                    break;
+                case "vertAlign":
+                    break;
+                case "position":
+                    style.verticalAlign = xml_parser_1.default.lengthAttr(c, "val", common_1.LengthUsage.FontSize);
                     break;
                 case "tcW":
                     if (_this.options.ignoreWidth)
@@ -970,19 +977,19 @@ var DocumentParser = (function () {
                     _this.parseTrHeight(c, style);
                     break;
                 case "strike":
-                    style["text-decoration"] = values.valueOfStrike(c);
+                    style["text-decoration"] = xml_parser_1.default.boolAttr(c, "val", true) ? "line-through" : "none";
                     break;
                 case "b":
-                    style["font-weight"] = xml.boolAttr(c, "val", true) ? "bold" : "normal";
+                    style["font-weight"] = xml_parser_1.default.boolAttr(c, "val", true) ? "bold" : "normal";
                     break;
                 case "i":
-                    style["font-style"] = xml.boolAttr(c, "val", true) ? "italic" : "normal";
+                    style["font-style"] = xml_parser_1.default.boolAttr(c, "val", true) ? "italic" : "normal";
                     break;
                 case "caps":
-                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "uppercase" : "none";
+                    style["text-transform"] = xml_parser_1.default.boolAttr(c, "val", true) ? "uppercase" : "none";
                     break;
                 case "smallCaps":
-                    style["text-transform"] = xml.boolAttr(c, "val", true) ? "lowercase" : "none";
+                    style["text-transform"] = xml_parser_1.default.boolAttr(c, "val", true) ? "lowercase" : "none";
                     break;
                 case "u":
                     _this.parseUnderline(c, style);
@@ -1011,8 +1018,10 @@ var DocumentParser = (function () {
                     _this.parseBorderProperties(c, style);
                     break;
                 case "vanish":
-                    if (xml.boolAttr(c, "val", true))
+                    if (xml_parser_1.default.boolAttr(c, "val", true))
                         style["display"] = "none";
+                    break;
+                case "kern":
                     break;
                 case "noWrap":
                     break;
@@ -1030,20 +1039,35 @@ var DocumentParser = (function () {
                     if (elem.localName == "pPr")
                         _this.parseSpacing(c, style);
                     break;
+                case "wordWrap":
+                    if (xml_parser_1.default.boolAttr(c, "val"))
+                        style["overflow-wrap"] = "break-word";
+                    break;
+                case "bCs":
+                case "iCs":
+                case "szCs":
+                case "tabs":
+                case "outlineLvl":
+                case "contextualSpacing":
+                case "tblStyleColBandSize":
+                case "tblStyleRowBandSize":
+                case "webHidden":
+                case "pageBreakBefore":
+                case "keepLines":
+                case "keepNext":
                 case "lang":
                 case "noProof":
-                case "webHidden":
                     break;
                 default:
-                    if (handler != null && !handler(c))
-                        _this.options.debug && console.warn("DOCX: Unknown document element: ".concat(c.localName));
+                    if (_this.options.debug)
+                        console.warn("DOCX: Unknown document element: ".concat(elem.localName, ".").concat(c.localName));
                     break;
             }
         });
         return style;
     };
     DocumentParser.prototype.parseUnderline = function (node, style) {
-        var val = xml.stringAttr(node, "val");
+        var val = xml_parser_1.default.attr(node, "val");
         if (val == null)
             return;
         switch (val) {
@@ -1080,24 +1104,24 @@ var DocumentParser = (function () {
                 style["text-decoration"] = "none";
                 break;
         }
-        var col = xml.colorAttr(node, "color");
+        var col = xmlUtil.colorAttr(node, "color");
         if (col)
             style["text-decoration-color"] = col;
     };
     DocumentParser.prototype.parseFont = function (node, style) {
-        var ascii = xml.stringAttr(node, "ascii");
+        var ascii = xml_parser_1.default.attr(node, "ascii");
         var asciiTheme = values.themeValue(node, "asciiTheme");
         var fonts = [ascii, asciiTheme].filter(function (x) { return x; }).join(', ');
         if (fonts.length > 0)
             style["font-family"] = fonts;
     };
     DocumentParser.prototype.parseIndentation = function (node, style) {
-        var firstLine = xml.sizeAttr(node, "firstLine");
-        var hanging = xml.sizeAttr(node, "hanging");
-        var left = xml.sizeAttr(node, "left");
-        var start = xml.sizeAttr(node, "start");
-        var right = xml.sizeAttr(node, "right");
-        var end = xml.sizeAttr(node, "end");
+        var firstLine = xml_parser_1.default.lengthAttr(node, "firstLine");
+        var hanging = xml_parser_1.default.lengthAttr(node, "hanging");
+        var left = xml_parser_1.default.lengthAttr(node, "left");
+        var start = xml_parser_1.default.lengthAttr(node, "start");
+        var right = xml_parser_1.default.lengthAttr(node, "right");
+        var end = xml_parser_1.default.lengthAttr(node, "end");
         if (firstLine)
             style["text-indent"] = firstLine;
         if (hanging)
@@ -1108,10 +1132,10 @@ var DocumentParser = (function () {
             style["margin-right"] = right || end;
     };
     DocumentParser.prototype.parseSpacing = function (node, style) {
-        var before = xml.sizeAttr(node, "before");
-        var after = xml.sizeAttr(node, "after");
-        var line = xml.intAttr(node, "line", null);
-        var lineRule = xml.stringAttr(node, "lineRule");
+        var before = xml_parser_1.default.lengthAttr(node, "before");
+        var after = xml_parser_1.default.lengthAttr(node, "after");
+        var line = xml_parser_1.default.intAttr(node, "line", null);
+        var lineRule = xml_parser_1.default.attr(node, "lineRule");
         if (before)
             style["margin-top"] = before;
         if (after)
@@ -1131,7 +1155,7 @@ var DocumentParser = (function () {
         }
     };
     DocumentParser.prototype.parseMarginProperties = function (node, output) {
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "left":
                     output["padding-left"] = values.valueOfMargin(c);
@@ -1149,18 +1173,18 @@ var DocumentParser = (function () {
         });
     };
     DocumentParser.prototype.parseTrHeight = function (node, output) {
-        switch (xml.stringAttr(node, "hRule")) {
+        switch (xml_parser_1.default.attr(node, "hRule")) {
             case "exact":
-                output["height"] = xml.sizeAttr(node, "val");
+                output["height"] = xml_parser_1.default.lengthAttr(node, "val");
                 break;
             case "atLeast":
             default:
-                output["height"] = xml.sizeAttr(node, "val");
+                output["height"] = xml_parser_1.default.lengthAttr(node, "val");
                 break;
         }
     };
     DocumentParser.prototype.parseBorderProperties = function (node, output) {
-        xml.foreach(node, function (c) {
+        xmlUtil.foreach(node, function (c) {
             switch (c.localName) {
                 case "start":
                 case "left":
@@ -1182,36 +1206,21 @@ var DocumentParser = (function () {
     return DocumentParser;
 }());
 exports.DocumentParser = DocumentParser;
-var SizeType;
-(function (SizeType) {
-    SizeType[SizeType["FontSize"] = 0] = "FontSize";
-    SizeType[SizeType["Dxa"] = 1] = "Dxa";
-    SizeType[SizeType["Emu"] = 2] = "Emu";
-    SizeType[SizeType["Border"] = 3] = "Border";
-    SizeType[SizeType["Percent"] = 4] = "Percent";
-})(SizeType || (SizeType = {}));
 var knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
-var xml = (function () {
-    function xml() {
+var xmlUtil = (function () {
+    function xmlUtil() {
     }
-    xml.foreach = function (node, cb) {
+    xmlUtil.foreach = function (node, cb) {
         for (var i = 0; i < node.childNodes.length; i++) {
             var n = node.childNodes[i];
             if (n.nodeType == Node.ELEMENT_NODE)
                 cb(n);
         }
     };
-    xml.elementStringAttr = function (elem, nodeName, attrName) {
-        var n = xml_parser_1.default.element(elem, nodeName);
-        return n ? xml.stringAttr(n, attrName) : null;
-    };
-    xml.stringAttr = function (node, attrName) {
-        return xml_parser_1.default.attr(node, attrName);
-    };
-    xml.colorAttr = function (node, attrName, defValue, autoColor) {
+    xmlUtil.colorAttr = function (node, attrName, defValue, autoColor) {
         if (defValue === void 0) { defValue = null; }
         if (autoColor === void 0) { autoColor = 'black'; }
-        var v = xml.stringAttr(node, attrName);
+        var v = xml_parser_1.default.attr(node, attrName);
         if (v) {
             if (v == "auto") {
                 return autoColor;
@@ -1221,115 +1230,59 @@ var xml = (function () {
             }
             return "#".concat(v);
         }
-        var themeColor = xml.stringAttr(node, "themeColor");
+        var themeColor = xml_parser_1.default.attr(node, "themeColor");
         return themeColor ? "var(--docx-".concat(themeColor, "-color)") : defValue;
     };
-    xml.boolAttr = function (node, attrName, defValue) {
-        if (defValue === void 0) { defValue = false; }
-        return xml_parser_1.default.boolAttr(node, attrName, defValue);
+    xmlUtil.sizeValue = function (node, type) {
+        if (type === void 0) { type = common_1.LengthUsage.Dxa; }
+        return (0, common_1.convertLength)(node.textContent, type);
     };
-    xml.intAttr = function (node, attrName, defValue) {
-        if (defValue === void 0) { defValue = 0; }
-        return xml_parser_1.default.intAttr(node, attrName, defValue);
-    };
-    xml.sizeAttr = function (node, attrName, type) {
-        if (type === void 0) { type = SizeType.Dxa; }
-        return xml.convertSize(xml.stringAttr(node, attrName), type);
-    };
-    xml.sizeValue = function (node, type) {
-        if (type === void 0) { type = SizeType.Dxa; }
-        return xml.convertSize(node.textContent, type);
-    };
-    xml.convertSize = function (val, type) {
-        if (type === void 0) { type = SizeType.Dxa; }
-        if (val == null || /.+p[xt]$/.test(val))
-            return val;
-        var intVal = parseInt(val);
-        switch (type) {
-            case SizeType.Dxa: return (0.05 * intVal).toFixed(2) + "pt";
-            case SizeType.Emu: return (intVal / 12700).toFixed(2) + "pt";
-            case SizeType.FontSize: return (0.5 * intVal).toFixed(2) + "pt";
-            case SizeType.Border: return (0.125 * intVal).toFixed(2) + "pt";
-            case SizeType.Percent: return (0.02 * intVal).toFixed(2) + "%";
-        }
-        return val;
-    };
-    xml.className = function (node, attrName) {
-        var val = xml.stringAttr(node, attrName);
-        return val && val.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
-    };
-    return xml;
+    return xmlUtil;
 }());
 var values = (function () {
     function values() {
     }
     values.themeValue = function (c, attr) {
-        var val = xml.stringAttr(c, attr);
+        var val = xml_parser_1.default.attr(c, attr);
         return val ? "var(--docx-".concat(val, "-font)") : null;
     };
-    values.valueOfBold = function (c) {
-        return xml.boolAttr(c, "val", true) ? "bold" : "normal";
-    };
     values.valueOfSize = function (c, attr) {
-        var type = SizeType.Dxa;
-        switch (xml.stringAttr(c, "type")) {
+        var type = common_1.LengthUsage.Dxa;
+        switch (xml_parser_1.default.attr(c, "type")) {
             case "dxa": break;
             case "pct":
-                type = SizeType.Percent;
+                type = common_1.LengthUsage.Percent;
                 break;
             case "auto": return "auto";
         }
-        return xml.sizeAttr(c, attr, type);
-    };
-    values.valueOfStrike = function (c) {
-        return xml.boolAttr(c, "val", true) ? "line-through" : "none";
+        return xml_parser_1.default.lengthAttr(c, attr, type);
     };
     values.valueOfMargin = function (c) {
-        return xml.sizeAttr(c, "w");
+        return xml_parser_1.default.lengthAttr(c, "w");
     };
     values.valueOfBorder = function (c) {
-        var type = xml.stringAttr(c, "val");
+        var type = xml_parser_1.default.attr(c, "val");
         if (type == "nil")
             return "none";
-        var color = xml.colorAttr(c, "color");
-        var size = xml.sizeAttr(c, "sz", SizeType.Border);
-        return "".concat(size, " solid ").concat(color == "auto" ? "black" : color);
+        var color = xmlUtil.colorAttr(c, "color");
+        var size = xml_parser_1.default.lengthAttr(c, "sz", common_1.LengthUsage.Border);
+        return "".concat(size, " solid ").concat(color == "auto" ? exports.autos.borderColor : color);
     };
     values.valueOfTblLayout = function (c) {
-        var type = xml.stringAttr(c, "val");
+        var type = xml_parser_1.default.attr(c, "val");
         return type == "fixed" ? "fixed" : "auto";
     };
     values.classNameOfCnfStyle = function (c) {
-        var className = "";
-        var val = xml.stringAttr(c, "val");
-        if (val[0] == "1")
-            className += " first-row";
-        if (val[1] == "1")
-            className += " last-row";
-        if (val[2] == "1")
-            className += " first-col";
-        if (val[3] == "1")
-            className += " last-col";
-        if (val[4] == "1")
-            className += " odd-col";
-        if (val[5] == "1")
-            className += " even-col";
-        if (val[6] == "1")
-            className += " odd-row";
-        if (val[7] == "1")
-            className += " even-row";
-        if (val[8] == "1")
-            className += " ne-cell";
-        if (val[9] == "1")
-            className += " nw-cell";
-        if (val[10] == "1")
-            className += " se-cell";
-        if (val[11] == "1")
-            className += " sw-cell";
-        return className.trim();
+        var val = xml_parser_1.default.attr(c, "val");
+        var classes = [
+            'first-row', 'last-row', 'first-col', 'last-col',
+            'odd-col', 'even-col', 'odd-row', 'even-row',
+            'ne-cell', 'nw-cell', 'se-cell', 'sw-cell'
+        ];
+        return classes.filter(function (_, i) { return val[i] == '1'; }).join(' ');
     };
     values.valueOfJc = function (c) {
-        var type = xml.stringAttr(c, "val");
+        var type = xml_parser_1.default.attr(c, "val");
         switch (type) {
             case "start":
             case "left": return "left";
@@ -1340,8 +1293,17 @@ var values = (function () {
         }
         return type;
     };
+    values.valueOfVertAlign = function (c, asTagName) {
+        if (asTagName === void 0) { asTagName = false; }
+        var type = xml_parser_1.default.attr(c, "val");
+        switch (type) {
+            case "subscript": return "sub";
+            case "superscript": return asTagName ? "sup" : "super";
+        }
+        return asTagName ? null : type;
+    };
     values.valueOfTextAlignment = function (c) {
-        var type = xml.stringAttr(c, "val");
+        var type = xml_parser_1.default.attr(c, "val");
         switch (type) {
             case "auto":
             case "baseline": return "baseline";
@@ -1358,22 +1320,19 @@ var values = (function () {
             return a;
         return "calc(".concat(a, " + ").concat(b, ")");
     };
-    values.checkMask = function (num, mask) {
-        return (num & mask) == mask;
-    };
     values.classNameOftblLook = function (c) {
         var className = "";
-        if (xml.boolAttr(c, "firstColumn"))
+        if (xml_parser_1.default.boolAttr(c, "firstColumn"))
             className += " first-col";
-        if (xml.boolAttr(c, "firstRow"))
+        if (xml_parser_1.default.boolAttr(c, "firstRow"))
             className += " first-row";
-        if (xml.boolAttr(c, "lastColumn"))
+        if (xml_parser_1.default.boolAttr(c, "lastColumn"))
             className += " lat-col";
-        if (xml.boolAttr(c, "lastRow"))
+        if (xml_parser_1.default.boolAttr(c, "lastRow"))
             className += " last-row";
-        if (xml.boolAttr(c, "noHBand"))
+        if (xml_parser_1.default.boolAttr(c, "noHBand"))
             className += " no-hband";
-        if (xml.boolAttr(c, "noVBand"))
+        if (xml_parser_1.default.boolAttr(c, "noVBand"))
             className += " no-vband";
         return className.trim();
     };
@@ -1723,7 +1682,8 @@ exports.parseCommonProperty = exports.convertPercentage = exports.convertBoolean
 exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
     drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
-    picture: "http://schemas.openxmlformats.org/drawingml/2006/picture"
+    picture: "http://schemas.openxmlformats.org/drawingml/2006/picture",
+    compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006"
 };
 exports.LengthUsage = {
     Dxa: { mul: 0.05, unit: "pt" },
@@ -1735,17 +1695,12 @@ exports.LengthUsage = {
     LineHeight: { mul: 1 / 240, unit: null }
 };
 function convertLength(val, usage) {
+    var _a;
     if (usage === void 0) { usage = exports.LengthUsage.Dxa; }
-    if (!val) {
-        return null;
+    if (val == null || /.+(p[xt]|[%])$/.test(val)) {
+        return val;
     }
-    if (val.endsWith('pt')) {
-        return { value: parseFloat(val), type: 'pt' };
-    }
-    if (val.endsWith('%')) {
-        return { value: parseFloat(val), type: '%' };
-    }
-    return { value: parseInt(val) * usage.mul, type: usage.unit };
+    return "".concat((parseInt(val) * usage.mul).toFixed(2)).concat((_a = usage.unit) !== null && _a !== void 0 ? _a : '');
 }
 exports.convertLength = convertLength;
 function convertBoolean(v, defaultValue) {
@@ -1753,6 +1708,8 @@ function convertBoolean(v, defaultValue) {
     switch (v) {
         case "1": return true;
         case "0": return false;
+        case "on": return true;
+        case "off": return false;
         case "true": return true;
         case "false": return false;
         default: return defaultValue;
@@ -2153,7 +2110,8 @@ exports.defaultOptions = {
     renderHeaders: true,
     renderFooters: true,
     renderFootnotes: true,
-    renderEndnotes: true
+    renderEndnotes: true,
+    useBase64URL: false
 };
 function praseAsync(data, userOptions) {
     if (userOptions === void 0) { userOptions = null; }
@@ -2510,10 +2468,8 @@ var HtmlRenderer = (function () {
             _loop_1(f);
         }
     };
-    HtmlRenderer.prototype.processClassName = function (className) {
-        if (!className)
-            return this.className;
-        return "".concat(this.className, "_").concat(className);
+    HtmlRenderer.prototype.processStyleName = function (className) {
+        return className ? "".concat(this.className, "_").concat((0, utils_1.escapeClassName)(className)) : this.className;
     };
     HtmlRenderer.prototype.processStyles = function (styles) {
         var stylesMap = (0, utils_1.keyBy)(styles.filter(function (x) { return x.id != null; }), function (x) { return x.id; });
@@ -2543,7 +2499,7 @@ var HtmlRenderer = (function () {
         }
         for (var _d = 0, styles_1 = styles; _d < styles_1.length; _d++) {
             var style = styles_1[_d];
-            style.cssName = this.processClassName(this.escapeClassName(style.id));
+            style.cssName = this.processStyleName(style.id);
         }
         return stylesMap;
     };
@@ -2551,7 +2507,7 @@ var HtmlRenderer = (function () {
         var _a;
         for (var _i = 0, _b = numberings.filter(function (n) { return n.pStyleName; }); _i < _b.length; _i++) {
             var num = _b[_i];
-            var style = this.styleMap && this.styleMap[num.pStyleName];
+            var style = this.findStyle(num.pStyleName);
             if ((_a = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _a === void 0 ? void 0 : _a.numbering) {
                 style.paragraphProps.numbering.level = num.level;
             }
@@ -2561,7 +2517,6 @@ var HtmlRenderer = (function () {
         if (element.children) {
             for (var _i = 0, _a = element.children; _i < _a.length; _i++) {
                 var e = _a[_i];
-                e.className = this.processClassName(e.className);
                 e.parent = element;
                 if (e.type == dom_1.DomType.Table) {
                     this.processTable(e);
@@ -2604,20 +2559,20 @@ var HtmlRenderer = (function () {
         var elem = this.createElement("section", { className: className });
         if (props) {
             if (props.pageMargins) {
-                elem.style.paddingLeft = this.renderLength(props.pageMargins.left);
-                elem.style.paddingRight = this.renderLength(props.pageMargins.right);
-                elem.style.paddingTop = this.renderLength(props.pageMargins.top);
-                elem.style.paddingBottom = this.renderLength(props.pageMargins.bottom);
+                elem.style.paddingLeft = props.pageMargins.left;
+                elem.style.paddingRight = props.pageMargins.right;
+                elem.style.paddingTop = props.pageMargins.top;
+                elem.style.paddingBottom = props.pageMargins.bottom;
             }
             if (props.pageSize) {
                 if (!this.options.ignoreWidth)
-                    elem.style.width = this.renderLength(props.pageSize.width);
+                    elem.style.width = props.pageSize.width;
                 if (!this.options.ignoreHeight)
-                    elem.style.minHeight = this.renderLength(props.pageSize.height);
+                    elem.style.minHeight = props.pageSize.height;
             }
             if (props.columns && props.columns.numberOfColumns) {
                 elem.style.columnCount = "".concat(props.columns.numberOfColumns);
-                elem.style.columnGap = this.renderLength(props.columns.space);
+                elem.style.columnGap = props.columns.space;
                 if (props.columns.separator) {
                     elem.style.columnRule = "1px solid black";
                 }
@@ -2683,8 +2638,7 @@ var HtmlRenderer = (function () {
         for (var _i = 0, elements_1 = elements; _i < elements_1.length; _i++) {
             var elem = elements_1[_i];
             if (elem.type == dom_1.DomType.Paragraph) {
-                var styleName = elem.styleName;
-                var s = this.styleMap && styleName ? this.styleMap[styleName] : null;
+                var s = this.findStyle(elem.styleName);
                 if ((_a = s === null || s === void 0 ? void 0 : s.paragraphProps) === null || _a === void 0 ? void 0 : _a.pageBreakBefore) {
                     current.sectProps = sectProps;
                     current = { sectProps: null, elements: [] };
@@ -2738,16 +2692,12 @@ var HtmlRenderer = (function () {
         }
         return result;
     };
-    HtmlRenderer.prototype.renderLength = function (l) {
-        var _a;
-        return l ? "".concat(l.value.toFixed(2)).concat((_a = l.type) !== null && _a !== void 0 ? _a : '') : null;
-    };
     HtmlRenderer.prototype.renderWrapper = function (children) {
         return this.createElement("div", { className: "".concat(this.className, "-wrapper") }, children);
     };
     HtmlRenderer.prototype.renderDefaultStyle = function () {
         var c = this.className;
-        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper>section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }\nsection.").concat(c, ">article { margin-bottom: auto; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; overflow-wrap: break-word; }\n");
+        var styleText = "\n.".concat(c, "-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } \n.").concat(c, "-wrapper>section.").concat(c, " { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }\n.").concat(c, " { color: black; }\nsection.").concat(c, " { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }\nsection.").concat(c, ">article { margin-bottom: auto; }\n.").concat(c, " table { border-collapse: collapse; }\n.").concat(c, " table td, .").concat(c, " table th { vertical-align: top; }\n.").concat(c, " p { margin: 0pt; min-height: 1em; }\n.").concat(c, " span { white-space: pre-wrap; overflow-wrap: break-word; }\n.").concat(c, " a { color: inherit; text-decoration: inherit; }\n");
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderNumbering = function (numberings, styleContainer) {
@@ -2890,45 +2840,38 @@ var HtmlRenderer = (function () {
             return null;
         var result = elems.map(function (e) { return _this.renderElement(e); }).filter(function (e) { return e != null; });
         if (into)
-            for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
-                var c = result_1[_i];
-                into.appendChild(c);
-            }
+            appendChildren(into, result);
         return result;
     };
     HtmlRenderer.prototype.renderContainer = function (elem, tagName) {
         return this.createElement(tagName, null, this.renderChildren(elem));
     };
     HtmlRenderer.prototype.renderParagraph = function (elem) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         var result = this.createElement("p");
+        var style = this.findStyle(elem.styleName);
+        (_a = elem.tabs) !== null && _a !== void 0 ? _a : (elem.tabs = (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.tabs);
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        this.renderCommonProeprties(result.style, elem);
-        var style = elem.styleName && this.styleMap && this.styleMap[elem.styleName];
-        var numbering = (_a = elem.numbering) !== null && _a !== void 0 ? _a : (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.numbering;
+        this.renderCommonProperties(result.style, elem);
+        var numbering = (_c = elem.numbering) !== null && _c !== void 0 ? _c : (_d = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _d === void 0 ? void 0 : _d.numbering;
         if (numbering) {
-            var numberingClass = this.numberingClass(numbering.id, numbering.level);
-            result.className = (0, utils_1.appendClass)(result.className, numberingClass);
-        }
-        if (elem.styleName) {
-            var styleClassName = this.processClassName(this.escapeClassName(elem.styleName));
-            result.className = (0, utils_1.appendClass)(result.className, styleClassName);
+            result.classList.add(this.numberingClass(numbering.id, numbering.level));
         }
         return result;
     };
     HtmlRenderer.prototype.renderRunProperties = function (style, props) {
-        this.renderCommonProeprties(style, props);
+        this.renderCommonProperties(style, props);
     };
-    HtmlRenderer.prototype.renderCommonProeprties = function (style, props) {
+    HtmlRenderer.prototype.renderCommonProperties = function (style, props) {
         if (props == null)
             return;
         if (props.color) {
             style["color"] = props.color;
         }
         if (props.fontSize) {
-            style["font-size"] = this.renderLength(props.fontSize);
+            style["font-size"] = props.fontSize;
         }
     };
     HtmlRenderer.prototype.renderHyperlink = function (elem) {
@@ -3002,18 +2945,20 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderRun = function (elem) {
-        var _a;
         if (elem.fieldRun)
             return null;
         var result = this.createElement("span");
         if (elem.id)
             result.id = elem.id;
         this.renderClass(elem, result);
-        this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         if (elem.verticalAlign) {
-            result.style.verticalAlign = elem.verticalAlign;
-            (_a = result.style).fontSize || (_a.fontSize = "small");
+            var wrapper = this.createElement(elem.verticalAlign);
+            this.renderChildren(elem, wrapper);
+            result.appendChild(wrapper);
+        }
+        else {
+            this.renderChildren(elem, result);
         }
         return result;
     };
@@ -3054,16 +2999,17 @@ var HtmlRenderer = (function () {
         return result;
     };
     HtmlRenderer.prototype.renderStyleValues = function (style, ouput) {
-        if (style == null)
-            return;
-        for (var _i = 0, _a = Object.getOwnPropertyNames(style); _i < _a.length; _i++) {
-            var key = _a[_i];
-            ouput.style[key] = style[key];
-        }
+        Object.assign(ouput.style, style);
     };
     HtmlRenderer.prototype.renderClass = function (input, ouput) {
         if (input.className)
             ouput.className = input.className;
+        if (input.styleName)
+            ouput.classList.add(this.processStyleName(input.styleName));
+    };
+    HtmlRenderer.prototype.findStyle = function (styleName) {
+        var _a;
+        return styleName && ((_a = this.styleMap) === null || _a === void 0 ? void 0 : _a[styleName]);
     };
     HtmlRenderer.prototype.numberingClass = function (id, lvl) {
         return "".concat(this.className, "-num-").concat(id, "-").concat(lvl);
@@ -3108,9 +3054,6 @@ var HtmlRenderer = (function () {
             "upperRoman": "upper-roman",
         };
         return mapping[format] || format;
-    };
-    HtmlRenderer.prototype.escapeClassName = function (className) {
-        return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and');
     };
     HtmlRenderer.prototype.refreshTabStops = function () {
         var _this = this;
@@ -3175,18 +3118,9 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updateTabStop = exports.computePixelToPoint = void 0;
-var defaultTab = { position: { value: 0, type: "pt" }, leader: "none", style: "left" };
+var defaultTab = { pos: 0, leader: "none", style: "left" };
 var maxTabs = 50;
 function computePixelToPoint(container) {
     if (container === void 0) { container = document.body; }
@@ -3204,31 +3138,34 @@ function updateTabStop(elem, tabs, defaultTabSize, pixelToPoint) {
     var ebb = elem.getBoundingClientRect();
     var pbb = p.getBoundingClientRect();
     var pcs = getComputedStyle(p);
-    tabs = tabs && tabs.length > 0 ? tabs.sort(function (a, b) { return a.position.value - b.position.value; }) : [defaultTab];
-    var lastTab = tabs[tabs.length - 1];
+    var tabStops = (tabs === null || tabs === void 0 ? void 0 : tabs.length) > 0 ? tabs.map(function (t) { return ({
+        pos: lengthToPoint(t.position),
+        leader: t.leader,
+        style: t.style
+    }); }).sort(function (a, b) { return a.pos - b.pos; }) : [defaultTab];
+    var lastTab = tabStops[tabStops.length - 1];
     var pWidthPt = pbb.width * pixelToPoint;
-    var size = defaultTabSize.value;
-    var pos = lastTab.position.value + defaultTabSize.value;
+    var size = lengthToPoint(defaultTabSize);
+    var pos = lastTab.pos + size;
     if (pos < pWidthPt) {
-        tabs = __spreadArray([], tabs, true);
-        for (; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
-            tabs.push(__assign(__assign({}, defaultTab), { position: { value: pos, type: "pt" } }));
+        for (; pos < pWidthPt && tabStops.length < maxTabs; pos += size) {
+            tabStops.push(__assign(__assign({}, defaultTab), { pos: pos }));
         }
     }
     var marginLeft = parseFloat(pcs.marginLeft);
     var pOffset = pbb.left + marginLeft;
     var left = (ebb.left - pOffset) * pixelToPoint;
-    var tab = tabs.find(function (t) { return t.style != "clear" && t.position.value > left; });
+    var tab = tabStops.find(function (t) { return t.style != "clear" && t.pos > left; });
     if (tab == null)
         return;
     var width = 1;
     if (tab.style == "right" || tab.style == "center") {
-        var tabStops = Array.from(p.querySelectorAll(".".concat(elem.className)));
-        var nextIdx = tabStops.indexOf(elem) + 1;
+        var tabStops_1 = Array.from(p.querySelectorAll(".".concat(elem.className)));
+        var nextIdx = tabStops_1.indexOf(elem) + 1;
         var range = document.createRange();
         range.setStart(elem, 1);
-        if (nextIdx < tabStops.length) {
-            range.setEndBefore(tabStops[nextIdx]);
+        if (nextIdx < tabStops_1.length) {
+            range.setEndBefore(tabStops_1[nextIdx]);
         }
         else {
             range.setEndAfter(p);
@@ -3236,10 +3173,10 @@ function updateTabStop(elem, tabs, defaultTabSize, pixelToPoint) {
         var mul = tab.style == "center" ? 0.5 : 1;
         var nextBB = range.getBoundingClientRect();
         var offset = nextBB.left + mul * nextBB.width - (pbb.left - marginLeft);
-        width = tab.position.value - offset * pixelToPoint;
+        width = tab.pos - offset * pixelToPoint;
     }
     else {
-        width = tab.position.value - left;
+        width = tab.pos - left;
     }
     elem.innerHTML = "&nbsp;";
     elem.style.textDecoration = "inherit";
@@ -3258,6 +3195,9 @@ function updateTabStop(elem, tabs, defaultTabSize, pixelToPoint) {
     }
 }
 exports.updateTabStop = updateTabStop;
+function lengthToPoint(length) {
+    return parseFloat(length);
+}
 
 
 /***/ }),
@@ -3943,15 +3883,11 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeDeep = exports.isObject = exports.keyBy = exports.resolvePath = exports.splitPath = exports.appendClass = exports.addElementClass = void 0;
-function addElementClass(element, className) {
-    return element.className = appendClass(element.className, className);
+exports.mergeDeep = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
+function escapeClassName(className) {
+    return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
 }
-exports.addElementClass = addElementClass;
-function appendClass(classList, className) {
-    return (!classList) ? className : "".concat(classList, " ").concat(className);
-}
-exports.appendClass = appendClass;
+exports.escapeClassName = escapeClassName;
 function splitPath(path) {
     var si = path.lastIndexOf('/') + 1;
     var folder = si == 0 ? "" : path.substring(0, si);
@@ -3963,7 +3899,7 @@ function resolvePath(path, base) {
     try {
         var prefix = "http://docx/";
         var url = new URL(path, prefix + base).toString();
-        return url.substr(prefix.length);
+        return url.substring(prefix.length);
     }
     catch (_a) {
         return "".concat(base).concat(path);
@@ -3977,6 +3913,14 @@ function keyBy(array, by) {
     }, {});
 }
 exports.keyBy = keyBy;
+function blobToBase64(blob) {
+    return new Promise(function (resolve, _) {
+        var reader = new FileReader();
+        reader.onloadend = function () { return resolve(reader.result); };
+        reader.readAsDataURL(blob);
+    });
+}
+exports.blobToBase64 = blobToBase64;
 function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
@@ -4044,6 +3988,7 @@ var WordDocument = (function () {
     }
     WordDocument.load = function (blob, parser, options) {
         var d = new WordDocument();
+        d._options = options;
         d._parser = parser;
         return open_xml_package_1.OpenXmlPackage.load(blob, options)
             .then(function (pkg) {
@@ -4126,16 +4071,27 @@ var WordDocument = (function () {
         });
     };
     WordDocument.prototype.loadDocumentImage = function (id, part) {
+        var _this = this;
         return this.loadResource(part !== null && part !== void 0 ? part : this.documentPart, id, "blob")
-            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
+            .then(function (x) { return _this.blobToURL(x); });
     };
     WordDocument.prototype.loadNumberingImage = function (id) {
+        var _this = this;
         return this.loadResource(this.numberingPart, id, "blob")
-            .then(function (x) { return x ? URL.createObjectURL(x) : null; });
+            .then(function (x) { return _this.blobToURL(x); });
     };
     WordDocument.prototype.loadFont = function (id, key) {
+        var _this = this;
         return this.loadResource(this.fontTablePart, id, "uint8array")
-            .then(function (x) { return x ? URL.createObjectURL(new Blob([deobfuscate(x, key)])) : x; });
+            .then(function (x) { return x ? _this.blobToURL(new Blob([deobfuscate(x, key)])) : x; });
+    };
+    WordDocument.prototype.blobToURL = function (blob) {
+        if (!blob)
+            return null;
+        if (this._options.useBase64URL) {
+            return (0, utils_1.blobToBase64)(blob);
+        }
+        return URL.createObjectURL(blob);
     };
     WordDocument.prototype.findPartByRelId = function (id, basePart) {
         var _a;

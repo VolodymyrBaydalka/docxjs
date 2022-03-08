@@ -3,15 +3,12 @@ import { XmlParser } from "../parser/xml-parser";
 export const ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
     drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
-    picture: "http://schemas.openxmlformats.org/drawingml/2006/picture"
+    picture: "http://schemas.openxmlformats.org/drawingml/2006/picture",
+	compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006"
 }
 
 export type LengthType = "px" | "pt" | "%";
-
-export interface Length {
-    value: number;
-    type: LengthType
-}
+export type Length = string;
 
 export interface Font {
     name: string;
@@ -35,27 +32,21 @@ export const LengthUsage: Record<string, LengthUsageType> = {
     LineHeight: { mul: 1 / 240, unit: null }
 }
 
-export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): Length {
-    if (!val) {
-        return null;
-    }
-
+export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): string {
     //"simplified" docx documents use pt's as units
-    if (val.endsWith('pt')) {
-        return { value: parseFloat(val), type: 'pt' };
+    if (val == null || /.+(p[xt]|[%])$/.test(val)) {
+        return val;
     }
 
-    if (val.endsWith('%')) {
-        return { value: parseFloat(val), type: '%' };
-    }
-
-    return { value: parseInt(val) * usage.mul, type: usage.unit };
+	return `${(parseInt(val) * usage.mul).toFixed(2)}${usage.unit ?? ''}`;
 }
 
 export function convertBoolean(v: string, defaultValue = false): boolean {
     switch (v) {
         case "1": return true;
         case "0": return false;
+        case "on": return true;
+        case "off": return false;
         case "true": return true;
         case "false": return false;
         default: return defaultValue;

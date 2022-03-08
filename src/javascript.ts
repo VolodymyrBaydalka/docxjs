@@ -1,7 +1,13 @@
 import { Length } from "./document/common";
 import { ParagraphTab } from "./document/paragraph";
 
-const defaultTab: ParagraphTab = { position: { value: 0, type: "pt" }, leader: "none", style: "left" };
+interface TabStop {
+	pos: number;
+	leader: string;
+	style: string;
+}
+
+const defaultTab: TabStop = { pos: 0, leader: "none", style: "left" };
 const maxTabs = 50;
 
 export function computePixelToPoint(container: HTMLElement = document.body) {
@@ -22,25 +28,27 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
     const pbb = p.getBoundingClientRect();
     const pcs = getComputedStyle(p);
 
-	tabs = tabs && tabs.length > 0 ? tabs.sort((a, b) => a.position.value - b.position.value) : [defaultTab];
+	const tabStops = tabs?.length > 0 ? tabs.map(t => ({
+		pos: lengthToPoint(t.position),
+		leader: t.leader,
+		style: t.style
+	})).sort((a, b) => a.pos - b.pos) : [defaultTab];
 
-	const lastTab = tabs[tabs.length - 1];
+	const lastTab = tabStops[tabStops.length - 1];
 	const pWidthPt = pbb.width * pixelToPoint;
-	const size = defaultTabSize.value;
-    let pos = lastTab.position.value + defaultTabSize.value;
+	const size = lengthToPoint(defaultTabSize);
+    let pos = lastTab.pos + size;
 
     if (pos < pWidthPt) {
-        tabs = [...tabs];
-
-        for (; pos < pWidthPt && tabs.length < maxTabs; pos += size) {
-            tabs.push({ ...defaultTab, position: { value: pos, type: "pt" } });
+        for (; pos < pWidthPt && tabStops.length < maxTabs; pos += size) {
+            tabStops.push({ ...defaultTab, pos: pos });
         }
     }
 
     const marginLeft = parseFloat(pcs.marginLeft);
     const pOffset = pbb.left + marginLeft;
     const left = (ebb.left - pOffset) * pixelToPoint;
-    const tab = tabs.find(t => t.style != "clear" && t.position.value > left);
+    const tab = tabStops.find(t => t.style != "clear" && t.pos > left);
 
     if(tab == null)
         return;
@@ -63,9 +71,9 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
         const nextBB = range.getBoundingClientRect();
 		const offset = nextBB.left + mul * nextBB.width - (pbb.left - marginLeft);
 
-		width = tab.position.value - offset * pixelToPoint;
+		width = tab.pos - offset * pixelToPoint;
     } else {
-        width = tab.position.value - left;
+        width = tab.pos - left;
     }
 
     elem.innerHTML = "&nbsp;";
@@ -85,4 +93,8 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
             elem.style.textDecoration = "underline";
             break;
     }
+}
+
+function lengthToPoint(length: Length): number {
+	return parseFloat(length);
 }

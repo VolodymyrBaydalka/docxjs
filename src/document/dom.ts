@@ -30,40 +30,46 @@ export interface OpenXmlElement {
     type: DomType;
     children?: OpenXmlElement[];
     cssStyle?: Record<string, string>;
-    className?: string;
+    
+	styleName?: string; //style name
+	className?: string; //class mods
+
     parent?: OpenXmlElement;
 }
 
-export interface IDomHyperlink extends OpenXmlElement {
+export interface WmlHyperlink extends OpenXmlElement {
     href?: string;
 }
 
-export interface NoteReferenceElement extends OpenXmlElement {
+export interface WmlNoteReference extends OpenXmlElement {
     id: string;
 }
 
-export interface BreakElement extends OpenXmlElement{
+export interface WmlBreak extends OpenXmlElement{
     break: "page" | "lastRenderedPageBreak" | "textWrapping";
 }
 
-export interface TextElement extends OpenXmlElement{
+export interface WmlText extends OpenXmlElement{
     text: string;
 }
 
-export interface SymbolElement extends OpenXmlElement {
+export interface WmlSymbol extends OpenXmlElement {
     font: string;
     char: string;
 }
 
-export interface IDomTable extends OpenXmlElement {
-    columns?: IDomTableColumn[];
+export interface WmlTable extends OpenXmlElement {
+    columns?: WmlTableColumn[];
     cellStyle?: Record<string, string>;
+
+	colBandSize?: number;
+	rowBandSize?: number;
 }
 
-export interface IDomTableRow extends OpenXmlElement {
+export interface WmlTableRow extends OpenXmlElement {
 }
 
-export interface IDomTableCell extends OpenXmlElement {
+export interface WmlTableCell extends OpenXmlElement {
     span?: number;
 }
 
@@ -71,7 +77,7 @@ export interface IDomImage extends OpenXmlElement {
     src: string;
 }
 
-export interface IDomTableColumn {
+export interface WmlTableColumn {
     width?: string;
 }
 

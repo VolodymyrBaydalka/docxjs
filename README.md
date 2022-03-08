@@ -43,6 +43,7 @@ renderAsync(
         ignoreLastRenderedPageBreak: boolean = true, //disables page breaking on lastRenderedPageBreak elements
         experimental: boolean = false, //enables experimental features (tab stops calculation)
         trimXmlDeclaration: boolean = true, //if true, xml declaration will be removed from xml documents before parsing
+        useBase64URL: boolean = false, //if true, images, fonts, etc. will be converted to base 64 URL, otherwise URL.createObjectURL is used
         debug: boolean = false, //enables additional logging
     }
     ): Promise<any>
