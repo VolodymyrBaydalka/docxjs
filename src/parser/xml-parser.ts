@@ -67,6 +67,11 @@ export class XmlParser {
         return val ? parseInt(val) : defaultValue;
     }
 
+	hexAttr(node: Element, attrName: string, defaultValue: number = null): number {
+        var val = this.attr(node, attrName);
+        return val ? parseInt(val, 16) : defaultValue;
+    }
+
     floatAttr(node: Element, attrName: string, defaultValue: number = null): number {
         var val = this.attr(node, attrName);
         return val ? parseFloat(val) : defaultValue;

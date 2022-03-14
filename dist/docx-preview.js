@@ -374,29 +374,38 @@ var DocumentParser = (function () {
         var result = [];
         var type = xml_parser_1.default.attr(node, "type");
         var selector = "";
+        var modificator = "";
         switch (type) {
             case "firstRow":
+                modificator = ".first-row";
                 selector = "tr.first-row td";
                 break;
             case "lastRow":
+                modificator = ".last-row";
                 selector = "tr.last-row td";
                 break;
             case "firstCol":
+                modificator = ".first-col";
                 selector = "td.first-col";
                 break;
             case "lastCol":
+                modificator = ".last-col";
                 selector = "td.last-col";
                 break;
             case "band1Vert":
+                modificator = ":not(.no-vband)";
                 selector = "td.odd-col";
                 break;
             case "band2Vert":
+                modificator = ":not(.no-vband)";
                 selector = "td.even-col";
                 break;
             case "band1Horz":
+                modificator = ":not(.no-hband)";
                 selector = "tr.odd-row";
                 break;
             case "band2Horz":
+                modificator = ":not(.no-hband)";
                 selector = "tr.even-row";
                 break;
             default: return [];
@@ -405,13 +414,15 @@ var DocumentParser = (function () {
             switch (n.localName) {
                 case "pPr":
                     result.push({
-                        target: selector + " p",
+                        target: "".concat(selector, " p"),
+                        mod: modificator,
                         values: _this.parseDefaultProperties(n, {})
                     });
                     break;
                 case "rPr":
                     result.push({
-                        target: selector + " span",
+                        target: "".concat(selector, " span"),
+                        mod: modificator,
                         values: _this.parseDefaultProperties(n, {})
                     });
                     break;
@@ -419,6 +430,7 @@ var DocumentParser = (function () {
                 case "tcPr":
                     result.push({
                         target: selector,
+                        mod: modificator,
                         values: _this.parseDefaultProperties(n, {})
                     });
                     break;
@@ -919,11 +931,13 @@ var DocumentParser = (function () {
     };
     DocumentParser.prototype.parseTableCellProperties = function (elem, cell) {
         cell.cssStyle = this.parseDefaultProperties(elem, {}, null, function (c) {
+            var _a;
             switch (c.localName) {
                 case "gridSpan":
                     cell.span = xml_parser_1.default.intAttr(c, "val", null);
                     break;
                 case "vMerge":
+                    cell.verticalMerge = (_a = xml_parser_1.default.attr(c, "val")) !== null && _a !== void 0 ? _a : "continue";
                     break;
                 case "cnfStyle":
                     cell.className = values.classNameOfCnfStyle(c);
@@ -1321,18 +1335,19 @@ var values = (function () {
         return "calc(".concat(a, " + ").concat(b, ")");
     };
     values.classNameOftblLook = function (c) {
+        var val = xml_parser_1.default.hexAttr(c, "val", 0);
         var className = "";
-        if (xml_parser_1.default.boolAttr(c, "firstColumn"))
-            className += " first-col";
-        if (xml_parser_1.default.boolAttr(c, "firstRow"))
+        if (xml_parser_1.default.boolAttr(c, "firstRow") || (val & 0x0020))
             className += " first-row";
-        if (xml_parser_1.default.boolAttr(c, "lastColumn"))
-            className += " lat-col";
-        if (xml_parser_1.default.boolAttr(c, "lastRow"))
+        if (xml_parser_1.default.boolAttr(c, "lastRow") || (val & 0x0040))
             className += " last-row";
-        if (xml_parser_1.default.boolAttr(c, "noHBand"))
+        if (xml_parser_1.default.boolAttr(c, "firstColumn") || (val & 0x0080))
+            className += " first-col";
+        if (xml_parser_1.default.boolAttr(c, "lastColumn") || (val & 0x0100))
+            className += " last-col";
+        if (xml_parser_1.default.boolAttr(c, "noHBand") || (val & 0x0200))
             className += " no-hband";
-        if (xml_parser_1.default.boolAttr(c, "noVBand"))
+        if (xml_parser_1.default.boolAttr(c, "noVBand") || (val & 0x0400))
             className += " no-vband";
         return className.trim();
     };
@@ -2360,6 +2375,10 @@ var HtmlRenderer = (function () {
         this.className = "docx";
         this.styleMap = {};
         this.currentPart = null;
+        this.tableVerticalMerges = [];
+        this.currentVerticalMerge = null;
+        this.tableCellPositions = [];
+        this.currentCellPosition = null;
         this.footnoteMap = {};
         this.endnoteMap = {};
         this.currentEndnoteIds = [];
@@ -2485,7 +2504,7 @@ var HtmlRenderer = (function () {
                         this_2.copyStyleProperties(baseValues.values, styleValues.values);
                     }
                     else {
-                        style.styles.push({ target: baseValues.target, values: __assign({}, baseValues.values) });
+                        style.styles.push(__assign(__assign({}, baseValues), { values: __assign({}, baseValues.values) }));
                     }
                 };
                 var this_2 = this;
@@ -2749,6 +2768,7 @@ var HtmlRenderer = (function () {
         return createStyleElement(styleText);
     };
     HtmlRenderer.prototype.renderStyles = function (styles) {
+        var _a;
         var styleText = "";
         var stylesMap = this.styleMap;
         var defautStyles = (0, utils_1.keyBy)(styles.filter(function (s) { return s.isDefault; }), function (s) { return s.target; });
@@ -2762,15 +2782,11 @@ var HtmlRenderer = (function () {
                 else if (this.options.debug)
                     console.warn("Can't find linked style ".concat(style.linked));
             }
-            for (var _a = 0, subStyles_1 = subStyles; _a < subStyles_1.length; _a++) {
-                var subStyle = subStyles_1[_a];
-                var selector = "";
-                if (style.target == subStyle.target)
-                    selector += "".concat(style.target, ".").concat(style.cssName);
-                else if (style.target)
-                    selector += "".concat(style.target, ".").concat(style.cssName, " ").concat(subStyle.target);
-                else
-                    selector += ".".concat(style.cssName, " ").concat(subStyle.target);
+            for (var _b = 0, subStyles_1 = subStyles; _b < subStyles_1.length; _b++) {
+                var subStyle = subStyles_1[_b];
+                var selector = "".concat((_a = style.target) !== null && _a !== void 0 ? _a : '', ".").concat(style.cssName);
+                if (style.target != subStyle.target)
+                    selector += " ".concat(subStyle.target);
                 if (defautStyles[style.target] == style)
                     selector = ".".concat(this.className, " ").concat(style.target, ", ") + selector;
                 styleText += this.styleToString(selector, subStyle.values);
@@ -2964,11 +2980,17 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderTable = function (elem) {
         var result = this.createElement("table");
+        this.tableCellPositions.push(this.currentCellPosition);
+        this.tableVerticalMerges.push(this.currentVerticalMerge);
+        this.currentVerticalMerge = {};
+        this.currentCellPosition = { col: 0, row: 0 };
         if (elem.columns)
             result.appendChild(this.renderTableColumns(elem.columns));
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+        this.currentVerticalMerge = this.tableVerticalMerges.pop();
+        this.currentCellPosition = this.tableCellPositions.pop();
         return result;
     };
     HtmlRenderer.prototype.renderTableColumns = function (columns) {
@@ -2984,18 +3006,32 @@ var HtmlRenderer = (function () {
     };
     HtmlRenderer.prototype.renderTableRow = function (elem) {
         var result = this.createElement("tr");
+        this.currentCellPosition.col = 0;
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+        this.currentCellPosition.row++;
         return result;
     };
     HtmlRenderer.prototype.renderTableCell = function (elem) {
         var result = this.createElement("td");
+        if (elem.verticalMerge) {
+            var key = this.currentCellPosition.col;
+            if (elem.verticalMerge == "restart") {
+                this.currentVerticalMerge[key] = result;
+                result.rowSpan = 1;
+            }
+            else if (this.currentVerticalMerge[key]) {
+                this.currentVerticalMerge[key].rowSpan += 1;
+                result.style.display = "none";
+            }
+        }
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         if (elem.span)
             result.colSpan = elem.span;
+        this.currentCellPosition.col++;
         return result;
     };
     HtmlRenderer.prototype.renderStyleValues = function (style, ouput) {
@@ -3584,6 +3620,11 @@ var XmlParser = (function () {
         if (defaultValue === void 0) { defaultValue = null; }
         var val = this.attr(node, attrName);
         return val ? parseInt(val) : defaultValue;
+    };
+    XmlParser.prototype.hexAttr = function (node, attrName, defaultValue) {
+        if (defaultValue === void 0) { defaultValue = null; }
+        var val = this.attr(node, attrName);
+        return val ? parseInt(val, 16) : defaultValue;
     };
     XmlParser.prototype.floatAttr = function (node, attrName, defaultValue) {
         if (defaultValue === void 0) { defaultValue = null; }

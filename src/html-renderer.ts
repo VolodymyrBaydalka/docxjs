@@ -19,6 +19,13 @@ import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 
+interface CellPos {
+	col: number;
+	row: number;
+}
+
+type CellVerticalMergeType = Record<number, HTMLTableCellElement>;
+
 export class HtmlRenderer {
 
     className: string = "docx";
@@ -26,6 +33,11 @@ export class HtmlRenderer {
     options: Options;
     styleMap: Record<string, IDomStyle> = {};
 	currentPart: Part = null;
+
+	tableVerticalMerges: CellVerticalMergeType[] = [];
+	currentVerticalMerge: CellVerticalMergeType = null;
+	tableCellPositions: CellPos[] = [];
+	currentCellPosition: CellPos = null;
 
     footnoteMap: Record<string, WmlFootnote> = {};
 	endnoteMap: Record<string, WmlFootnote> = {};
@@ -172,7 +184,7 @@ export class HtmlRenderer {
 					if (styleValues) {
                         this.copyStyleProperties(baseValues.values, styleValues.values);
 					} else {
-						style.styles.push({ target: baseValues.target, values: { ...baseValues.values } });
+						style.styles.push({ ...baseValues, values: { ...baseValues.values } });
                     }
                 }
             }
@@ -578,14 +590,11 @@ section.${c}>article { margin-bottom: auto; }
             }
 
             for (const subStyle of subStyles) {
-                var selector = "";
+				//TODO temporary disable modificators until test it well
+                var selector = `${style.target ?? ''}.${style.cssName}`; //${subStyle.mod ?? ''} 
 
-                if (style.target == subStyle.target)
-                    selector += `${style.target}.${style.cssName}`;
-                else if (style.target)
-                    selector += `${style.target}.${style.cssName} ${subStyle.target}`;
-                else
-                    selector += `.${style.cssName} ${subStyle.target}`;
+				if (style.target != subStyle.target)
+					selector += ` ${subStyle.target}`;
 
                 if (defautStyles[style.target] == style)
                     selector = `.${this.className} ${style.target}, ` + selector;
@@ -849,12 +858,20 @@ section.${c}>article { margin-bottom: auto; }
     renderTable(elem: WmlTable) {
         let result = this.createElement("table");
 
+		this.tableCellPositions.push(this.currentCellPosition);	
+		this.tableVerticalMerges.push(this.currentVerticalMerge);
+		this.currentVerticalMerge = {};	
+		this.currentCellPosition = { col: 0, row: 0};
+
         if (elem.columns)
             result.appendChild(this.renderTableColumns(elem.columns));
 
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+
+		this.currentVerticalMerge = this.tableVerticalMerges.pop();
+		this.currentCellPosition = this.tableCellPositions.pop();
 
         return result;
     }
@@ -877,9 +894,13 @@ section.${c}>article { margin-bottom: auto; }
     renderTableRow(elem: OpenXmlElement) {
         let result = this.createElement("tr");
 
+		this.currentCellPosition.col = 0;
+
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
+
+		this.currentCellPosition.row ++;
 
         return result;
     }
@@ -887,11 +908,26 @@ section.${c}>article { margin-bottom: auto; }
     renderTableCell(elem: WmlTableCell) {
         let result = this.createElement("td");
 
+		if (elem.verticalMerge) {
+			const key = this.currentCellPosition.col;
+
+			if (elem.verticalMerge == "restart") {
+				this.currentVerticalMerge[key] = result;
+				result.rowSpan = 1;
+			} else if(this.currentVerticalMerge[key]) {
+				this.currentVerticalMerge[key].rowSpan += 1;
+				result.style.display = "none";
+			} 
+		}
+
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
 
-        if (elem.span) result.colSpan = elem.span;
+        if (elem.span) 
+			result.colSpan = elem.span;
+
+		this.currentCellPosition.col ++;
 
         return result;
     }

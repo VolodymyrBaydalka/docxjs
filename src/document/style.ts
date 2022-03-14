@@ -19,5 +19,6 @@ export interface IDomStyle {
 
 export interface IDomSubStyle {
     target: string;
+	mod?: string;
     values: Record<string, string>;
 }

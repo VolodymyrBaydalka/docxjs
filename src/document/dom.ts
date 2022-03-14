@@ -70,6 +70,7 @@ export interface WmlTableRow extends OpenXmlElement {
 }
 
 export interface WmlTableCell extends OpenXmlElement {
+	verticalMerge?: 'restart' | 'continue' | string;
     span?: number;
 }
 

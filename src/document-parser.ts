@@ -242,31 +242,58 @@ export class DocumentParser {
 
         var type = xml.attr(node, "type");
         var selector = "";
+        var modificator = "";
 
-        switch (type) {
-            case "firstRow": selector = "tr.first-row td"; break;
-            case "lastRow": selector = "tr.last-row td"; break;
-            case "firstCol": selector = "td.first-col"; break;
-            case "lastCol": selector = "td.last-col"; break;
-            case "band1Vert": selector = "td.odd-col"; break;
-            case "band2Vert": selector = "td.even-col"; break;
-            case "band1Horz": selector = "tr.odd-row"; break;
-            case "band2Horz": selector = "tr.even-row"; break;
-            default: return [];
-        }
+		switch (type) {
+			case "firstRow":
+				modificator = ".first-row";
+				selector = "tr.first-row td";
+				break;
+			case "lastRow":
+				modificator = ".last-row";
+				selector = "tr.last-row td";
+				break;
+			case "firstCol":
+				modificator = ".first-col";
+				selector = "td.first-col";
+				break;
+			case "lastCol":
+				modificator = ".last-col";
+				selector = "td.last-col";
+				break;
+			case "band1Vert":
+				modificator = ":not(.no-vband)";
+				selector = "td.odd-col";
+				break;
+			case "band2Vert":
+				modificator = ":not(.no-vband)";
+				selector = "td.even-col";
+				break;
+			case "band1Horz":
+				modificator = ":not(.no-hband)";
+				selector = "tr.odd-row";
+				break;
+			case "band2Horz":
+				modificator = ":not(.no-hband)";
+				selector = "tr.even-row";
+				break;
+			default: return [];
+		}
 
         xmlUtil.foreach(node, n => {
             switch (n.localName) {
                 case "pPr":
                     result.push({
-                        target: selector + " p",
+                        target: `${selector} p`,
+						mod: modificator,
                         values: this.parseDefaultProperties(n, {})
                     });
                     break;
 
                 case "rPr":
                     result.push({
-                        target: selector + " span",
+                        target: `${selector} span`,
+						mod: modificator,
                         values: this.parseDefaultProperties(n, {})
                     });
                     break;
@@ -275,6 +302,7 @@ export class DocumentParser {
                 case "tcPr":
                     result.push({
                         target: selector, //TODO: maybe move to processor
+						mod: modificator,
                         values: this.parseDefaultProperties(n, {})
                     });
                     break;
@@ -894,7 +922,8 @@ export class DocumentParser {
                     cell.span = xml.intAttr(c, "val", null);
                     break;
 
-                case "vMerge": //TODO
+                case "vMerge":
+					cell.verticalMerge = xml.attr(c, "val") ?? "continue";
                     break;
 
                 case "cnfStyle":
@@ -1379,14 +1408,15 @@ class values {
     }
 
     static classNameOftblLook(c: Element) {
+		const val = xml.hexAttr(c, "val", 0);
         let className = "";
 
-        if (xml.boolAttr(c, "firstColumn")) className += " first-col";
-        if (xml.boolAttr(c, "firstRow")) className += " first-row";
-        if (xml.boolAttr(c, "lastColumn")) className += " lat-col";
-        if (xml.boolAttr(c, "lastRow")) className += " last-row";
-        if (xml.boolAttr(c, "noHBand")) className += " no-hband";
-        if (xml.boolAttr(c, "noVBand")) className += " no-vband";
+        if (xml.boolAttr(c, "firstRow") || (val & 0x0020)) className += " first-row";
+        if (xml.boolAttr(c, "lastRow") || (val & 0x0040)) className += " last-row";
+        if (xml.boolAttr(c, "firstColumn") || (val & 0x0080)) className += " first-col";
+        if (xml.boolAttr(c, "lastColumn") || (val & 0x0100)) className += " last-col";
+        if (xml.boolAttr(c, "noHBand") || (val & 0x0200)) className += " no-hband";
+        if (xml.boolAttr(c, "noVBand") || (val & 0x0400)) className += " no-vband";
 
         return className.trim();
     }
