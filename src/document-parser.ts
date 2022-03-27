@@ -14,7 +14,7 @@ import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fie
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
 
 export var autos = {
-    shd: "white",
+    shd: "inherit",
     color: "black",
 	borderColor: "black",
     highlight: "transparent"
@@ -885,6 +885,10 @@ export class DocumentParser {
                     row.className = values.classNameOfCnfStyle(c);
                     break;
 
+				case "tblHeader":
+					row.isHeader = xml.boolAttr(c, "val");
+					break;
+
                 default:
                     return false;
             }
@@ -1093,9 +1097,13 @@ export class DocumentParser {
 				case "tblStyleRowBandSize": //TODO
                 case "webHidden": //TODO - maybe web-hidden should be implemented
 				case "pageBreakBefore": //TODO - maybe ignore 
+				case "suppressLineNumbers": //TODO - maybe ignore
 				case "keepLines": //TODO - maybe ignore
 				case "keepNext": //TODO - maybe ignore
 				case "lang":
+				case "widowControl": //TODO - maybe ignore 
+				case "bidi": //TODO - maybe ignore
+				case "rtl": //TODO - maybe ignore
                 case "noProof": //ignore spellcheck
                     //TODO ignore
                     break;

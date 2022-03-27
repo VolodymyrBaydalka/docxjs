@@ -5,9 +5,8 @@ const PATHS = {
   build: path.join(__dirname, './dist')
 }
 
-function buildConfig(prod, es6) {
-  const outputFilename = `[name]${es6 ? '.es6' : ''}${prod ? '.min' : ''}.js`;
-  const tsLoaderOptions = es6 ? { compilerOptions: { target: "es6" } } : {};
+function buildConfig(prod) {
+  const outputFilename = `[name]${prod ? '.min' : ''}.js`;
 
   return {
     mode: 'development',
@@ -26,8 +25,7 @@ function buildConfig(prod, es6) {
         {
           test: /\.ts$/,
           use: [{
-            loader: 'ts-loader',
-            options: tsLoaderOptions
+            loader: 'ts-loader'
           }]
         }
       ]
@@ -48,5 +46,5 @@ function buildConfig(prod, es6) {
 
 
 module.exports = (env, argv) => {
-  return buildConfig(argv.mode === 'production', false);
+  return buildConfig(argv.mode === 'production');
 };

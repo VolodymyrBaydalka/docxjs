@@ -10,7 +10,7 @@
     "sourceMap": true,
     "noEmitHelpers": false,
     "importHelpers": false,
-    "target": "es5",
+    "target": "es6",
     "outDir": "dist",
     "lib": [
       "es6",

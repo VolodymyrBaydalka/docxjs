@@ -16,7 +16,7 @@
     <script src="dist/docx-preview.js"></script>
 </head>
 
-<body>
+<body class="vh-100 d-flex flex-column">
     <div class="hstack bg-black">
         <a class="mx-auto p-2 text-white" href="https://how-to-help-ukraine-now.super.site">Support Ukraine 🇺🇦</a>
     </div>
@@ -34,30 +34,33 @@
         </div>
     </div>
 
-    <div id="document-container">
+    <div id="document-container" class="flex-grow-1 overflow-auto">
     </div>
 
     <script>
+        let currentDocument = null;
         const docxOptions = Object.assign(docx.defaultOptions, {
             debug: true,
             experimental: true,
         });
 
-        document.getElementById("loadButton").addEventListener("click", loadDocx);
+        const container = document.querySelector("#document-container");
 
-        function loadDocx() {
-            var file = document.getElementById("files").files[0];
+        function renderDocx(file) {
+            currentDocument = file; 
 
-            if (!file)
+            if (!currentDocument) 
                 return;
 
-            var container = document.getElementById("document-container");
-
-            docx.renderAsync(file, container, null, docxOptions)
-                .then(function (x) { console.log(x); });
+            docx.renderAsync(currentDocument, container, null, docxOptions)
+                .then((x) => console.log(x));
         }
+        
+        document.querySelector("#loadButton").addEventListener("click", ev => {
+            renderDocx(document.getElementById("files").files[0]);
+        });
 
-        const menu = document.getElementById("optionsMenu");
+        const menu = document.querySelector("#optionsMenu");
 
         Object.keys(docxOptions).filter(key => !/className/i.test(key)).forEach(function(key) {
             const listItem = document.createElement("li");
@@ -70,12 +73,18 @@
 
             const checkInput = listItem.querySelector("input");
 
-            checkInput.addEventListener("click", function(e) {
+            checkInput.addEventListener("click", (e) => {
                 docxOptions[key] = checkInput.checked;
-                loadDocx();
+                renderDocx(currentDocument);
             });
 
             menu.appendChild(listItem);
+        });
+
+        container.addEventListener("dragover", ev => ev.preventDefault());
+        container.addEventListener("drop", ev => {
+            ev.preventDefault();
+            renderDocx(ev.dataTransfer.files[0]);
         });
     </script>
 </body>
