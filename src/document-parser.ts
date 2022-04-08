@@ -12,6 +12,7 @@ import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmarks';
 import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fields';
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
+import { VmlShape } from './document/vector';
 
 export var autos = {
     shd: "inherit",
@@ -594,6 +595,10 @@ export class DocumentParser {
                         result.children = [d];
                     break;
 
+				case "pict":
+					result.children.push(this.parseVmlPicture(c));
+					break;
+	
                 case "rPr":
                     this.parseRunProperties(c, result);
                     break;
@@ -621,6 +626,39 @@ export class DocumentParser {
             return true;
         });
     }
+
+	parseVmlPicture(elem: Element): OpenXmlElement {
+        const result  = { type: DomType.VmlPicture, children: [] };
+
+		for (const el of xml.elements(elem)) {
+			switch (el.localName) {
+				case "shape":
+					result.children.push(this.parseVmlShape(el));
+					break;
+			}
+		}
+
+		return result;
+	}
+
+	parseVmlShape(elem: Element): OpenXmlElement {
+        const result = <VmlShape>{ type: DomType.VmlShape, children: [] };
+
+		result.cssStyleText = xml.attr(elem, "style");
+
+		for (const el of xml.elements(elem)) {
+			switch (el.localName) {
+				case "imagedata":
+					result.imagedata = {
+						id: xml.attr(el, "id"),
+						title: xml.attr(el, "title"),
+					}
+					break;
+			}
+		}
+
+		return result;
+	}
 
     parseDrawing(node: Element): OpenXmlElement {
         for (var n of xml.elements(node)) {

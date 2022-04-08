@@ -7,7 +7,7 @@
 		exports["docx"] = factory(require("jszip"));
 	else
 		root["docx"] = factory(root["JSZip"]);
-})(self, function(__WEBPACK_EXTERNAL_MODULE_jszip__) {
+})(self, (__WEBPACK_EXTERNAL_MODULE_jszip__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
@@ -638,6 +638,9 @@ class DocumentParser {
                     if (d)
                         result.children = [d];
                     break;
+                case "pict":
+                    result.children.push(this.parseVmlPicture(c));
+                    break;
                 case "rPr":
                     this.parseRunProperties(c, result);
                     break;
@@ -659,6 +662,32 @@ class DocumentParser {
             }
             return true;
         });
+    }
+    parseVmlPicture(elem) {
+        const result = { type: dom_1.DomType.VmlPicture, children: [] };
+        for (const el of xml_parser_1.default.elements(elem)) {
+            switch (el.localName) {
+                case "shape":
+                    result.children.push(this.parseVmlShape(el));
+                    break;
+            }
+        }
+        return result;
+    }
+    parseVmlShape(elem) {
+        const result = { type: dom_1.DomType.VmlShape, children: [] };
+        result.cssStyleText = xml_parser_1.default.attr(elem, "style");
+        for (const el of xml_parser_1.default.elements(elem)) {
+            switch (el.localName) {
+                case "imagedata":
+                    result.imagedata = {
+                        id: xml_parser_1.default.attr(el, "id"),
+                        title: xml_parser_1.default.attr(el, "title"),
+                    };
+                    break;
+            }
+        }
+        return result;
     }
     parseDrawing(node) {
         for (var n of xml_parser_1.default.elements(node)) {
@@ -1701,6 +1730,8 @@ var DomType;
     DomType["SimpleField"] = "simpleField";
     DomType["ComplexField"] = "complexField";
     DomType["Instruction"] = "instruction";
+    DomType["VmlPicture"] = "vmlPicture";
+    DomType["VmlShape"] = "vmlShape";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -2607,6 +2638,10 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderEndnoteReference(elem);
             case dom_1.DomType.NoBreakHyphen:
                 return this.createElement("wbr");
+            case dom_1.DomType.VmlPicture:
+                return this.renderVmlPicture(elem);
+            case dom_1.DomType.VmlShape:
+                return this.renderVmlShape(elem);
         }
         return null;
     }
@@ -2795,6 +2830,28 @@ section.${c}>article { margin-bottom: auto; }
         this.currentCellPosition.col++;
         return result;
     }
+    renderVmlPicture(elem) {
+        var result = createSvgElement("svg");
+        this.renderChildren(elem, result);
+        setTimeout(() => {
+            const bb = result.getBBox();
+            result.setAttribute("width", `${Math.round(bb.width)}`);
+            result.setAttribute("height", `${Math.round(bb.height)}`);
+        });
+        return result;
+    }
+    renderVmlShape(elem) {
+        if (elem.imagedata) {
+            const image = createSvgElement("image");
+            image.setAttribute("style", elem.cssStyleText);
+            if (this.document) {
+                this.document.loadDocumentImage(elem.imagedata.id, this.currentPart).then(x => {
+                    image.setAttribute("href", x);
+                });
+            }
+            return image;
+        }
+    }
     renderStyleValues(style, ouput) {
         Object.assign(ouput.style, style);
     }
@@ -2863,8 +2920,15 @@ section.${c}>article { margin-bottom: auto; }
     }
 }
 exports.HtmlRenderer = HtmlRenderer;
-function createElement(tagName, props = undefined, children = undefined) {
-    var result = Object.assign(document.createElement(tagName), props);
+function createElement(tagName, props, children) {
+    return createElementNS(undefined, tagName, props, children);
+}
+function createSvgElement(tagName, props, children) {
+    return createElementNS("http://www.w3.org/2000/svg", tagName, props, children);
+}
+function createElementNS(ns, tagName, props, children) {
+    var result = ns ? document.createElementNS(ns, tagName) : document.createElement(tagName);
+    Object.assign(result, props);
     children && appendChildren(result, children);
     return result;
 }
