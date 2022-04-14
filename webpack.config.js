@@ -17,7 +17,8 @@ function buildConfig(prod) {
       path: PATHS.build,
       filename: outputFilename,
       library: 'docx',
-      libraryTarget: 'umd'
+      libraryTarget: 'umd',
+      globalObject: 'this'
     },
     devtool: 'source-map',
     module: {
