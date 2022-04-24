@@ -7,7 +7,7 @@
 		exports["docx"] = factory(require("jszip"));
 	else
 		root["docx"] = factory(root["JSZip"]);
-})(self, (__WEBPACK_EXTERNAL_MODULE_jszip__) => {
+})(globalThis, (__WEBPACK_EXTERNAL_MODULE_jszip__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
