@@ -551,8 +551,11 @@ class DocumentParser {
     parseHyperlink(node, parent) {
         var result = { type: dom_1.DomType.Hyperlink, parent: parent, children: [] };
         var anchor = xml_parser_1.default.attr(node, "anchor");
+        var relId = xml_parser_1.default.attr(node, "id");
         if (anchor)
             result.href = "#" + anchor;
+        if (relId)
+            result.id = relId;
         xmlUtil.foreach(node, c => {
             switch (c.localName) {
                 case "r":
@@ -2691,8 +2694,14 @@ section.${c}>article { margin-bottom: auto; }
         var result = this.createElement("a");
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
-        if (elem.href)
+        if (elem.href) {
             result.href = elem.href;
+        }
+        else if (elem.id) {
+            const rel = this.document.documentPart.rels
+                .find(it => it.id == elem.id && it.targetMode === "External");
+            result.href = rel === null || rel === void 0 ? void 0 : rel.target;
+        }
         return result;
     }
     renderDrawing(elem) {

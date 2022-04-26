@@ -4,7 +4,7 @@ export interface Relationship {
     id: string,
     type: RelationshipTypes | string,
     target: string
-    targetMode: "" | string 
+    targetMode: "" | "External" | string 
 }
 
 export enum RelationshipTypes {

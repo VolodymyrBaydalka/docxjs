@@ -490,9 +490,13 @@ export class DocumentParser {
     parseHyperlink(node: Element, parent?: OpenXmlElement): WmlHyperlink {
         var result: WmlHyperlink = <WmlHyperlink>{ type: DomType.Hyperlink, parent: parent, children: [] };
         var anchor = xml.attr(node, "anchor");
+		var relId = xml.attr(node, "id");
 
         if (anchor)
             result.href = "#" + anchor;
+
+		if (relId)
+			result.id = relId;
 
         xmlUtil.foreach(node, c => {
             switch (c.localName) {

@@ -752,8 +752,13 @@ section.${c}>article { margin-bottom: auto; }
 		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
-		if (elem.href)
-			result.href = elem.href
+		if (elem.href) {
+			result.href = elem.href;
+		} else if(elem.id) {
+			const rel = this.document.documentPart.rels
+				.find(it => it.id == elem.id && it.targetMode === "External");
+			result.href = rel?.target;
+		}
 
 		return result;
 	}
