@@ -4,7 +4,8 @@ export const ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
     drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
     picture: "http://schemas.openxmlformats.org/drawingml/2006/picture",
-	compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006"
+	compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006",
+	math: "http://schemas.openxmlformats.org/officeDocument/2006/math"
 }
 
 export type LengthType = "px" | "pt" | "%";

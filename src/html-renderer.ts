@@ -7,7 +7,7 @@ import { Length, CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
-import { escapeClassName, keyBy, mergeDeep } from './utils';
+import { escapeClassName, isString, keyBy, mergeDeep } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -19,6 +19,12 @@ import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import { VmlShape } from './document/vector';
+import mathMLCSS from "./mathml.scss";
+
+const ns = {
+	svg: "http://www.w3.org/2000/svg",
+	mathML: "http://www.w3.org/1998/Math/MathML"
+}
 
 interface CellPos {
 	col: number;
@@ -66,6 +72,11 @@ export class HtmlRenderer {
 
 		appendComment(styleContainer, "docxjs library predefined styles");
 		styleContainer.appendChild(this.renderDefaultStyle());
+
+		if (!window.MathMLElement && options.useMathMLPolyfill) {
+			appendComment(styleContainer, "docxjs mathml polyfill styles");
+			styleContainer.appendChild(createStyleElement(mathMLCSS));
+		} 
 
 		if (document.themePart) {
 			appendComment(styleContainer, "docxjs document theme values");
@@ -684,6 +695,46 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.VmlShape:
 				return this.renderVmlShape(elem as VmlShape);
+
+			case DomType.MmlMath:
+				return this.renderContainerNS(elem, ns.mathML, "math", { xmlns: ns.mathML });
+	
+			case DomType.MmlMathParagraph:
+				return this.renderContainer(elem, "span");
+
+			case DomType.MmlFraction:
+				return this.renderContainerNS(elem, ns.mathML, "mfrac");
+
+			case DomType.MmlNumerator:
+			case DomType.MmlDenominator:
+				return this.renderContainerNS(elem, ns.mathML, "mrow");
+
+			case DomType.MmlRadical:
+				return this.renderMmlRadical(elem);
+
+			case DomType.MmlDegree:
+				return this.renderContainerNS(elem, ns.mathML, "mn");
+
+			case DomType.MmlSuperscript:
+				return this.renderContainerNS(elem, ns.mathML, "msup");
+
+			case DomType.MmlSubscript:
+				return this.renderContainerNS(elem, ns.mathML, "msub");
+	
+			case DomType.MmlBase:
+				return this.renderContainerNS(elem, ns.mathML, "mrow");
+
+			case DomType.MmlSuperArgument:
+				return this.renderContainerNS(elem, ns.mathML, "mn");
+
+			case DomType.MmlSubArgument:
+				return this.renderContainerNS(elem, ns.mathML, "mn");
+
+			case DomType.MmlDelimiter:
+				return this.renderMmlDelimiter(elem);
+
+			case DomType.MmlNary:
+				return this.renderMmlNary(elem);
 		}
 
 		return null;
@@ -705,8 +756,12 @@ section.${c}>article { margin-bottom: auto; }
 		return result;
 	}
 
-	renderContainer(elem: OpenXmlElement, tagName: keyof HTMLElementTagNameMap) {
-		return this.createElement(tagName, null, this.renderChildren(elem));
+	renderContainer(elem: OpenXmlElement, tagName: keyof HTMLElementTagNameMap, props?: Record<string, any>) {
+		return this.createElement(tagName, props, this.renderChildren(elem));
+	}
+
+	renderContainerNS(elem: OpenXmlElement, ns: string, tagName: string, props?: Record<string, any>) {
+		return createElementNS(ns, tagName, props, this.renderChildren(elem));
 	}
 
 	renderParagraph(elem: WmlParagraph) {
@@ -974,6 +1029,55 @@ section.${c}>article { margin-bottom: auto; }
 		}
 	}
 
+	renderMmlRadical(elem: OpenXmlElement): HTMLElement {
+		const base = elem.children.find(el => el.type == DomType.MmlBase);
+
+		if (elem.props?.hideDegree) {
+			return createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
+		}
+
+		const degree = elem.children.find(el => el.type == DomType.MmlDegree);
+		return createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
+	}
+
+	renderMmlDelimiter(elem: OpenXmlElement): HTMLElement {		
+		const children = [];
+
+		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
+		children.push(...this.renderElements(elem.children));
+		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
+
+		return createElementNS(ns.mathML, "mrow", null, children);
+	}
+
+	renderMmlNary(elem: OpenXmlElement): HTMLElement {		
+		const children = [];
+		const grouped = keyBy(elem.children, x => x.type);
+
+		const sup = grouped[DomType.MmlSuperArgument];
+		const sub = grouped[DomType.MmlSubArgument];
+		const supElem = sup ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sup)]) : null;
+		const subElem = sub ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sub)]) : null;
+
+		if (elem.props?.char) {
+			const charElem = createElementNS(ns.mathML, "mo", null, [elem.props.char]);
+
+			if (supElem || subElem) {
+				children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
+			} else if(supElem) {
+				children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
+			} else if(subElem) {
+				children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+			} else {
+				children.push(charElem);
+			}
+		}
+
+		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
+
+		return createElementNS(ns.mathML, "mrow", null, children);
+	}
+
 	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
 		Object.assign(ouput.style, style);
 	}
@@ -1061,11 +1165,12 @@ section.${c}>article { margin-bottom: auto; }
 	createElement = createElement;
 }
 
+type ChildType = Node | string;
 
 function createElement<T extends keyof HTMLElementTagNameMap>(
 	tagName: T,
 	props?: Partial<Record<keyof HTMLElementTagNameMap[T], any>>,
-	children?: Node[]
+	children?: ChildType[]
 ): HTMLElementTagNameMap[T] {
 	return createElementNS(undefined, tagName, props, children);
 }
@@ -1073,12 +1178,12 @@ function createElement<T extends keyof HTMLElementTagNameMap>(
 function createSvgElement<T extends keyof SVGElementTagNameMap>(
 	tagName: T,
 	props?: Partial<Record<keyof SVGElementTagNameMap[T], any>>,
-	children?: Node[]
+	children?: ChildType[]
 ): SVGElementTagNameMap[T] {
-	return createElementNS("http://www.w3.org/2000/svg", tagName, props, children);
+	return createElementNS(ns.svg, tagName, props, children);
 }
 
-function createElementNS(ns: string, tagName: string, props?: Partial<Record<any, any>>, children?: Node[]): any {
+function createElementNS(ns: string, tagName: string, props?: Partial<Record<any, any>>, children?: ChildType[]): any {
 	var result = ns ? document.createElementNS(ns, tagName) : document.createElement(tagName);
 	Object.assign(result, props);
 	children && appendChildren(result, children);
@@ -1089,8 +1194,8 @@ function removeAllElements(elem: HTMLElement) {
 	elem.innerHTML = '';
 }
 
-function appendChildren(elem: Element, children: Node[]) {
-	children.forEach(c => elem.appendChild(c));
+function appendChildren(elem: Element, children: (Node | string)[]) {
+	children.forEach(c => elem.appendChild(isString(c) ? document.createTextNode(c) : c));
 }
 
 function createStyleElement(cssText: string) {

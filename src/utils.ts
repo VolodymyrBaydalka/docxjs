@@ -36,7 +36,11 @@ export function blobToBase64(blob: Blob): any {
 }
 
 export function isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
+    return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+export function isString(item: unknown): item is string {
+    return item && typeof item === 'string' || item instanceof String;
 }
 
 export function mergeDeep(target, ...sources) {

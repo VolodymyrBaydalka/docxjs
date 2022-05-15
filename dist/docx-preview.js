@@ -12,6 +12,217 @@ return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./src/mathml.scss":
+/*!*************************!*\
+  !*** ./src/mathml.scss ***!
+  \*************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../node_modules/css-loader/dist/runtime/sourceMaps.js */ "./node_modules/css-loader/dist/runtime/sourceMaps.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../node_modules/css-loader/dist/runtime/getUrl.js */ "./node_modules/css-loader/dist/runtime/getUrl.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2__);
+// Imports
+
+
+
+var ___CSS_LOADER_URL_IMPORT_0___ = new URL(/* asset import */ __webpack_require__(/*! data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 100%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27m0,75 l5,0 l5,25 l10,-100%27 stroke=%27black%27 fill=%27none%27 vector-effect=%27non-scaling-stroke%27/%3E%3C/svg%3E */ "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 100%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27m0,75 l5,0 l5,25 l10,-100%27 stroke=%27black%27 fill=%27none%27 vector-effect=%27non-scaling-stroke%27/%3E%3C/svg%3E"), __webpack_require__.b);
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
+var ___CSS_LOADER_URL_REPLACEMENT_0___ = _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2___default()(___CSS_LOADER_URL_IMPORT_0___);
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\r\n\r\nmath {\r\n    display: inline-block;\r\n    line-height: initial;\r\n}\r\n\r\nmfrac {\r\n    display: inline-block;\r\n    vertical-align: -50%;\r\n    text-align: center;\r\n\r\n    &>:first-child {\r\n        border-bottom: solid thin currentColor;\r\n    }\r\n\r\n    &>* {\r\n        display: block;\r\n    }\r\n}\r\n\r\nmsub {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: sub;\r\n    }\r\n}\r\n\r\nmsup {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: super;\r\n    }\r\n}\r\n\r\nmunder, mover, munderover {\r\n    display: inline-flex;\r\n    flex-flow: column nowrap;\r\n    vertical-align: middle;\r\n    text-align: center;\r\n\r\n    &>:not(:first-child) {\r\n        font-size: smaller;\r\n    }\r\n}\r\n\r\nmunderover {\r\n    &>:last-child { order: -1; }\r\n}\r\n\r\nmroot, msqrt {\r\n    position: relative;\r\n    display: inline-block;\r\n    border-top: solid thin currentColor;  \r\n    margin-top: 0.5px;\r\n    vertical-align: middle;  \r\n    margin-left: 1ch; \r\n\r\n    &:before {\r\n        content: \"\";\r\n        display: inline-block;\r\n        position: absolute;\r\n        width: 1ch;\r\n        left: -1ch;\r\n        top: -1px;\r\n        bottom: 0;\r\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\r\n    }\r\n}"],"sourceRoot":""}]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___.toString());
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/runtime/api.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/css-loader/dist/runtime/api.js ***!
+  \*****************************************************/
+/***/ ((module) => {
+
+
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+*/
+module.exports = function (cssWithMappingToString) {
+  var list = []; // return the list of modules as css string
+
+  list.toString = function toString() {
+    return this.map(function (item) {
+      var content = "";
+      var needLayer = typeof item[5] !== "undefined";
+
+      if (item[4]) {
+        content += "@supports (".concat(item[4], ") {");
+      }
+
+      if (item[2]) {
+        content += "@media ".concat(item[2], " {");
+      }
+
+      if (needLayer) {
+        content += "@layer".concat(item[5].length > 0 ? " ".concat(item[5]) : "", " {");
+      }
+
+      content += cssWithMappingToString(item);
+
+      if (needLayer) {
+        content += "}";
+      }
+
+      if (item[2]) {
+        content += "}";
+      }
+
+      if (item[4]) {
+        content += "}";
+      }
+
+      return content;
+    }).join("");
+  }; // import a list of modules into the list
+
+
+  list.i = function i(modules, media, dedupe, supports, layer) {
+    if (typeof modules === "string") {
+      modules = [[null, modules, undefined]];
+    }
+
+    var alreadyImportedModules = {};
+
+    if (dedupe) {
+      for (var k = 0; k < this.length; k++) {
+        var id = this[k][0];
+
+        if (id != null) {
+          alreadyImportedModules[id] = true;
+        }
+      }
+    }
+
+    for (var _k = 0; _k < modules.length; _k++) {
+      var item = [].concat(modules[_k]);
+
+      if (dedupe && alreadyImportedModules[item[0]]) {
+        continue;
+      }
+
+      if (typeof layer !== "undefined") {
+        if (typeof item[5] === "undefined") {
+          item[5] = layer;
+        } else {
+          item[1] = "@layer".concat(item[5].length > 0 ? " ".concat(item[5]) : "", " {").concat(item[1], "}");
+          item[5] = layer;
+        }
+      }
+
+      if (media) {
+        if (!item[2]) {
+          item[2] = media;
+        } else {
+          item[1] = "@media ".concat(item[2], " {").concat(item[1], "}");
+          item[2] = media;
+        }
+      }
+
+      if (supports) {
+        if (!item[4]) {
+          item[4] = "".concat(supports);
+        } else {
+          item[1] = "@supports (".concat(item[4], ") {").concat(item[1], "}");
+          item[4] = supports;
+        }
+      }
+
+      list.push(item);
+    }
+  };
+
+  return list;
+};
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/runtime/getUrl.js":
+/*!********************************************************!*\
+  !*** ./node_modules/css-loader/dist/runtime/getUrl.js ***!
+  \********************************************************/
+/***/ ((module) => {
+
+
+
+module.exports = function (url, options) {
+  if (!options) {
+    options = {};
+  }
+
+  if (!url) {
+    return url;
+  }
+
+  url = String(url.__esModule ? url.default : url); // If url is already wrapped in quotes, remove them
+
+  if (/^['"].*['"]$/.test(url)) {
+    url = url.slice(1, -1);
+  }
+
+  if (options.hash) {
+    url += options.hash;
+  } // Should url be wrapped?
+  // See https://drafts.csswg.org/css-values-3/#urls
+
+
+  if (/["'() \t\n]|(%20)/.test(url) || options.needQuotes) {
+    return "\"".concat(url.replace(/"/g, '\\"').replace(/\n/g, "\\n"), "\"");
+  }
+
+  return url;
+};
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/runtime/sourceMaps.js":
+/*!************************************************************!*\
+  !*** ./node_modules/css-loader/dist/runtime/sourceMaps.js ***!
+  \************************************************************/
+/***/ ((module) => {
+
+
+
+module.exports = function (item) {
+  var content = item[1];
+  var cssMapping = item[3];
+
+  if (!cssMapping) {
+    return content;
+  }
+
+  if (typeof btoa === "function") {
+    var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(cssMapping))));
+    var data = "sourceMappingURL=data:application/json;charset=utf-8;base64,".concat(base64);
+    var sourceMapping = "/*# ".concat(data, " */");
+    var sourceURLs = cssMapping.sources.map(function (source) {
+      return "/*# sourceURL=".concat(cssMapping.sourceRoot || "").concat(source, " */");
+    });
+    return [content].concat(sourceURLs).concat([sourceMapping]).join("\n");
+  }
+
+  return [content].join("\n");
+};
+
+/***/ }),
+
 /***/ "./src/common/open-xml-package.ts":
 /*!****************************************!*\
   !*** ./src/common/open-xml-package.ts ***!
@@ -171,6 +382,22 @@ exports.autos = {
     color: "black",
     borderColor: "black",
     highlight: "transparent"
+};
+const mmlTagMap = {
+    "oMath": dom_1.DomType.MmlMath,
+    "oMathPara": dom_1.DomType.MmlMathParagraph,
+    "f": dom_1.DomType.MmlFraction,
+    "num": dom_1.DomType.MmlNumerator,
+    "den": dom_1.DomType.MmlDenominator,
+    "rad": dom_1.DomType.MmlRadical,
+    "deg": dom_1.DomType.MmlDegree,
+    "e": dom_1.DomType.MmlBase,
+    "sSup": dom_1.DomType.MmlSuperscript,
+    "sSub": dom_1.DomType.MmlSubscript,
+    "sup": dom_1.DomType.MmlSuperArgument,
+    "sub": dom_1.DomType.MmlSubArgument,
+    "d": dom_1.DomType.MmlDelimiter,
+    "nary": dom_1.DomType.MmlNary
 };
 class DocumentParser {
     constructor(options) {
@@ -514,6 +741,10 @@ class DocumentParser {
                 case "bookmarkEnd":
                     result.children.push((0, bookmarks_1.parseBookmarkEnd)(c, xml_parser_1.default));
                     break;
+                case "oMath":
+                case "oMathPara":
+                    result.children.push(this.parseMathElement(c));
+                    break;
                 case "pPr":
                     this.parseParagraphProperties(c, result);
                     break;
@@ -649,6 +880,43 @@ class DocumentParser {
                     break;
             }
         });
+        return result;
+    }
+    parseMathElement(elem) {
+        const propsTag = `${elem.localName}Pr`;
+        const result = { type: mmlTagMap[elem.localName], children: [] };
+        for (const el of xml_parser_1.default.elements(elem)) {
+            const childType = mmlTagMap[el.localName];
+            if (childType) {
+                result.children.push(this.parseMathElement(el));
+            }
+            else if (el.localName == "r") {
+                result.children.push(this.parseRun(el));
+            }
+            else if (el.localName == propsTag) {
+                result.props = this.parseMathProperies(el);
+            }
+        }
+        return result;
+    }
+    parseMathProperies(elem) {
+        const result = {};
+        for (const el of xml_parser_1.default.elements(elem)) {
+            switch (el.localName) {
+                case "chr":
+                    result.char = xml_parser_1.default.attr(el, "val");
+                    break;
+                case "degHide":
+                    result.hideDegree = xml_parser_1.default.boolAttr(el, "val");
+                    break;
+                case "begChr":
+                    result.beginChar = xml_parser_1.default.attr(el, "val");
+                    break;
+                case "endChr":
+                    result.endChar = xml_parser_1.default.attr(el, "val");
+                    break;
+            }
+        }
         return result;
     }
     parseRunProperties(elem, run) {
@@ -1618,7 +1886,8 @@ exports.ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
     drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
     picture: "http://schemas.openxmlformats.org/drawingml/2006/picture",
-    compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006",
+    math: "http://schemas.openxmlformats.org/officeDocument/2006/math"
 };
 exports.LengthUsage = {
     Dxa: { mul: 0.05, unit: "pt" },
@@ -1735,6 +2004,20 @@ var DomType;
     DomType["Instruction"] = "instruction";
     DomType["VmlPicture"] = "vmlPicture";
     DomType["VmlShape"] = "vmlShape";
+    DomType["MmlMath"] = "mmlMath";
+    DomType["MmlMathParagraph"] = "mmlMathParagraph";
+    DomType["MmlFraction"] = "mmlFraction";
+    DomType["MmlNumerator"] = "mmlNumerator";
+    DomType["MmlDenominator"] = "mmlDenominator";
+    DomType["MmlRadical"] = "mmlRadical";
+    DomType["MmlBase"] = "mmlBase";
+    DomType["MmlDegree"] = "mmlDegree";
+    DomType["MmlSuperscript"] = "mmlSuperscript";
+    DomType["MmlSubscript"] = "mmlSubscript";
+    DomType["MmlSubArgument"] = "mmlSubArgument";
+    DomType["MmlSuperArgument"] = "mmlSuperArgument";
+    DomType["MmlNary"] = "mmlNary";
+    DomType["MmlDelimiter"] = "mmlDelimiter";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -2012,7 +2295,8 @@ exports.defaultOptions = {
     renderFooters: true,
     renderFootnotes: true,
     renderEndnotes: true,
-    useBase64URL: false
+    useBase64URL: false,
+    useMathMLPolyfill: false
 };
 function praseAsync(data, userOptions = null) {
     const ops = Object.assign(Object.assign({}, exports.defaultOptions), userOptions);
@@ -2190,6 +2474,11 @@ exports.HtmlRenderer = void 0;
 const dom_1 = __webpack_require__(/*! ./document/dom */ "./src/document/dom.ts");
 const utils_1 = __webpack_require__(/*! ./utils */ "./src/utils.ts");
 const javascript_1 = __webpack_require__(/*! ./javascript */ "./src/javascript.ts");
+const mathml_scss_1 = __webpack_require__(/*! ./mathml.scss */ "./src/mathml.scss");
+const ns = {
+    svg: "http://www.w3.org/2000/svg",
+    mathML: "http://www.w3.org/1998/Math/MathML"
+};
 class HtmlRenderer {
     constructor(htmlDocument) {
         this.htmlDocument = htmlDocument;
@@ -2219,6 +2508,10 @@ class HtmlRenderer {
         removeAllElements(bodyContainer);
         appendComment(styleContainer, "docxjs library predefined styles");
         styleContainer.appendChild(this.renderDefaultStyle());
+        if (!window.MathMLElement && options.useMathMLPolyfill) {
+            appendComment(styleContainer, "docxjs mathml polyfill styles");
+            styleContainer.appendChild(createStyleElement(mathml_scss_1.default));
+        }
         if (document.themePart) {
             appendComment(styleContainer, "docxjs document theme values");
             this.renderTheme(document.themePart, styleContainer);
@@ -2645,6 +2938,33 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderVmlPicture(elem);
             case dom_1.DomType.VmlShape:
                 return this.renderVmlShape(elem);
+            case dom_1.DomType.MmlMath:
+                return this.renderContainerNS(elem, ns.mathML, "math", { xmlns: ns.mathML });
+            case dom_1.DomType.MmlMathParagraph:
+                return this.renderContainer(elem, "span");
+            case dom_1.DomType.MmlFraction:
+                return this.renderContainerNS(elem, ns.mathML, "mfrac");
+            case dom_1.DomType.MmlNumerator:
+            case dom_1.DomType.MmlDenominator:
+                return this.renderContainerNS(elem, ns.mathML, "mrow");
+            case dom_1.DomType.MmlRadical:
+                return this.renderMmlRadical(elem);
+            case dom_1.DomType.MmlDegree:
+                return this.renderContainerNS(elem, ns.mathML, "mn");
+            case dom_1.DomType.MmlSuperscript:
+                return this.renderContainerNS(elem, ns.mathML, "msup");
+            case dom_1.DomType.MmlSubscript:
+                return this.renderContainerNS(elem, ns.mathML, "msub");
+            case dom_1.DomType.MmlBase:
+                return this.renderContainerNS(elem, ns.mathML, "mrow");
+            case dom_1.DomType.MmlSuperArgument:
+                return this.renderContainerNS(elem, ns.mathML, "mn");
+            case dom_1.DomType.MmlSubArgument:
+                return this.renderContainerNS(elem, ns.mathML, "mn");
+            case dom_1.DomType.MmlDelimiter:
+                return this.renderMmlDelimiter(elem);
+            case dom_1.DomType.MmlNary:
+                return this.renderMmlNary(elem);
         }
         return null;
     }
@@ -2659,8 +2979,11 @@ section.${c}>article { margin-bottom: auto; }
             appendChildren(into, result);
         return result;
     }
-    renderContainer(elem, tagName) {
-        return this.createElement(tagName, null, this.renderChildren(elem));
+    renderContainer(elem, tagName, props) {
+        return this.createElement(tagName, props, this.renderChildren(elem));
+    }
+    renderContainerNS(elem, ns, tagName, props) {
+        return createElementNS(ns, tagName, props, this.renderChildren(elem));
     }
     renderParagraph(elem) {
         var _a, _b, _c, _d;
@@ -2861,6 +3184,49 @@ section.${c}>article { margin-bottom: auto; }
             return image;
         }
     }
+    renderMmlRadical(elem) {
+        var _a;
+        const base = elem.children.find(el => el.type == dom_1.DomType.MmlBase);
+        if ((_a = elem.props) === null || _a === void 0 ? void 0 : _a.hideDegree) {
+            return createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
+        }
+        const degree = elem.children.find(el => el.type == dom_1.DomType.MmlDegree);
+        return createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
+    }
+    renderMmlDelimiter(elem) {
+        var _a, _b;
+        const children = [];
+        children.push(createElementNS(ns.mathML, "mo", null, [(_a = elem.props.beginChar) !== null && _a !== void 0 ? _a : '(']));
+        children.push(...this.renderElements(elem.children));
+        children.push(createElementNS(ns.mathML, "mo", null, [(_b = elem.props.endChar) !== null && _b !== void 0 ? _b : ')']));
+        return createElementNS(ns.mathML, "mrow", null, children);
+    }
+    renderMmlNary(elem) {
+        var _a;
+        const children = [];
+        const grouped = (0, utils_1.keyBy)(elem.children, x => x.type);
+        const sup = grouped[dom_1.DomType.MmlSuperArgument];
+        const sub = grouped[dom_1.DomType.MmlSubArgument];
+        const supElem = sup ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sup)]) : null;
+        const subElem = sub ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sub)]) : null;
+        if ((_a = elem.props) === null || _a === void 0 ? void 0 : _a.char) {
+            const charElem = createElementNS(ns.mathML, "mo", null, [elem.props.char]);
+            if (supElem || subElem) {
+                children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
+            }
+            else if (supElem) {
+                children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
+            }
+            else if (subElem) {
+                children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+            }
+            else {
+                children.push(charElem);
+            }
+        }
+        children.push(...this.renderElements(grouped[dom_1.DomType.MmlBase].children));
+        return createElementNS(ns.mathML, "mrow", null, children);
+    }
     renderStyleValues(style, ouput) {
         Object.assign(ouput.style, style);
     }
@@ -2933,7 +3299,7 @@ function createElement(tagName, props, children) {
     return createElementNS(undefined, tagName, props, children);
 }
 function createSvgElement(tagName, props, children) {
-    return createElementNS("http://www.w3.org/2000/svg", tagName, props, children);
+    return createElementNS(ns.svg, tagName, props, children);
 }
 function createElementNS(ns, tagName, props, children) {
     var result = ns ? document.createElementNS(ns, tagName) : document.createElement(tagName);
@@ -2945,7 +3311,7 @@ function removeAllElements(elem) {
     elem.innerHTML = '';
 }
 function appendChildren(elem, children) {
-    children.forEach(c => elem.appendChild(c));
+    children.forEach(c => elem.appendChild((0, utils_1.isString)(c) ? document.createTextNode(c) : c));
 }
 function createStyleElement(cssText) {
     return createElement("style", { innerHTML: cssText });
@@ -3592,7 +3958,7 @@ exports.parseFontInfo = parseFontInfo;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeDeep = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
+exports.mergeDeep = exports.isString = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
 function escapeClassName(className) {
     return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
 }
@@ -3631,9 +3997,13 @@ function blobToBase64(blob) {
 }
 exports.blobToBase64 = blobToBase64;
 function isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
+    return item && typeof item === 'object' && !Array.isArray(item);
 }
 exports.isObject = isObject;
+function isString(item) {
+    return item && typeof item === 'string' || item instanceof String;
+}
+exports.isString = isString;
 function mergeDeep(target, ...sources) {
     var _a;
     if (!sources.length)
@@ -3825,6 +4195,16 @@ exports.deobfuscate = deobfuscate;
 
 /***/ }),
 
+/***/ "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 100%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27m0,75 l5,0 l5,25 l10,-100%27 stroke=%27black%27 fill=%27none%27 vector-effect=%27non-scaling-stroke%27/%3E%3C/svg%3E":
+/*!********************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 100%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27m0,75 l5,0 l5,25 l10,-100%27 stroke=%27black%27 fill=%27none%27 vector-effect=%27non-scaling-stroke%27/%3E%3C/svg%3E ***!
+  \********************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module) => {
+
+module.exports = "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 100%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27m0,75 l5,0 l5,25 l10,-100%27 stroke=%27black%27 fill=%27none%27 vector-effect=%27non-scaling-stroke%27/%3E%3C/svg%3E";
+
+/***/ }),
+
 /***/ "jszip":
 /*!**************************************************************************************!*\
   !*** external {"root":"JSZip","commonjs":"jszip","commonjs2":"jszip","amd":"jszip"} ***!
@@ -3849,7 +4229,7 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
+/******/ 			id: moduleId,
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
@@ -3860,6 +4240,76 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		__webpack_require__.b = document.baseURI || self.location.href;
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"docx-preview": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		// no jsonp function
+/******/ 	})();
 /******/ 	
 /************************************************************************/
 /******/ 	

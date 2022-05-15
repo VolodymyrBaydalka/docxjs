@@ -25,13 +25,28 @@ export enum DomType {
     ComplexField = "complexField",
     Instruction = "instruction",
 	VmlPicture = "vmlPicture",
-	VmlShape = "vmlShape"
+	VmlShape = "vmlShape",
+	MmlMath = "mmlMath",
+	MmlMathParagraph = "mmlMathParagraph",
+	MmlFraction = "mmlFraction",
+	MmlNumerator = "mmlNumerator",
+	MmlDenominator = "mmlDenominator",
+	MmlRadical = "mmlRadical",
+	MmlBase = "mmlBase",
+	MmlDegree = "mmlDegree",
+	MmlSuperscript = "mmlSuperscript",
+	MmlSubscript = "mmlSubscript",
+	MmlSubArgument = "mmlSubArgument",
+	MmlSuperArgument = "mmlSuperArgument",
+	MmlNary = "mmlNary",
+	MmlDelimiter = "mmlDelimiter"
 }
 
 export interface OpenXmlElement {
     type: DomType;
     children?: OpenXmlElement[];
     cssStyle?: Record<string, string>;
+    props?: Record<string, any>;
     
 	styleName?: string; //style name
 	className?: string; //class mods

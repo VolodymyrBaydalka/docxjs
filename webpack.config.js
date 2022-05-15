@@ -28,7 +28,14 @@ function buildConfig(prod) {
           use: [{
             loader: 'ts-loader'
           }]
-        }
+        },
+        {
+          test: /\.s[ac]ss$/i,
+          use: [
+            { loader: "css-loader", options: { exportType: "string" } },
+            { loader: "sass-loader" },
+          ],
+        },
       ]
     },
     resolve: {
