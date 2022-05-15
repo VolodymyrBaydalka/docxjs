@@ -49,6 +49,12 @@ renderAsync(
     }
     ): Promise<any>
 ```
+Thumbnails, TOC and etc.
+------
+Thumbnails is added only for example and it's not part of library. Library renders DOCX into HTML, so it can't be efficiently used for thumbnails. 
+
+Table of contents is built using the TOC fields and there is no efficient way to get table of contents at this point, since fields is not supported yet (http://officeopenxml.com/WPtableOfContents.php)
+
 Status and stability
 ------
-So far I can't come up with final approach of parsing documents and final structure of API. Main development is moved to **next** branch. Only **renderAsync** function is stable and definition shouldn't be changed in future. Inner implementation of parsing and rendering may be changed at any point of time.
+So far I can't come up with final approach of parsing documents and final structure of API. Only **renderAsync** function is stable and definition shouldn't be changed in future. Inner implementation of parsing and rendering may be changed at any point of time.

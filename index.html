@@ -14,6 +14,9 @@
     <script crossorigin src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
     <!--library-->
     <script src="dist/docx-preview.js"></script>
+    <!--thumbnail example-->
+    <script src="./demo/thumbnail.example.js"></script>
+    <link href="./demo/thumbnail.example.css" rel="stylesheet">
 </head>
 
 <body class="vh-100 d-flex flex-column">
@@ -21,7 +24,7 @@
         <a class="mx-auto p-2 text-white" href="https://war.ukraine.ua">Support Ukraine 🇺🇦</a>
     </div>
 
-    <div class="hstack p-2 gap-2 bg-light position-sticky top-0" style="z-index: 1;">
+    <div class="hstack p-2 gap-2 bg-light">
         <input id="files" type="file" class="form-control" style="width: 50ch;" accept=".docx" />
         <button id="loadButton" class="btn btn-primary px-4">Load</button>
         <div class="dropdown">
@@ -34,7 +37,12 @@
         </div>
     </div>
 
-    <div id="document-container" class="flex-grow-1 overflow-auto">
+    <div class="flex-grow-1 d-flex flex-row" style="height: 0;">
+        <details class="docx-thumbnails h-100">
+            <summary></summary>
+            <div id="thumbnails-container" class="docx-thumbnails-container"></div>
+        </details>
+        <div id="document-container" class="overflow-auto flex-grow-1 h-100"></div>
     </div>
 
     <script>
@@ -54,7 +62,10 @@
                 return;
 
             docx.renderAsync(currentDocument, container, null, docxOptions)
-                .then((x) => console.log(x));
+                .then((x) => {
+                    renderThumbnails(container, document.querySelector("#thumbnails-container"));
+                    console.log(x);
+                });
         }
         
         document.querySelector("#loadButton").addEventListener("click", ev => {

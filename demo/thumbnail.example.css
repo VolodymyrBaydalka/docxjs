@@ -1,0 +1,52 @@
+details.docx-thumbnails {
+    position: relative;
+    background-color: rgb(101, 101, 101);
+    border-right: 1px solid black;
+    min-width: 1rem;
+}
+
+details.docx-thumbnails[open] {
+    min-width: 120px;
+}
+
+details.docx-thumbnails summary {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 1rem;
+    padding-left: 3px;
+}
+
+details.docx-thumbnails summary:hover {
+    background-color: rgb(0 0 0 / 50%);
+}
+
+details.docx-thumbnails summary::marker {
+    color: white;
+}
+
+.docx-thumbnails:empty {
+    display: none;
+}
+
+.docx-thumbnails-container {
+    height: 100%;
+    overflow: auto;
+    scrollbar-gutter: stable both-edges;
+    padding: 0.25rem;
+}
+
+.docx-thumbnail-item {
+    display: flex;
+    background-color: white;
+    text-decoration: none;
+    color: black;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    aspect-ratio: 6 / 8;
+    width: 100px;
+    box-shadow: 0 0 10px rgb(0 0 0 / 50%);
+    margin: 1rem;
+}
