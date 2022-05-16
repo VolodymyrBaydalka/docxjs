@@ -4,7 +4,7 @@
 # docxjs
 Docx rendering library
 
-Demo - http://zVolodymyr.github.io/docxjs
+Demo - https://volodymyrbaydalka.github.io/docxjs/
 
 Usage
 -----
