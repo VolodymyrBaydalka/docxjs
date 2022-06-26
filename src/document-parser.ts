@@ -12,7 +12,7 @@ import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmarks';
 import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fields';
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
-import { VmlShape } from './document/vector';
+import { parseVmlElement } from './vml/vml';
 
 export var autos = {
 	shd: "inherit",
@@ -20,6 +20,8 @@ export var autos = {
 	borderColor: "black",
 	highlight: "transparent"
 };
+
+const supportedNamespaceURIs = [];
 
 const mmlTagMap = {
 	"oMath": DomType.MmlMath,
@@ -535,6 +537,8 @@ export class DocumentParser {
 		var result: WmlRun = <WmlRun>{ type: DomType.Run, parent: parent, children: [] };
 
 		xmlUtil.foreach(node, c => {
+			c = this.checkAlternateContent(c);
+
 			switch (c.localName) {
 				case "t":
 					result.children.push(<WmlText>{
@@ -691,33 +695,28 @@ export class DocumentParser {
 		const result = { type: DomType.VmlPicture, children: [] };
 
 		for (const el of xml.elements(elem)) {
-			switch (el.localName) {
-				case "shape":
-					result.children.push(this.parseVmlShape(el));
-					break;
-			}
+			const child = parseVmlElement(el);
+			child && result.children.push(child);
 		}
 
 		return result;
 	}
 
-	parseVmlShape(elem: Element): OpenXmlElement {
-		const result = <VmlShape>{ type: DomType.VmlShape, children: [] };
+	checkAlternateContent(elem: Element): Element {
+		if (elem.localName != 'AlternateContent')
+			return elem;
 
-		result.cssStyleText = xml.attr(elem, "style");
+		var choice = xml.element(elem, "Choice");
 
-		for (const el of xml.elements(elem)) {
-			switch (el.localName) {
-				case "imagedata":
-					result.imagedata = {
-						id: xml.attr(el, "id"),
-						title: xml.attr(el, "title"),
-					}
-					break;
-			}
+		if (choice) {
+			var requires = xml.attr(choice, "Requires");
+			var namespaceURI = elem.lookupNamespaceURI(requires);
+
+			if (supportedNamespaceURIs.includes(namespaceURI))
+				return choice.firstElementChild;
 		}
 
-		return result;
+		return xml.element(elem, "Fallback")?.firstElementChild;
 	}
 
 	parseDrawing(node: Element): OpenXmlElement {

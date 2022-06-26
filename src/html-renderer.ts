@@ -3,7 +3,7 @@ import {
 	DomType, WmlTable, IDomNumbering,
 	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference
 } from './document/dom';
-import { Length, CommonProperties } from './document/common';
+import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
@@ -18,8 +18,8 @@ import { WmlBaseNote, WmlFootnote } from './notes/elements';
 import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
-import { VmlShape } from './document/vector';
 import mathMLCSS from "./mathml.scss";
+import { VmlElement } from './vml/vml';
 
 const ns = {
 	svg: "http://www.w3.org/2000/svg",
@@ -52,7 +52,7 @@ export class HtmlRenderer {
 	currentEndnoteIds: string[] = [];
 	usedHederFooterParts: any[] = [];
 
-	defaultTabSize: Length;
+	defaultTabSize: string;
 	currentTabs: any[] = [];
 	tabsTimeout: any = 0;
 
@@ -693,9 +693,9 @@ section.${c}>article { margin-bottom: auto; }
 			case DomType.VmlPicture:
 				return this.renderVmlPicture(elem);
 
-			case DomType.VmlShape:
-				return this.renderVmlShape(elem as VmlShape);
-
+			case DomType.VmlElement:
+				return this.renderVmlElement(elem as VmlElement);
+	
 			case DomType.MmlMath:
 				return this.renderContainerNS(elem, ns.mathML, "math", { xmlns: ns.mathML });
 	
@@ -1000,33 +1000,34 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderVmlPicture(elem: OpenXmlElement) {
-		var result = createSvgElement("svg");
+		var result = createElement("div");
 		this.renderChildren(elem, result);
-
-		setTimeout(() => {
-			const bb = result.getBBox();
-
-			result.setAttribute("width", `${Math.round(bb.width)}`);
-			result.setAttribute("height", `${Math.round(bb.height)}`);
-		});
-
 		return result;
 	}
 
-	renderVmlShape(elem: VmlShape) {
-		if (elem.imagedata) {
-			const image = createSvgElement("image");
+	renderVmlElement(elem: VmlElement): SVGElement {
+		var container = createSvgElement("svg");
 
-			image.setAttribute("style", elem.cssStyleText);
+		container.setAttribute("style", elem.cssStyleText);
 
-			if (this.document) {
-				this.document.loadDocumentImage(elem.imagedata.id, this.currentPart).then(x => {
-					image.setAttribute("href", x);
-				});
-			}
+		const result = createSvgElement(elem.tagName as any);
+		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
 
-			return image;
+		if (elem.imageHref?.id) {
+			this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
+				.then(x => result.setAttribute("href", x));
 		}
+		
+		container.appendChild(result);
+
+		setTimeout(() => {
+			const bb = (container.firstElementChild as any).getBBox();
+
+			container.setAttribute("width", `${Math.ceil(bb.x +  bb.width)}`);
+			container.setAttribute("height", `${Math.ceil(bb.y + bb.height)}`);
+		}, 0);
+
+		return container;
 	}
 
 	renderMmlRadical(elem: OpenXmlElement): HTMLElement {

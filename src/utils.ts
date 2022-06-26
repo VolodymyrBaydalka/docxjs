@@ -62,3 +62,18 @@ export function mergeDeep(target, ...sources) {
 
     return mergeDeep(target, ...sources);
 }
+
+export function parseCssRules(text: string): Record<string, string> {
+	const result: Record<string, string> = {};
+
+	for (const rule of text.split(';')) {
+		const [key, val] = rule.split(':');
+		result[key] = val;
+	}
+
+	return result
+}
+
+export function formatCssRules(style: Record<string, string>): string {
+	return Object.entries(style).map((k, v) => `${k}: ${v}`).join(';');
+}

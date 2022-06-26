@@ -377,12 +377,14 @@ const xml_parser_1 = __webpack_require__(/*! ./parser/xml-parser */ "./src/parse
 const run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts");
 const bookmarks_1 = __webpack_require__(/*! ./document/bookmarks */ "./src/document/bookmarks.ts");
 const common_1 = __webpack_require__(/*! ./document/common */ "./src/document/common.ts");
+const vml_1 = __webpack_require__(/*! ./vml/vml */ "./src/vml/vml.ts");
 exports.autos = {
     shd: "inherit",
     color: "black",
     borderColor: "black",
     highlight: "transparent"
 };
+const supportedNamespaceURIs = [];
 const mmlTagMap = {
     "oMath": dom_1.DomType.MmlMath,
     "oMathPara": dom_1.DomType.MmlMathParagraph,
@@ -799,6 +801,7 @@ class DocumentParser {
     parseRun(node, parent) {
         var result = { type: dom_1.DomType.Run, parent: parent, children: [] };
         xmlUtil.foreach(node, c => {
+            c = this.checkAlternateContent(c);
             switch (c.localName) {
                 case "t":
                     result.children.push({
@@ -937,28 +940,23 @@ class DocumentParser {
     parseVmlPicture(elem) {
         const result = { type: dom_1.DomType.VmlPicture, children: [] };
         for (const el of xml_parser_1.default.elements(elem)) {
-            switch (el.localName) {
-                case "shape":
-                    result.children.push(this.parseVmlShape(el));
-                    break;
-            }
+            const child = (0, vml_1.parseVmlElement)(el);
+            child && result.children.push(child);
         }
         return result;
     }
-    parseVmlShape(elem) {
-        const result = { type: dom_1.DomType.VmlShape, children: [] };
-        result.cssStyleText = xml_parser_1.default.attr(elem, "style");
-        for (const el of xml_parser_1.default.elements(elem)) {
-            switch (el.localName) {
-                case "imagedata":
-                    result.imagedata = {
-                        id: xml_parser_1.default.attr(el, "id"),
-                        title: xml_parser_1.default.attr(el, "title"),
-                    };
-                    break;
-            }
+    checkAlternateContent(elem) {
+        var _a;
+        if (elem.localName != 'AlternateContent')
+            return elem;
+        var choice = xml_parser_1.default.element(elem, "Choice");
+        if (choice) {
+            var requires = xml_parser_1.default.attr(choice, "Requires");
+            var namespaceURI = elem.lookupNamespaceURI(requires);
+            if (supportedNamespaceURIs.includes(namespaceURI))
+                return choice.firstElementChild;
         }
-        return result;
+        return (_a = xml_parser_1.default.element(elem, "Fallback")) === null || _a === void 0 ? void 0 : _a.firstElementChild;
     }
     parseDrawing(node) {
         for (var n of xml_parser_1.default.elements(node)) {
@@ -1896,14 +1894,14 @@ exports.LengthUsage = {
     Border: { mul: 0.125, unit: "pt" },
     Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
-    LineHeight: { mul: 1 / 240, unit: null }
+    LineHeight: { mul: 1 / 240, unit: "" },
+    VmlEmu: { mul: 1 / 12700, unit: "" },
 };
 function convertLength(val, usage = exports.LengthUsage.Dxa) {
-    var _a;
     if (val == null || /.+(p[xt]|[%])$/.test(val)) {
         return val;
     }
-    return `${(parseInt(val) * usage.mul).toFixed(2)}${(_a = usage.unit) !== null && _a !== void 0 ? _a : ''}`;
+    return `${(parseInt(val) * usage.mul).toFixed(2)}${usage.unit}`;
 }
 exports.convertLength = convertLength;
 function convertBoolean(v, defaultValue = false) {
@@ -2003,7 +2001,6 @@ var DomType;
     DomType["ComplexField"] = "complexField";
     DomType["Instruction"] = "instruction";
     DomType["VmlPicture"] = "vmlPicture";
-    DomType["VmlShape"] = "vmlShape";
     DomType["MmlMath"] = "mmlMath";
     DomType["MmlMathParagraph"] = "mmlMathParagraph";
     DomType["MmlFraction"] = "mmlFraction";
@@ -2018,6 +2015,7 @@ var DomType;
     DomType["MmlSuperArgument"] = "mmlSuperArgument";
     DomType["MmlNary"] = "mmlNary";
     DomType["MmlDelimiter"] = "mmlDelimiter";
+    DomType["VmlElement"] = "vmlElement";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -2936,8 +2934,8 @@ section.${c}>article { margin-bottom: auto; }
                 return this.createElement("wbr");
             case dom_1.DomType.VmlPicture:
                 return this.renderVmlPicture(elem);
-            case dom_1.DomType.VmlShape:
-                return this.renderVmlShape(elem);
+            case dom_1.DomType.VmlElement:
+                return this.renderVmlElement(elem);
             case dom_1.DomType.MmlMath:
                 return this.renderContainerNS(elem, ns.mathML, "math", { xmlns: ns.mathML });
             case dom_1.DomType.MmlMathParagraph:
@@ -3163,26 +3161,26 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
     renderVmlPicture(elem) {
-        var result = createSvgElement("svg");
+        var result = createElement("div");
         this.renderChildren(elem, result);
-        setTimeout(() => {
-            const bb = result.getBBox();
-            result.setAttribute("width", `${Math.round(bb.width)}`);
-            result.setAttribute("height", `${Math.round(bb.height)}`);
-        });
         return result;
     }
-    renderVmlShape(elem) {
-        if (elem.imagedata) {
-            const image = createSvgElement("image");
-            image.setAttribute("style", elem.cssStyleText);
-            if (this.document) {
-                this.document.loadDocumentImage(elem.imagedata.id, this.currentPart).then(x => {
-                    image.setAttribute("href", x);
-                });
-            }
-            return image;
+    renderVmlElement(elem) {
+        var _a, _b;
+        var container = createSvgElement("svg");
+        container.setAttribute("style", elem.cssStyleText);
+        const result = createSvgElement(elem.tagName);
+        Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+        if ((_a = elem.imageHref) === null || _a === void 0 ? void 0 : _a.id) {
+            (_b = this.document) === null || _b === void 0 ? void 0 : _b.loadDocumentImage(elem.imageHref.id, this.currentPart).then(x => result.setAttribute("href", x));
         }
+        container.appendChild(result);
+        setTimeout(() => {
+            const bb = container.firstElementChild.getBBox();
+            container.setAttribute("width", `${Math.ceil(bb.x + bb.width)}`);
+            container.setAttribute("height", `${Math.ceil(bb.y + bb.height)}`);
+        }, 0);
+        return container;
     }
     renderMmlRadical(elem) {
         var _a;
@@ -3717,6 +3715,9 @@ class XmlParser {
         var el = this.element(elem, localName);
         return el ? this.attr(el, attrLocalName) : undefined;
     }
+    attrs(elem) {
+        return Array.from(elem.attributes);
+    }
     attr(elem, localName) {
         for (let i = 0, l = elem.attributes.length; i < l; i++) {
             let a = elem.attributes.item(i);
@@ -3958,7 +3959,7 @@ exports.parseFontInfo = parseFontInfo;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeDeep = exports.isString = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
+exports.formatCssRules = exports.parseCssRules = exports.mergeDeep = exports.isString = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
 function escapeClassName(className) {
     return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
 }
@@ -4023,6 +4024,128 @@ function mergeDeep(target, ...sources) {
     return mergeDeep(target, ...sources);
 }
 exports.mergeDeep = mergeDeep;
+function parseCssRules(text) {
+    const result = {};
+    for (const rule of text.split(';')) {
+        const [key, val] = rule.split(':');
+        result[key] = val;
+    }
+    return result;
+}
+exports.parseCssRules = parseCssRules;
+function formatCssRules(style) {
+    return Object.entries(style).map((k, v) => `${k}: ${v}`).join(';');
+}
+exports.formatCssRules = formatCssRules;
+
+
+/***/ }),
+
+/***/ "./src/vml/vml.ts":
+/*!************************!*\
+  !*** ./src/vml/vml.ts ***!
+  \************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseVmlElement = exports.VmlElement = void 0;
+const common_1 = __webpack_require__(/*! ../document/common */ "./src/document/common.ts");
+const dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
+const xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+class VmlElement {
+    constructor() {
+        this.type = dom_1.DomType.VmlElement;
+        this.attrs = {};
+        this.chidren = [];
+    }
+}
+exports.VmlElement = VmlElement;
+function parseVmlElement(elem) {
+    var result = new VmlElement();
+    switch (elem.localName) {
+        case "rect":
+            result.tagName = "rect";
+            Object.assign(result.attrs, { width: '100%', height: '100%' });
+            break;
+        case "oval":
+            result.tagName = "ellipse";
+            Object.assign(result.attrs, { cx: "50%", cy: "50%", rx: "50%", ry: "50%" });
+            break;
+        case "line":
+            result.tagName = "line";
+            break;
+        case "shape":
+            result.tagName = "g";
+            break;
+        default:
+            return null;
+    }
+    for (const at of xml_parser_1.default.attrs(elem)) {
+        switch (at.localName) {
+            case "style":
+                result.cssStyleText = at.value;
+                break;
+            case "fillcolor":
+                result.attrs.fill = at.value;
+                break;
+            case "from":
+                const [x1, y1] = parsePoint(at.value);
+                Object.assign(result.attrs, { x1, y1 });
+                break;
+            case "to":
+                const [x2, y2] = parsePoint(at.value);
+                Object.assign(result.attrs, { x2, y2 });
+                break;
+        }
+    }
+    for (const el of xml_parser_1.default.elements(elem)) {
+        switch (el.localName) {
+            case "stroke":
+                Object.assign(result.attrs, parseStroke(el));
+                break;
+            case "fill":
+                Object.assign(result.attrs, parseFill(el));
+                break;
+            case "imagedata":
+                result.tagName = "image";
+                Object.assign(result.attrs, { width: '100%', height: '100%' });
+                result.imageHref = {
+                    id: xml_parser_1.default.attr(el, "id"),
+                    title: xml_parser_1.default.attr(el, "title"),
+                };
+                break;
+            default:
+                const child = parseVmlElement(el);
+                child && result.chidren.push(child);
+                break;
+        }
+    }
+    return result;
+}
+exports.parseVmlElement = parseVmlElement;
+function parseStroke(el) {
+    var _a;
+    return {
+        'stroke': xml_parser_1.default.attr(el, "color"),
+        'stroke-width': (_a = xml_parser_1.default.lengthAttr(el, "weight", common_1.LengthUsage.Emu)) !== null && _a !== void 0 ? _a : '1px'
+    };
+}
+function parseFill(el) {
+    return {};
+}
+function parsePoint(val) {
+    return val.split(",");
+}
+function convertPath(path) {
+    return path.replace(/([mlxe])|([-\d]+)|([,])/g, (m) => {
+        if (/[-\d]/.test(m))
+            return (0, common_1.convertLength)(m, common_1.LengthUsage.VmlEmu);
+        if (/[ml,]/.test(m))
+            return m;
+        return '';
+    });
+}
 
 
 /***/ }),

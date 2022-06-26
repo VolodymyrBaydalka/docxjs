@@ -51,6 +51,10 @@ export class XmlParser {
         return el ? this.attr(el, attrLocalName) : undefined;
     }
 
+	attrs(elem: Element) {
+		return Array.from(elem.attributes);
+	}
+
     attr(elem: Element, localName: string): string {
         for (let i = 0, l = elem.attributes.length; i < l; i++) {
             let a = elem.attributes.item(i);
