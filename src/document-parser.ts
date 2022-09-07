@@ -439,6 +439,35 @@ export class DocumentParser {
 		return sdtContent ? this.parseBodyElements(sdtContent) : [];
 	}
 
+	parseSdtContent(node: Element): Element[]{
+		const children = []
+		const sdtContent = xml.element(node, "sdtContent");
+		xmlUtil.foreach(sdtContent, n => {
+			switch (n.localName) {
+				case "r":
+					children.push(n)
+					break;
+				case "ins":
+					children.push(...this.parseIns(n))
+					break;
+			}
+		});
+		return children
+	}
+
+	parseIns(node: Element): Element[]{
+		const children = []
+		xmlUtil.foreach(node, n => {
+			switch (n.localName) {
+				case "r":
+					children.push(n)
+					break;
+			}
+		});
+		return children
+	}
+
+
 	parseParagraph(node: Element): OpenXmlElement {
 		var result = <WmlParagraph>{ type: DomType.Paragraph, children: [] };
 
@@ -468,6 +497,19 @@ export class DocumentParser {
 				case "pPr":
 					this.parseParagraphProperties(c, result);
 					break;
+
+				case "sdt":
+					this.parseSdtContent(c).forEach(r => {
+						result.children.push(this.parseRun(r, result));
+					})
+					break;
+
+				case "ins":
+					this.parseIns(c).forEach(r => {
+						result.children.push(this.parseRun(r, result));
+					})
+					break;
+
 			}
 		});
 
@@ -1193,12 +1235,12 @@ export class DocumentParser {
 				case "tblStyleColBandSize": //TODO
 				case "tblStyleRowBandSize": //TODO
 				case "webHidden": //TODO - maybe web-hidden should be implemented
-				case "pageBreakBefore": //TODO - maybe ignore 
+				case "pageBreakBefore": //TODO - maybe ignore
 				case "suppressLineNumbers": //TODO - maybe ignore
 				case "keepLines": //TODO - maybe ignore
 				case "keepNext": //TODO - maybe ignore
 				case "lang":
-				case "widowControl": //TODO - maybe ignore 
+				case "widowControl": //TODO - maybe ignore
 				case "bidi": //TODO - maybe ignore
 				case "rtl": //TODO - maybe ignore
 				case "noProof": //ignore spellcheck
@@ -1350,7 +1392,7 @@ export class DocumentParser {
 			default:
 				output["height"] = xml.lengthAttr(node, "val");
 				// min-height doesn't work for tr
-				//output["min-height"] = xml.sizeAttr(node, "val");  
+				//output["min-height"] = xml.sizeAttr(node, "val");
 				break;
 		}
 	}
