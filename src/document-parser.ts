@@ -97,7 +97,7 @@ export class DocumentParser {
 	parseBodyElements(element: Element): OpenXmlElement[] {
 		var children = [];
 
-		xmlUtil.foreach(element, elem => {
+		for (let elem of xml.elements(element)) {
 			switch (elem.localName) {
 				case "p":
 					children.push(this.parseParagraph(elem));
@@ -108,10 +108,10 @@ export class DocumentParser {
 					break;
 
 				case "sdt":
-					this.parseSdt(elem).forEach(el => children.push(el));
+					children.push(...this.parseSdt(elem, e => this.parseBodyElements(e)));
 					break;
 			}
-		});
+		}
 
 		return children;
 	}
@@ -434,42 +434,68 @@ export class DocumentParser {
 		return result;
 	}
 
-	parseSdt(node: Element): OpenXmlElement[] {
+	parseSdt(node: Element, parser: Function): OpenXmlElement[] {
 		const sdtContent = xml.element(node, "sdtContent");
-		return sdtContent ? this.parseBodyElements(sdtContent) : [];
+		return sdtContent ? parser(sdtContent) : [];
+	}
+
+	parseInserted(node: Element, parentParser: Function): OpenXmlElement {
+		return <OpenXmlElement>{ 
+			type: DomType.Inserted, 
+			children: parentParser(node)?.children ?? []
+		};
+	}
+
+	parseDeleted(node: Element, parentParser: Function): OpenXmlElement {
+		return <OpenXmlElement>{ 
+			type: DomType.Deleted, 
+			children: parentParser(node)?.children ?? []
+		};
 	}
 
 	parseParagraph(node: Element): OpenXmlElement {
 		var result = <WmlParagraph>{ type: DomType.Paragraph, children: [] };
 
-		xmlUtil.foreach(node, c => {
-			switch (c.localName) {
+		for (let el of xml.elements(node)) {
+			switch (el.localName) {
+				case "pPr":
+					this.parseParagraphProperties(el, result);
+					break;
+
 				case "r":
-					result.children.push(this.parseRun(c, result));
+					result.children.push(this.parseRun(el, result));
 					break;
 
 				case "hyperlink":
-					result.children.push(this.parseHyperlink(c, result));
+					result.children.push(this.parseHyperlink(el, result));
 					break;
 
 				case "bookmarkStart":
-					result.children.push(parseBookmarkStart(c, xml));
+					result.children.push(parseBookmarkStart(el, xml));
 					break;
 
 				case "bookmarkEnd":
-					result.children.push(parseBookmarkEnd(c, xml));
+					result.children.push(parseBookmarkEnd(el, xml));
 					break;
 
 				case "oMath":
 				case "oMathPara":
-					result.children.push(this.parseMathElement(c));
+					result.children.push(this.parseMathElement(el));
 					break;
 
-				case "pPr":
-					this.parseParagraphProperties(c, result);
+				case "sdt":
+					result.children.push(...this.parseSdt(el, e => this.parseParagraph(e).children));
+					break;
+
+				case "ins":
+					result.children.push(this.parseInserted(el, e => this.parseParagraph(e)));
+					break;
+
+				case "del":
+					result.children.push(this.parseDeleted(el, e => this.parseParagraph(e)));
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -545,6 +571,13 @@ export class DocumentParser {
 						type: DomType.Text,
 						text: c.textContent
 					});//.replace(" ", "\u00A0"); // TODO
+					break;
+
+				case "delText":
+					result.children.push(<WmlText>{
+						type: DomType.DeletedText,
+						text: c.textContent
+					});
 					break;
 
 				case "fldSimple":

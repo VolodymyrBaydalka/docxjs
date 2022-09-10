@@ -437,7 +437,7 @@ class DocumentParser {
     }
     parseBodyElements(element) {
         var children = [];
-        xmlUtil.foreach(element, elem => {
+        for (let elem of xml_parser_1.default.elements(element)) {
             switch (elem.localName) {
                 case "p":
                     children.push(this.parseParagraph(elem));
@@ -446,10 +446,10 @@ class DocumentParser {
                     children.push(this.parseTable(elem));
                     break;
                 case "sdt":
-                    this.parseSdt(elem).forEach(el => children.push(el));
+                    children.push(...this.parseSdt(elem, e => this.parseBodyElements(e)));
                     break;
             }
-        });
+        }
         return children;
     }
     parseStylesFile(xstyles) {
@@ -723,35 +723,58 @@ class DocumentParser {
         });
         return result;
     }
-    parseSdt(node) {
+    parseSdt(node, parser) {
         const sdtContent = xml_parser_1.default.element(node, "sdtContent");
-        return sdtContent ? this.parseBodyElements(sdtContent) : [];
+        return sdtContent ? parser(sdtContent) : [];
+    }
+    parseInserted(node, parentParser) {
+        var _a, _b;
+        return {
+            type: dom_1.DomType.Inserted,
+            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : []
+        };
+    }
+    parseDeleted(node, parentParser) {
+        var _a, _b;
+        return {
+            type: dom_1.DomType.Deleted,
+            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : []
+        };
     }
     parseParagraph(node) {
         var result = { type: dom_1.DomType.Paragraph, children: [] };
-        xmlUtil.foreach(node, c => {
-            switch (c.localName) {
+        for (let el of xml_parser_1.default.elements(node)) {
+            switch (el.localName) {
+                case "pPr":
+                    this.parseParagraphProperties(el, result);
+                    break;
                 case "r":
-                    result.children.push(this.parseRun(c, result));
+                    result.children.push(this.parseRun(el, result));
                     break;
                 case "hyperlink":
-                    result.children.push(this.parseHyperlink(c, result));
+                    result.children.push(this.parseHyperlink(el, result));
                     break;
                 case "bookmarkStart":
-                    result.children.push((0, bookmarks_1.parseBookmarkStart)(c, xml_parser_1.default));
+                    result.children.push((0, bookmarks_1.parseBookmarkStart)(el, xml_parser_1.default));
                     break;
                 case "bookmarkEnd":
-                    result.children.push((0, bookmarks_1.parseBookmarkEnd)(c, xml_parser_1.default));
+                    result.children.push((0, bookmarks_1.parseBookmarkEnd)(el, xml_parser_1.default));
                     break;
                 case "oMath":
                 case "oMathPara":
-                    result.children.push(this.parseMathElement(c));
+                    result.children.push(this.parseMathElement(el));
                     break;
-                case "pPr":
-                    this.parseParagraphProperties(c, result);
+                case "sdt":
+                    result.children.push(...this.parseSdt(el, e => this.parseParagraph(e).children));
+                    break;
+                case "ins":
+                    result.children.push(this.parseInserted(el, e => this.parseParagraph(e)));
+                    break;
+                case "del":
+                    result.children.push(this.parseDeleted(el, e => this.parseParagraph(e)));
                     break;
             }
-        });
+        }
         return result;
     }
     parseParagraphProperties(elem, paragraph) {
@@ -806,6 +829,12 @@ class DocumentParser {
                 case "t":
                     result.children.push({
                         type: dom_1.DomType.Text,
+                        text: c.textContent
+                    });
+                    break;
+                case "delText":
+                    result.children.push({
+                        type: dom_1.DomType.DeletedText,
                         text: c.textContent
                     });
                     break;
@@ -2016,6 +2045,9 @@ var DomType;
     DomType["MmlNary"] = "mmlNary";
     DomType["MmlDelimiter"] = "mmlDelimiter";
     DomType["VmlElement"] = "vmlElement";
+    DomType["Inserted"] = "inserted";
+    DomType["Deleted"] = "deleted";
+    DomType["DeletedText"] = "deletedText";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -2294,7 +2326,8 @@ exports.defaultOptions = {
     renderFootnotes: true,
     renderEndnotes: true,
     useBase64URL: false,
-    useMathMLPolyfill: false
+    useMathMLPolyfill: false,
+    renderChanges: false
 };
 function praseAsync(data, userOptions = null) {
     const ops = Object.assign(Object.assign({}, exports.defaultOptions), userOptions);
@@ -2913,6 +2946,10 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderImage(elem);
             case dom_1.DomType.Text:
                 return this.renderText(elem);
+            case dom_1.DomType.Text:
+                return this.renderText(elem);
+            case dom_1.DomType.DeletedText:
+                return this.renderDeletedText(elem);
             case dom_1.DomType.Tab:
                 return this.renderTab(elem);
             case dom_1.DomType.Symbol:
@@ -2963,6 +3000,10 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderMmlDelimiter(elem);
             case dom_1.DomType.MmlNary:
                 return this.renderMmlNary(elem);
+            case dom_1.DomType.Inserted:
+                return this.renderInserted(elem);
+            case dom_1.DomType.Deleted:
+                return this.renderDeleted(elem);
         }
         return null;
     }
@@ -2972,7 +3013,7 @@ section.${c}>article { margin-bottom: auto; }
     renderElements(elems, into) {
         if (elems == null)
             return null;
-        var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
+        var result = elems.flatMap(e => this.renderElement(e)).filter(e => e != null);
         if (into)
             appendChildren(into, result);
         return result;
@@ -3047,10 +3088,23 @@ section.${c}>article { margin-bottom: auto; }
     renderText(elem) {
         return this.htmlDocument.createTextNode(elem.text);
     }
+    renderDeletedText(elem) {
+        return this.options.renderEndnotes ? this.htmlDocument.createTextNode(elem.text) : null;
+    }
     renderBreak(elem) {
         if (elem.break == "textWrapping") {
             return this.createElement("br");
         }
+        return null;
+    }
+    renderInserted(elem) {
+        if (this.options.renderChanges)
+            return this.renderContainer(elem, "ins");
+        return this.renderChildren(elem);
+    }
+    renderDeleted(elem) {
+        if (this.options.renderChanges)
+            return this.renderContainer(elem, "del");
         return null;
     }
     renderSymbol(elem) {
@@ -3205,8 +3259,8 @@ section.${c}>article { margin-bottom: auto; }
         const grouped = (0, utils_1.keyBy)(elem.children, x => x.type);
         const sup = grouped[dom_1.DomType.MmlSuperArgument];
         const sub = grouped[dom_1.DomType.MmlSubArgument];
-        const supElem = sup ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sup)]) : null;
-        const subElem = sub ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sub)]) : null;
+        const supElem = sup ? createElementNS(ns.mathML, "mo", null, (0, utils_1.asArray)(this.renderElement(sup))) : null;
+        const subElem = sub ? createElementNS(ns.mathML, "mo", null, (0, utils_1.asArray)(this.renderElement(sub))) : null;
         if ((_a = elem.props) === null || _a === void 0 ? void 0 : _a.char) {
             const charElem = createElementNS(ns.mathML, "mo", null, [elem.props.char]);
             if (supElem || subElem) {
@@ -3959,7 +4013,7 @@ exports.parseFontInfo = parseFontInfo;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.formatCssRules = exports.parseCssRules = exports.mergeDeep = exports.isString = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
+exports.asArray = exports.formatCssRules = exports.parseCssRules = exports.mergeDeep = exports.isString = exports.isObject = exports.blobToBase64 = exports.keyBy = exports.resolvePath = exports.splitPath = exports.escapeClassName = void 0;
 function escapeClassName(className) {
     return className === null || className === void 0 ? void 0 : className.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
 }
@@ -4037,6 +4091,10 @@ function formatCssRules(style) {
     return Object.entries(style).map((k, v) => `${k}: ${v}`).join(';');
 }
 exports.formatCssRules = formatCssRules;
+function asArray(val) {
+    return Array.isArray(val) ? val : [val];
+}
+exports.asArray = asArray;
 
 
 /***/ }),

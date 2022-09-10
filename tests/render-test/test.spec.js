@@ -4,6 +4,7 @@ describe("Render document", function () {
     'text-break',
     'table',
     'page-layout',
+    'revision',
     'numbering',
     'line-spacing',
     'header-footer',

@@ -7,7 +7,7 @@ import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
-import { escapeClassName, isString, keyBy, mergeDeep } from './utils';
+import { asArray, escapeClassName, isString, keyBy, mergeDeep } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -627,7 +627,7 @@ section.${c}>article { margin-bottom: auto; }
 		}
 	}
 
-	renderElement(elem: OpenXmlElement): Node {
+	renderElement(elem: OpenXmlElement): Node | Node[] {
 		switch (elem.type) {
 			case DomType.Paragraph:
 				return this.renderParagraph(elem as WmlParagraph);
@@ -662,6 +662,12 @@ section.${c}>article { margin-bottom: auto; }
 			case DomType.Text:
 				return this.renderText(elem as WmlText);
 
+			case DomType.Text:
+				return this.renderText(elem as WmlText);
+
+			case DomType.DeletedText:
+				return this.renderDeletedText(elem as WmlText);
+	
 			case DomType.Tab:
 				return this.renderTab(elem);
 
@@ -735,6 +741,12 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.MmlNary:
 				return this.renderMmlNary(elem);
+
+			case DomType.Inserted:
+				return this.renderInserted(elem);
+
+			case DomType.Deleted:
+				return this.renderDeleted(elem);
 		}
 
 		return null;
@@ -748,7 +760,7 @@ section.${c}>article { margin-bottom: auto; }
 		if (elems == null)
 			return null;
 
-		var result = elems.map(e => this.renderElement(e)).filter(e => e != null);
+		var result = elems.flatMap(e => this.renderElement(e)).filter(e => e != null);
 
 		if (into)
 			appendChildren(into, result);
@@ -849,10 +861,28 @@ section.${c}>article { margin-bottom: auto; }
 		return this.htmlDocument.createTextNode(elem.text);
 	}
 
+	renderDeletedText(elem: WmlText) {
+		return this.options.renderEndnotes ? this.htmlDocument.createTextNode(elem.text) : null;
+	}
+
 	renderBreak(elem: WmlBreak) {
 		if (elem.break == "textWrapping") {
 			return this.createElement("br");
 		}
+
+		return null;
+	}
+
+	renderInserted(elem: OpenXmlElement): Node | Node[] {
+		if (this.options.renderChanges)
+			return this.renderContainer(elem, "ins");
+
+		return this.renderChildren(elem);
+	}
+
+	renderDeleted(elem: OpenXmlElement): Node {
+		if (this.options.renderChanges)
+			return this.renderContainer(elem, "del");
 
 		return null;
 	}
@@ -1057,8 +1087,8 @@ section.${c}>article { margin-bottom: auto; }
 
 		const sup = grouped[DomType.MmlSuperArgument];
 		const sub = grouped[DomType.MmlSubArgument];
-		const supElem = sup ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sup)]) : null;
-		const subElem = sub ? createElementNS(ns.mathML, "mo", null, [this.renderElement(sub)]) : null;
+		const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
+		const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
 
 		if (elem.props?.char) {
 			const charElem = createElementNS(ns.mathML, "mo", null, [elem.props.char]);

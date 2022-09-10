@@ -39,7 +39,10 @@ export enum DomType {
 	MmlSuperArgument = "mmlSuperArgument",
 	MmlNary = "mmlNary",
 	MmlDelimiter = "mmlDelimiter",
-	VmlElement = "vmlElement"
+	VmlElement = "vmlElement",
+	Inserted = "inserted",
+	Deleted = "deleted",
+	DeletedText = "deletedText"
 }
 
 export interface OpenXmlElement {
