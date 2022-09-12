@@ -36,6 +36,7 @@ type CellVerticalMergeType = Record<number, HTMLTableCellElement>;
 export class HtmlRenderer {
 
 	className: string = "docx";
+	rootSelector: string;
 	document: WordDocument;
 	options: Options;
 	styleMap: Record<string, IDomStyle> = {};
@@ -63,6 +64,7 @@ export class HtmlRenderer {
 		this.document = document;
 		this.options = options;
 		this.className = options.className;
+		this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
 		this.styleMap = null;
 
 		styleContainer = styleContainer || bodyContainer;
@@ -541,7 +543,7 @@ section.${c}>article { margin-bottom: auto; }
 				}, num.bullet.style);
 
 				this.document.loadNumberingImage(num.bullet.src).then(data => {
-					var text = `.${this.className}-wrapper { ${valiable}: url(${data}) }`;
+					var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
 					styleContainer.appendChild(createStyleElement(text));
 				});
 			}
@@ -576,7 +578,7 @@ section.${c}>article { margin-bottom: auto; }
 		}
 
 		if (rootCounters.length > 0) {
-			styleText += this.styleToString(`.${this.className}-wrapper`, {
+			styleText += this.styleToString(this.rootSelector, {
 				"counter-reset": rootCounters.join(" ")
 			});
 		}
