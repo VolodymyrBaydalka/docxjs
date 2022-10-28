@@ -1007,9 +1007,9 @@ section.${c}>article { margin-bottom: auto; }
 	renderTableCell(elem: WmlTableCell) {
 		let result = this.createElement("td");
 
-		if (elem.verticalMerge) {
-			const key = this.currentCellPosition.col;
+		const key = this.currentCellPosition.col;
 
+		if (elem.verticalMerge) {
 			if (elem.verticalMerge == "restart") {
 				this.currentVerticalMerge[key] = result;
 				result.rowSpan = 1;
@@ -1017,6 +1017,8 @@ section.${c}>article { margin-bottom: auto; }
 				this.currentVerticalMerge[key].rowSpan += 1;
 				result.style.display = "none";
 			}
+		} else {
+			this.currentVerticalMerge[key] = null;
 		}
 
 		this.renderClass(elem, result);
@@ -1026,7 +1028,7 @@ section.${c}>article { margin-bottom: auto; }
 		if (elem.span)
 			result.colSpan = elem.span;
 
-		this.currentCellPosition.col++;
+		this.currentCellPosition.col += result.colSpan;
 
 		return result;
 	}

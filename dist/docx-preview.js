@@ -3196,8 +3196,8 @@ section.${c}>article { margin-bottom: auto; }
     }
     renderTableCell(elem) {
         let result = this.createElement("td");
+        const key = this.currentCellPosition.col;
         if (elem.verticalMerge) {
-            const key = this.currentCellPosition.col;
             if (elem.verticalMerge == "restart") {
                 this.currentVerticalMerge[key] = result;
                 result.rowSpan = 1;
@@ -3207,12 +3207,15 @@ section.${c}>article { margin-bottom: auto; }
                 result.style.display = "none";
             }
         }
+        else {
+            this.currentVerticalMerge[key] = null;
+        }
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         if (elem.span)
             result.colSpan = elem.span;
-        this.currentCellPosition.col++;
+        this.currentCellPosition.col += result.colSpan;
         return result;
     }
     renderVmlPicture(elem) {
