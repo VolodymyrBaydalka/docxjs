@@ -31,7 +31,7 @@ export class OpenXmlPackage {
     }
 
     load(path: string, type: JSZip.OutputType = "string"): Promise<any> {
-        return this.get(path)?.async(type) ?? Promise.resolve(null);
+        return this.get(path)?.async(type) || Promise.resolve(null);
     }
 
     loadRelationships(path: string = null): Promise<Relationship[]> {

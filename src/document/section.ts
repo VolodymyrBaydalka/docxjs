@@ -99,11 +99,11 @@ export function parseSectionProperties(elem: Element, xml: XmlParser = globalXml
                 break;
 
             case "headerReference":
-                (section.headerRefs ?? (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
+                (section.headerRefs || (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
                 break;
             
             case "footerReference":
-                (section.footerRefs ?? (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
+                (section.footerRefs || (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml)); 
                 break;
 
             case "titlePg":

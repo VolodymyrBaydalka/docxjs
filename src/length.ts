@@ -32,6 +32,6 @@ export class Length {
 	}
 
 	toString(): string {
-		return `${this.value.toFixed(2)}${this.type ?? ''}`;
+		return `${this.value.toFixed(2)}${this.type || ''}`;
 	}
 }

@@ -341,8 +341,8 @@ export class HtmlRenderer {
 		if (!refs) return;
 
 		var ref = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)
-			?? (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
-			?? refs.find(x => x.type == "default");
+			|| (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
+			|| refs.find(x => x.type == "default");
 
 		var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart) as BaseHeaderFooterPart;
 
@@ -393,7 +393,7 @@ export class HtmlRenderer {
 
 				if (this.options.breakPages && p.children) {
 					pBreakIndex = p.children.findIndex(r => {
-						rBreakIndex = r.children?.findIndex(this.isPageBreakElement.bind(this)) ?? -1;
+						rBreakIndex = r.children?.findIndex(this.isPageBreakElement.bind(this)) || -1;
 						return rBreakIndex != -1;
 					});
 				}
@@ -605,7 +605,7 @@ section.${c}>article { margin-bottom: auto; }
 
 			for (const subStyle of subStyles) {
 				//TODO temporary disable modificators until test it well
-				var selector = `${style.target ?? ''}.${style.cssName}`; //${subStyle.mod ?? ''} 
+				var selector = `${style.target || ''}.${style.cssName}`; //${subStyle.mod || ''} 
 
 				if (style.target != subStyle.target)
 					selector += ` ${subStyle.target}`;
@@ -782,14 +782,14 @@ section.${c}>article { margin-bottom: auto; }
 		var result = this.createElement("p");
 
 		const style = this.findStyle(elem.styleName);
-		elem.tabs ??= style?.paragraphProps?.tabs;  //TODO
+		elem.tabs ||= style?.paragraphProps?.tabs;  //TODO
 
 		this.renderClass(elem, result);
 		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 		this.renderCommonProperties(result.style, elem);
 
-		const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
+		const numbering = elem.numbering || style?.paragraphProps?.numbering;
 
 		if (numbering) {
 			result.classList.add(this.numberingClass(numbering.id, numbering.level));
@@ -1078,9 +1078,9 @@ section.${c}>article { margin-bottom: auto; }
 	renderMmlDelimiter(elem: OpenXmlElement): HTMLElement {		
 		const children = [];
 
-		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
+		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar || '(']));
 		children.push(...this.renderElements(elem.children));
-		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
+		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar || ')']));
 
 		return createElementNS(ns.mathML, "mrow", null, children);
 	}
@@ -1165,7 +1165,7 @@ section.${c}>article { margin-bottom: auto; }
 			return `"counter(${this.numberingCounter(id, lvl)}, ${numformat})"`;
 		});
 
-		return `"${result}${suffMap[suff] ?? ""}"`;
+		return `"${result}${suffMap[suff] || ""}"`;
 	}
 
 	numFormatToCssValue(format: string) {

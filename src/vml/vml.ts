@@ -96,7 +96,7 @@ export function parseVmlElement(elem: Element): VmlElement {
 function parseStroke(el: Element): Record<string, string> {
 	return {
 		'stroke': xml.attr(el, "color"),
-		'stroke-width': xml.lengthAttr(el, "weight", LengthUsage.Emu) ?? '1px'
+		'stroke-width': xml.lengthAttr(el, "weight", LengthUsage.Emu) || '1px'
 	};
 }
 

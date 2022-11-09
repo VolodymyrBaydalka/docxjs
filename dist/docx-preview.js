@@ -36,7 +36,7 @@ var ___CSS_LOADER_URL_IMPORT_0___ = new URL(/* asset import */ __webpack_require
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2___default()(___CSS_LOADER_URL_IMPORT_0___);
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\r\n\r\nmath {\r\n    display: inline-block;\r\n    line-height: initial;\r\n}\r\n\r\nmfrac {\r\n    display: inline-block;\r\n    vertical-align: -50%;\r\n    text-align: center;\r\n\r\n    &>:first-child {\r\n        border-bottom: solid thin currentColor;\r\n    }\r\n\r\n    &>* {\r\n        display: block;\r\n    }\r\n}\r\n\r\nmsub {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: sub;\r\n    }\r\n}\r\n\r\nmsup {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: super;\r\n    }\r\n}\r\n\r\nmunder, mover, munderover {\r\n    display: inline-flex;\r\n    flex-flow: column nowrap;\r\n    vertical-align: middle;\r\n    text-align: center;\r\n\r\n    &>:not(:first-child) {\r\n        font-size: smaller;\r\n    }\r\n}\r\n\r\nmunderover {\r\n    &>:last-child { order: -1; }\r\n}\r\n\r\nmroot, msqrt {\r\n    position: relative;\r\n    display: inline-block;\r\n    border-top: solid thin currentColor;  \r\n    margin-top: 0.5px;\r\n    vertical-align: middle;  \r\n    margin-left: 1ch; \r\n\r\n    &:before {\r\n        content: \"\";\r\n        display: inline-block;\r\n        position: absolute;\r\n        width: 1ch;\r\n        left: -1ch;\r\n        top: -1px;\r\n        bottom: 0;\r\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\r\n    }\r\n}"],"sourceRoot":""}]);
+___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\n\nmath {\n    display: inline-block;\n    line-height: initial;\n}\n\nmfrac {\n    display: inline-block;\n    vertical-align: -50%;\n    text-align: center;\n\n    &>:first-child {\n        border-bottom: solid thin currentColor;\n    }\n\n    &>* {\n        display: block;\n    }\n}\n\nmsub {\n    &>:nth-child(2) {\n        font-size: smaller;\n        vertical-align: sub;\n    }\n}\n\nmsup {\n    &>:nth-child(2) {\n        font-size: smaller;\n        vertical-align: super;\n    }\n}\n\nmunder, mover, munderover {\n    display: inline-flex;\n    flex-flow: column nowrap;\n    vertical-align: middle;\n    text-align: center;\n\n    &>:not(:first-child) {\n        font-size: smaller;\n    }\n}\n\nmunderover {\n    &>:last-child { order: -1; }\n}\n\nmroot, msqrt {\n    position: relative;\n    display: inline-block;\n    border-top: solid thin currentColor;  \n    margin-top: 0.5px;\n    vertical-align: middle;  \n    margin-left: 1ch; \n\n    &:before {\n        content: \"\";\n        display: inline-block;\n        position: absolute;\n        width: 1ch;\n        left: -1ch;\n        top: -1px;\n        bottom: 0;\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\n    }\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___.toString());
 
@@ -255,8 +255,8 @@ class OpenXmlPackage {
         return this._zip.generateAsync({ type });
     }
     load(path, type = "string") {
-        var _a, _b;
-        return (_b = (_a = this.get(path)) === null || _a === void 0 ? void 0 : _a.async(type)) !== null && _b !== void 0 ? _b : Promise.resolve(null);
+        var _a;
+        return ((_a = this.get(path)) === null || _a === void 0 ? void 0 : _a.async(type)) || Promise.resolve(null);
     }
     loadRelationships(path = null) {
         let relsPath = `_rels/.rels`;
@@ -728,17 +728,17 @@ class DocumentParser {
         return sdtContent ? parser(sdtContent) : [];
     }
     parseInserted(node, parentParser) {
-        var _a, _b;
+        var _a;
         return {
             type: dom_1.DomType.Inserted,
-            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : []
+            children: ((_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) || []
         };
     }
     parseDeleted(node, parentParser) {
-        var _a, _b;
+        var _a;
         return {
             type: dom_1.DomType.Deleted,
-            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : []
+            children: ((_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) || []
         };
     }
     parseParagraph(node) {
@@ -997,7 +997,6 @@ class DocumentParser {
         }
     }
     parseDrawingWrapper(node) {
-        var _a;
         var result = { type: dom_1.DomType.Drawing, children: [], cssStyle: {} };
         var isAnchor = node.localName == "anchor";
         let wrapType = null;
@@ -1022,7 +1021,7 @@ class DocumentParser {
                         let pos = n.localName == "positionH" ? posX : posY;
                         var alignNode = xml_parser_1.default.element(n, "align");
                         var offsetNode = xml_parser_1.default.element(n, "posOffset");
-                        pos.relative = (_a = xml_parser_1.default.attr(n, "relativeFrom")) !== null && _a !== void 0 ? _a : pos.relative;
+                        pos.relative = xml_parser_1.default.attr(n, "relativeFrom") || pos.relative;
                         if (alignNode)
                             pos.align = alignNode.textContent;
                         if (offsetNode)
@@ -1220,13 +1219,12 @@ class DocumentParser {
     }
     parseTableCellProperties(elem, cell) {
         cell.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
-            var _a;
             switch (c.localName) {
                 case "gridSpan":
                     cell.span = xml_parser_1.default.intAttr(c, "val", null);
                     break;
                 case "vMerge":
-                    cell.verticalMerge = (_a = xml_parser_1.default.attr(c, "val")) !== null && _a !== void 0 ? _a : "continue";
+                    cell.verticalMerge = xml_parser_1.default.attr(c, "val") || "continue";
                     break;
                 case "cnfStyle":
                     cell.className = values.classNameOfCnfStyle(c);
@@ -2219,7 +2217,6 @@ var SectionType;
     SectionType["OddPage"] = "oddPage";
 })(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml = xml_parser_1.default) {
-    var _a, _b;
     var section = {};
     for (let e of xml.elements(elem)) {
         switch (e.localName) {
@@ -2248,10 +2245,10 @@ function parseSectionProperties(elem, xml = xml_parser_1.default) {
                 section.columns = parseColumns(e, xml);
                 break;
             case "headerReference":
-                ((_a = section.headerRefs) !== null && _a !== void 0 ? _a : (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml));
+                (section.headerRefs || (section.headerRefs = [])).push(parseFooterHeaderReference(e, xml));
                 break;
             case "footerReference":
-                ((_b = section.footerRefs) !== null && _b !== void 0 ? _b : (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml));
+                (section.footerRefs || (section.footerRefs = [])).push(parseFooterHeaderReference(e, xml));
                 break;
             case "titlePg":
                 section.titlePage = xml.boolAttr(e, "val", true);
@@ -2748,10 +2745,11 @@ class HtmlRenderer {
         return result;
     }
     renderHeaderFooter(refs, props, page, firstOfSection, into) {
-        var _a, _b;
         if (!refs)
             return;
-        var ref = (_b = (_a = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)) !== null && _a !== void 0 ? _a : (page % 2 == 1 ? refs.find(x => x.type == "even") : null)) !== null && _b !== void 0 ? _b : refs.find(x => x.type == "default");
+        var ref = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)
+            || (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
+            || refs.find(x => x.type == "default");
         var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart);
         if (part) {
             this.currentPart = part;
@@ -2791,8 +2789,8 @@ class HtmlRenderer {
                 var rBreakIndex = -1;
                 if (this.options.breakPages && p.children) {
                     pBreakIndex = p.children.findIndex(r => {
-                        var _a, _b;
-                        rBreakIndex = (_b = (_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(this.isPageBreakElement.bind(this))) !== null && _b !== void 0 ? _b : -1;
+                        var _a;
+                        rBreakIndex = ((_a = r.children) === null || _a === void 0 ? void 0 : _a.findIndex(this.isPageBreakElement.bind(this))) || -1;
                         return rBreakIndex != -1;
                     });
                 }
@@ -2892,7 +2890,6 @@ section.${c}>article { margin-bottom: auto; }
         return createStyleElement(styleText);
     }
     renderStyles(styles) {
-        var _a;
         var styleText = "";
         const stylesMap = this.styleMap;
         const defautStyles = (0, utils_1.keyBy)(styles.filter(s => s.isDefault), s => s.target);
@@ -2906,7 +2903,7 @@ section.${c}>article { margin-bottom: auto; }
                     console.warn(`Can't find linked style ${style.linked}`);
             }
             for (const subStyle of subStyles) {
-                var selector = `${(_a = style.target) !== null && _a !== void 0 ? _a : ''}.${style.cssName}`;
+                var selector = `${style.target || ''}.${style.cssName}`;
                 if (style.target != subStyle.target)
                     selector += ` ${subStyle.target}`;
                 if (defautStyles[style.target] == style)
@@ -3026,15 +3023,15 @@ section.${c}>article { margin-bottom: auto; }
         return createElementNS(ns, tagName, props, this.renderChildren(elem));
     }
     renderParagraph(elem) {
-        var _a, _b, _c, _d;
+        var _a, _b;
         var result = this.createElement("p");
         const style = this.findStyle(elem.styleName);
-        (_a = elem.tabs) !== null && _a !== void 0 ? _a : (elem.tabs = (_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.tabs);
+        elem.tabs || (elem.tabs = (_a = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _a === void 0 ? void 0 : _a.tabs);
         this.renderClass(elem, result);
         this.renderChildren(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         this.renderCommonProperties(result.style, elem);
-        const numbering = (_c = elem.numbering) !== null && _c !== void 0 ? _c : (_d = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _d === void 0 ? void 0 : _d.numbering;
+        const numbering = elem.numbering || ((_b = style === null || style === void 0 ? void 0 : style.paragraphProps) === null || _b === void 0 ? void 0 : _b.numbering);
         if (numbering) {
             result.classList.add(this.numberingClass(numbering.id, numbering.level));
         }
@@ -3250,11 +3247,10 @@ section.${c}>article { margin-bottom: auto; }
         return createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
     }
     renderMmlDelimiter(elem) {
-        var _a, _b;
         const children = [];
-        children.push(createElementNS(ns.mathML, "mo", null, [(_a = elem.props.beginChar) !== null && _a !== void 0 ? _a : '(']));
+        children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar || '(']));
         children.push(...this.renderElements(elem.children));
-        children.push(createElementNS(ns.mathML, "mo", null, [(_b = elem.props.endChar) !== null && _b !== void 0 ? _b : ')']));
+        children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar || ')']));
         return createElementNS(ns.mathML, "mrow", null, children);
     }
     renderMmlNary(elem) {
@@ -3315,7 +3311,6 @@ section.${c}>article { margin-bottom: auto; }
         return `${this.className}-num-${id}-${lvl}`;
     }
     levelTextToContent(text, suff, id, numformat) {
-        var _a;
         const suffMap = {
             "tab": "\\9",
             "space": "\\a0",
@@ -3324,7 +3319,7 @@ section.${c}>article { margin-bottom: auto; }
             let lvl = parseInt(s.substring(1), 10) - 1;
             return `"counter(${this.numberingCounter(id, lvl)}, ${numformat})"`;
         });
-        return `"${result}${(_a = suffMap[suff]) !== null && _a !== void 0 ? _a : ""}"`;
+        return `"${result}${suffMap[suff] || ""}"`;
     }
     numFormatToCssValue(format) {
         var mapping = {
@@ -4064,14 +4059,13 @@ function isString(item) {
 }
 exports.isString = isString;
 function mergeDeep(target, ...sources) {
-    var _a;
     if (!sources.length)
         return target;
     const source = sources.shift();
     if (isObject(target) && isObject(source)) {
         for (const key in source) {
             if (isObject(source[key])) {
-                const val = (_a = target[key]) !== null && _a !== void 0 ? _a : (target[key] = {});
+                const val = target[key] || (target[key] = {});
                 mergeDeep(val, source[key]);
             }
             else {
@@ -4187,10 +4181,9 @@ function parseVmlElement(elem) {
 }
 exports.parseVmlElement = parseVmlElement;
 function parseStroke(el) {
-    var _a;
     return {
         'stroke': xml_parser_1.default.attr(el, "color"),
-        'stroke-width': (_a = xml_parser_1.default.lengthAttr(el, "weight", common_1.LengthUsage.Emu)) !== null && _a !== void 0 ? _a : '1px'
+        'stroke-width': xml_parser_1.default.lengthAttr(el, "weight", common_1.LengthUsage.Emu) || '1px'
     };
 }
 function parseFill(el) {
@@ -4257,8 +4250,7 @@ class WordDocument {
         }).then(rels => {
             d.rels = rels;
             const tasks = topLevelRels.map(rel => {
-                var _a;
-                const r = (_a = rels.find(x => x.type === rel.type)) !== null && _a !== void 0 ? _a : rel;
+                const r = rels.find(x => x.type === rel.type) || rel;
                 return d.loadRelationshipPart(r.target, r.type);
             });
             return Promise.all(tasks);
@@ -4329,7 +4321,7 @@ class WordDocument {
         });
     }
     loadDocumentImage(id, part) {
-        return this.loadResource(part !== null && part !== void 0 ? part : this.documentPart, id, "blob")
+        return this.loadResource(part || this.documentPart, id, "blob")
             .then(x => this.blobToURL(x));
     }
     loadNumberingImage(id) {
@@ -4349,8 +4341,7 @@ class WordDocument {
         return URL.createObjectURL(blob);
     }
     findPartByRelId(id, basePart = null) {
-        var _a;
-        var rel = ((_a = basePart.rels) !== null && _a !== void 0 ? _a : this.rels).find(r => r.id == id);
+        var rel = (basePart.rels || this.rels).find(r => r.id == id);
         const folder = basePart ? (0, utils_1.splitPath)(basePart.path)[0] : '';
         return rel ? this.partsMap[(0, utils_1.resolvePath)(rel.target, folder)] : null;
     }

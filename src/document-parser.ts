@@ -442,14 +442,14 @@ export class DocumentParser {
 	parseInserted(node: Element, parentParser: Function): OpenXmlElement {
 		return <OpenXmlElement>{ 
 			type: DomType.Inserted, 
-			children: parentParser(node)?.children ?? []
+			children: parentParser(node)?.children || []
 		};
 	}
 
 	parseDeleted(node: Element, parentParser: Function): OpenXmlElement {
 		return <OpenXmlElement>{ 
 			type: DomType.Deleted, 
-			children: parentParser(node)?.children ?? []
+			children: parentParser(node)?.children || []
 		};
 	}
 
@@ -799,7 +799,7 @@ export class DocumentParser {
 						var alignNode = xml.element(n, "align");
 						var offsetNode = xml.element(n, "posOffset");
 
-						pos.relative = xml.attr(n, "relativeFrom") ?? pos.relative;
+						pos.relative = xml.attr(n, "relativeFrom") || pos.relative;
 
 						if (alignNode)
 							pos.align = alignNode.textContent;
@@ -1057,7 +1057,7 @@ export class DocumentParser {
 					break;
 
 				case "vMerge":
-					cell.verticalMerge = xml.attr(c, "val") ?? "continue";
+					cell.verticalMerge = xml.attr(c, "val") || "continue";
 					break;
 
 				case "cnfStyle":

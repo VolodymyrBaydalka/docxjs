@@ -59,7 +59,7 @@ export class WordDocument {
 				d.rels = rels;
 
 				const tasks = topLevelRels.map(rel => {
-					const r = rels.find(x => x.type === rel.type) ?? rel; //fallback                    
+					const r = rels.find(x => x.type === rel.type) || rel; //fallback                    
 					return d.loadRelationshipPart(r.target, r.type);
 				});
 
@@ -154,7 +154,7 @@ export class WordDocument {
 	}
 
 	loadDocumentImage(id: string, part?: Part): PromiseLike<string> {
-		return this.loadResource(part ?? this.documentPart, id, "blob")
+		return this.loadResource(part || this.documentPart, id, "blob")
 			.then(x => this.blobToURL(x));
 	}
 
@@ -180,7 +180,7 @@ export class WordDocument {
 	}
 
 	findPartByRelId(id: string, basePart: Part = null) {
-		var rel = (basePart.rels ?? this.rels).find(r => r.id == id);
+		var rel = (basePart.rels || this.rels).find(r => r.id == id);
 		const folder = basePart ? splitPath(basePart.path)[0] : '';
 		return rel ? this.partsMap[resolvePath(rel.target, folder)] : null;
 	}
