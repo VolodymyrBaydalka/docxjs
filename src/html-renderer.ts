@@ -1,30 +1,40 @@
-import { WordDocument } from './word-document';
+import { WordDocument } from "./word-document";
 import {
-	DomType, WmlTable, IDomNumbering,
-	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference
-} from './document/dom';
-import { CommonProperties } from './document/common';
-import { Options } from './docx-preview';
-import { DocumentElement } from './document/document';
-import { WmlParagraph } from './document/paragraph';
-import { asArray, escapeClassName, isString, keyBy, mergeDeep } from './utils';
-import { computePixelToPoint, updateTabStop } from './javascript';
-import { FontTablePart } from './font-table/font-table';
-import { FooterHeaderReference, SectionProperties } from './document/section';
-import { WmlRun, RunProperties } from './document/run';
-import { WmlBookmarkStart } from './document/bookmarks';
-import { IDomStyle } from './document/style';
-import { WmlBaseNote, WmlFootnote } from './notes/elements';
-import { ThemePart } from './theme/theme-part';
-import { BaseHeaderFooterPart } from './header-footer/parts';
-import { Part } from './common/part';
+	DomType,
+	WmlTable,
+	IDomNumbering,
+	WmlHyperlink,
+	IDomImage,
+	OpenXmlElement,
+	WmlTableColumn,
+	WmlTableCell,
+	WmlText,
+	WmlSymbol,
+	WmlBreak,
+	WmlNoteReference,
+} from "./document/dom";
+import { CommonProperties } from "./document/common";
+import { Options } from "./docx-preview";
+import { DocumentElement } from "./document/document";
+import { WmlParagraph } from "./document/paragraph";
+import { asArray, escapeClassName, isString, keyBy, mergeDeep } from "./utils";
+import { computePixelToPoint, updateTabStop } from "./javascript";
+import { FontTablePart } from "./font-table/font-table";
+import { FooterHeaderReference, SectionProperties } from "./document/section";
+import { WmlRun, RunProperties } from "./document/run";
+import { WmlBookmarkStart } from "./document/bookmarks";
+import { IDomStyle } from "./document/style";
+import { WmlBaseNote, WmlFootnote } from "./notes/elements";
+import { ThemePart } from "./theme/theme-part";
+import { BaseHeaderFooterPart } from "./header-footer/parts";
+import { Part } from "./common/part";
 import mathMLCSS from "./mathml.scss";
-import { VmlElement } from './vml/vml';
+import { VmlElement } from "./vml/vml";
 
 const ns = {
 	svg: "http://www.w3.org/2000/svg",
-	mathML: "http://www.w3.org/1998/Math/MathML"
-}
+	mathML: "http://www.w3.org/1998/Math/MathML",
+};
 
 interface CellPos {
 	col: number;
@@ -34,7 +44,6 @@ interface CellPos {
 type CellVerticalMergeType = Record<number, HTMLTableCellElement>;
 
 export class HtmlRenderer {
-
 	className: string = "docx";
 	rootSelector: string;
 	document: WordDocument;
@@ -57,14 +66,20 @@ export class HtmlRenderer {
 	currentTabs: any[] = [];
 	tabsTimeout: any = 0;
 
-	constructor(public htmlDocument: Document) {
-	}
+	constructor(public htmlDocument: Document) {}
 
-	render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
+	render(
+		document: WordDocument,
+		bodyContainer: HTMLElement,
+		styleContainer: HTMLElement = null,
+		options: Options
+	) {
 		this.document = document;
 		this.options = options;
 		this.className = options.className;
-		this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
+		this.rootSelector = options.inWrapper
+			? `.${this.className}-wrapper`
+			: ":root";
 		this.styleMap = null;
 
 		styleContainer = styleContainer || bodyContainer;
@@ -78,7 +93,7 @@ export class HtmlRenderer {
 		if (!window.MathMLElement && options.useMathMLPolyfill) {
 			appendComment(styleContainer, "docxjs mathml polyfill styles");
 			styleContainer.appendChild(createStyleElement(mathMLCSS));
-		} 
+		}
 
 		if (document.themePart) {
 			appendComment(styleContainer, "docxjs document theme values");
@@ -89,27 +104,35 @@ export class HtmlRenderer {
 			this.styleMap = this.processStyles(document.stylesPart.styles);
 
 			appendComment(styleContainer, "docxjs document styles");
-			styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
+			styleContainer.appendChild(
+				this.renderStyles(document.stylesPart.styles)
+			);
 		}
 
 		if (document.numberingPart) {
 			this.prodessNumberings(document.numberingPart.domNumberings);
 
 			appendComment(styleContainer, "docxjs document numbering styles");
-			styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
+			styleContainer.appendChild(
+				this.renderNumbering(
+					document.numberingPart.domNumberings,
+					styleContainer
+				)
+			);
 			//styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
 		}
 
 		if (document.footnotesPart) {
-			this.footnoteMap = keyBy(document.footnotesPart.notes, x => x.id);
+			this.footnoteMap = keyBy(document.footnotesPart.notes, (x) => x.id);
 		}
 
 		if (document.endnotesPart) {
-			this.endnoteMap = keyBy(document.endnotesPart.notes, x => x.id);
+			this.endnoteMap = keyBy(document.endnotesPart.notes, (x) => x.id);
 		}
 
 		if (document.settingsPart) {
-			this.defaultTabSize = document.settingsPart.settings?.defaultTabStop;
+			this.defaultTabSize =
+				document.settingsPart.settings?.defaultTabStop;
 		}
 
 		if (!options.ignoreFonts && document.fontTablePart)
@@ -132,11 +155,13 @@ export class HtmlRenderer {
 
 		if (fontScheme) {
 			if (fontScheme.majorFont) {
-				variables['--docx-majorHAnsi-font'] = fontScheme.majorFont.latinTypeface;
+				variables["--docx-majorHAnsi-font"] =
+					fontScheme.majorFont.latinTypeface;
 			}
 
 			if (fontScheme.minorFont) {
-				variables['--docx-minorHAnsi-font'] = fontScheme.minorFont.latinTypeface;
+				variables["--docx-minorHAnsi-font"] =
+					fontScheme.minorFont.latinTypeface;
 			}
 		}
 
@@ -155,18 +180,18 @@ export class HtmlRenderer {
 	renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
 		for (let f of fontsPart.fonts) {
 			for (let ref of f.embedFontRefs) {
-				this.document.loadFont(ref.id, ref.key).then(fontData => {
+				this.document.loadFont(ref.id, ref.key).then((fontData) => {
 					const cssValues = {
-						'font-family': f.name,
-						'src': `url(${fontData})`
+						"font-family": f.name,
+						src: `url(${fontData})`,
 					};
 
 					if (ref.type == "bold" || ref.type == "boldItalic") {
-						cssValues['font-weight'] = 'bold';
+						cssValues["font-weight"] = "bold";
 					}
 
 					if (ref.type == "italic" || ref.type == "boldItalic") {
-						cssValues['font-style'] = 'italic';
+						cssValues["font-style"] = "italic";
 					}
 
 					appendComment(styleContainer, `docxjs ${f.name} font`);
@@ -179,30 +204,45 @@ export class HtmlRenderer {
 	}
 
 	processStyleName(className: string): string {
-		return className ? `${this.className}_${escapeClassName(className)}` : this.className;
+		return className
+			? `${this.className}_${escapeClassName(className)}`
+			: this.className;
 	}
 
 	processStyles(styles: IDomStyle[]) {
-		const stylesMap = keyBy(styles.filter(x => x.id != null), x => x.id);
+		const stylesMap = keyBy(
+			styles.filter((x) => x.id != null),
+			(x) => x.id
+		);
 
-		for (const style of styles.filter(x => x.basedOn)) {
+		for (const style of styles.filter((x) => x.basedOn)) {
 			var baseStyle = stylesMap[style.basedOn];
 
 			if (baseStyle) {
-				style.paragraphProps = mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
+				style.paragraphProps = mergeDeep(
+					style.paragraphProps,
+					baseStyle.paragraphProps
+				);
 				style.runProps = mergeDeep(style.runProps, baseStyle.runProps);
 
 				for (const baseValues of baseStyle.styles) {
-					const styleValues = style.styles.find(x => x.target == baseValues.target);
+					const styleValues = style.styles.find(
+						(x) => x.target == baseValues.target
+					);
 
 					if (styleValues) {
-						this.copyStyleProperties(baseValues.values, styleValues.values);
+						this.copyStyleProperties(
+							baseValues.values,
+							styleValues.values
+						);
 					} else {
-						style.styles.push({ ...baseValues, values: { ...baseValues.values } });
+						style.styles.push({
+							...baseValues,
+							values: { ...baseValues.values },
+						});
 					}
 				}
-			}
-			else if (this.options.debug)
+			} else if (this.options.debug)
 				console.warn(`Can't find base style ${style.basedOn}`);
 		}
 
@@ -214,7 +254,7 @@ export class HtmlRenderer {
 	}
 
 	prodessNumberings(numberings: IDomNumbering[]) {
-		for (let num of numberings.filter(n => n.pStyleName)) {
+		for (let num of numberings.filter((n) => n.pStyleName)) {
 			const style = this.findStyle(num.pStyleName);
 
 			if (style?.paragraphProps?.numbering) {
@@ -230,8 +270,7 @@ export class HtmlRenderer {
 
 				if (e.type == DomType.Table) {
 					this.processTable(e);
-				}
-				else {
+				} else {
 					this.processElement(e);
 				}
 			}
@@ -241,19 +280,32 @@ export class HtmlRenderer {
 	processTable(table: WmlTable) {
 		for (var r of table.children) {
 			for (var c of r.children) {
-				c.cssStyle = this.copyStyleProperties(table.cellStyle, c.cssStyle, [
-					"border-left", "border-right", "border-top", "border-bottom",
-					"padding-left", "padding-right", "padding-top", "padding-bottom"
-				]);
+				c.cssStyle = this.copyStyleProperties(
+					table.cellStyle,
+					c.cssStyle,
+					[
+						"border-left",
+						"border-right",
+						"border-top",
+						"border-bottom",
+						"padding-left",
+						"padding-right",
+						"padding-top",
+						"padding-bottom",
+					]
+				);
 
 				this.processElement(c);
 			}
 		}
 	}
 
-	copyStyleProperties(input: Record<string, string>, output: Record<string, string>, attrs: string[] = null): Record<string, string> {
-		if (!input)
-			return output;
+	copyStyleProperties(
+		input: Record<string, string>,
+		output: Record<string, string>,
+		attrs: string[] = null
+	): Record<string, string> {
+		if (!input) return output;
 
 		if (output == null) output = {};
 		if (attrs == null) attrs = Object.getOwnPropertyNames(input);
@@ -312,23 +364,43 @@ export class HtmlRenderer {
 			const sectionElement = this.createSection(this.className, props);
 			this.renderStyleValues(document.cssStyle, sectionElement);
 
-			this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props,
-				result.length, prevProps != props, sectionElement);
+			this.options.renderHeaders &&
+				this.renderHeaderFooter(
+					props.headerRefs,
+					props,
+					result.length,
+					prevProps != props,
+					sectionElement
+				);
 
 			var contentElement = this.createElement("article");
 			this.renderElements(section.elements, contentElement);
 			sectionElement.appendChild(contentElement);
 
 			if (this.options.renderFootnotes) {
-				this.renderNotes(this.currentFootnoteIds, this.footnoteMap, sectionElement);
+				this.renderNotes(
+					this.currentFootnoteIds,
+					this.footnoteMap,
+					sectionElement
+				);
 			}
 
 			if (this.options.renderEndnotes && i == l - 1) {
-				this.renderNotes(this.currentEndnoteIds, this.endnoteMap, sectionElement);
+				this.renderNotes(
+					this.currentEndnoteIds,
+					this.endnoteMap,
+					sectionElement
+				);
 			}
 
-			this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props,
-				result.length, prevProps != props, sectionElement);
+			this.options.renderFooters &&
+				this.renderHeaderFooter(
+					props.footerRefs,
+					props,
+					result.length,
+					prevProps != props,
+					sectionElement
+				);
 
 			result.push(sectionElement);
 			prevProps = props;
@@ -337,14 +409,28 @@ export class HtmlRenderer {
 		return result;
 	}
 
-	renderHeaderFooter(refs: FooterHeaderReference[], props: SectionProperties, page: number, firstOfSection: boolean, into: HTMLElement) {
+	renderHeaderFooter(
+		refs: FooterHeaderReference[],
+		props: SectionProperties,
+		page: number,
+		firstOfSection: boolean,
+		into: HTMLElement
+	) {
 		if (!refs) return;
 
-		var ref = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)
-			|| (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
-			|| refs.find(x => x.type == "default");
+		var ref =
+			(props.titlePage && firstOfSection
+				? refs.find((x) => x.type == "first")
+				: null) ||
+			(page % 2 == 1 ? refs.find((x) => x.type == "even") : null) ||
+			refs.find((x) => x.type == "default");
 
-		var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart) as BaseHeaderFooterPart;
+		var part =
+			ref &&
+			(this.document.findPartByRelId(
+				ref.id,
+				this.document.documentPart
+			) as BaseHeaderFooterPart);
 
 		if (part) {
 			this.currentPart = part;
@@ -358,8 +444,7 @@ export class HtmlRenderer {
 	}
 
 	isPageBreakElement(elem: OpenXmlElement): boolean {
-		if (elem.type != DomType.Break)
-			return false;
+		if (elem.type != DomType.Break) return false;
 
 		if ((elem as WmlBreak).break == "lastRenderedPageBreak")
 			return !this.options.ignoreLastRenderedPageBreak;
@@ -367,7 +452,9 @@ export class HtmlRenderer {
 		return (elem as WmlBreak).break == "page";
 	}
 
-	splitBySection(elements: OpenXmlElement[]): { sectProps: SectionProperties, elements: OpenXmlElement[] }[] {
+	splitBySection(
+		elements: OpenXmlElement[]
+	): { sectProps: SectionProperties; elements: OpenXmlElement[] }[] {
 		var current = { sectProps: null, elements: [] };
 		var result = [current];
 
@@ -392,8 +479,11 @@ export class HtmlRenderer {
 				var rBreakIndex = -1;
 
 				if (this.options.breakPages && p.children) {
-					pBreakIndex = p.children.findIndex(r => {
-						rBreakIndex = r.children?.findIndex(this.isPageBreakElement.bind(this)) || -1;
+					pBreakIndex = p.children.findIndex((r) => {
+						rBreakIndex =
+							r.children?.findIndex(
+								this.isPageBreakElement.bind(this)
+							) || -1;
 						return rBreakIndex != -1;
 					});
 				}
@@ -410,13 +500,19 @@ export class HtmlRenderer {
 
 					if (pBreakIndex < p.children.length - 1 || splitRun) {
 						var children = elem.children;
-						var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
+						var newParagraph = {
+							...elem,
+							children: children.slice(pBreakIndex),
+						};
 						elem.children = children.slice(0, pBreakIndex);
 						current.elements.push(newParagraph);
 
 						if (splitRun) {
 							let runChildren = breakRun.children;
-							let newRun = { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
+							let newRun = {
+								...breakRun,
+								children: runChildren.slice(0, rBreakIndex),
+							};
 							elem.children.push(newRun);
 							breakRun.children = runChildren.slice(rBreakIndex);
 						}
@@ -431,7 +527,7 @@ export class HtmlRenderer {
 			if (result[i].sectProps == null) {
 				result[i].sectProps = currentSectProps;
 			} else {
-				currentSectProps = result[i].sectProps
+				currentSectProps = result[i].sectProps;
 			}
 		}
 
@@ -439,7 +535,11 @@ export class HtmlRenderer {
 	}
 
 	renderWrapper(children: HTMLElement[]) {
-		return this.createElement("div", { className: `${this.className}-wrapper` }, children);
+		return this.createElement(
+			"div",
+			{ className: `${this.className}-wrapper` },
+			children
+		);
 	}
 
 	renderDefaultStyle() {
@@ -534,52 +634,64 @@ section.${c}>article { margin-bottom: auto; }
 			var listStyleType = "none";
 
 			if (num.bullet) {
-				let valiable = `--${this.className}-${num.bullet.src}`.toLowerCase();
+				let valiable =
+					`--${this.className}-${num.bullet.src}`.toLowerCase();
 
-				styleText += this.styleToString(`${selector}:before`, {
-					"content": "' '",
-					"display": "inline-block",
-					"background": `var(${valiable})`
-				}, num.bullet.style);
+				styleText += this.styleToString(
+					`${selector}:before`,
+					{
+						content: "' '",
+						display: "inline-block",
+						background: `var(${valiable})`,
+					},
+					num.bullet.style
+				);
 
-				this.document.loadNumberingImage(num.bullet.src).then(data => {
-					var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
-					styleContainer.appendChild(createStyleElement(text));
-				});
-			}
-			else if (num.levelText) {
+				this.document
+					.loadNumberingImage(num.bullet.src)
+					.then((data) => {
+						var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
+						styleContainer.appendChild(createStyleElement(text));
+					});
+			} else if (num.levelText) {
 				let counter = this.numberingCounter(num.id, num.level);
 
 				if (num.level > 0) {
-					styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-						"counter-reset": counter
-					});
-				}
-				else {
+					styleText += this.styleToString(
+						`p.${this.numberingClass(num.id, num.level - 1)}`,
+						{
+							"counter-reset": counter,
+						}
+					);
+				} else {
 					rootCounters.push(counter);
 				}
 
 				styleText += this.styleToString(`${selector}:before`, {
-					"content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
+					content: this.levelTextToContent(
+						num.levelText,
+						num.suff,
+						num.id,
+						this.numFormatToCssValue(num.format)
+					),
 					"counter-increment": counter,
 					...num.rStyle,
 				});
-			}
-			else {
+			} else {
 				listStyleType = this.numFormatToCssValue(num.format);
 			}
 
 			styleText += this.styleToString(selector, {
-				"display": "list-item",
+				display: "list-item",
 				"list-style-position": "inside",
 				"list-style-type": listStyleType,
-				...num.pStyle
+				...num.pStyle,
 			});
 		}
 
 		if (rootCounters.length > 0) {
 			styleText += this.styleToString(this.rootSelector, {
-				"counter-reset": rootCounters.join(" ")
+				"counter-reset": rootCounters.join(" "),
 			});
 		}
 
@@ -589,7 +701,10 @@ section.${c}>article { margin-bottom: auto; }
 	renderStyles(styles: IDomStyle[]): HTMLElement {
 		var styleText = "";
 		const stylesMap = this.styleMap;
-		const defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
+		const defautStyles = keyBy(
+			styles.filter((s) => s.isDefault),
+			(s) => s.target
+		);
 
 		for (const style of styles) {
 			var subStyles = style.styles;
@@ -605,13 +720,14 @@ section.${c}>article { margin-bottom: auto; }
 
 			for (const subStyle of subStyles) {
 				//TODO temporary disable modificators until test it well
-				var selector = `${style.target || ''}.${style.cssName}`; //${subStyle.mod || ''} 
+				var selector = `${style.target || ""}.${style.cssName}`; //${subStyle.mod || ''}
 
 				if (style.target != subStyle.target)
 					selector += ` ${subStyle.target}`;
 
 				if (defautStyles[style.target] == style)
-					selector = `.${this.className} ${style.target}, ` + selector;
+					selector =
+						`.${this.className} ${style.target}, ` + selector;
 
 				styleText += this.styleToString(selector, subStyle.values);
 			}
@@ -620,11 +736,19 @@ section.${c}>article { margin-bottom: auto; }
 		return createStyleElement(styleText);
 	}
 
-	renderNotes(noteIds: string[], notesMap: Record<string, WmlBaseNote>, into: HTMLElement) {
-		var notes = noteIds.map(id => notesMap[id]).filter(x => x);
+	renderNotes(
+		noteIds: string[],
+		notesMap: Record<string, WmlBaseNote>,
+		into: HTMLElement
+	) {
+		var notes = noteIds.map((id) => notesMap[id]).filter((x) => x);
 
 		if (notes.length > 0) {
-			var result = this.createElement("ol", null, this.renderElements(notes));
+			var result = this.createElement(
+				"ol",
+				null,
+				this.renderElements(notes)
+			);
 			into.appendChild(result);
 		}
 	}
@@ -669,7 +793,7 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.DeletedText:
 				return this.renderDeletedText(elem as WmlText);
-	
+
 			case DomType.Tab:
 				return this.renderTab(elem);
 
@@ -703,10 +827,12 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.VmlElement:
 				return this.renderVmlElement(elem as VmlElement);
-	
+
 			case DomType.MmlMath:
-				return this.renderContainerNS(elem, ns.mathML, "math", { xmlns: ns.mathML });
-	
+				return this.renderContainerNS(elem, ns.mathML, "math", {
+					xmlns: ns.mathML,
+				});
+
 			case DomType.MmlMathParagraph:
 				return this.renderContainer(elem, "span");
 
@@ -728,7 +854,7 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.MmlSubscript:
 				return this.renderContainerNS(elem, ns.mathML, "msub");
-	
+
 			case DomType.MmlBase:
 				return this.renderContainerNS(elem, ns.mathML, "mrow");
 
@@ -759,22 +885,31 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderElements(elems: OpenXmlElement[], into?: Element): Node[] {
-		if (elems == null)
-			return null;
+		if (elems == null) return null;
 
-		var result = elems.flatMap(e => this.renderElement(e)).filter(e => e != null);
+		var result = elems
+			.flatMap((e) => this.renderElement(e))
+			.filter((e) => e != null);
 
-		if (into)
-			appendChildren(into, result);
+		if (into) appendChildren(into, result);
 
 		return result;
 	}
 
-	renderContainer(elem: OpenXmlElement, tagName: keyof HTMLElementTagNameMap, props?: Record<string, any>) {
+	renderContainer(
+		elem: OpenXmlElement,
+		tagName: keyof HTMLElementTagNameMap,
+		props?: Record<string, any>
+	) {
 		return this.createElement(tagName, props, this.renderChildren(elem));
 	}
 
-	renderContainerNS(elem: OpenXmlElement, ns: string, tagName: string, props?: Record<string, any>) {
+	renderContainerNS(
+		elem: OpenXmlElement,
+		ns: string,
+		tagName: string,
+		props?: Record<string, any>
+	) {
 		return createElementNS(ns, tagName, props, this.renderChildren(elem));
 	}
 
@@ -782,7 +917,9 @@ section.${c}>article { margin-bottom: auto; }
 		var result = this.createElement("p");
 
 		const style = this.findStyle(elem.styleName);
-		elem.tabs ||= style?.paragraphProps?.tabs;  //TODO
+		if (style?.paragraphProps?.tabs) {
+			elem.tabs = style.paragraphProps.tabs;
+		}
 
 		this.renderClass(elem, result);
 		this.renderChildren(elem, result);
@@ -792,7 +929,9 @@ section.${c}>article { margin-bottom: auto; }
 		const numbering = elem.numbering || style?.paragraphProps?.numbering;
 
 		if (numbering) {
-			result.classList.add(this.numberingClass(numbering.id, numbering.level));
+			result.classList.add(
+				this.numberingClass(numbering.id, numbering.level)
+			);
 		}
 
 		return result;
@@ -803,8 +942,7 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderCommonProperties(style: any, props: CommonProperties) {
-		if (props == null)
-			return;
+		if (props == null) return;
 
 		if (props.color) {
 			style["color"] = props.color;
@@ -823,9 +961,10 @@ section.${c}>article { margin-bottom: auto; }
 
 		if (elem.href) {
 			result.href = elem.href;
-		} else if(elem.id) {
-			const rel = this.document.documentPart.rels
-				.find(it => it.id == elem.id && it.targetMode === "External");
+		} else if (elem.id) {
+			const rel = this.document.documentPart.rels.find(
+				(it) => it.id == elem.id && it.targetMode === "External"
+			);
 			result.href = rel?.target;
 		}
 
@@ -851,9 +990,11 @@ section.${c}>article { margin-bottom: auto; }
 		this.renderStyleValues(elem.cssStyle, result);
 
 		if (this.document) {
-			this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
-				result.src = x;
-			});
+			this.document
+				.loadDocumentImage(elem.src, this.currentPart)
+				.then((x) => {
+					result.src = x;
+				});
 		}
 
 		return result;
@@ -864,7 +1005,9 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderDeletedText(elem: WmlText) {
-		return this.options.renderEndnotes ? this.htmlDocument.createTextNode(elem.text) : null;
+		return this.options.renderEndnotes
+			? this.htmlDocument.createTextNode(elem.text)
+			: null;
 	}
 
 	renderBreak(elem: WmlBreak) {
@@ -892,7 +1035,7 @@ section.${c}>article { margin-bottom: auto; }
 	renderSymbol(elem: WmlSymbol) {
 		var span = this.createElement("span");
 		span.style.fontFamily = elem.font;
-		span.innerHTML = `&#x${elem.char};`
+		span.innerHTML = `&#x${elem.char};`;
 		return span;
 	}
 
@@ -913,7 +1056,7 @@ section.${c}>article { margin-bottom: auto; }
 	renderTab(elem: OpenXmlElement) {
 		var tabSpan = this.createElement("span");
 
-		tabSpan.innerHTML = "&emsp;";//"&nbsp;";
+		tabSpan.innerHTML = "&emsp;"; //"&nbsp;";
 
 		if (this.options.experimental) {
 			tabSpan.className = this.tabStopClass();
@@ -931,13 +1074,11 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderRun(elem: WmlRun) {
-		if (elem.fieldRun)
-			return null;
+		if (elem.fieldRun) return null;
 
 		const result = this.createElement("span");
 
-		if (elem.id)
-			result.id = elem.id;
+		if (elem.id) result.id = elem.id;
 
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
@@ -946,8 +1087,7 @@ section.${c}>article { margin-bottom: auto; }
 			const wrapper = this.createElement(elem.verticalAlign as any);
 			this.renderChildren(elem, wrapper);
 			result.appendChild(wrapper);
-		}
-		else {
+		} else {
 			this.renderChildren(elem, result);
 		}
 
@@ -981,8 +1121,7 @@ section.${c}>article { margin-bottom: auto; }
 		for (let col of columns) {
 			let colElem = this.createElement("col");
 
-			if (col.width)
-				colElem.style.width = col.width;
+			if (col.width) colElem.style.width = col.width;
 
 			result.appendChild(colElem);
 		}
@@ -1025,8 +1164,7 @@ section.${c}>article { margin-bottom: auto; }
 		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
-		if (elem.span)
-			result.colSpan = elem.span;
+		if (elem.span) result.colSpan = elem.span;
 
 		this.currentCellPosition.col += result.colSpan;
 
@@ -1045,19 +1183,22 @@ section.${c}>article { margin-bottom: auto; }
 		container.setAttribute("style", elem.cssStyleText);
 
 		const result = createSvgElement(elem.tagName as any);
-		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+		Object.entries(elem.attrs).forEach(([k, v]) =>
+			result.setAttribute(k, v)
+		);
 
 		if (elem.imageHref?.id) {
-			this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
-				.then(x => result.setAttribute("href", x));
+			this.document
+				?.loadDocumentImage(elem.imageHref.id, this.currentPart)
+				.then((x) => result.setAttribute("href", x));
 		}
-		
+
 		container.appendChild(result);
 
 		setTimeout(() => {
 			const bb = (container.firstElementChild as any).getBBox();
 
-			container.setAttribute("width", `${Math.ceil(bb.x +  bb.width)}`);
+			container.setAttribute("width", `${Math.ceil(bb.x + bb.width)}`);
 			container.setAttribute("height", `${Math.ceil(bb.y + bb.height)}`);
 		}, 0);
 
@@ -1065,50 +1206,100 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderMmlRadical(elem: OpenXmlElement): HTMLElement {
-		const base = elem.children.find(el => el.type == DomType.MmlBase);
+		const base = elem.children.find((el) => el.type == DomType.MmlBase);
 
 		if (elem.props?.hideDegree) {
-			return createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
+			return createElementNS(
+				ns.mathML,
+				"msqrt",
+				null,
+				this.renderElements([base])
+			);
 		}
 
-		const degree = elem.children.find(el => el.type == DomType.MmlDegree);
-		return createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
+		const degree = elem.children.find((el) => el.type == DomType.MmlDegree);
+		return createElementNS(
+			ns.mathML,
+			"mroot",
+			null,
+			this.renderElements([base, degree])
+		);
 	}
 
-	renderMmlDelimiter(elem: OpenXmlElement): HTMLElement {		
+	renderMmlDelimiter(elem: OpenXmlElement): HTMLElement {
 		const children = [];
 
-		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar || '(']));
+		children.push(
+			createElementNS(ns.mathML, "mo", null, [
+				elem.props.beginChar || "(",
+			])
+		);
 		children.push(...this.renderElements(elem.children));
-		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar || ')']));
+		children.push(
+			createElementNS(ns.mathML, "mo", null, [elem.props.endChar || ")"])
+		);
 
 		return createElementNS(ns.mathML, "mrow", null, children);
 	}
 
-	renderMmlNary(elem: OpenXmlElement): HTMLElement {		
+	renderMmlNary(elem: OpenXmlElement): HTMLElement {
 		const children = [];
-		const grouped = keyBy(elem.children, x => x.type);
+		const grouped = keyBy(elem.children, (x) => x.type);
 
 		const sup = grouped[DomType.MmlSuperArgument];
 		const sub = grouped[DomType.MmlSubArgument];
-		const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-		const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+		const supElem = sup
+			? createElementNS(
+					ns.mathML,
+					"mo",
+					null,
+					asArray(this.renderElement(sup))
+			  )
+			: null;
+		const subElem = sub
+			? createElementNS(
+					ns.mathML,
+					"mo",
+					null,
+					asArray(this.renderElement(sub))
+			  )
+			: null;
 
 		if (elem.props?.char) {
-			const charElem = createElementNS(ns.mathML, "mo", null, [elem.props.char]);
+			const charElem = createElementNS(ns.mathML, "mo", null, [
+				elem.props.char,
+			]);
 
 			if (supElem || subElem) {
-				children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
-			} else if(supElem) {
-				children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
-			} else if(subElem) {
-				children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+				children.push(
+					createElementNS(ns.mathML, "munderover", null, [
+						charElem,
+						subElem,
+						supElem,
+					])
+				);
+			} else if (supElem) {
+				children.push(
+					createElementNS(ns.mathML, "mover", null, [
+						charElem,
+						supElem,
+					])
+				);
+			} else if (subElem) {
+				children.push(
+					createElementNS(ns.mathML, "munder", null, [
+						charElem,
+						subElem,
+					])
+				);
 			} else {
 				children.push(charElem);
 			}
 		}
 
-		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
+		children.push(
+			...this.renderElements(grouped[DomType.MmlBase].children)
+		);
 
 		return createElementNS(ns.mathML, "mrow", null, children);
 	}
@@ -1118,8 +1309,7 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderClass(input: OpenXmlElement, ouput: HTMLElement) {
-		if (input.className)
-			ouput.className = input.className;
+		if (input.className) ouput.className = input.className;
 
 		if (input.styleName)
 			ouput.classList.add(this.processStyleName(input.styleName));
@@ -1137,15 +1327,18 @@ section.${c}>article { margin-bottom: auto; }
 		return `${this.className}-tab-stop`;
 	}
 
-	styleToString(selectors: string, values: Record<string, string>, cssText: string = null) {
+	styleToString(
+		selectors: string,
+		values: Record<string, string>,
+		cssText: string = null
+	) {
 		let result = `${selectors} {\r\n`;
 
 		for (const key in values) {
 			result += `  ${key}: ${values[key]};\r\n`;
 		}
 
-		if (cssText)
-			result += cssText;
+		if (cssText) result += cssText;
 
 		return result + "}\r\n";
 	}
@@ -1154,13 +1347,18 @@ section.${c}>article { margin-bottom: auto; }
 		return `${this.className}-num-${id}-${lvl}`;
 	}
 
-	levelTextToContent(text: string, suff: string, id: string, numformat: string) {
+	levelTextToContent(
+		text: string,
+		suff: string,
+		id: string,
+		numformat: string
+	) {
 		const suffMap = {
-			"tab": "\\9",
-			"space": "\\a0",
+			tab: "\\9",
+			space: "\\a0",
 		};
 
-		var result = text.replace(/%\d*/g, s => {
+		var result = text.replace(/%\d*/g, (s) => {
 			let lvl = parseInt(s.substring(1), 10) - 1;
 			return `"counter(${this.numberingCounter(id, lvl)}, ${numformat})"`;
 		});
@@ -1170,21 +1368,20 @@ section.${c}>article { margin-bottom: auto; }
 
 	numFormatToCssValue(format: string) {
 		var mapping = {
-			"none": "none",
-			"bullet": "disc",
-			"decimal": "decimal",
-			"lowerLetter": "lower-alpha",
-			"upperLetter": "upper-alpha",
-			"lowerRoman": "lower-roman",
-			"upperRoman": "upper-roman",
+			none: "none",
+			bullet: "disc",
+			decimal: "decimal",
+			lowerLetter: "lower-alpha",
+			upperLetter: "upper-alpha",
+			lowerRoman: "lower-roman",
+			upperRoman: "upper-roman",
 		};
 
 		return mapping[format] || format;
 	}
 
 	refreshTabStops() {
-		if (!this.options.experimental)
-			return;
+		if (!this.options.experimental) return;
 
 		clearTimeout(this.tabsTimeout);
 
@@ -1192,7 +1389,12 @@ section.${c}>article { margin-bottom: auto; }
 			const pixelToPoint = computePixelToPoint();
 
 			for (let tab of this.currentTabs) {
-				updateTabStop(tab.span, tab.stops, this.defaultTabSize, pixelToPoint);
+				updateTabStop(
+					tab.span,
+					tab.stops,
+					this.defaultTabSize,
+					pixelToPoint
+				);
 			}
 		}, 500);
 	}
@@ -1218,19 +1420,28 @@ function createSvgElement<T extends keyof SVGElementTagNameMap>(
 	return createElementNS(ns.svg, tagName, props, children);
 }
 
-function createElementNS(ns: string, tagName: string, props?: Partial<Record<any, any>>, children?: ChildType[]): any {
-	var result = ns ? document.createElementNS(ns, tagName) : document.createElement(tagName);
+function createElementNS(
+	ns: string,
+	tagName: string,
+	props?: Partial<Record<any, any>>,
+	children?: ChildType[]
+): any {
+	var result = ns
+		? document.createElementNS(ns, tagName)
+		: document.createElement(tagName);
 	Object.assign(result, props);
 	children && appendChildren(result, children);
 	return result;
 }
 
 function removeAllElements(elem: HTMLElement) {
-	elem.innerHTML = '';
+	elem.innerHTML = "";
 }
 
 function appendChildren(elem: Element, children: (Node | string)[]) {
-	children.forEach(c => elem.appendChild(isString(c) ? document.createTextNode(c) : c));
+	children.forEach((c) =>
+		elem.appendChild(isString(c) ? document.createTextNode(c) : c)
+	);
 }
 
 function createStyleElement(cssText: string) {
@@ -1241,11 +1452,13 @@ function appendComment(elem: HTMLElement, comment: string) {
 	elem.appendChild(document.createComment(comment));
 }
 
-function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomType): T {
+function findParent<T extends OpenXmlElement>(
+	elem: OpenXmlElement,
+	type: DomType
+): T {
 	var parent = elem.parent;
 
-	while (parent != null && parent.type != type)
-		parent = parent.parent;
+	while (parent != null && parent.type != type) parent = parent.parent;
 
 	return <T>parent;
 }
