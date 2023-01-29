@@ -5,7 +5,7 @@ import {
 } from './document/dom';
 import { DocumentElement } from './document/document';
 import { WmlParagraph, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
-import { parseSectionProperties } from './document/section';
+import { parseSectionProperties, SectionProperties } from './document/section';
 import xml from './parser/xml-parser';
 import { parseRunProperties, WmlRun } from './document/run';
 import { parseBookmarkEnd, parseBookmarkStart } from './document/bookmarks';
@@ -78,7 +78,7 @@ export class DocumentParser {
 		return {
 			type: DomType.Document,
 			children: this.parseBodyElements(xbody),
-			props: sectPr ? parseSectionProperties(sectPr, xml) : null,
+			props: sectPr ? parseSectionProperties(sectPr, xml) : {} as SectionProperties,
 			cssStyle: background ? this.parseBackground(background) : {},
 		};
 	}
