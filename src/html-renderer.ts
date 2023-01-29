@@ -741,6 +741,9 @@ section.${c}>article { margin-bottom: auto; }
 			case DomType.MmlDelimiter:
 				return this.renderMmlDelimiter(elem);
 
+			case DomType.MmlRun:
+				return this.renderMmlRun(elem);
+
 			case DomType.MmlNary:
 				return this.renderMmlNary(elem);
 
@@ -1111,6 +1114,16 @@ section.${c}>article { margin-bottom: auto; }
 		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
 
 		return createElementNS(ns.mathML, "mrow", null, children);
+	}
+
+	renderMmlRun(elem: OpenXmlElement) {
+		const result = createElementNS(ns.mathML, "ms");
+
+		this.renderClass(elem, result);
+		this.renderStyleValues(elem.cssStyle, result);
+		this.renderChildren(elem, result);
+
+		return result;
 	}
 
 	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {

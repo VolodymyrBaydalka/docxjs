@@ -39,6 +39,7 @@ export enum DomType {
 	MmlSuperArgument = "mmlSuperArgument",
 	MmlNary = "mmlNary",
 	MmlDelimiter = "mmlDelimiter",
+	MmlRun = "mmlRun",
 	VmlElement = "vmlElement",
 	Inserted = "inserted",
 	Deleted = "deleted",

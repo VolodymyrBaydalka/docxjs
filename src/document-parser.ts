@@ -37,7 +37,7 @@ const mmlTagMap = {
 	"sup": DomType.MmlSuperArgument,
 	"sub": DomType.MmlSubArgument,
 	"d": DomType.MmlDelimiter,
-	"nary": DomType.MmlNary
+	"nary": DomType.MmlNary,
 }
 
 export interface DocumentParserOptions {
@@ -681,7 +681,9 @@ export class DocumentParser {
 			if (childType) {
 				result.children.push(this.parseMathElement(el));
 			} else if (el.localName == "r") {
-				result.children.push(this.parseRun(el));
+				var run = this.parseRun(el);
+				run.type = DomType.MmlRun;
+				result.children.push(run);
 			} else if (el.localName == propsTag) {
 				result.props = this.parseMathProperies(el);
 			}

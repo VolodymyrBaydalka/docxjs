@@ -399,7 +399,7 @@ const mmlTagMap = {
     "sup": dom_1.DomType.MmlSuperArgument,
     "sub": dom_1.DomType.MmlSubArgument,
     "d": dom_1.DomType.MmlDelimiter,
-    "nary": dom_1.DomType.MmlNary
+    "nary": dom_1.DomType.MmlNary,
 };
 class DocumentParser {
     constructor(options) {
@@ -423,7 +423,7 @@ class DocumentParser {
         return {
             type: dom_1.DomType.Document,
             children: this.parseBodyElements(xbody),
-            props: sectPr ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default) : null,
+            props: sectPr ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default) : {},
             cssStyle: background ? this.parseBackground(background) : {},
         };
     }
@@ -923,7 +923,9 @@ class DocumentParser {
                 result.children.push(this.parseMathElement(el));
             }
             else if (el.localName == "r") {
-                result.children.push(this.parseRun(el));
+                var run = this.parseRun(el);
+                run.type = dom_1.DomType.MmlRun;
+                result.children.push(run);
             }
             else if (el.localName == propsTag) {
                 result.props = this.parseMathProperies(el);
@@ -2044,6 +2046,7 @@ var DomType;
     DomType["MmlSuperArgument"] = "mmlSuperArgument";
     DomType["MmlNary"] = "mmlNary";
     DomType["MmlDelimiter"] = "mmlDelimiter";
+    DomType["MmlRun"] = "mmlRun";
     DomType["VmlElement"] = "vmlElement";
     DomType["Inserted"] = "inserted";
     DomType["Deleted"] = "deleted";
@@ -2999,6 +3002,8 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderContainerNS(elem, ns.mathML, "mn");
             case dom_1.DomType.MmlDelimiter:
                 return this.renderMmlDelimiter(elem);
+            case dom_1.DomType.MmlRun:
+                return this.renderMmlRun(elem);
             case dom_1.DomType.MmlNary:
                 return this.renderMmlNary(elem);
             case dom_1.DomType.Inserted:
@@ -3282,6 +3287,13 @@ section.${c}>article { margin-bottom: auto; }
         }
         children.push(...this.renderElements(grouped[dom_1.DomType.MmlBase].children));
         return createElementNS(ns.mathML, "mrow", null, children);
+    }
+    renderMmlRun(elem) {
+        const result = createElementNS(ns.mathML, "ms");
+        this.renderClass(elem, result);
+        this.renderStyleValues(elem.cssStyle, result);
+        this.renderChildren(elem, result);
+        return result;
     }
     renderStyleValues(style, ouput) {
         Object.assign(ouput.style, style);
