@@ -59,11 +59,11 @@ Table of contents is built using the TOC fields and there is no efficient way to
 Breaks
 ------
 Currently library does break pages:
-- if user/manual page break `<w:br w:type="page"/>` is inserted - when user insert break
+- if user/manual page break `<w:br w:type="page"/>` is inserted - when user insert page break
 - if application page break `<w:lastRenderedPageBreak/>` is inserted - could be inserted by editor application like MS word
 - if page settings for paragraph is changed - ex: user change settings from portrait to landscape page
 
-Realtime page breaking is not implemented because it's requires
+Realtime page breaking is not implemented because it's requires re-calculation of sizes on each insertion and that could affect performance a lot. 
 
 If page breaking is crutual for you, I would recommend:
 - try to insert manual break point as much as you could
