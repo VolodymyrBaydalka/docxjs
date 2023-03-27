@@ -56,6 +56,19 @@ Thumbnails is added only for example and it's not part of library. Library rende
 
 Table of contents is built using the TOC fields and there is no efficient way to get table of contents at this point, since fields is not supported yet (http://officeopenxml.com/WPtableOfContents.php)
 
+Breaks
+------
+Currently library does break pages:
+- if user/manual page break `<w:br w:type="page"/>` is inserted - when user insert break
+- if application page break `<w:lastRenderedPageBreak/>` is inserted - could be inserted by editor application like MS word
+- if page settings for paragraph is changed - ex: user change settings from portrait to landscape page
+
+Realtime page breaking is not implemented because it's requires
+
+If page breaking is crutual for you, I would recommend:
+- try to insert manual break point as much as you could
+- try use editors like MS Word, that inserts `<w:lastRenderedPageBreak/>` break points
+
 Status and stability
 ------
 So far I can't come up with final approach of parsing documents and final structure of API. Only **renderAsync** function is stable and definition shouldn't be changed in future. Inner implementation of parsing and rendering may be changed at any point of time.
