@@ -60,7 +60,7 @@ Breaks
 ------
 Currently library does break pages:
 - if user/manual page break `<w:br w:type="page"/>` is inserted - when user insert page break
-- if application page break `<w:lastRenderedPageBreak/>` is inserted - could be inserted by editor application like MS word
+- if application page break `<w:lastRenderedPageBreak/>` is inserted - could be inserted by editor application like MS word (`ignoreLastRenderedPageBreak` should be set to false)
 - if page settings for paragraph is changed - ex: user change settings from portrait to landscape page
 
 Realtime page breaking is not implemented because it's requires re-calculation of sizes on each insertion and that could affect performance a lot. 
@@ -68,6 +68,8 @@ Realtime page breaking is not implemented because it's requires re-calculation o
 If page breaking is crutual for you, I would recommend:
 - try to insert manual break point as much as you could
 - try use editors like MS Word, that inserts `<w:lastRenderedPageBreak/>` break points
+
+NOTE: by default `ignoreLastRenderedPageBreak` is set to `true`. You may need to set it to `true`, to make library break by `<w:lastRenderedPageBreak/>` break points
 
 Status and stability
 ------
