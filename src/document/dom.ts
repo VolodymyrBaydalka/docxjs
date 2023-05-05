@@ -43,7 +43,8 @@ export enum DomType {
 	VmlElement = "vmlElement",
 	Inserted = "inserted",
 	Deleted = "deleted",
-	DeletedText = "deletedText"
+	DeletedText = "deletedText",
+	CheckboxFormField = "checkBoxFormField"
 }
 
 export interface OpenXmlElement {

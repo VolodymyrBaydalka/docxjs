@@ -36,7 +36,7 @@ var ___CSS_LOADER_URL_IMPORT_0___ = new URL(/* asset import */ __webpack_require
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2___default()(___CSS_LOADER_URL_IMPORT_0___);
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\r\n\r\nmath {\r\n    display: inline-block;\r\n    line-height: initial;\r\n}\r\n\r\nmfrac {\r\n    display: inline-block;\r\n    vertical-align: -50%;\r\n    text-align: center;\r\n\r\n    &>:first-child {\r\n        border-bottom: solid thin currentColor;\r\n    }\r\n\r\n    &>* {\r\n        display: block;\r\n    }\r\n}\r\n\r\nmsub {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: sub;\r\n    }\r\n}\r\n\r\nmsup {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: super;\r\n    }\r\n}\r\n\r\nmunder, mover, munderover {\r\n    display: inline-flex;\r\n    flex-flow: column nowrap;\r\n    vertical-align: middle;\r\n    text-align: center;\r\n\r\n    &>:not(:first-child) {\r\n        font-size: smaller;\r\n    }\r\n}\r\n\r\nmunderover {\r\n    &>:last-child { order: -1; }\r\n}\r\n\r\nmroot, msqrt {\r\n    position: relative;\r\n    display: inline-block;\r\n    border-top: solid thin currentColor;  \r\n    margin-top: 0.5px;\r\n    vertical-align: middle;  \r\n    margin-left: 1ch; \r\n\r\n    &:before {\r\n        content: \"\";\r\n        display: inline-block;\r\n        position: absolute;\r\n        width: 1ch;\r\n        left: -1ch;\r\n        top: -1px;\r\n        bottom: 0;\r\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\r\n    }\r\n}"],"sourceRoot":""}]);
+___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\n\nmath {\n    display: inline-block;\n    line-height: initial;\n}\n\nmfrac {\n    display: inline-block;\n    vertical-align: -50%;\n    text-align: center;\n\n    &>:first-child {\n        border-bottom: solid thin currentColor;\n    }\n\n    &>* {\n        display: block;\n    }\n}\n\nmsub {\n    &>:nth-child(2) {\n        font-size: smaller;\n        vertical-align: sub;\n    }\n}\n\nmsup {\n    &>:nth-child(2) {\n        font-size: smaller;\n        vertical-align: super;\n    }\n}\n\nmunder, mover, munderover {\n    display: inline-flex;\n    flex-flow: column nowrap;\n    vertical-align: middle;\n    text-align: center;\n\n    &>:not(:first-child) {\n        font-size: smaller;\n    }\n}\n\nmunderover {\n    &>:last-child { order: -1; }\n}\n\nmroot, msqrt {\n    position: relative;\n    display: inline-block;\n    border-top: solid thin currentColor;  \n    margin-top: 0.5px;\n    vertical-align: middle;  \n    margin-left: 1ch; \n\n    &:before {\n        content: \"\";\n        display: inline-block;\n        position: absolute;\n        width: 1ch;\n        left: -1ch;\n        top: -1px;\n        bottom: 0;\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\n    }\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___.toString());
 
@@ -352,6 +352,7 @@ const run_1 = __webpack_require__(/*! ./document/run */ "./src/document/run.ts")
 const bookmarks_1 = __webpack_require__(/*! ./document/bookmarks */ "./src/document/bookmarks.ts");
 const common_1 = __webpack_require__(/*! ./document/common */ "./src/document/common.ts");
 const vml_1 = __webpack_require__(/*! ./vml/vml */ "./src/vml/vml.ts");
+const checkbox_1 = __webpack_require__(/*! ./document/checkbox */ "./src/document/checkbox.ts");
 exports.autos = {
     shd: "inherit",
     color: "black",
@@ -729,6 +730,9 @@ class DocumentParser {
                     result.children.push(this.parseHyperlink(el, result));
                     break;
                 case "bookmarkStart":
+                    if (el.previousElementSibling.getElementsByTagName("w:checkBox").length) {
+                        break;
+                    }
                     result.children.push((0, bookmarks_1.parseBookmarkStart)(el, xml_parser_1.default));
                     break;
                 case "bookmarkEnd":
@@ -796,6 +800,9 @@ class DocumentParser {
         return result;
     }
     parseRun(node, parent) {
+        const checkbox = (0, checkbox_1.parseCheckbox)(node);
+        if (checkbox)
+            return checkbox;
         var result = { type: dom_1.DomType.Run, parent: parent, children: [] };
         xmlUtil.foreach(node, c => {
             c = this.checkAlternateContent(c);
@@ -1876,6 +1883,45 @@ exports.parseBorders = parseBorders;
 
 /***/ }),
 
+/***/ "./src/document/checkbox.ts":
+/*!**********************************!*\
+  !*** ./src/document/checkbox.ts ***!
+  \**********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseCheckbox = void 0;
+const dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
+const xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+const getName = (checkboxWrapperElement) => {
+    const statusTextElement = checkboxWrapperElement.getElementsByTagName("w:statusText")[0];
+    const statusTextName = statusTextElement ? xml_parser_1.default.attr(statusTextElement, "val") : "";
+    if (statusTextName)
+        return statusTextName;
+    const nameElement = checkboxWrapperElement.getElementsByTagName("w:name")[0];
+    const nameNodeText = nameElement ? xml_parser_1.default.attr(nameElement, "val") : "";
+    return nameNodeText || "unknownCheckbox";
+};
+const getDefaultChecked = (checkboxElement) => {
+    const defaultElement = checkboxElement.getElementsByTagName("w:default")[0];
+    return defaultElement ? xml_parser_1.default.boolAttr(defaultElement, "val", false) : false;
+};
+const parseCheckbox = (element) => {
+    const checkboxElement = element.getElementsByTagName("w:checkBox")[0];
+    if (!checkboxElement)
+        return null;
+    return {
+        type: dom_1.DomType.CheckboxFormField,
+        name: getName(checkboxElement.parentElement),
+        checked: getDefaultChecked(checkboxElement),
+    };
+};
+exports.parseCheckbox = parseCheckbox;
+
+
+/***/ }),
+
 /***/ "./src/document/common.ts":
 /*!********************************!*\
   !*** ./src/document/common.ts ***!
@@ -2025,6 +2071,7 @@ var DomType;
     DomType["Inserted"] = "inserted";
     DomType["Deleted"] = "deleted";
     DomType["DeletedText"] = "deletedText";
+    DomType["CheckboxFormField"] = "checkBoxFormField";
 })(DomType = exports.DomType || (exports.DomType = {}));
 
 
@@ -2984,6 +3031,8 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderInserted(elem);
             case dom_1.DomType.Deleted:
                 return this.renderDeleted(elem);
+            case dom_1.DomType.CheckboxFormField:
+                return this.renderCheckbox(elem);
         }
         return null;
     }
@@ -3138,6 +3187,16 @@ section.${c}>article { margin-bottom: auto; }
             this.renderChildren(elem, result);
         }
         return result;
+    }
+    renderCheckbox({ name, checked }) {
+        const input = this.createElement("input");
+        input.setAttribute("type", "checkbox");
+        input.setAttribute("name", name);
+        input.setAttribute("id", name);
+        if (checked) {
+            input.setAttribute("checked", "checked");
+        }
+        return input;
     }
     renderTable(elem) {
         let result = this.createElement("table");

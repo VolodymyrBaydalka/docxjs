@@ -6,3 +6,4 @@ docx.js.map
 /*.json
 /*.config
 *.log
+.DS_Store
