@@ -1894,12 +1894,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseCheckbox = void 0;
 const dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 const xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
-const getName = (checkboxWrapperElement) => {
-    const statusTextElement = checkboxWrapperElement.getElementsByTagName("w:statusText")[0];
+const getName = (checkboxElement) => {
+    const parentElement = checkboxElement.parentElement;
+    const statusTextElement = parentElement.getElementsByTagName("w:statusText")[0];
     const statusTextName = statusTextElement ? xml_parser_1.default.attr(statusTextElement, "val") : "";
     if (statusTextName)
         return statusTextName;
-    const nameElement = checkboxWrapperElement.getElementsByTagName("w:name")[0];
+    const nameElement = parentElement.getElementsByTagName("w:name")[0];
     const nameNodeText = nameElement ? xml_parser_1.default.attr(nameElement, "val") : "";
     return nameNodeText || "unknownCheckbox";
 };
@@ -1913,7 +1914,7 @@ const parseCheckbox = (element) => {
         return null;
     return {
         type: dom_1.DomType.CheckboxFormField,
-        name: getName(checkboxElement.parentElement),
+        name: getName(checkboxElement),
         checked: getDefaultChecked(checkboxElement),
     };
 };
@@ -3189,14 +3190,9 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
     renderCheckbox({ name, checked }) {
-        const input = this.createElement("input");
-        input.setAttribute("type", "checkbox");
-        input.setAttribute("name", name);
-        input.setAttribute("id", name);
-        if (checked) {
-            input.setAttribute("checked", "checked");
-        }
-        return input;
+        return this.createElement("input", Object.assign({ type: "checkbox", name, id: name }, (checked && {
+            checked: "checked",
+        })));
     }
     renderTable(elem) {
         let result = this.createElement("table");
