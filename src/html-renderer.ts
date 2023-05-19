@@ -20,6 +20,7 @@ import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import mathMLCSS from "./mathml.scss";
 import { VmlElement } from './vml/vml';
+import { WmlCheckboxFormField } from './document/checkbox';
 
 const ns = {
 	svg: "http://www.w3.org/2000/svg",
@@ -752,6 +753,9 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.Deleted:
 				return this.renderDeleted(elem);
+
+			case DomType.CheckboxFormField:
+				return this.renderCheckbox(elem as WmlCheckboxFormField);
 		}
 
 		return null;
@@ -955,6 +959,17 @@ section.${c}>article { margin-bottom: auto; }
 		}
 
 		return result;
+	}
+
+	renderCheckbox({ name, checked }: WmlCheckboxFormField) {
+		return this.createElement("input", {
+			type: "checkbox",
+			name,
+			id: name,
+			...(checked && {
+				checked: "checked",
+			})
+		});
 	}
 
 	renderTable(elem: WmlTable) {

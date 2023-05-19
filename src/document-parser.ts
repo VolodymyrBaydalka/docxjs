@@ -13,6 +13,7 @@ import { IDomStyle, IDomSubStyle } from './document/style';
 import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fields';
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
 import { parseVmlElement } from './vml/vml';
+import { WmlCheckboxFormField, parseCheckbox } from './document/checkbox';
 
 export var autos = {
 	shd: "inherit",
@@ -471,6 +472,10 @@ export class DocumentParser {
 					break;
 
 				case "bookmarkStart":
+					// Skip a bookmark that follows a checkbox as it'd appear as an empty HTML element of no use
+					if (el.previousElementSibling.getElementsByTagName("w:checkBox").length) {
+						break;
+					}
 					result.children.push(parseBookmarkStart(el, xml));
 					break;
 
@@ -559,7 +564,10 @@ export class DocumentParser {
 		return result;
 	}
 
-	parseRun(node: Element, parent?: OpenXmlElement): WmlRun {
+	parseRun(node: Element, parent?: OpenXmlElement): WmlRun | WmlCheckboxFormField {
+		const checkbox = parseCheckbox(node);
+		if (checkbox) return checkbox;
+
 		var result: WmlRun = <WmlRun>{ type: DomType.Run, parent: parent, children: [] };
 
 		xmlUtil.foreach(node, c => {

@@ -1,5 +1,6 @@
 describe("Render document", function () {
   const tests = [
+    'checkbox',
     'text',
     'text-break',
     'table',
