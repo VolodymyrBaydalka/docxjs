@@ -47,14 +47,12 @@ export function praseAsync(data: Blob | any, userOptions: Partial<Options> = nul
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
 
-export function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null): Promise<any> {
+export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null): Promise<any> {
     const ops = { ...defaultOptions, ...userOptions };
     const renderer = new HtmlRenderer(window.document);
+	const doc = await WordDocument.load(data, new DocumentParser(ops), ops)
 
-    return WordDocument
-        .load(data, new DocumentParser(ops), ops)
-        .then(doc => {
-            renderer.render(doc, bodyContainer, styleContainer, ops);
-            return doc;
-        });
+	renderer.render(doc, bodyContainer, styleContainer, ops);
+	
+    return doc;
 }

@@ -10,21 +10,17 @@ export class Part {
     constructor(protected _package: OpenXmlPackage, public path: string) {
     }
 
-    load(): Promise<any> {
-        return Promise.all([
-            this._package.loadRelationships(this.path).then(rels => {
-                this.rels = rels;
-            }),
-            this._package.load(this.path).then(text => {
-                const xmlDoc = this._package.parseXmlDocument(text);
+    async load(): Promise<any> {
+		this.rels = await this._package.loadRelationships(this.path);
 
-                if (this._package.options.keepOrigin) {
-                    this._xmlDocument = xmlDoc;
-                }
+		const xmlText = await this._package.load(this.path);
+		const xmlDoc = this._package.parseXmlDocument(xmlText);
 
-                this.parseXml(xmlDoc.firstElementChild);
-            })
-        ]);
+		if (this._package.options.keepOrigin) {
+			this._xmlDocument = xmlDoc;
+		}
+
+		this.parseXml(xmlDoc.firstElementChild);
     }
 
     save() {

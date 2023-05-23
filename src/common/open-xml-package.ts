@@ -22,8 +22,9 @@ export class OpenXmlPackage {
         this._zip.file(path, content);
     }
 
-    static load(input: Blob | any, options: OpenXmlPackageOptions): Promise<OpenXmlPackage> {
-        return JSZip.loadAsync(input).then(zip => new OpenXmlPackage(zip, options));
+    static async load(input: Blob | any, options: OpenXmlPackageOptions): Promise<OpenXmlPackage> {
+        const zip = await JSZip.loadAsync(input);
+		return new OpenXmlPackage(zip, options);
     }
 
     save(type: any = "blob"): Promise<any>  {
@@ -34,7 +35,7 @@ export class OpenXmlPackage {
         return this.get(path)?.async(type) ?? Promise.resolve(null);
     }
 
-    loadRelationships(path: string = null): Promise<Relationship[]> {
+    async loadRelationships(path: string = null): Promise<Relationship[]> {
         let relsPath = `_rels/.rels`;
 
         if (path != null) {
@@ -42,8 +43,8 @@ export class OpenXmlPackage {
             relsPath = `${f}_rels/${fn}.rels`;
         }
 
-        return this.load(relsPath)
-            .then(txt => txt ? parseRelationships(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null);
+        const txt = await this.load(relsPath);
+		return txt ? parseRelationships(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null;
     }
 
     /** @internal */

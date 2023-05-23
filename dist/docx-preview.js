@@ -222,8 +222,9 @@ class OpenXmlPackage {
     update(path, content) {
         this._zip.file(path, content);
     }
-    static load(input, options) {
-        return JSZip.loadAsync(input).then(zip => new OpenXmlPackage(zip, options));
+    static async load(input, options) {
+        const zip = await JSZip.loadAsync(input);
+        return new OpenXmlPackage(zip, options);
     }
     save(type = "blob") {
         return this._zip.generateAsync({ type });
@@ -232,14 +233,14 @@ class OpenXmlPackage {
         var _a, _b;
         return (_b = (_a = this.get(path)) === null || _a === void 0 ? void 0 : _a.async(type)) !== null && _b !== void 0 ? _b : Promise.resolve(null);
     }
-    loadRelationships(path = null) {
+    async loadRelationships(path = null) {
         let relsPath = `_rels/.rels`;
         if (path != null) {
             const [f, fn] = (0, utils_1.splitPath)(path);
             relsPath = `${f}_rels/${fn}.rels`;
         }
-        return this.load(relsPath)
-            .then(txt => txt ? (0, relationship_1.parseRelationships)(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null);
+        const txt = await this.load(relsPath);
+        return txt ? (0, relationship_1.parseRelationships)(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null;
     }
     parseXmlDocument(txt) {
         return (0, xml_parser_1.parseXmlString)(txt, this.options.trimXmlDeclaration);
@@ -268,19 +269,14 @@ class Part {
         this._package = _package;
         this.path = path;
     }
-    load() {
-        return Promise.all([
-            this._package.loadRelationships(this.path).then(rels => {
-                this.rels = rels;
-            }),
-            this._package.load(this.path).then(text => {
-                const xmlDoc = this._package.parseXmlDocument(text);
-                if (this._package.options.keepOrigin) {
-                    this._xmlDocument = xmlDoc;
-                }
-                this.parseXml(xmlDoc.firstElementChild);
-            })
-        ]);
+    async load() {
+        this.rels = await this._package.loadRelationships(this.path);
+        const xmlText = await this._package.load(this.path);
+        const xmlDoc = this._package.parseXmlDocument(xmlText);
+        if (this._package.options.keepOrigin) {
+            this._xmlDocument = xmlDoc;
+        }
+        this.parseXml(xmlDoc.firstElementChild);
     }
     save() {
         this._package.update(this.path, (0, xml_parser_1.serializeXmlString)(this._xmlDocument));
@@ -2311,15 +2307,12 @@ function praseAsync(data, userOptions = null) {
     return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
 }
 exports.praseAsync = praseAsync;
-function renderAsync(data, bodyContainer, styleContainer = null, userOptions = null) {
+async function renderAsync(data, bodyContainer, styleContainer = null, userOptions = null) {
     const ops = Object.assign(Object.assign({}, exports.defaultOptions), userOptions);
     const renderer = new html_renderer_1.HtmlRenderer(window.document);
-    return word_document_1.WordDocument
-        .load(data, new document_parser_1.DocumentParser(ops), ops)
-        .then(doc => {
-        renderer.render(doc, bodyContainer, styleContainer, ops);
-        return doc;
-    });
+    const doc = await word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
+    renderer.render(doc, bodyContainer, styleContainer, ops);
+    return doc;
 }
 exports.renderAsync = renderAsync;
 
@@ -3212,11 +3205,11 @@ section.${c}>article { margin-bottom: auto; }
             (_b = this.document) === null || _b === void 0 ? void 0 : _b.loadDocumentImage(elem.imageHref.id, this.currentPart).then(x => result.setAttribute("href", x));
         }
         container.appendChild(result);
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             const bb = container.firstElementChild.getBBox();
             container.setAttribute("width", `${Math.ceil(bb.x + bb.width)}`);
             container.setAttribute("height", `${Math.ceil(bb.y + bb.height)}`);
-        }, 0);
+        });
         return container;
     }
     renderMmlRadical(elem) {
@@ -4034,9 +4027,10 @@ function keyBy(array, by) {
 }
 exports.keyBy = keyBy;
 function blobToBase64(blob) {
-    return new Promise((resolve, _) => {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject();
         reader.readAsDataURL(blob);
     });
 }
@@ -4232,28 +4226,23 @@ class WordDocument {
         this.parts = [];
         this.partsMap = {};
     }
-    static load(blob, parser, options) {
+    static async load(blob, parser, options) {
         var d = new WordDocument();
         d._options = options;
         d._parser = parser;
-        return open_xml_package_1.OpenXmlPackage.load(blob, options)
-            .then(pkg => {
-            d._package = pkg;
-            return d._package.loadRelationships();
-        }).then(rels => {
-            d.rels = rels;
-            const tasks = topLevelRels.map(rel => {
-                var _a;
-                const r = (_a = rels.find(x => x.type === rel.type)) !== null && _a !== void 0 ? _a : rel;
-                return d.loadRelationshipPart(r.target, r.type);
-            });
-            return Promise.all(tasks);
-        }).then(() => d);
+        d._package = await open_xml_package_1.OpenXmlPackage.load(blob, options);
+        d.rels = await d._package.loadRelationships();
+        await Promise.all(topLevelRels.map(rel => {
+            var _a;
+            const r = (_a = d.rels.find(x => x.type === rel.type)) !== null && _a !== void 0 ? _a : rel;
+            return d.loadRelationshipPart(r.target, r.type);
+        }));
+        return d;
     }
     save(type = "blob") {
         return this._package.save(type);
     }
-    loadRelationshipPart(path, type) {
+    async loadRelationshipPart(path, type) {
         if (this.partsMap[path])
             return Promise.resolve(this.partsMap[path]);
         if (!this._package.get(path))
@@ -4304,27 +4293,27 @@ class WordDocument {
             return Promise.resolve(null);
         this.partsMap[path] = part;
         this.parts.push(part);
-        return part.load().then(() => {
-            if (part.rels == null || part.rels.length == 0)
-                return part;
-            const [folder] = (0, utils_1.splitPath)(part.path);
-            const rels = part.rels.map(rel => {
-                return this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
-            });
-            return Promise.all(rels).then(() => part);
+        await part.load();
+        if (part.rels == null || part.rels.length == 0)
+            return part;
+        const [folder] = (0, utils_1.splitPath)(part.path);
+        const rels = part.rels.map(rel => {
+            return this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
         });
+        await Promise.all(rels);
+        return part;
     }
-    loadDocumentImage(id, part) {
-        return this.loadResource(part !== null && part !== void 0 ? part : this.documentPart, id, "blob")
-            .then(x => this.blobToURL(x));
+    async loadDocumentImage(id, part) {
+        const x = await this.loadResource(part !== null && part !== void 0 ? part : this.documentPart, id, "blob");
+        return this.blobToURL(x);
     }
-    loadNumberingImage(id) {
-        return this.loadResource(this.numberingPart, id, "blob")
-            .then(x => this.blobToURL(x));
+    async loadNumberingImage(id) {
+        const x = await this.loadResource(this.numberingPart, id, "blob");
+        return this.blobToURL(x);
     }
-    loadFont(id, key) {
-        return this.loadResource(this.fontTablePart, id, "uint8array")
-            .then(x => x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x);
+    async loadFont(id, key) {
+        const x = await this.loadResource(this.fontTablePart, id, "uint8array");
+        return x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x;
     }
     blobToURL(blob) {
         if (!blob)

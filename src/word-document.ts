@@ -44,39 +44,32 @@ export class WordDocument {
 	extendedPropsPart: ExtendedPropsPart;
 	settingsPart: SettingsPart;
 
-	static load(blob, parser: DocumentParser, options: any): Promise<WordDocument> {
+	static async load(blob: Blob | any, parser: DocumentParser, options: any): Promise<WordDocument> {
 		var d = new WordDocument();
 
 		d._options = options;
 		d._parser = parser;
+		d._package = await OpenXmlPackage.load(blob, options);
+		d.rels = await d._package.loadRelationships();
 
-		return OpenXmlPackage.load(blob, options)
-			.then(pkg => {
-				d._package = pkg;
+		await Promise.all(topLevelRels.map(rel => {
+			const r = d.rels.find(x => x.type === rel.type) ?? rel; //fallback                    
+			return d.loadRelationshipPart(r.target, r.type);
+		}));
 
-				return d._package.loadRelationships();
-			}).then(rels => {
-				d.rels = rels;
-
-				const tasks = topLevelRels.map(rel => {
-					const r = rels.find(x => x.type === rel.type) ?? rel; //fallback                    
-					return d.loadRelationshipPart(r.target, r.type);
-				});
-
-				return Promise.all(tasks);
-			}).then(() => d);
+		return d;
 	}
 
 	save(type = "blob"): Promise<any> {
 		return this._package.save(type);
 	}
 
-	private loadRelationshipPart(path: string, type: string): Promise<Part> {
+	private async loadRelationshipPart(path: string, type: string): Promise<Part> {
 		if (this.partsMap[path])
-			return Promise.resolve(this.partsMap[path]);
+			return this.partsMap[path];
 
 		if (!this._package.get(path))
-			return Promise.resolve(null);
+			return null;
 
 		let part: Part = null;
 
@@ -140,35 +133,32 @@ export class WordDocument {
 		this.partsMap[path] = part;
 		this.parts.push(part);
 
-		return part.load().then(() => {
-			if (part.rels == null || part.rels.length == 0)
-				return part;
+		await part.load();
 
+		if (part.rels?.length > 0) {
 			const [folder] = splitPath(part.path);
-			const rels = part.rels.map(rel => {
-				return this.loadRelationshipPart(resolvePath(rel.target, folder), rel.type)
-			});
+			await Promise.all(part.rels.map(rel => this.loadRelationshipPart(resolvePath(rel.target, folder), rel.type)));
+		}
 
-			return Promise.all(rels).then(() => part);
-		});
+		return part;
 	}
 
-	loadDocumentImage(id: string, part?: Part): PromiseLike<string> {
-		return this.loadResource(part ?? this.documentPart, id, "blob")
-			.then(x => this.blobToURL(x));
+	async loadDocumentImage(id: string, part?: Part): Promise<string> {
+		const x = await this.loadResource(part ?? this.documentPart, id, "blob");
+		return this.blobToURL(x);
 	}
 
-	loadNumberingImage(id: string): PromiseLike<string> {
-		return this.loadResource(this.numberingPart, id, "blob")
-			.then(x => this.blobToURL(x));
+	async loadNumberingImage(id: string): Promise<string> {
+		const x = await this.loadResource(this.numberingPart, id, "blob");
+		return this.blobToURL(x);
 	}
 
-	loadFont(id: string, key: string): PromiseLike<string> {
-		return this.loadResource(this.fontTablePart, id, "uint8array")
-			.then(x => x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x);
+	async loadFont(id: string, key: string): Promise<string> {
+		const x = await this.loadResource(this.fontTablePart, id, "uint8array");
+		return x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x;
 	}
 
-	private blobToURL(blob: Blob): string | PromiseLike<string> {
+	private blobToURL(blob: Blob): string | Promise<string> {
 		if (!blob)
 			return null;
 

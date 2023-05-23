@@ -1057,12 +1057,12 @@ section.${c}>article { margin-bottom: auto; }
 		
 		container.appendChild(result);
 
-		setTimeout(() => {
+		requestAnimationFrame(() => {
 			const bb = (container.firstElementChild as any).getBBox();
 
 			container.setAttribute("width", `${Math.ceil(bb.x +  bb.width)}`);
 			container.setAttribute("height", `${Math.ceil(bb.y + bb.height)}`);
-		}, 0);
+		});
 
 		return container;
 	}

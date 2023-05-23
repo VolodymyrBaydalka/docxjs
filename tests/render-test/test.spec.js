@@ -26,7 +26,7 @@ describe("Render document", function () {
       const actual = formatHTML(div.innerHTML);
       const expected = formatHTML(resultText);
 
-      expect(actual == expected).toBeTrue();
+      expect(actual).toBe(expected);
 
       if(actual != expected) {
         const diffs = Diff.diffLines(expected, actual);
