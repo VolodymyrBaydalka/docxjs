@@ -6,15 +6,18 @@ export interface WmlCheckboxFormField extends OpenXmlElement {
 	checked: boolean,
 }
 
+const checkboxDefaultName = "unknownCheckbox";
+
 const getName = (checkboxElement: Element) => {
 	const parentElement = checkboxElement.parentElement;
+	if (!parentElement) return checkboxDefaultName;
 	const statusTextElement = parentElement.getElementsByTagName("w:statusText")[0];
 	const statusTextName = statusTextElement ? xml.attr(statusTextElement, "val") : "";
 	if (statusTextName) return statusTextName;
 
 	const nameElement = parentElement.getElementsByTagName("w:name")[0];
 	const nameNodeText = nameElement ? xml.attr(nameElement, "val") : "";
-	return nameNodeText || "unknownCheckbox";
+	return nameNodeText || checkboxDefaultName;
 }
 
 const getDefaultChecked = (checkboxElement: Element) => {

@@ -717,6 +717,7 @@ class DocumentParser {
         };
     }
     parseParagraph(node) {
+        var _a;
         var result = { type: dom_1.DomType.Paragraph, children: [] };
         for (let el of xml_parser_1.default.elements(node)) {
             switch (el.localName) {
@@ -730,7 +731,8 @@ class DocumentParser {
                     result.children.push(this.parseHyperlink(el, result));
                     break;
                 case "bookmarkStart":
-                    if (el.previousElementSibling.getElementsByTagName("w:checkBox").length) {
+                    console.log({ el });
+                    if ((_a = el.previousElementSibling) === null || _a === void 0 ? void 0 : _a.getElementsByTagName("w:checkBox").length) {
                         break;
                     }
                     result.children.push((0, bookmarks_1.parseBookmarkStart)(el, xml_parser_1.default));
@@ -1894,15 +1896,18 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseCheckbox = void 0;
 const dom_1 = __webpack_require__(/*! ./dom */ "./src/document/dom.ts");
 const xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
+const checkboxDefaultName = "unknownCheckbox";
 const getName = (checkboxElement) => {
     const parentElement = checkboxElement.parentElement;
+    if (!parentElement)
+        return checkboxDefaultName;
     const statusTextElement = parentElement.getElementsByTagName("w:statusText")[0];
     const statusTextName = statusTextElement ? xml_parser_1.default.attr(statusTextElement, "val") : "";
     if (statusTextName)
         return statusTextName;
     const nameElement = parentElement.getElementsByTagName("w:name")[0];
     const nameNodeText = nameElement ? xml_parser_1.default.attr(nameElement, "val") : "";
-    return nameNodeText || "unknownCheckbox";
+    return nameNodeText || checkboxDefaultName;
 };
 const getDefaultChecked = (checkboxElement) => {
     const defaultElement = checkboxElement.getElementsByTagName("w:default")[0];

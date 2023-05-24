@@ -473,7 +473,7 @@ export class DocumentParser {
 
 				case "bookmarkStart":
 					// Skip a bookmark that follows a checkbox as it'd appear as an empty HTML element of no use
-					if (el.previousElementSibling.getElementsByTagName("w:checkBox").length) {
+					if (el.previousElementSibling?.getElementsByTagName("w:checkBox").length) {
 						break;
 					}
 					result.children.push(parseBookmarkStart(el, xml));
