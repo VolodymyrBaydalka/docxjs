@@ -3,6 +3,7 @@ import { Length,  LengthUsage, LengthUsageType, convertLength, convertBoolean  }
 export function parseXmlString(xmlString: string, trimXmlDeclaration: boolean = false): Document {
     if (trimXmlDeclaration)
         xmlString = xmlString.replace(/<[?].*[?]>/, "");
+        xmlString = removeUTF8BOM(xmlString);
     
     const result = new DOMParser().parseFromString(xmlString, "application/xml");  
     const errorText = hasXmlParserError(result);
@@ -15,6 +16,10 @@ export function parseXmlString(xmlString: string, trimXmlDeclaration: boolean = 
 
 function hasXmlParserError(doc: Document) {
     return doc.getElementsByTagName("parsererror")[0]?.textContent;
+}
+
+function removeUTF8BOM(data: string) {
+    return data.charCodeAt(0) === 0xFEFF ? data.substring(1) : data;
 }
 
 export function serializeXmlString(elem: Node): string {
