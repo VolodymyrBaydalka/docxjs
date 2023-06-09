@@ -36,7 +36,66 @@ var ___CSS_LOADER_URL_IMPORT_0___ = new URL(/* asset import */ __webpack_require
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2___default()(___CSS_LOADER_URL_IMPORT_0___);
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\r\n\r\nmath {\r\n    display: inline-block;\r\n    line-height: initial;\r\n}\r\n\r\nmfrac {\r\n    display: inline-block;\r\n    vertical-align: -50%;\r\n    text-align: center;\r\n\r\n    &>:first-child {\r\n        border-bottom: solid thin currentColor;\r\n    }\r\n\r\n    &>* {\r\n        display: block;\r\n    }\r\n}\r\n\r\nmsub {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: sub;\r\n    }\r\n}\r\n\r\nmsup {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: super;\r\n    }\r\n}\r\n\r\nmunder, mover, munderover {\r\n    display: inline-flex;\r\n    flex-flow: column nowrap;\r\n    vertical-align: middle;\r\n    text-align: center;\r\n\r\n    &>:not(:first-child) {\r\n        font-size: smaller;\r\n    }\r\n}\r\n\r\nmunderover {\r\n    &>:last-child { order: -1; }\r\n}\r\n\r\nmroot, msqrt {\r\n    position: relative;\r\n    display: inline-block;\r\n    border-top: solid thin currentColor;  \r\n    margin-top: 0.5px;\r\n    vertical-align: middle;  \r\n    margin-left: 1ch; \r\n\r\n    &:before {\r\n        content: \"\";\r\n        display: inline-block;\r\n        position: absolute;\r\n        width: 1ch;\r\n        left: -1ch;\r\n        top: -1px;\r\n        bottom: 0;\r\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\r\n    }\r\n}"],"sourceRoot":""}]);
+___CSS_LOADER_EXPORT___.push([module.id, `@namespace "http://www.w3.org/1998/Math/MathML";
+math {
+  display: inline-block;
+  line-height: initial;
+}
+
+mfrac {
+  display: inline-block;
+  vertical-align: -50%;
+  text-align: center;
+}
+mfrac > :first-child {
+  border-bottom: solid thin currentColor;
+}
+mfrac > * {
+  display: block;
+}
+
+msub > :nth-child(2) {
+  font-size: smaller;
+  vertical-align: sub;
+}
+
+msup > :nth-child(2) {
+  font-size: smaller;
+  vertical-align: super;
+}
+
+munder, mover, munderover {
+  display: inline-flex;
+  flex-flow: column nowrap;
+  vertical-align: middle;
+  text-align: center;
+}
+munder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {
+  font-size: smaller;
+}
+
+munderover > :last-child {
+  order: -1;
+}
+
+mroot, msqrt {
+  position: relative;
+  display: inline-block;
+  border-top: solid thin currentColor;
+  margin-top: 0.5px;
+  vertical-align: middle;
+  margin-left: 1ch;
+}
+mroot:before, msqrt:before {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  width: 1ch;
+  left: -1ch;
+  top: -1px;
+  bottom: 0;
+  background-image: url(${___CSS_LOADER_URL_REPLACEMENT_0___});
+}`, "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\r\n\r\nmath {\r\n    display: inline-block;\r\n    line-height: initial;\r\n}\r\n\r\nmfrac {\r\n    display: inline-block;\r\n    vertical-align: -50%;\r\n    text-align: center;\r\n\r\n    &>:first-child {\r\n        border-bottom: solid thin currentColor;\r\n    }\r\n\r\n    &>* {\r\n        display: block;\r\n    }\r\n}\r\n\r\nmsub {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: sub;\r\n    }\r\n}\r\n\r\nmsup {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: super;\r\n    }\r\n}\r\n\r\nmunder, mover, munderover {\r\n    display: inline-flex;\r\n    flex-flow: column nowrap;\r\n    vertical-align: middle;\r\n    text-align: center;\r\n\r\n    &>:not(:first-child) {\r\n        font-size: smaller;\r\n    }\r\n}\r\n\r\nmunderover {\r\n    &>:last-child { order: -1; }\r\n}\r\n\r\nmroot, msqrt {\r\n    position: relative;\r\n    display: inline-block;\r\n    border-top: solid thin currentColor;  \r\n    margin-top: 0.5px;\r\n    vertical-align: middle;  \r\n    margin-left: 1ch; \r\n\r\n    &:before {\r\n        content: \"\";\r\n        display: inline-block;\r\n        position: absolute;\r\n        width: 1ch;\r\n        left: -1ch;\r\n        top: -1px;\r\n        bottom: 0;\r\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\r\n    }\r\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___.toString());
 
@@ -317,7 +376,7 @@ var RelationshipTypes;
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
     RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
     RelationshipTypes["CustomProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties";
-})(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
+})(RelationshipTypes || (exports.RelationshipTypes = RelationshipTypes = {}));
 function parseRelationships(root, xml) {
     return xml.elements(root).map(e => ({
         id: xml.attr(e, "Id"),
@@ -2021,7 +2080,7 @@ var DomType;
     DomType["Inserted"] = "inserted";
     DomType["Deleted"] = "deleted";
     DomType["DeletedText"] = "deletedText";
-})(DomType = exports.DomType || (exports.DomType = {}));
+})(DomType || (exports.DomType = DomType = {}));
 
 
 /***/ }),
@@ -2190,7 +2249,7 @@ var SectionType;
     SectionType["NextColumn"] = "nextColumn";
     SectionType["EvenPage"] = "evenPage";
     SectionType["OddPage"] = "oddPage";
-})(SectionType = exports.SectionType || (exports.SectionType = {}));
+})(SectionType || (exports.SectionType = SectionType = {}));
 function parseSectionProperties(elem, xml = xml_parser_1.default) {
     var _a, _b;
     var section = {};
@@ -3715,6 +3774,7 @@ const common_1 = __webpack_require__(/*! ../document/common */ "./src/document/c
 function parseXmlString(xmlString, trimXmlDeclaration = false) {
     if (trimXmlDeclaration)
         xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    xmlString = removeUTF8BOM(xmlString);
     const result = new DOMParser().parseFromString(xmlString, "application/xml");
     const errorText = hasXmlParserError(result);
     if (errorText)
@@ -3725,6 +3785,9 @@ exports.parseXmlString = parseXmlString;
 function hasXmlParserError(doc) {
     var _a;
     return (_a = doc.getElementsByTagName("parsererror")[0]) === null || _a === void 0 ? void 0 : _a.textContent;
+}
+function removeUTF8BOM(data) {
+    return data.charCodeAt(0) === 0xFEFF ? data.substring(1) : data;
 }
 function serializeXmlString(elem) {
     return new XMLSerializer().serializeToString(elem);
@@ -4243,10 +4306,11 @@ class WordDocument {
         return this._package.save(type);
     }
     async loadRelationshipPart(path, type) {
+        var _a;
         if (this.partsMap[path])
-            return Promise.resolve(this.partsMap[path]);
+            return this.partsMap[path];
         if (!this._package.get(path))
-            return Promise.resolve(null);
+            return null;
         let part = null;
         switch (type) {
             case relationship_1.RelationshipTypes.OfficeDocument:
@@ -4294,13 +4358,10 @@ class WordDocument {
         this.partsMap[path] = part;
         this.parts.push(part);
         await part.load();
-        if (part.rels == null || part.rels.length == 0)
-            return part;
-        const [folder] = (0, utils_1.splitPath)(part.path);
-        const rels = part.rels.map(rel => {
-            return this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
-        });
-        await Promise.all(rels);
+        if (((_a = part.rels) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+            const [folder] = (0, utils_1.splitPath)(part.path);
+            await Promise.all(part.rels.map(rel => this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type)));
+        }
         return part;
     }
     async loadDocumentImage(id, part) {
