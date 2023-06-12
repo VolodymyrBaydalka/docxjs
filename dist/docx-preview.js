@@ -3715,6 +3715,7 @@ const common_1 = __webpack_require__(/*! ../document/common */ "./src/document/c
 function parseXmlString(xmlString, trimXmlDeclaration = false) {
     if (trimXmlDeclaration)
         xmlString = xmlString.replace(/<[?].*[?]>/, "");
+    xmlString = removeUTF8BOM(xmlString);
     const result = new DOMParser().parseFromString(xmlString, "application/xml");
     const errorText = hasXmlParserError(result);
     if (errorText)
@@ -3725,6 +3726,9 @@ exports.parseXmlString = parseXmlString;
 function hasXmlParserError(doc) {
     var _a;
     return (_a = doc.getElementsByTagName("parsererror")[0]) === null || _a === void 0 ? void 0 : _a.textContent;
+}
+function removeUTF8BOM(data) {
+    return data.charCodeAt(0) === 0xFEFF ? data.substring(1) : data;
 }
 function serializeXmlString(elem) {
     return new XMLSerializer().serializeToString(elem);
@@ -4243,10 +4247,11 @@ class WordDocument {
         return this._package.save(type);
     }
     async loadRelationshipPart(path, type) {
+        var _a;
         if (this.partsMap[path])
-            return Promise.resolve(this.partsMap[path]);
+            return this.partsMap[path];
         if (!this._package.get(path))
-            return Promise.resolve(null);
+            return null;
         let part = null;
         switch (type) {
             case relationship_1.RelationshipTypes.OfficeDocument:
@@ -4294,13 +4299,10 @@ class WordDocument {
         this.partsMap[path] = part;
         this.parts.push(part);
         await part.load();
-        if (part.rels == null || part.rels.length == 0)
-            return part;
-        const [folder] = (0, utils_1.splitPath)(part.path);
-        const rels = part.rels.map(rel => {
-            return this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type);
-        });
-        await Promise.all(rels);
+        if (((_a = part.rels) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+            const [folder] = (0, utils_1.splitPath)(part.path);
+            await Promise.all(part.rels.map(rel => this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type)));
+        }
         return part;
     }
     async loadDocumentImage(id, part) {
