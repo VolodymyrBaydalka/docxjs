@@ -44,11 +44,14 @@ renderAsync(
         experimental: boolean = false, //enables experimental features (tab stops calculation)
         trimXmlDeclaration: boolean = true, //if true, xml declaration will be removed from xml documents before parsing
         useBase64URL: boolean = false, //if true, images, fonts, etc. will be converted to base 64 URL, otherwise URL.createObjectURL is used
-        useMathMLPolyfill: boolean = false, //includes MathML polyfills for chrome, edge, etc.
-        showChanges: false, //enables experimental rendering of document changes (inserions/deletions)
+        useMathMLPolyfill: boolean = false, //@deprecated includes MathML polyfills for chrome, edge, etc.
+        renderChanges: false, //enables experimental rendering of document changes (inserions/deletions)
+        renderHeaders: true, //enables headers rendering
+        renderFooters: true, //enables footers rendering
+        renderFootnotes: true, //enables footnotes rendering
+        renderEndnotes: true, //enables endnotes rendering
         debug: boolean = false, //enables additional logging
-    }
-    ): Promise<any>
+    }): Promise<any>
 ```
 Thumbnails, TOC and etc.
 ------
