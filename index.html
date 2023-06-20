@@ -25,8 +25,14 @@
     </div>
 
     <div class="hstack p-2 gap-2 bg-light">
+
         <input id="files" type="file" class="form-control" style="width: 50ch;" accept=".docx" />
-        <button id="loadButton" class="btn btn-primary px-4">Load</button>
+        <div class="col-2">
+            <select id="testDocuments" class="form-select">
+                <option disabled selected>-- Test Documents --</option>
+            </select>
+        </div>
+        <button id="loadButton" class="btn btn-primary px-4">Reload</button>
         <div class="dropdown">
             <button class="btn btn-secondary dropdown-toggle" type="button" id="optionsMenuButton"
                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -53,6 +59,9 @@
         });
 
         const container = document.querySelector("#document-container");
+        const fileInput = document.querySelector("#files");
+        const loadButton = document.querySelector("#loadButton");
+        const testDocuments = document.querySelector("#testDocuments");
 
         function renderDocx(file) {
             currentDocument = file; 
@@ -67,9 +76,11 @@
                 });
         }
         
-        document.querySelector("#loadButton").addEventListener("click", ev => {
-            renderDocx(document.getElementById("files").files[0]);
+        fileInput.addEventListener("change", ev => {
+            renderDocx(fileInput.files[0]);
+            testDocuments.selectedIndex = 0;
         });
+        loadButton.addEventListener("click", ev => renderDocx(fileInput.files[0]));
 
         const menu = document.querySelector("#optionsMenu");
 
@@ -96,6 +107,23 @@
         container.addEventListener("drop", ev => {
             ev.preventDefault();
             renderDocx(ev.dataTransfer.files[0]);
+        });
+
+        for (let testName of ['text','text-break','line-spacing','numbering','page-layout','table','table-spans','footnote','header-footer','revision'])
+        {
+            var op = document.createElement("option");
+            op.label = testName;
+            testDocuments.add(op);
+        }
+
+        testDocuments.addEventListener("change", async e => {
+            const selected = testDocuments.selectedOptions[0].label;
+
+            if (selected) {
+                let resp = await fetch(`tests/render-test/${selected}/document.docx`);
+                renderDocx(await resp.blob());
+                fileInput.value = "";
+            }
         });
     </script>
 </body>
