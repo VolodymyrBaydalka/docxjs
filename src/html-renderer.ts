@@ -1190,6 +1190,7 @@ section.${c}>article { margin-bottom: auto; }
 			"upperLetter": "upper-alpha",
 			"lowerRoman": "lower-roman",
 			"upperRoman": "upper-roman",
+			"chineseCounting": "cjk-decimal",
 		};
 
 		return mapping[format] || format;
