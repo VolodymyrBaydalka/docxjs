@@ -1190,6 +1190,14 @@ section.${c}>article { margin-bottom: auto; }
 			"upperLetter": "upper-alpha",
 			"lowerRoman": "lower-roman",
 			"upperRoman": "upper-roman",
+			"chineseCounting": "simp-chinese-informal",
+			"chineseCountingThousand": "simp-chinese-informal",
+			"chineseLegalSimplified": "simp-chinese-formal", // 中文大写
+			"ideographTraditional": "cjk-heavenly-stem", // 十天干
+			"ideographZodiac": "cjk-earthly-branch", // 十二地支
+			// "ordinal": "", // 1st, 2nd, 3rd,...
+			// "cardinalText": "", // One, Two, Three,...
+			"decimalZero": "decimal-leading-zero", // 01,02,03,...
 		};
 
 		return mapping[format] || format;
