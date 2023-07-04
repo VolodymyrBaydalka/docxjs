@@ -1183,24 +1183,53 @@ section.${c}>article { margin-bottom: auto; }
 
 	numFormatToCssValue(format: string) {
 		var mapping = {
-			"none": "none",
-			"bullet": "disc",
-			"decimal": "decimal",
-			"lowerLetter": "lower-alpha",
-			"upperLetter": "upper-alpha",
-			"lowerRoman": "lower-roman",
-			"upperRoman": "upper-roman",
-			"chineseCounting": "simp-chinese-informal",
-			"chineseCountingThousand": "simp-chinese-informal",
-			"chineseLegalSimplified": "simp-chinese-formal", // 中文大写
-			"ideographTraditional": "cjk-heavenly-stem", // 十天干
-			"ideographZodiac": "cjk-earthly-branch", // 十二地支
-			// "ordinal": "", // 1st, 2nd, 3rd,...
-			// "cardinalText": "", // One, Two, Three,...
-			"decimalZero": "decimal-leading-zero", // 01,02,03,...
+			none: "none",
+			bullet: "disc",
+			decimal: "decimal",
+			lowerLetter: "lower-alpha",
+			upperLetter: "upper-alpha",
+			lowerRoman: "lower-roman",
+			upperRoman: "upper-roman",
+			decimalZero: "decimal-leading-zero", // 01,02,03,...
+			// ordinal: "", // 1st, 2nd, 3rd,...
+			// ordinalText: "", //First, Second, Third, ...
+			// cardinalText: "", //One,Two Three,...
+			// numberInDash: "", //-1-,-2-,-3-, ...
+			// hex: "upper-hexadecimal",
+			aiueo: "katakana",
+			aiueoFullWidth: "katakana",
+			chineseCounting: "simp-chinese-informal",
+			chineseCountingThousand: "simp-chinese-informal",
+			chineseLegalSimplified: "simp-chinese-formal", // 中文大写
+			chosung: "hangul-consonant",
+			ideographDigital: "cjk-ideographic",
+			ideographTraditional: "cjk-heavenly-stem", // 十天干
+			ideographLegalTraditional: "trad-chinese-formal",
+			ideographZodiac: "cjk-earthly-branch", // 十二地支
+			iroha: "katakana-iroha",
+			irohaFullWidth: "katakana-iroha",
+			japaneseCounting: "japanese-informal",
+			japaneseDigitalTenThousand: "cjk-decimal",
+			japaneseLegal: "japanese-formal",
+			thaiNumbers: "thai",
+			koreanCounting: "korean-hangul-formal",
+			koreanDigital: "korean-hangul-formal",
+			koreanDigital2: "korean-hanja-informal",
+			hebrew1: "hebrew",
+			hebrew2: "hebrew",
+			hindiNumbers: "devanagari",
+			ganada: "hangul",
+			taiwaneseCounting: "cjk-ideographic",
+			taiwaneseCountingThousand: "cjk-ideographic",
+			taiwaneseDigital:  "cjk-decimal",
 		};
 
-		return mapping[format] || format;
+		if (mapping[format])
+			return mapping[format];
+
+		console.log(format);
+
+		return format;
 	}
 
 	refreshTabStops() {
