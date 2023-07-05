@@ -1224,12 +1224,7 @@ section.${c}>article { margin-bottom: auto; }
 			taiwaneseDigital:  "cjk-decimal",
 		};
 
-		if (mapping[format])
-			return mapping[format];
-
-		console.log(format);
-
-		return format;
+		return mapping[format] ?? format;
 	}
 
 	refreshTabStops() {

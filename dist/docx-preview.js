@@ -3365,6 +3365,7 @@ section.${c}>article { margin-bottom: auto; }
         return `"${result}${(_a = suffMap[suff]) !== null && _a !== void 0 ? _a : ""}"`;
     }
     numFormatToCssValue(format) {
+        var _a;
         var mapping = {
             none: "none",
             bullet: "disc",
@@ -3401,10 +3402,7 @@ section.${c}>article { margin-bottom: auto; }
             taiwaneseCountingThousand: "cjk-ideographic",
             taiwaneseDigital: "cjk-decimal",
         };
-        if (mapping[format])
-            return mapping[format];
-        console.log(format);
-        return format;
+        return (_a = mapping[format]) !== null && _a !== void 0 ? _a : format;
     }
     refreshTabStops() {
         if (!this.options.experimental)
