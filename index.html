@@ -41,6 +41,7 @@
             <ul id="optionsMenu" class="dropdown-menu" aria-labelledby="optionsMenuButton">
             </ul>
         </div>
+        <button id="saveTestButton" class="btn btn-primary px-4" style="display: none">Save Test</button>
     </div>
 
     <div class="flex-grow-1 d-flex flex-row" style="height: 0;">
@@ -124,6 +125,13 @@
                 renderDocx(await resp.blob());
                 fileInput.value = "";
             }
+        });
+
+        document.querySelector("#saveTestButton").addEventListener("click", async () => {
+            const file = await showSaveFilePicker({ types: [ { description: "HTML File", accept: { "text/html": [".html"] } }] });
+            const stream = await file.createWritable();
+            await stream.write(container.innerHTML);
+            await stream.close();
         });
     </script>
 </body>

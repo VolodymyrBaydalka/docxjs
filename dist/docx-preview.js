@@ -1373,6 +1373,12 @@ class DocumentParser {
                     if (xml_parser_1.default.boolAttr(c, "val"))
                         style["overflow-wrap"] = "break-word";
                     break;
+                case "suppressAutoHyphens":
+                    style["hyphens"] = xml_parser_1.default.boolAttr(c, "val", true) ? "none" : "auto";
+                    break;
+                case "lang":
+                    style["$lang"] = xml_parser_1.default.attr(c, "val");
+                    break;
                 case "bCs":
                 case "iCs":
                 case "szCs":
@@ -1386,7 +1392,6 @@ class DocumentParser {
                 case "suppressLineNumbers":
                 case "keepLines":
                 case "keepNext":
-                case "lang":
                 case "widowControl":
                 case "bidi":
                 case "rtl":
@@ -2032,7 +2037,7 @@ exports.DocumentPart = DocumentPart;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DomType = void 0;
+exports.OpenXmlElementBase = exports.DomType = void 0;
 var DomType;
 (function (DomType) {
     DomType["Document"] = "document";
@@ -2081,6 +2086,13 @@ var DomType;
     DomType["Deleted"] = "deleted";
     DomType["DeletedText"] = "deletedText";
 })(DomType || (exports.DomType = DomType = {}));
+class OpenXmlElementBase {
+    constructor() {
+        this.children = [];
+        this.cssStyle = {};
+    }
+}
+exports.OpenXmlElementBase = OpenXmlElementBase;
 
 
 /***/ }),
@@ -2464,19 +2476,17 @@ exports.parseEmbedFontRef = parseEmbedFontRef;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlFooter = exports.WmlHeader = void 0;
 const dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
-class WmlHeader {
+class WmlHeader extends dom_1.OpenXmlElementBase {
     constructor() {
+        super(...arguments);
         this.type = dom_1.DomType.Header;
-        this.children = [];
-        this.cssStyle = {};
     }
 }
 exports.WmlHeader = WmlHeader;
-class WmlFooter {
+class WmlFooter extends dom_1.OpenXmlElementBase {
     constructor() {
+        super(...arguments);
         this.type = dom_1.DomType.Footer;
-        this.children = [];
-        this.cssStyle = {};
     }
 }
 exports.WmlFooter = WmlFooter;
@@ -2867,7 +2877,7 @@ class HtmlRenderer {
         var styleText = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-.${c} { color: black; }
+.${c} { color: black; hyphens: auto; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
@@ -3322,7 +3332,14 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
     renderStyleValues(style, ouput) {
-        Object.assign(ouput.style, style);
+        for (let k in style) {
+            if (k.startsWith("$")) {
+                ouput.setAttribute(k.slice(1), style[k]);
+            }
+            else {
+                ouput.style[k] = style[k];
+            }
+        }
     }
     renderClass(input, ouput) {
         if (input.className)
@@ -3343,6 +3360,8 @@ section.${c}>article { margin-bottom: auto; }
     styleToString(selectors, values, cssText = null) {
         let result = `${selectors} {\r\n`;
         for (const key in values) {
+            if (key.startsWith('$'))
+                continue;
             result += `  ${key}: ${values[key]};\r\n`;
         }
         if (cssText)
@@ -3551,10 +3570,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WmlEndnote = exports.WmlFootnote = exports.WmlBaseNote = void 0;
 const dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 class WmlBaseNote {
-    constructor() {
-        this.children = [];
-        this.cssStyle = {};
-    }
 }
 exports.WmlBaseNote = WmlBaseNote;
 class WmlFootnote extends WmlBaseNote {
@@ -4186,11 +4201,11 @@ exports.parseVmlElement = exports.VmlElement = void 0;
 const common_1 = __webpack_require__(/*! ../document/common */ "./src/document/common.ts");
 const dom_1 = __webpack_require__(/*! ../document/dom */ "./src/document/dom.ts");
 const xml_parser_1 = __webpack_require__(/*! ../parser/xml-parser */ "./src/parser/xml-parser.ts");
-class VmlElement {
+class VmlElement extends dom_1.OpenXmlElementBase {
     constructor() {
+        super(...arguments);
         this.type = dom_1.DomType.VmlElement;
         this.attrs = {};
-        this.chidren = [];
     }
 }
 exports.VmlElement = VmlElement;
@@ -4250,7 +4265,7 @@ function parseVmlElement(elem) {
                 break;
             default:
                 const child = parseVmlElement(el);
-                child && result.chidren.push(child);
+                child && result.children.push(child);
                 break;
         }
     }
