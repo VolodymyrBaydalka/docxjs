@@ -527,7 +527,7 @@ section.${c}>article { margin-bottom: auto; }
 
 	renderNumbering(numberings: IDomNumbering[], styleContainer: HTMLElement) {
 		var styleText = "";
-		var rootCounters = [];
+		var resetCounters = [];
 
 		for (var num of numberings) {
 			var selector = `p.${this.numberingClass(num.id, num.level)}`;
@@ -549,15 +549,14 @@ section.${c}>article { margin-bottom: auto; }
 			}
 			else if (num.levelText) {
 				let counter = this.numberingCounter(num.id, num.level);
-
+				const counterReset = counter + " " + (num.start - 1);
 				if (num.level > 0) {
 					styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-						"counter-reset": counter
+						"counter-reset": counterReset
 					});
 				}
-				else {
-					rootCounters.push(counter);
-				}
+				// reset all level counters with start value
+				resetCounters.push(counterReset);
 
 				styleText += this.styleToString(`${selector}:before`, {
 					"content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
@@ -577,9 +576,9 @@ section.${c}>article { margin-bottom: auto; }
 			});
 		}
 
-		if (rootCounters.length > 0) {
+		if (resetCounters.length > 0) {
 			styleText += this.styleToString(this.rootSelector, {
-				"counter-reset": rootCounters.join(" ")
+				"counter-reset": resetCounters.join(" ")
 			});
 		}
 

@@ -392,6 +392,7 @@ export class DocumentParser {
 		var result: IDomNumbering = {
 			id: id,
 			level: xml.intAttr(node, "ilvl"),
+			start: 1,
 			pStyleName: undefined,
 			pStyle: {},
 			rStyle: {},
@@ -400,6 +401,10 @@ export class DocumentParser {
 
 		xmlUtil.foreach(node, n => {
 			switch (n.localName) {
+				case "start":
+					result.start = xml.intAttr(n, "val");
+					break;
+
 				case "pPr":
 					this.parseDefaultProperties(n, result.pStyle);
 					break;
