@@ -1,5 +1,6 @@
 import { OpenXmlPackage } from "../common/open-xml-package";
 import { Part } from "../common/part";
+import { Relationship } from "../common/relationship";
 import { DocumentParser } from "../document-parser";
 import { DocumentElement } from "./document";
 
@@ -16,4 +17,11 @@ export class DocumentPart extends Part {
     parseXml(root: Element) {
         this.body = this._documentParser.parseDocumentFile(root);
     }
+
+    setParserExtraData(rels: Relationship[], chartPartsMap: Record<string, Part>) {
+        this._documentParser.documentRels = rels;
+        this._documentParser.chartPartsMap = chartPartsMap;
+    }
+
+    
 }

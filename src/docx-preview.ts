@@ -1,6 +1,8 @@
 import { WordDocument } from './word-document';
 import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
+import { ChartElement } from './chart/chart';
+import { IDomChart } from './document/dom';
 
 export interface Options {
     inWrapper: boolean;
@@ -20,6 +22,7 @@ export interface Options {
 	useBase64URL: boolean;
 	useMathMLPolyfill: boolean;
 	renderChanges: boolean;
+    renderCharts: Record<string, (chart: ChartElement) => IDomChart>;
 }
 
 export const defaultOptions: Options = {
@@ -39,7 +42,8 @@ export const defaultOptions: Options = {
 	renderEndnotes: true,
 	useBase64URL: false,
 	useMathMLPolyfill: false,
-	renderChanges: false
+	renderChanges: false,
+    renderCharts: {},
 }
 
 export function praseAsync(data: Blob | any, userOptions: Partial<Options> = null): Promise<any>  {

@@ -10,6 +10,7 @@ export enum DomType {
     Hyperlink = "hyperlink",
     Drawing = "drawing",
     Image = "image",
+    Chart = "chart",
     Text = "text",
     Tab = "tab",
     Symbol = "symbol",
@@ -99,6 +100,13 @@ export interface WmlTableCell extends OpenXmlElement {
 
 export interface IDomImage extends OpenXmlElement {
     src: string;
+}
+
+export interface IDomChart extends OpenXmlElement {
+    /**
+     * 子节点
+     */
+    child: Node;
 }
 
 export interface WmlTableColumn {

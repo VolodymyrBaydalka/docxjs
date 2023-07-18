@@ -36,6 +36,7 @@ export class OpenXmlPackage {
     }
 
     async loadRelationships(path: string = null): Promise<Relationship[]> {
+        
         let relsPath = `_rels/.rels`;
 
         if (path != null) {
@@ -44,6 +45,7 @@ export class OpenXmlPackage {
         }
 
         const txt = await this.load(relsPath);
+        
 		return txt ? parseRelationships(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null;
     }
 

@@ -36,66 +36,7 @@ var ___CSS_LOADER_URL_IMPORT_0___ = new URL(/* asset import */ __webpack_require
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_2___default()(___CSS_LOADER_URL_IMPORT_0___);
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, `@namespace "http://www.w3.org/1998/Math/MathML";
-math {
-  display: inline-block;
-  line-height: initial;
-}
-
-mfrac {
-  display: inline-block;
-  vertical-align: -50%;
-  text-align: center;
-}
-mfrac > :first-child {
-  border-bottom: solid thin currentColor;
-}
-mfrac > * {
-  display: block;
-}
-
-msub > :nth-child(2) {
-  font-size: smaller;
-  vertical-align: sub;
-}
-
-msup > :nth-child(2) {
-  font-size: smaller;
-  vertical-align: super;
-}
-
-munder, mover, munderover {
-  display: inline-flex;
-  flex-flow: column nowrap;
-  vertical-align: middle;
-  text-align: center;
-}
-munder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {
-  font-size: smaller;
-}
-
-munderover > :last-child {
-  order: -1;
-}
-
-mroot, msqrt {
-  position: relative;
-  display: inline-block;
-  border-top: solid thin currentColor;
-  margin-top: 0.5px;
-  vertical-align: middle;
-  margin-left: 1ch;
-}
-mroot:before, msqrt:before {
-  content: "";
-  display: inline-block;
-  position: absolute;
-  width: 1ch;
-  left: -1ch;
-  top: -1px;
-  bottom: 0;
-  background-image: url(${___CSS_LOADER_URL_REPLACEMENT_0___});
-}`, "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\r\n\r\nmath {\r\n    display: inline-block;\r\n    line-height: initial;\r\n}\r\n\r\nmfrac {\r\n    display: inline-block;\r\n    vertical-align: -50%;\r\n    text-align: center;\r\n\r\n    &>:first-child {\r\n        border-bottom: solid thin currentColor;\r\n    }\r\n\r\n    &>* {\r\n        display: block;\r\n    }\r\n}\r\n\r\nmsub {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: sub;\r\n    }\r\n}\r\n\r\nmsup {\r\n    &>:nth-child(2) {\r\n        font-size: smaller;\r\n        vertical-align: super;\r\n    }\r\n}\r\n\r\nmunder, mover, munderover {\r\n    display: inline-flex;\r\n    flex-flow: column nowrap;\r\n    vertical-align: middle;\r\n    text-align: center;\r\n\r\n    &>:not(:first-child) {\r\n        font-size: smaller;\r\n    }\r\n}\r\n\r\nmunderover {\r\n    &>:last-child { order: -1; }\r\n}\r\n\r\nmroot, msqrt {\r\n    position: relative;\r\n    display: inline-block;\r\n    border-top: solid thin currentColor;  \r\n    margin-top: 0.5px;\r\n    vertical-align: middle;  \r\n    margin-left: 1ch; \r\n\r\n    &:before {\r\n        content: \"\";\r\n        display: inline-block;\r\n        position: absolute;\r\n        width: 1ch;\r\n        left: -1ch;\r\n        top: -1px;\r\n        bottom: 0;\r\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\r\n    }\r\n}"],"sourceRoot":""}]);
+___CSS_LOADER_EXPORT___.push([module.id, "@namespace \"http://www.w3.org/1998/Math/MathML\";\nmath {\n  display: inline-block;\n  line-height: initial;\n}\n\nmfrac {\n  display: inline-block;\n  vertical-align: -50%;\n  text-align: center;\n}\nmfrac > :first-child {\n  border-bottom: solid thin currentColor;\n}\nmfrac > * {\n  display: block;\n}\n\nmsub > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: sub;\n}\n\nmsup > :nth-child(2) {\n  font-size: smaller;\n  vertical-align: super;\n}\n\nmunder, mover, munderover {\n  display: inline-flex;\n  flex-flow: column nowrap;\n  vertical-align: middle;\n  text-align: center;\n}\nmunder > :not(:first-child), mover > :not(:first-child), munderover > :not(:first-child) {\n  font-size: smaller;\n}\n\nmunderover > :last-child {\n  order: -1;\n}\n\nmroot, msqrt {\n  position: relative;\n  display: inline-block;\n  border-top: solid thin currentColor;\n  margin-top: 0.5px;\n  vertical-align: middle;\n  margin-left: 1ch;\n}\nmroot:before, msqrt:before {\n  content: \"\";\n  display: inline-block;\n  position: absolute;\n  width: 1ch;\n  left: -1ch;\n  top: -1px;\n  bottom: 0;\n  background-image: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ");\n}", "",{"version":3,"sources":["webpack://./src/mathml.scss"],"names":[],"mappings":"AAAA,+CAAA;AAEA;EACI,qBAAA;EACA,oBAAA;AAAJ;;AAGA;EACI,qBAAA;EACA,oBAAA;EACA,kBAAA;AAAJ;AAEI;EACI,sCAAA;AAAR;AAGI;EACI,cAAA;AADR;;AAMI;EACI,kBAAA;EACA,mBAAA;AAHR;;AAQI;EACI,kBAAA;EACA,qBAAA;AALR;;AASA;EACI,oBAAA;EACA,wBAAA;EACA,sBAAA;EACA,kBAAA;AANJ;AAQI;EACI,kBAAA;AANR;;AAWI;EAAgB,SAAA;AAPpB;;AAUA;EACI,kBAAA;EACA,qBAAA;EACA,mCAAA;EACA,iBAAA;EACA,sBAAA;EACA,gBAAA;AAPJ;AASI;EACI,WAAA;EACA,qBAAA;EACA,kBAAA;EACA,UAAA;EACA,UAAA;EACA,SAAA;EACA,SAAA;EACA,yDAAA;AAPR","sourcesContent":["@namespace \"http://www.w3.org/1998/Math/MathML\";\n\nmath {\n    display: inline-block;\n    line-height: initial;\n}\n\nmfrac {\n    display: inline-block;\n    vertical-align: -50%;\n    text-align: center;\n\n    &>:first-child {\n        border-bottom: solid thin currentColor;\n    }\n\n    &>* {\n        display: block;\n    }\n}\n\nmsub {\n    &>:nth-child(2) {\n        font-size: smaller;\n        vertical-align: sub;\n    }\n}\n\nmsup {\n    &>:nth-child(2) {\n        font-size: smaller;\n        vertical-align: super;\n    }\n}\n\nmunder, mover, munderover {\n    display: inline-flex;\n    flex-flow: column nowrap;\n    vertical-align: middle;\n    text-align: center;\n\n    &>:not(:first-child) {\n        font-size: smaller;\n    }\n}\n\nmunderover {\n    &>:last-child { order: -1; }\n}\n\nmroot, msqrt {\n    position: relative;\n    display: inline-block;\n    border-top: solid thin currentColor;  \n    margin-top: 0.5px;\n    vertical-align: middle;  \n    margin-left: 1ch; \n\n    &:before {\n        content: \"\";\n        display: inline-block;\n        position: absolute;\n        width: 1ch;\n        left: -1ch;\n        top: -1px;\n        bottom: 0;\n        background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 100' preserveAspectRatio='none'%3E%3Cpath d='m0,75 l5,0 l5,25 l10,-100' stroke='black' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E\");\n    }\n}"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___.toString());
 
@@ -256,6 +197,30 @@ module.exports = function (item) {
 
 /***/ }),
 
+/***/ "./src/chart/chart-part.ts":
+/*!*********************************!*\
+  !*** ./src/chart/chart-part.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ChartPart = void 0;
+const part_1 = __webpack_require__(/*! ../common/part */ "./src/common/part.ts");
+class ChartPart extends part_1.Part {
+    constructor(pkg, path, parser) {
+        super(pkg, path);
+        this._documentParser = parser;
+    }
+    parseXml(element) {
+        this.chart = this._documentParser.parseChartElement(element);
+    }
+}
+exports.ChartPart = ChartPart;
+
+
+/***/ }),
+
 /***/ "./src/common/open-xml-package.ts":
 /*!****************************************!*\
   !*** ./src/common/open-xml-package.ts ***!
@@ -340,8 +305,7 @@ class Part {
     save() {
         this._package.update(this.path, (0, xml_parser_1.serializeXmlString)(this._xmlDocument));
     }
-    parseXml(root) {
-    }
+    parseXml(root) { }
 }
 exports.Part = Part;
 
@@ -376,7 +340,8 @@ var RelationshipTypes;
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
     RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
     RelationshipTypes["CustomProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties";
-})(RelationshipTypes || (exports.RelationshipTypes = RelationshipTypes = {}));
+    RelationshipTypes["Chart"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart";
+})(RelationshipTypes = exports.RelationshipTypes || (exports.RelationshipTypes = {}));
 function parseRelationships(root, xml) {
     return xml.elements(root).map(e => ({
         id: xml.attr(e, "Id"),
@@ -411,28 +376,32 @@ exports.autos = {
     shd: "inherit",
     color: "black",
     borderColor: "black",
-    highlight: "transparent"
+    highlight: "transparent",
 };
 const supportedNamespaceURIs = [];
 const mmlTagMap = {
-    "oMath": dom_1.DomType.MmlMath,
-    "oMathPara": dom_1.DomType.MmlMathParagraph,
-    "f": dom_1.DomType.MmlFraction,
-    "num": dom_1.DomType.MmlNumerator,
-    "den": dom_1.DomType.MmlDenominator,
-    "rad": dom_1.DomType.MmlRadical,
-    "deg": dom_1.DomType.MmlDegree,
-    "e": dom_1.DomType.MmlBase,
-    "sSup": dom_1.DomType.MmlSuperscript,
-    "sSub": dom_1.DomType.MmlSubscript,
-    "sup": dom_1.DomType.MmlSuperArgument,
-    "sub": dom_1.DomType.MmlSubArgument,
-    "d": dom_1.DomType.MmlDelimiter,
-    "nary": dom_1.DomType.MmlNary,
+    oMath: dom_1.DomType.MmlMath,
+    oMathPara: dom_1.DomType.MmlMathParagraph,
+    f: dom_1.DomType.MmlFraction,
+    num: dom_1.DomType.MmlNumerator,
+    den: dom_1.DomType.MmlDenominator,
+    rad: dom_1.DomType.MmlRadical,
+    deg: dom_1.DomType.MmlDegree,
+    e: dom_1.DomType.MmlBase,
+    sSup: dom_1.DomType.MmlSuperscript,
+    sSub: dom_1.DomType.MmlSubscript,
+    sup: dom_1.DomType.MmlSuperArgument,
+    sub: dom_1.DomType.MmlSubArgument,
+    d: dom_1.DomType.MmlDelimiter,
+    nary: dom_1.DomType.MmlNary,
 };
+const titlePath = ["title", "tx", "rich", "p", "r", "t"];
+const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
 class DocumentParser {
     constructor(options) {
-        this.options = Object.assign({ ignoreWidth: false, debug: false }, options);
+        this.options = Object.assign({ ignoreWidth: false, debug: false, renderCharts: {} }, options);
+        this.documentRels = [];
+        this.chartPartsMap = {};
     }
     parseNotes(xmlDoc, elemName, elemClass) {
         var result = [];
@@ -452,7 +421,9 @@ class DocumentParser {
         return {
             type: dom_1.DomType.Document,
             children: this.parseBodyElements(xbody),
-            props: sectPr ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default) : {},
+            props: sectPr
+                ? (0, section_1.parseSectionProperties)(sectPr, xml_parser_1.default)
+                : {},
             cssStyle: background ? this.parseBackground(background) : {},
         };
     }
@@ -475,15 +446,31 @@ class DocumentParser {
                     children.push(this.parseTable(elem));
                     break;
                 case "sdt":
-                    children.push(...this.parseSdt(elem, e => this.parseBodyElements(e)));
+                    children.push(...this.parseSdt(elem, (e) => this.parseBodyElements(e)));
                     break;
             }
         }
         return children;
     }
+    parseChartElement(element) {
+        const chart = xml_parser_1.default.element(element, "chart");
+        const title = xmlUtil.deepFind(chart, titlePath);
+        const plotArea = xml_parser_1.default.element(chart, "plotArea");
+        const catAx = xmlUtil.deepFind(plotArea, ["catAx", ...titlePath]);
+        const valAx = xmlUtil.deepFind(plotArea, ["valAx", ...titlePath]);
+        const charts = xml_parser_1.default
+            .elements(plotArea)
+            .filter((el) => xml_parser_1.default.element(el, "ser") != null);
+        return {
+            title: xmlUtil.getTextContent(title),
+            catAx: xmlUtil.getTextContent(catAx),
+            valAx: xmlUtil.getTextContent(valAx),
+            chartList: charts.map((chart) => xmlUtil.getChartInfo(chart)),
+        };
+    }
     parseStylesFile(xstyles) {
         var result = [];
-        xmlUtil.foreach(xstyles, n => {
+        xmlUtil.foreach(xstyles, (n) => {
             switch (n.localName) {
                 case "style":
                     result.push(this.parseStyle(n));
@@ -501,16 +488,16 @@ class DocumentParser {
             name: null,
             target: null,
             basedOn: null,
-            styles: []
+            styles: [],
         };
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "rPrDefault":
                     var rPr = xml_parser_1.default.element(c, "rPr");
                     if (rPr)
                         result.styles.push({
                             target: "span",
-                            values: this.parseDefaultProperties(rPr, {})
+                            values: this.parseDefaultProperties(rPr, {}),
                         });
                     break;
                 case "pPrDefault":
@@ -518,7 +505,7 @@ class DocumentParser {
                     if (pPr)
                         result.styles.push({
                             target: "p",
-                            values: this.parseDefaultProperties(pPr, {})
+                            values: this.parseDefaultProperties(pPr, {}),
                         });
                     break;
             }
@@ -533,7 +520,7 @@ class DocumentParser {
             target: null,
             basedOn: null,
             styles: [],
-            linked: null
+            linked: null,
         };
         switch (xml_parser_1.default.attr(node, "type")) {
             case "paragraph":
@@ -546,7 +533,7 @@ class DocumentParser {
                 result.target = "span";
                 break;
         }
-        xmlUtil.foreach(node, n => {
+        xmlUtil.foreach(node, (n) => {
             switch (n.localName) {
                 case "basedOn":
                     result.basedOn = xml_parser_1.default.attr(n, "val");
@@ -566,14 +553,14 @@ class DocumentParser {
                 case "pPr":
                     result.styles.push({
                         target: "p",
-                        values: this.parseDefaultProperties(n, {})
+                        values: this.parseDefaultProperties(n, {}),
                     });
                     result.paragraphProps = (0, paragraph_1.parseParagraphProperties)(n, xml_parser_1.default);
                     break;
                 case "rPr":
                     result.styles.push({
                         target: "span",
-                        values: this.parseDefaultProperties(n, {})
+                        values: this.parseDefaultProperties(n, {}),
                     });
                     result.runProps = (0, run_1.parseRunProperties)(n, xml_parser_1.default);
                     break;
@@ -581,7 +568,7 @@ class DocumentParser {
                 case "tcPr":
                     result.styles.push({
                         target: "td",
-                        values: this.parseDefaultProperties(n, {})
+                        values: this.parseDefaultProperties(n, {}),
                     });
                     break;
                 case "tblStylePr":
@@ -597,7 +584,8 @@ class DocumentParser {
                 case "uiPriority":
                     break;
                 default:
-                    this.options.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
+                    this.options.debug &&
+                        console.warn(`DOCX: Unknown style element: ${n.localName}`);
             }
         });
         return result;
@@ -640,22 +628,23 @@ class DocumentParser {
                 modificator = ":not(.no-hband)";
                 selector = "tr.even-row";
                 break;
-            default: return [];
+            default:
+                return [];
         }
-        xmlUtil.foreach(node, n => {
+        xmlUtil.foreach(node, (n) => {
             switch (n.localName) {
                 case "pPr":
                     result.push({
                         target: `${selector} p`,
                         mod: modificator,
-                        values: this.parseDefaultProperties(n, {})
+                        values: this.parseDefaultProperties(n, {}),
                     });
                     break;
                 case "rPr":
                     result.push({
                         target: `${selector} span`,
                         mod: modificator,
-                        values: this.parseDefaultProperties(n, {})
+                        values: this.parseDefaultProperties(n, {}),
                     });
                     break;
                 case "tblPr":
@@ -663,7 +652,7 @@ class DocumentParser {
                     result.push({
                         target: selector,
                         mod: modificator,
-                        values: this.parseDefaultProperties(n, {})
+                        values: this.parseDefaultProperties(n, {}),
                     });
                     break;
             }
@@ -674,11 +663,10 @@ class DocumentParser {
         var result = [];
         var mapping = {};
         var bullets = [];
-        xmlUtil.foreach(xnums, n => {
+        xmlUtil.foreach(xnums, (n) => {
             switch (n.localName) {
                 case "abstractNum":
-                    this.parseAbstractNumbering(n, bullets)
-                        .forEach(x => result.push(x));
+                    this.parseAbstractNumbering(n, bullets).forEach((x) => result.push(x));
                     break;
                 case "numPicBullet":
                     bullets.push(this.parseNumberingPicBullet(n));
@@ -690,23 +678,25 @@ class DocumentParser {
                     break;
             }
         });
-        result.forEach(x => x.id = mapping[x.id]);
+        result.forEach((x) => (x.id = mapping[x.id]));
         return result;
     }
     parseNumberingPicBullet(elem) {
         var pict = xml_parser_1.default.element(elem, "pict");
         var shape = pict && xml_parser_1.default.element(pict, "shape");
         var imagedata = shape && xml_parser_1.default.element(shape, "imagedata");
-        return imagedata ? {
-            id: xml_parser_1.default.intAttr(elem, "numPicBulletId"),
-            src: xml_parser_1.default.attr(imagedata, "id"),
-            style: xml_parser_1.default.attr(shape, "style")
-        } : null;
+        return imagedata
+            ? {
+                id: xml_parser_1.default.intAttr(elem, "numPicBulletId"),
+                src: xml_parser_1.default.attr(imagedata, "id"),
+                style: xml_parser_1.default.attr(shape, "style"),
+            }
+            : null;
     }
     parseAbstractNumbering(node, bullets) {
         var result = [];
         var id = xml_parser_1.default.attr(node, "abstractNumId");
-        xmlUtil.foreach(node, n => {
+        xmlUtil.foreach(node, (n) => {
             switch (n.localName) {
                 case "lvl":
                     result.push(this.parseNumberingLevel(id, n, bullets));
@@ -722,9 +712,9 @@ class DocumentParser {
             pStyleName: undefined,
             pStyle: {},
             rStyle: {},
-            suff: "tab"
+            suff: "tab",
         };
-        xmlUtil.foreach(node, n => {
+        xmlUtil.foreach(node, (n) => {
             switch (n.localName) {
                 case "pPr":
                     this.parseDefaultProperties(n, result.pStyle);
@@ -734,7 +724,7 @@ class DocumentParser {
                     break;
                 case "lvlPicBulletId":
                     var id = xml_parser_1.default.intAttr(n, "val");
-                    result.bullet = bullets.find(x => x.id == id);
+                    result.bullet = bullets.find((x) => x.id == id);
                     break;
                 case "lvlText":
                     result.levelText = xml_parser_1.default.attr(n, "val");
@@ -760,14 +750,14 @@ class DocumentParser {
         var _a, _b;
         return {
             type: dom_1.DomType.Inserted,
-            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : []
+            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : [],
         };
     }
     parseDeleted(node, parentParser) {
         var _a, _b;
         return {
             type: dom_1.DomType.Deleted,
-            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : []
+            children: (_b = (_a = parentParser(node)) === null || _a === void 0 ? void 0 : _a.children) !== null && _b !== void 0 ? _b : [],
         };
     }
     parseParagraph(node) {
@@ -794,20 +784,20 @@ class DocumentParser {
                     result.children.push(this.parseMathElement(el));
                     break;
                 case "sdt":
-                    result.children.push(...this.parseSdt(el, e => this.parseParagraph(e).children));
+                    result.children.push(...this.parseSdt(el, (e) => this.parseParagraph(e).children));
                     break;
                 case "ins":
-                    result.children.push(this.parseInserted(el, e => this.parseParagraph(e)));
+                    result.children.push(this.parseInserted(el, (e) => this.parseParagraph(e)));
                     break;
                 case "del":
-                    result.children.push(this.parseDeleted(el, e => this.parseParagraph(e)));
+                    result.children.push(this.parseDeleted(el, (e) => this.parseParagraph(e)));
                     break;
             }
         }
         return result;
     }
     parseParagraphProperties(elem, paragraph) {
-        this.parseDefaultProperties(elem, paragraph.cssStyle = {}, null, c => {
+        this.parseDefaultProperties(elem, (paragraph.cssStyle = {}), null, (c) => {
             if ((0, paragraph_1.parseParagraphProperty)(c, paragraph, xml_parser_1.default))
                 return true;
             switch (c.localName) {
@@ -834,14 +824,18 @@ class DocumentParser {
             paragraph.cssStyle["float"] = "left";
     }
     parseHyperlink(node, parent) {
-        var result = { type: dom_1.DomType.Hyperlink, parent: parent, children: [] };
+        var result = {
+            type: dom_1.DomType.Hyperlink,
+            parent: parent,
+            children: [],
+        };
         var anchor = xml_parser_1.default.attr(node, "anchor");
         var relId = xml_parser_1.default.attr(node, "id");
         if (anchor)
             result.href = "#" + anchor;
         if (relId)
             result.id = relId;
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "r":
                     result.children.push(this.parseRun(c, result));
@@ -851,20 +845,24 @@ class DocumentParser {
         return result;
     }
     parseRun(node, parent) {
-        var result = { type: dom_1.DomType.Run, parent: parent, children: [] };
-        xmlUtil.foreach(node, c => {
+        var result = {
+            type: dom_1.DomType.Run,
+            parent: parent,
+            children: [],
+        };
+        xmlUtil.foreach(node, (c) => {
             c = this.checkAlternateContent(c);
             switch (c.localName) {
                 case "t":
                     result.children.push({
                         type: dom_1.DomType.Text,
-                        text: c.textContent
+                        text: c.textContent,
                     });
                     break;
                 case "delText":
                     result.children.push({
                         type: dom_1.DomType.DeletedText,
-                        text: c.textContent
+                        text: c.textContent,
                     });
                     break;
                 case "fldSimple":
@@ -872,14 +870,14 @@ class DocumentParser {
                         type: dom_1.DomType.SimpleField,
                         instruction: xml_parser_1.default.attr(c, "instr"),
                         lock: xml_parser_1.default.boolAttr(c, "lock", false),
-                        dirty: xml_parser_1.default.boolAttr(c, "dirty", false)
+                        dirty: xml_parser_1.default.boolAttr(c, "dirty", false),
                     });
                     break;
                 case "instrText":
                     result.fieldRun = true;
                     result.children.push({
                         type: dom_1.DomType.Instruction,
-                        text: c.textContent
+                        text: c.textContent,
                     });
                     break;
                 case "fldChar":
@@ -888,7 +886,7 @@ class DocumentParser {
                         type: dom_1.DomType.ComplexField,
                         charType: xml_parser_1.default.attr(c, "fldCharType"),
                         lock: xml_parser_1.default.boolAttr(c, "lock", false),
-                        dirty: xml_parser_1.default.boolAttr(c, "dirty", false)
+                        dirty: xml_parser_1.default.boolAttr(c, "dirty", false),
                     });
                     break;
                 case "noBreakHyphen":
@@ -897,20 +895,20 @@ class DocumentParser {
                 case "br":
                     result.children.push({
                         type: dom_1.DomType.Break,
-                        break: xml_parser_1.default.attr(c, "type") || "textWrapping"
+                        break: xml_parser_1.default.attr(c, "type") || "textWrapping",
                     });
                     break;
                 case "lastRenderedPageBreak":
                     result.children.push({
                         type: dom_1.DomType.Break,
-                        break: "lastRenderedPageBreak"
+                        break: "lastRenderedPageBreak",
                     });
                     break;
                 case "sym":
                     result.children.push({
                         type: dom_1.DomType.Symbol,
                         font: xml_parser_1.default.attr(c, "font"),
-                        char: xml_parser_1.default.attr(c, "char")
+                        char: xml_parser_1.default.attr(c, "char"),
                     });
                     break;
                 case "tab":
@@ -919,13 +917,13 @@ class DocumentParser {
                 case "footnoteReference":
                     result.children.push({
                         type: dom_1.DomType.FootnoteReference,
-                        id: xml_parser_1.default.attr(c, "id")
+                        id: xml_parser_1.default.attr(c, "id"),
                     });
                     break;
                 case "endnoteReference":
                     result.children.push({
                         type: dom_1.DomType.EndnoteReference,
-                        id: xml_parser_1.default.attr(c, "id")
+                        id: xml_parser_1.default.attr(c, "id"),
                     });
                     break;
                 case "drawing":
@@ -945,7 +943,10 @@ class DocumentParser {
     }
     parseMathElement(elem) {
         const propsTag = `${elem.localName}Pr`;
-        const result = { type: mmlTagMap[elem.localName], children: [] };
+        const result = {
+            type: mmlTagMap[elem.localName],
+            children: [],
+        };
         for (const el of xml_parser_1.default.elements(elem)) {
             const childType = mmlTagMap[el.localName];
             if (childType) {
@@ -983,7 +984,7 @@ class DocumentParser {
         return result;
     }
     parseRunProperties(elem, run) {
-        this.parseDefaultProperties(elem, run.cssStyle = {}, null, c => {
+        this.parseDefaultProperties(elem, (run.cssStyle = {}), null, (c) => {
             switch (c.localName) {
                 case "rStyle":
                     run.styleName = xml_parser_1.default.attr(c, "val");
@@ -1007,7 +1008,7 @@ class DocumentParser {
     }
     checkAlternateContent(elem) {
         var _a;
-        if (elem.localName != 'AlternateContent')
+        if (elem.localName != "AlternateContent")
             return elem;
         var choice = xml_parser_1.default.element(elem, "Choice");
         if (choice) {
@@ -1029,7 +1030,11 @@ class DocumentParser {
     }
     parseDrawingWrapper(node) {
         var _a;
-        var result = { type: dom_1.DomType.Drawing, children: [], cssStyle: {} };
+        var result = {
+            type: dom_1.DomType.Drawing,
+            children: [],
+            cssStyle: {},
+        };
         var isAnchor = node.localName == "anchor";
         let wrapType = null;
         let simplePos = xml_parser_1.default.boolAttr(node, "simplePos");
@@ -1053,7 +1058,8 @@ class DocumentParser {
                         let pos = n.localName == "positionH" ? posX : posY;
                         var alignNode = xml_parser_1.default.element(n, "align");
                         var offsetNode = xml_parser_1.default.element(n, "posOffset");
-                        pos.relative = (_a = xml_parser_1.default.attr(n, "relativeFrom")) !== null && _a !== void 0 ? _a : pos.relative;
+                        pos.relative =
+                            (_a = xml_parser_1.default.attr(n, "relativeFrom")) !== null && _a !== void 0 ? _a : pos.relative;
                         if (alignNode)
                             pos.align = alignNode.textContent;
                         if (offsetNode)
@@ -1074,15 +1080,15 @@ class DocumentParser {
             }
         }
         if (wrapType == "wrapTopAndBottom") {
-            result.cssStyle['display'] = 'block';
+            result.cssStyle["display"] = "block";
             if (posX.align) {
-                result.cssStyle['text-align'] = posX.align;
-                result.cssStyle['width'] = "100%";
+                result.cssStyle["text-align"] = posX.align;
+                result.cssStyle["width"] = "100%";
             }
         }
         else if (wrapType == "wrapNone") {
-            result.cssStyle['display'] = 'block';
-            result.cssStyle['position'] = 'relative';
+            result.cssStyle["display"] = "block";
+            result.cssStyle["position"] = "relative";
             result.cssStyle["width"] = "0px";
             result.cssStyle["height"] = "0px";
             if (posX.offset)
@@ -1090,7 +1096,8 @@ class DocumentParser {
             if (posY.offset)
                 result.cssStyle["top"] = posY.offset;
         }
-        else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
+        else if (isAnchor &&
+            (posX.align == "left" || posX.align == "right")) {
             result.cssStyle["float"] = posX.align;
         }
         return result;
@@ -1101,6 +1108,8 @@ class DocumentParser {
             switch (n.localName) {
                 case "pic":
                     return this.parsePicture(n);
+                case "chart":
+                    return this.parseChart(n);
             }
         }
         return null;
@@ -1127,9 +1136,31 @@ class DocumentParser {
         }
         return result;
     }
+    parseChart(elem) {
+        var _a;
+        const id = xml_parser_1.default.attr(elem, "id");
+        const rel = this.documentRels.find((x) => x.id == id);
+        if (rel == null) {
+            return;
+        }
+        const chartPart = this.chartPartsMap[`word/${rel.target}`];
+        if (chartPart == null) {
+            return;
+        }
+        const key = rel.target.split("/").pop().split(".").shift();
+        const { renderCharts = {} } = this.options;
+        const renderChart = renderCharts[key];
+        if (renderChart == null) {
+            return;
+        }
+        const { chart } = chartPart;
+        const result = (_a = renderChart(chart)) !== null && _a !== void 0 ? _a : { cssStyle: {} };
+        result.type = dom_1.DomType.Chart;
+        return result;
+    }
     parseTable(node) {
         var result = { type: dom_1.DomType.Table, children: [] };
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "tr":
                     result.children.push(this.parseTableRow(c));
@@ -1146,7 +1177,7 @@ class DocumentParser {
     }
     parseTableColumns(node) {
         var result = [];
-        xmlUtil.foreach(node, n => {
+        xmlUtil.foreach(node, (n) => {
             switch (n.localName) {
                 case "gridCol":
                     result.push({ width: xml_parser_1.default.lengthAttr(n, "w") });
@@ -1158,7 +1189,7 @@ class DocumentParser {
     parseTableProperties(elem, table) {
         table.cssStyle = {};
         table.cellStyle = {};
-        this.parseDefaultProperties(elem, table.cssStyle, table.cellStyle, c => {
+        this.parseDefaultProperties(elem, table.cssStyle, table.cellStyle, (c) => {
             switch (c.localName) {
                 case "tblStyle":
                     table.styleName = xml_parser_1.default.attr(c, "val");
@@ -1197,7 +1228,7 @@ class DocumentParser {
         var bottomFromText = xml_parser_1.default.lengthAttr(node, "bottomFromText");
         var rightFromText = xml_parser_1.default.lengthAttr(node, "rightFromText");
         var leftFromText = xml_parser_1.default.lengthAttr(node, "leftFromText");
-        table.cssStyle["float"] = 'left';
+        table.cssStyle["float"] = "left";
         table.cssStyle["margin-bottom"] = values.addSize(table.cssStyle["margin-bottom"], bottomFromText);
         table.cssStyle["margin-left"] = values.addSize(table.cssStyle["margin-left"], leftFromText);
         table.cssStyle["margin-right"] = values.addSize(table.cssStyle["margin-right"], rightFromText);
@@ -1205,7 +1236,7 @@ class DocumentParser {
     }
     parseTableRow(node) {
         var result = { type: dom_1.DomType.Row, children: [] };
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "tc":
                     result.children.push(this.parseTableCell(c));
@@ -1218,7 +1249,7 @@ class DocumentParser {
         return result;
     }
     parseTableRowProperties(elem, row) {
-        row.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
+        row.cssStyle = this.parseDefaultProperties(elem, {}, null, (c) => {
             switch (c.localName) {
                 case "cnfStyle":
                     row.className = values.classNameOfCnfStyle(c);
@@ -1234,7 +1265,7 @@ class DocumentParser {
     }
     parseTableCell(node) {
         var result = { type: dom_1.DomType.Cell, children: [] };
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "tbl":
                     result.children.push(this.parseTable(c));
@@ -1250,7 +1281,7 @@ class DocumentParser {
         return result;
     }
     parseTableCellProperties(elem, cell) {
-        cell.cssStyle = this.parseDefaultProperties(elem, {}, null, c => {
+        cell.cssStyle = this.parseDefaultProperties(elem, {}, null, (c) => {
             var _a;
             switch (c.localName) {
                 case "gridSpan":
@@ -1270,7 +1301,7 @@ class DocumentParser {
     }
     parseDefaultProperties(elem, style = null, childStyle = null, handler = null) {
         style = style || {};
-        xmlUtil.foreach(elem, c => {
+        xmlUtil.foreach(elem, (c) => {
             if (handler === null || handler === void 0 ? void 0 : handler(c))
                 return;
             switch (c.localName) {
@@ -1307,19 +1338,29 @@ class DocumentParser {
                     this.parseTrHeight(c, style);
                     break;
                 case "strike":
-                    style["text-decoration"] = xml_parser_1.default.boolAttr(c, "val", true) ? "line-through" : "none";
+                    style["text-decoration"] = xml_parser_1.default.boolAttr(c, "val", true)
+                        ? "line-through"
+                        : "none";
                     break;
                 case "b":
-                    style["font-weight"] = xml_parser_1.default.boolAttr(c, "val", true) ? "bold" : "normal";
+                    style["font-weight"] = xml_parser_1.default.boolAttr(c, "val", true)
+                        ? "bold"
+                        : "normal";
                     break;
                 case "i":
-                    style["font-style"] = xml_parser_1.default.boolAttr(c, "val", true) ? "italic" : "normal";
+                    style["font-style"] = xml_parser_1.default.boolAttr(c, "val", true)
+                        ? "italic"
+                        : "normal";
                     break;
                 case "caps":
-                    style["text-transform"] = xml_parser_1.default.boolAttr(c, "val", true) ? "uppercase" : "none";
+                    style["text-transform"] = xml_parser_1.default.boolAttr(c, "val", true)
+                        ? "uppercase"
+                        : "none";
                     break;
                 case "smallCaps":
-                    style["text-transform"] = xml_parser_1.default.boolAttr(c, "val", true) ? "lowercase" : "none";
+                    style["text-transform"] = xml_parser_1.default.boolAttr(c, "val", true)
+                        ? "lowercase"
+                        : "none";
                     break;
                 case "u":
                     this.parseUnderline(c, style);
@@ -1445,7 +1486,7 @@ class DocumentParser {
     parseFont(node, style) {
         var ascii = xml_parser_1.default.attr(node, "ascii");
         var asciiTheme = values.themeValue(node, "asciiTheme");
-        var fonts = [ascii, asciiTheme].filter(x => x).join(', ');
+        var fonts = [ascii, asciiTheme].filter((x) => x).join(", ");
         if (fonts.length > 0)
             style["font-family"] = fonts;
     }
@@ -1489,7 +1530,7 @@ class DocumentParser {
         }
     }
     parseMarginProperties(node, output) {
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "left":
                     output["padding-left"] = values.valueOfMargin(c);
@@ -1518,7 +1559,7 @@ class DocumentParser {
         }
     }
     parseBorderProperties(node, output) {
-        xmlUtil.foreach(node, c => {
+        xmlUtil.foreach(node, (c) => {
             switch (c.localName) {
                 case "start":
                 case "left":
@@ -1539,7 +1580,25 @@ class DocumentParser {
     }
 }
 exports.DocumentParser = DocumentParser;
-const knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
+const knownColors = [
+    "black",
+    "blue",
+    "cyan",
+    "darkBlue",
+    "darkCyan",
+    "darkGray",
+    "darkGreen",
+    "darkMagenta",
+    "darkRed",
+    "darkYellow",
+    "green",
+    "lightGray",
+    "magenta",
+    "none",
+    "red",
+    "white",
+    "yellow",
+];
 class xmlUtil {
     static foreach(node, cb) {
         for (var i = 0; i < node.childNodes.length; i++) {
@@ -1548,7 +1607,7 @@ class xmlUtil {
                 cb(n);
         }
     }
-    static colorAttr(node, attrName, defValue = null, autoColor = 'black') {
+    static colorAttr(node, attrName, defValue = null, autoColor = "black") {
         var v = xml_parser_1.default.attr(node, attrName);
         if (v) {
             if (v == "auto") {
@@ -1565,6 +1624,56 @@ class xmlUtil {
     static sizeValue(node, type = common_1.LengthUsage.Dxa) {
         return (0, common_1.convertLength)(node.textContent, type);
     }
+    static deepFind(elem, path) {
+        if (path.length == 0) {
+            return null;
+        }
+        let currentElem = elem;
+        for (const localName of path) {
+            currentElem = xml_parser_1.default.element(currentElem, localName);
+            if (currentElem == null) {
+                return null;
+            }
+        }
+        return currentElem;
+    }
+    static getTextContent(elem) {
+        return elem != null ? elem.textContent : "";
+    }
+    static getChartInfo(elem) {
+        const serElements = xml_parser_1.default
+            .elements(elem)
+            .filter((el) => el.localName === "ser");
+        const serList = [];
+        for (const serElement of serElements) {
+            const title = this.deepFind(serElement, serTitlePath);
+            const catDataNode = this.deepFind(serElement, [
+                "cat",
+                "strRef",
+                "strCache",
+            ]);
+            const valDataNode = this.deepFind(serElement, [
+                "val",
+                "numRef",
+                "numCache",
+            ]);
+            serList.push({
+                title: this.getTextContent(title),
+                catList: this.getDataList(catDataNode),
+                valList: this.getDataList(valDataNode),
+            });
+        }
+        return { serList };
+    }
+    static getDataList(dataNode) {
+        if (dataNode == null) {
+            return [];
+        }
+        return xml_parser_1.default
+            .elements(dataNode)
+            .filter((el) => el.localName === "pt")
+            .map((el) => this.getTextContent(xml_parser_1.default.element(el, "v")));
+    }
 }
 class values {
     static themeValue(c, attr) {
@@ -1574,11 +1683,13 @@ class values {
     static valueOfSize(c, attr) {
         var type = common_1.LengthUsage.Dxa;
         switch (xml_parser_1.default.attr(c, "type")) {
-            case "dxa": break;
+            case "dxa":
+                break;
             case "pct":
                 type = common_1.LengthUsage.Percent;
                 break;
-            case "auto": return "auto";
+            case "auto":
+                return "auto";
         }
         return xml_parser_1.default.lengthAttr(c, attr, type);
     }
@@ -1600,29 +1711,44 @@ class values {
     static classNameOfCnfStyle(c) {
         const val = xml_parser_1.default.attr(c, "val");
         const classes = [
-            'first-row', 'last-row', 'first-col', 'last-col',
-            'odd-col', 'even-col', 'odd-row', 'even-row',
-            'ne-cell', 'nw-cell', 'se-cell', 'sw-cell'
+            "first-row",
+            "last-row",
+            "first-col",
+            "last-col",
+            "odd-col",
+            "even-col",
+            "odd-row",
+            "even-row",
+            "ne-cell",
+            "nw-cell",
+            "se-cell",
+            "sw-cell",
         ];
-        return classes.filter((_, i) => val[i] == '1').join(' ');
+        return classes.filter((_, i) => val[i] == "1").join(" ");
     }
     static valueOfJc(c) {
         var type = xml_parser_1.default.attr(c, "val");
         switch (type) {
             case "start":
-            case "left": return "left";
-            case "center": return "center";
+            case "left":
+                return "left";
+            case "center":
+                return "center";
             case "end":
-            case "right": return "right";
-            case "both": return "justify";
+            case "right":
+                return "right";
+            case "both":
+                return "justify";
         }
         return type;
     }
     static valueOfVertAlign(c, asTagName = false) {
         var type = xml_parser_1.default.attr(c, "val");
         switch (type) {
-            case "subscript": return "sub";
-            case "superscript": return asTagName ? "sup" : "super";
+            case "subscript":
+                return "sub";
+            case "superscript":
+                return asTagName ? "sup" : "super";
         }
         return asTagName ? null : type;
     }
@@ -1630,10 +1756,14 @@ class values {
         var type = xml_parser_1.default.attr(c, "val");
         switch (type) {
             case "auto":
-            case "baseline": return "baseline";
-            case "top": return "top";
-            case "center": return "middle";
-            case "bottom": return "bottom";
+            case "baseline":
+                return "baseline";
+            case "top":
+                return "top";
+            case "center":
+                return "middle";
+            case "bottom":
+                return "bottom";
         }
         return type;
     }
@@ -1647,17 +1777,17 @@ class values {
     static classNameOftblLook(c) {
         const val = xml_parser_1.default.hexAttr(c, "val", 0);
         let className = "";
-        if (xml_parser_1.default.boolAttr(c, "firstRow") || (val & 0x0020))
+        if (xml_parser_1.default.boolAttr(c, "firstRow") || val & 0x0020)
             className += " first-row";
-        if (xml_parser_1.default.boolAttr(c, "lastRow") || (val & 0x0040))
+        if (xml_parser_1.default.boolAttr(c, "lastRow") || val & 0x0040)
             className += " last-row";
-        if (xml_parser_1.default.boolAttr(c, "firstColumn") || (val & 0x0080))
+        if (xml_parser_1.default.boolAttr(c, "firstColumn") || val & 0x0080)
             className += " first-col";
-        if (xml_parser_1.default.boolAttr(c, "lastColumn") || (val & 0x0100))
+        if (xml_parser_1.default.boolAttr(c, "lastColumn") || val & 0x0100)
             className += " last-col";
-        if (xml_parser_1.default.boolAttr(c, "noHBand") || (val & 0x0200))
+        if (xml_parser_1.default.boolAttr(c, "noHBand") || val & 0x0200)
             className += " no-hband";
-        if (xml_parser_1.default.boolAttr(c, "noVBand") || (val & 0x0400))
+        if (xml_parser_1.default.boolAttr(c, "noVBand") || val & 0x0400)
             className += " no-vband";
         return className.trim();
     }
@@ -2018,6 +2148,10 @@ class DocumentPart extends part_1.Part {
     parseXml(root) {
         this.body = this._documentParser.parseDocumentFile(root);
     }
+    setParserExtraData(rels, chartPartsMap) {
+        this._documentParser.documentRels = rels;
+        this._documentParser.chartPartsMap = chartPartsMap;
+    }
 }
 exports.DocumentPart = DocumentPart;
 
@@ -2046,6 +2180,7 @@ var DomType;
     DomType["Hyperlink"] = "hyperlink";
     DomType["Drawing"] = "drawing";
     DomType["Image"] = "image";
+    DomType["Chart"] = "chart";
     DomType["Text"] = "text";
     DomType["Tab"] = "tab";
     DomType["Symbol"] = "symbol";
@@ -2080,7 +2215,7 @@ var DomType;
     DomType["Inserted"] = "inserted";
     DomType["Deleted"] = "deleted";
     DomType["DeletedText"] = "deletedText";
-})(DomType || (exports.DomType = DomType = {}));
+})(DomType = exports.DomType || (exports.DomType = {}));
 
 
 /***/ }),
@@ -2249,7 +2384,7 @@ var SectionType;
     SectionType["NextColumn"] = "nextColumn";
     SectionType["EvenPage"] = "evenPage";
     SectionType["OddPage"] = "oddPage";
-})(SectionType || (exports.SectionType = SectionType = {}));
+})(SectionType = exports.SectionType || (exports.SectionType = {}));
 function parseSectionProperties(elem, xml = xml_parser_1.default) {
     var _a, _b;
     var section = {};
@@ -2359,7 +2494,8 @@ exports.defaultOptions = {
     renderEndnotes: true,
     useBase64URL: false,
     useMathMLPolyfill: false,
-    renderChanges: false
+    renderChanges: false,
+    renderCharts: {},
 };
 function praseAsync(data, userOptions = null) {
     const ops = Object.assign(Object.assign({}, exports.defaultOptions), userOptions);
@@ -2974,6 +3110,8 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderDrawing(elem);
             case dom_1.DomType.Image:
                 return this.renderImage(elem);
+            case dom_1.DomType.Chart:
+                return this.renderChart(elem);
             case dom_1.DomType.Text:
                 return this.renderText(elem);
             case dom_1.DomType.Text:
@@ -3108,12 +3246,21 @@ section.${c}>article { margin-bottom: auto; }
         return result;
     }
     renderImage(elem) {
+        HTMLImageElement;
         let result = this.createElement("img");
         this.renderStyleValues(elem.cssStyle, result);
         if (this.document) {
             this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
                 result.src = x;
             });
+        }
+        return result;
+    }
+    renderChart(elem) {
+        let result = this.createElement("div");
+        this.renderStyleValues(elem.cssStyle, result);
+        if (elem.child) {
+            result.appendChild(elem.child);
         }
         return result;
     }
@@ -4306,6 +4453,7 @@ const theme_part_1 = __webpack_require__(/*! ./theme/theme-part */ "./src/theme/
 const parts_2 = __webpack_require__(/*! ./notes/parts */ "./src/notes/parts.ts");
 const settings_part_1 = __webpack_require__(/*! ./settings/settings-part */ "./src/settings/settings-part.ts");
 const custom_props_part_1 = __webpack_require__(/*! ./document-props/custom-props-part */ "./src/document-props/custom-props-part.ts");
+const chart_part_1 = __webpack_require__(/*! ./chart/chart-part */ "./src/chart/chart-part.ts");
 const topLevelRels = [
     { type: relationship_1.RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: relationship_1.RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
@@ -4316,6 +4464,7 @@ class WordDocument {
     constructor() {
         this.parts = [];
         this.partsMap = {};
+        this.chartPartsMap = {};
     }
     static async load(blob, parser, options) {
         var d = new WordDocument();
@@ -4323,11 +4472,15 @@ class WordDocument {
         d._parser = parser;
         d._package = await open_xml_package_1.OpenXmlPackage.load(blob, options);
         d.rels = await d._package.loadRelationships();
-        await Promise.all(topLevelRels.map(rel => {
+        await Promise.all(topLevelRels.map((rel) => {
             var _a;
-            const r = (_a = d.rels.find(x => x.type === rel.type)) !== null && _a !== void 0 ? _a : rel;
+            const r = (_a = d.rels.find((x) => x.type === rel.type)) !== null && _a !== void 0 ? _a : rel;
             return d.loadRelationshipPart(r.target, r.type);
         }));
+        if (Object.keys(d.chartPartsMap).length > 0) {
+            d.documentPart.setParserExtraData(d.documentPart.rels, d.chartPartsMap);
+            await d.documentPart.load();
+        }
         return d;
     }
     save(type = "blob") {
@@ -4380,6 +4533,10 @@ class WordDocument {
             case relationship_1.RelationshipTypes.Settings:
                 this.settingsPart = part = new settings_part_1.SettingsPart(this._package, path);
                 break;
+            case relationship_1.RelationshipTypes.Chart:
+                part = new chart_part_1.ChartPart(this._package, path, this._parser);
+                this.chartPartsMap[path] = part;
+                break;
         }
         if (part == null)
             return Promise.resolve(null);
@@ -4388,7 +4545,7 @@ class WordDocument {
         await part.load();
         if (((_a = part.rels) === null || _a === void 0 ? void 0 : _a.length) > 0) {
             const [folder] = (0, utils_1.splitPath)(part.path);
-            await Promise.all(part.rels.map(rel => this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type)));
+            await Promise.all(part.rels.map((rel) => this.loadRelationshipPart((0, utils_1.resolvePath)(rel.target, folder), rel.type)));
         }
         return part;
     }
@@ -4414,18 +4571,20 @@ class WordDocument {
     }
     findPartByRelId(id, basePart = null) {
         var _a;
-        var rel = ((_a = basePart.rels) !== null && _a !== void 0 ? _a : this.rels).find(r => r.id == id);
-        const folder = basePart ? (0, utils_1.splitPath)(basePart.path)[0] : '';
+        var rel = ((_a = basePart.rels) !== null && _a !== void 0 ? _a : this.rels).find((r) => r.id == id);
+        const folder = basePart ? (0, utils_1.splitPath)(basePart.path)[0] : "";
         return rel ? this.partsMap[(0, utils_1.resolvePath)(rel.target, folder)] : null;
     }
     getPathById(part, id) {
-        const rel = part.rels.find(x => x.id == id);
+        const rel = part.rels.find((x) => x.id == id);
         const [folder] = (0, utils_1.splitPath)(part.path);
         return rel ? (0, utils_1.resolvePath)(rel.target, folder) : null;
     }
     loadResource(part, id, outputType) {
         const path = this.getPathById(part, id);
-        return path ? this._package.load(path, outputType) : Promise.resolve(null);
+        return path
+            ? this._package.load(path, outputType)
+            : Promise.resolve(null);
     }
 }
 exports.WordDocument = WordDocument;
