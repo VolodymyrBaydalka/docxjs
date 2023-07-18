@@ -1,14 +1,13 @@
 import { convertLength, LengthUsage } from '../document/common';
-import { DomType, OpenXmlElement } from '../document/dom';
+import { OpenXmlElementBase, DomType } from '../document/dom';
 import xml from '../parser/xml-parser';
 import { formatCssRules, parseCssRules } from '../utils';
 
-export class VmlElement implements OpenXmlElement {
+export class VmlElement extends OpenXmlElementBase {
 	type: DomType = DomType.VmlElement;
 	tagName: string;
 	cssStyleText?: string;
 	attrs: Record<string, string> = {};
-	chidren: VmlElement[] = [];
 	wrapType?: string;
 	imageHref?: {
 		id: string,
@@ -85,7 +84,7 @@ export function parseVmlElement(elem: Element): VmlElement {
 
 			default:
 				const child = parseVmlElement(el);
-				child && result.chidren.push(child);
+				child && result.children.push(child);
 				break;
 		}
 	}

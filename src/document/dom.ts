@@ -59,6 +59,18 @@ export interface OpenXmlElement {
     parent?: OpenXmlElement;
 }
 
+export abstract class OpenXmlElementBase implements OpenXmlElement {
+    type: DomType;
+    children?: OpenXmlElement[] = [];
+    cssStyle?: Record<string, string> = {};
+    props?: Record<string, any>;
+
+    className?: string;
+    styleName?: string;
+
+    parent?: OpenXmlElement;
+}
+
 export interface WmlHyperlink extends OpenXmlElement {
 	id?: string;
     href?: string;
