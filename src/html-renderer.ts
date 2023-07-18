@@ -446,7 +446,7 @@ export class HtmlRenderer {
 		var styleText = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-.${c} { color: black; }
+.${c} { color: black; hyphens: auto; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; }
 .${c} table { border-collapse: collapse; }
@@ -1075,7 +1075,13 @@ section.${c}>article { margin-bottom: auto; }
 	}
 
 	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
-		Object.assign(ouput.style, style);
+		for (let k in style) {
+			if (k.startsWith("$")) {
+				ouput.setAttribute(k.slice(1), style[k]);
+			} else {
+				ouput.style[k] = style[k];
+			}
+		}
 	}
 
 	renderClass(input: OpenXmlElement, ouput: HTMLElement) {
@@ -1102,6 +1108,9 @@ section.${c}>article { margin-bottom: auto; }
 		let result = `${selectors} {\r\n`;
 
 		for (const key in values) {
+			if (key.startsWith('$'))
+				continue;
+			
 			result += `  ${key}: ${values[key]};\r\n`;
 		}
 

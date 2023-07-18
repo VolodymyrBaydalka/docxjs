@@ -1,13 +1,9 @@
-import { DomType, OpenXmlElement } from "../document/dom";
+import { OpenXmlElementBase, DomType } from "../document/dom";
 
-export abstract class WmlBaseNote implements OpenXmlElement {
+export abstract class WmlBaseNote implements OpenXmlElementBase {
+    type: DomType;
     id: string;
-	type: DomType;
 	noteType: string;
-    children?: OpenXmlElement[] = [];
-    cssStyle?: Record<string, string> = {};
-    className?: string;
-    parent?: OpenXmlElement;
 }
 
 export class WmlFootnote extends WmlBaseNote {
