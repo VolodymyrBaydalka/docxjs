@@ -735,7 +735,7 @@ export class DocumentParser {
 		const result = { type: DomType.VmlPicture, children: [] };
 
 		for (const el of xml.elements(elem)) {
-			const child = parseVmlElement(el);
+			const child = parseVmlElement(el, this);
 			child && result.children.push(child);
 		}
 

@@ -1046,14 +1046,13 @@ section.${c}>article { margin-bottom: auto; }
 
 		container.setAttribute("style", elem.cssStyleText);
 
-		const result = createSvgElement(elem.tagName as any);
-		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+		const result = this.renderVmlChildElement(elem);
 
 		if (elem.imageHref?.id) {
 			this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
 				.then(x => result.setAttribute("href", x));
 		}
-		
+
 		container.appendChild(result);
 
 		requestAnimationFrame(() => {
@@ -1064,6 +1063,21 @@ section.${c}>article { margin-bottom: auto; }
 		});
 
 		return container;
+	}
+
+	renderVmlChildElement(elem: VmlElement): any {
+		const result = createSvgElement(elem.tagName as any);
+		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+
+		for (let child of elem.children) {
+			if (child.type == DomType.VmlElement) {
+				result.appendChild(this.renderVmlChildElement(child as VmlElement));
+			} else {
+				result.appendChild(...asArray(this.renderElement(child as any)));
+			}
+		}
+
+		return result;
 	}
 
 	renderMmlRadical(elem: OpenXmlElement): HTMLElement {
