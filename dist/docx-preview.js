@@ -213,7 +213,7 @@ class ChartPart extends part_1.Part {
         this._documentParser = parser;
     }
     parseXml(element) {
-        this.chart = this._documentParser.parseChartElement(element);
+        this.chart = this._documentParser.parseChartElement(element, this.path);
     }
 }
 exports.ChartPart = ChartPart;
@@ -452,7 +452,8 @@ class DocumentParser {
         }
         return children;
     }
-    parseChartElement(element) {
+    parseChartElement(element, path) {
+        const key = path.split("/").pop().split(".").shift();
         const chart = xml_parser_1.default.element(element, "chart");
         const title = xmlUtil.deepFind(chart, titlePath);
         const plotArea = xml_parser_1.default.element(chart, "plotArea");
@@ -462,6 +463,7 @@ class DocumentParser {
             .elements(plotArea)
             .filter((el) => xml_parser_1.default.element(el, "ser") != null);
         return {
+            key: key,
             title: xmlUtil.getTextContent(title),
             catAx: xmlUtil.getTextContent(catAx),
             valAx: xmlUtil.getTextContent(valAx),
@@ -1151,13 +1153,11 @@ class DocumentParser {
         if (chartPart == null) {
             return;
         }
-        const key = rel.target.split("/").pop().split(".").shift();
-        const { renderCharts = {} } = this.options;
-        const renderChart = renderCharts[key];
+        const { chart } = chartPart;
+        const renderChart = chartUtil.getRenderChart(this.options.renderCharts, chart);
         if (renderChart == null) {
             return;
         }
-        const { chart } = chartPart;
         const result = (_a = renderChart(chart)) !== null && _a !== void 0 ? _a : { cssStyle: {} };
         result.type = dom_1.DomType.Chart;
         return result;
@@ -1419,7 +1419,9 @@ class DocumentParser {
                         style["overflow-wrap"] = "break-word";
                     break;
                 case "suppressAutoHyphens":
-                    style["hyphens"] = xml_parser_1.default.boolAttr(c, "val", true) ? "none" : "auto";
+                    style["hyphens"] = xml_parser_1.default.boolAttr(c, "val", true)
+                        ? "none"
+                        : "auto";
                     break;
                 case "lang":
                     style["$lang"] = xml_parser_1.default.attr(c, "val");
@@ -1650,6 +1652,7 @@ class xmlUtil {
         return elem != null ? elem.textContent : "";
     }
     static getChartInfo(elem) {
+        const chartType = elem.localName;
         const serElements = xml_parser_1.default
             .elements(elem)
             .filter((el) => el.localName === "ser");
@@ -1672,7 +1675,7 @@ class xmlUtil {
                 valList: this.getDataList(valDataNode),
             });
         }
-        return { serList };
+        return { type: chartType, serList: serList };
     }
     static getDataList(dataNode) {
         if (dataNode == null) {
@@ -1799,6 +1802,34 @@ class values {
         if (xml_parser_1.default.boolAttr(c, "noVBand") || val & 0x0400)
             className += " no-vband";
         return className.trim();
+    }
+}
+class chartUtil {
+    static getRenderChart(renderCharts, chart) {
+        const { key, chartList = [] } = chart;
+        if (renderCharts[key]) {
+            return renderCharts[key];
+        }
+        if (chartList.length === 1) {
+            const chart = chartList[0];
+            const { type } = chart;
+            if (renderCharts[type]) {
+                return renderCharts[type];
+            }
+            else {
+                if (renderCharts["defaultRender"]) {
+                    return renderCharts["defaultRender"];
+                }
+            }
+        }
+        else if (chartList.length > 1) {
+            if (renderCharts["mixedChart"]) {
+                return renderCharts["mixedChart"];
+            }
+        }
+        else {
+            return null;
+        }
     }
 }
 

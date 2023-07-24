@@ -100,6 +100,27 @@
               child: element,
             };
           },
+          lineChart: (chart) => {
+            const element = document.createElement("div");
+            element.textContent = 'lineChart';
+            return {
+              child: element,
+            };
+          },
+          defaultRender: (chart) => {
+            const element = document.createElement("div");
+            element.textContent = 'defaultRender';
+            return {
+              child: element,
+            };
+          },
+          mixedChart: (chart) => {
+            const element = document.createElement("div");
+            element.textContent = 'mixedChart';
+            return {
+              child: element,
+            };
+          },
         },
       });
 
