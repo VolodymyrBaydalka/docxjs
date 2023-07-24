@@ -461,7 +461,7 @@ section.${c}>article { margin-bottom: auto; }
 
 	renderNumbering(numberings: IDomNumbering[], styleContainer: HTMLElement) {
 		var styleText = "";
-		var rootCounters = [];
+		var resetCounters = [];
 
 		for (var num of numberings) {
 			var selector = `p.${this.numberingClass(num.id, num.level)}`;
@@ -483,15 +483,14 @@ section.${c}>article { margin-bottom: auto; }
 			}
 			else if (num.levelText) {
 				let counter = this.numberingCounter(num.id, num.level);
-
+				const counterReset = counter + " " + (num.start - 1);
 				if (num.level > 0) {
 					styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-						"counter-reset": counter
+						"counter-reset": counterReset
 					});
 				}
-				else {
-					rootCounters.push(counter);
-				}
+				// reset all level counters with start value
+				resetCounters.push(counterReset);
 
 				styleText += this.styleToString(`${selector}:before`, {
 					"content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
@@ -511,9 +510,9 @@ section.${c}>article { margin-bottom: auto; }
 			});
 		}
 
-		if (rootCounters.length > 0) {
+		if (resetCounters.length > 0) {
 			styleText += this.styleToString(this.rootSelector, {
-				"counter-reset": rootCounters.join(" ")
+				"counter-reset": resetCounters.join(" ")
 			});
 		}
 
@@ -995,14 +994,13 @@ section.${c}>article { margin-bottom: auto; }
 
 		container.setAttribute("style", elem.cssStyleText);
 
-		const result = createSvgElement(elem.tagName as any);
-		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+		const result = this.renderVmlChildElement(elem);
 
 		if (elem.imageHref?.id) {
 			this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
 				.then(x => result.setAttribute("href", x));
 		}
-		
+
 		container.appendChild(result);
 
 		requestAnimationFrame(() => {
@@ -1013,6 +1011,21 @@ section.${c}>article { margin-bottom: auto; }
 		});
 
 		return container;
+	}
+
+	renderVmlChildElement(elem: VmlElement): any {
+		const result = createSvgElement(elem.tagName as any);
+		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+
+		for (let child of elem.children) {
+			if (child.type == DomType.VmlElement) {
+				result.appendChild(this.renderVmlChildElement(child as VmlElement));
+			} else {
+				result.appendChild(...asArray(this.renderElement(child as any)));
+			}
+		}
+
+		return result;
 	}
 
 	renderMmlRadical(elem: OpenXmlElement): HTMLElement {
