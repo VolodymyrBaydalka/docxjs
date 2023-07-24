@@ -709,6 +709,7 @@ class DocumentParser {
         var result = {
             id: id,
             level: xml_parser_1.default.intAttr(node, "ilvl"),
+            start: 1,
             pStyleName: undefined,
             pStyle: {},
             rStyle: {},
@@ -716,6 +717,9 @@ class DocumentParser {
         };
         xmlUtil.foreach(node, (n) => {
             switch (n.localName) {
+                case "start":
+                    result.start = xml_parser_1.default.intAttr(n, "val");
+                    break;
                 case "pPr":
                     this.parseDefaultProperties(n, result.pStyle);
                     break;
@@ -1001,7 +1005,7 @@ class DocumentParser {
     parseVmlPicture(elem) {
         const result = { type: dom_1.DomType.VmlPicture, children: [] };
         for (const el of xml_parser_1.default.elements(elem)) {
-            const child = (0, vml_1.parseVmlElement)(el);
+            const child = (0, vml_1.parseVmlElement)(el, this);
             child && result.children.push(child);
         }
         return result;
@@ -3026,7 +3030,7 @@ section.${c}>article { margin-bottom: auto; }
     }
     renderNumbering(numberings, styleContainer) {
         var styleText = "";
-        var rootCounters = [];
+        var resetCounters = [];
         for (var num of numberings) {
             var selector = `p.${this.numberingClass(num.id, num.level)}`;
             var listStyleType = "none";
@@ -3044,14 +3048,13 @@ section.${c}>article { margin-bottom: auto; }
             }
             else if (num.levelText) {
                 let counter = this.numberingCounter(num.id, num.level);
+                const counterReset = counter + " " + (num.start - 1);
                 if (num.level > 0) {
                     styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-                        "counter-reset": counter
+                        "counter-reset": counterReset
                     });
                 }
-                else {
-                    rootCounters.push(counter);
-                }
+                resetCounters.push(counterReset);
                 styleText += this.styleToString(`${selector}:before`, Object.assign({ "content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)), "counter-increment": counter }, num.rStyle));
             }
             else {
@@ -3059,9 +3062,9 @@ section.${c}>article { margin-bottom: auto; }
             }
             styleText += this.styleToString(selector, Object.assign({ "display": "list-item", "list-style-position": "inside", "list-style-type": listStyleType }, num.pStyle));
         }
-        if (rootCounters.length > 0) {
+        if (resetCounters.length > 0) {
             styleText += this.styleToString(this.rootSelector, {
-                "counter-reset": rootCounters.join(" ")
+                "counter-reset": resetCounters.join(" ")
             });
         }
         return createStyleElement(styleText);
@@ -3415,8 +3418,7 @@ section.${c}>article { margin-bottom: auto; }
         var _a, _b;
         var container = createSvgElement("svg");
         container.setAttribute("style", elem.cssStyleText);
-        const result = createSvgElement(elem.tagName);
-        Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+        const result = this.renderVmlChildElement(elem);
         if ((_a = elem.imageHref) === null || _a === void 0 ? void 0 : _a.id) {
             (_b = this.document) === null || _b === void 0 ? void 0 : _b.loadDocumentImage(elem.imageHref.id, this.currentPart).then(x => result.setAttribute("href", x));
         }
@@ -3427,6 +3429,19 @@ section.${c}>article { margin-bottom: auto; }
             container.setAttribute("height", `${Math.ceil(bb.y + bb.height)}`);
         });
         return container;
+    }
+    renderVmlChildElement(elem) {
+        const result = createSvgElement(elem.tagName);
+        Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
+        for (let child of elem.children) {
+            if (child.type == dom_1.DomType.VmlElement) {
+                result.appendChild(this.renderVmlChildElement(child));
+            }
+            else {
+                result.appendChild(...(0, utils_1.asArray)(this.renderElement(child)));
+            }
+        }
+        return result;
     }
     renderMmlRadical(elem) {
         var _a;
@@ -4356,7 +4371,7 @@ class VmlElement extends dom_1.OpenXmlElementBase {
     }
 }
 exports.VmlElement = VmlElement;
-function parseVmlElement(elem) {
+function parseVmlElement(elem, parser) {
     var result = new VmlElement();
     switch (elem.localName) {
         case "rect":
@@ -4372,6 +4387,10 @@ function parseVmlElement(elem) {
             break;
         case "shape":
             result.tagName = "g";
+            break;
+        case "textbox":
+            result.tagName = "foreignObject";
+            Object.assign(result.attrs, { width: '100%', height: '100%' });
             break;
         default:
             return null;
@@ -4410,8 +4429,11 @@ function parseVmlElement(elem) {
                     title: xml_parser_1.default.attr(el, "title"),
                 };
                 break;
+            case "txbxContent":
+                result.children.push(...parser.parseBodyElements(el));
+                break;
             default:
-                const child = parseVmlElement(el);
+                const child = parseVmlElement(el, parser);
                 child && result.children.push(child);
                 break;
         }
