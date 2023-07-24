@@ -128,6 +128,7 @@ export interface WmlTableColumn {
 export interface IDomNumbering {
     id: string;
     level: number;
+    start: number;
     pStyleName: string;
     pStyle: Record<string, string>;
     rStyle: Record<string, string>;
