@@ -57,6 +57,9 @@ renderAsync(
 	 * 
 	 * 折线图渲染方法（非组合图表）
 	 * lineChart: (chart: ChartElement) => IDomChart
+	 *
+	 * 柱状图渲染方法（非组合图表）
+	 * barChart: (chart: ChartElement) => IDomChart
 	 * 
 	 * 默认渲染方法（非组合图表可用）
 	 * defaultRender: (chart: ChartElement) => IDomChart
@@ -64,7 +67,7 @@ renderAsync(
 	 * 组合图表渲染方法
 	 * mixedChart: (chart: ChartElement) => IDomChart
 	 */
-        renderCharts: Record<string, (chart: ChartElement) => IDomChart>;
+        renderCharts: Record<string, (chart: ChartElement) => IDomChart>,
     }): Promise<any>
 ```
 Thumbnails, TOC and etc.
