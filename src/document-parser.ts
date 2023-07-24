@@ -71,6 +71,19 @@ const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
 export interface DocumentParserOptions {
 	ignoreWidth: boolean;
 	debug: boolean;
+	/**
+	 * 指定chart1渲染方法
+	 * chart1: (chart: ChartElement) => IDomChart
+	 * 
+	 * 直线图渲染方法（非组合图表）
+	 * lineChart: (chart: ChartElement) => IDomChart
+	 * 
+	 * 默认渲染方法（非组合图表可用）
+	 * defaultRender: (chart: ChartElement) => IDomChart
+	 * 
+	 * 组合图表渲染方法
+	 * mixedChart: (chart: ChartElement) => IDomChart
+	 */
 	renderCharts: Record<string, (chart: ChartElement) => IDomChart>;
 }
 
@@ -154,8 +167,10 @@ export class DocumentParser {
 		return children;
 	}
 
-	parseChartElement(element: Element): ChartElement {
+	parseChartElement(element: Element, path: string): ChartElement {
+		const key = path.split("/").pop().split(".").shift();
 		const chart = xml.element(element, "chart");
+
 		const title = xmlUtil.deepFind(chart, titlePath);
 		const plotArea = xml.element(chart, "plotArea");
 		const catAx = xmlUtil.deepFind(plotArea, ["catAx", ...titlePath]);
@@ -163,7 +178,9 @@ export class DocumentParser {
 		const charts = xml
 			.elements(plotArea)
 			.filter((el) => xml.element(el, "ser") != null);
+
 		return {
+			key: key,
 			title: xmlUtil.getTextContent(title),
 			catAx: xmlUtil.getTextContent(catAx),
 			valAx: xmlUtil.getTextContent(valAx),
@@ -1047,14 +1064,15 @@ export class DocumentParser {
 		if (chartPart == null) {
 			return;
 		}
-		const key = rel.target.split("/").pop().split(".").shift();
+		const { chart } = chartPart as ChartPart;
 		// 获取对应chart的渲染方法
-		const { renderCharts = {} } = this.options;
-		const renderChart = renderCharts[key];
+		const renderChart = chartUtil.getRenderChart(
+			this.options.renderCharts,
+			chart
+		);
 		if (renderChart == null) {
 			return;
 		}
-		const { chart } = chartPart as ChartPart;
 		const result = renderChart(chart) ?? <IDomChart>{ cssStyle: {} };
 		result.type = DomType.Chart;
 		return result;
@@ -1436,7 +1454,9 @@ export class DocumentParser {
 					break;
 
 				case "suppressAutoHyphens":
-					style["hyphens"] = xml.boolAttr(c, "val", true) ? "none" : "auto";
+					style["hyphens"] = xml.boolAttr(c, "val", true)
+						? "none"
+						: "auto";
 					break;
 
 				case "lang":
@@ -1456,7 +1476,7 @@ export class DocumentParser {
 				case "suppressLineNumbers": //TODO - maybe ignore
 				case "keepLines": //TODO - maybe ignore
 				case "keepNext": //TODO - maybe ignore
-				case "widowControl": //TODO - maybe ignore 
+				case "widowControl": //TODO - maybe ignore
 				case "bidi": //TODO - maybe ignore
 				case "rtl": //TODO - maybe ignore
 				case "noProof": //ignore spellcheck
@@ -1714,6 +1734,7 @@ class xmlUtil {
 	}
 
 	static getChartInfo(elem: Element): Chart {
+		const chartType = elem.localName;
 		const serElements = xml
 			.elements(elem)
 			.filter((el) => el.localName === "ser");
@@ -1736,7 +1757,7 @@ class xmlUtil {
 				valList: this.getDataList(valDataNode),
 			});
 		}
-		return { serList };
+		return { type: chartType, serList: serList };
 	}
 
 	static getDataList(dataNode?: Element): string[] {
@@ -1887,5 +1908,38 @@ class values {
 			className += " no-vband";
 
 		return className.trim();
+	}
+}
+
+class chartUtil {
+	static getRenderChart(
+		renderCharts: Record<string, (chart: ChartElement) => IDomChart>,
+		chart: ChartElement
+	): (chart: ChartElement) => IDomChart {
+		const { key, chartList = [] } = chart;
+		if (renderCharts[key]) {
+			return renderCharts[key];
+		}
+		// 根据chartList数量判断是否为非组合图表，大于1则为非组合图表
+		if (chartList.length === 1) {
+			const chart = chartList[0];
+			const { type } = chart;
+			// 非组合图表根据图表类型从renderCharts中获取渲染方法
+			if (renderCharts[type]) {
+				return renderCharts[type];
+			} else {
+				// 非组合图表未找到对应类型的渲染方法，则使用默认渲染方法
+				if (renderCharts["defaultRender"]) {
+					return renderCharts["defaultRender"];
+				}
+			}
+		} else if (chartList.length > 1) {
+			// 组合图表从renderCharts中获取key为mixedChart的渲染方法
+			if (renderCharts["mixedChart"]) {
+				return renderCharts["mixedChart"];
+			}
+		} else {
+			return null;
+		}
 	}
 }

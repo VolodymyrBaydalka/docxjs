@@ -13,6 +13,6 @@ export class ChartPart extends Part {
 	}
 
 	parseXml(element: Element) {
-		this.chart = this._documentParser.parseChartElement(element);
+		this.chart = this._documentParser.parseChartElement(element, this.path);
 	}
 }

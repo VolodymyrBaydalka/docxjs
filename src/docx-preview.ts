@@ -22,6 +22,19 @@ export interface Options {
 	useBase64URL: boolean;
 	useMathMLPolyfill: boolean;
 	renderChanges: boolean;
+    /**
+	 * 指定chart1渲染方法
+	 * chart1: (chart: ChartElement) => IDomChart
+	 * 
+	 * 折线图渲染方法（非组合图表）
+	 * lineChart: (chart: ChartElement) => IDomChart
+	 * 
+	 * 默认渲染方法（非组合图表可用）
+	 * defaultRender: (chart: ChartElement) => IDomChart
+	 * 
+	 * 组合图表渲染方法
+	 * mixedChart: (chart: ChartElement) => IDomChart
+	 */
     renderCharts: Record<string, (chart: ChartElement) => IDomChart>;
 }
 

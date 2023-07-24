@@ -1,5 +1,9 @@
 export interface ChartElement {
 	/**
+	 * key
+	 */
+	key: string;
+	/**
 	 * 标题
 	 */
 	title: string;
@@ -11,7 +15,6 @@ export interface ChartElement {
 	 * 纵坐标标题
 	 */
 	valAx: string;
-
 	/**
 	 * 图表数据
 	 */
@@ -22,6 +25,11 @@ export interface ChartElement {
  * 图表数据
  */
 export interface Chart {
+	/**
+	 * 图表类型
+	 */
+	type: string;
+
 	serList: Ser[];
 }
 
