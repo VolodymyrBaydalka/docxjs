@@ -38,6 +38,7 @@ const mmlTagMap = {
 	"sub": DomType.MmlSubArgument,
 	"d": DomType.MmlDelimiter,
 	"nary": DomType.MmlNary,
+	"eqArr": DomType.MmlEquationArray,
 }
 
 export interface DocumentParserOptions {

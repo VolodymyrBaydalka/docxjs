@@ -449,7 +449,8 @@ export class HtmlRenderer {
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; hyphens: auto; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
-section.${c}>article { margin-bottom: auto; }
+section.${c}>article { margin-bottom: auto; z-index: 1; }
+section.${c}>footer { z-index: 1; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
@@ -745,6 +746,9 @@ section.${c}>article { margin-bottom: auto; }
 
 			case DomType.MmlNary:
 				return this.renderMmlNary(elem);
+
+			case DomType.MmlEquationArray:
+				return this.renderMllList(elem);
 
 			case DomType.Inserted:
 				return this.renderInserted(elem);
@@ -1138,6 +1142,24 @@ section.${c}>article { margin-bottom: auto; }
 
 		return result;
 	}
+
+	renderMllList(elem: OpenXmlElement) {
+		const result = createElementNS(ns.mathML, "mtable");
+
+		this.renderClass(elem, result);
+		this.renderStyleValues(elem.cssStyle, result);
+
+		const childern = this.renderChildren(elem);
+
+		for (let child of this.renderChildren(elem)) {
+			result.appendChild(createElementNS(ns.mathML, "mtr", null, [
+				createElementNS(ns.mathML, "mtd", null, [child])
+			]));
+		}
+
+		return result;
+	}
+
 
 	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
 		for (let k in style) {
