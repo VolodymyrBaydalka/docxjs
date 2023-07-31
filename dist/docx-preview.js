@@ -380,20 +380,21 @@ exports.autos = {
 };
 const supportedNamespaceURIs = [];
 const mmlTagMap = {
-    oMath: dom_1.DomType.MmlMath,
-    oMathPara: dom_1.DomType.MmlMathParagraph,
-    f: dom_1.DomType.MmlFraction,
-    num: dom_1.DomType.MmlNumerator,
-    den: dom_1.DomType.MmlDenominator,
-    rad: dom_1.DomType.MmlRadical,
-    deg: dom_1.DomType.MmlDegree,
-    e: dom_1.DomType.MmlBase,
-    sSup: dom_1.DomType.MmlSuperscript,
-    sSub: dom_1.DomType.MmlSubscript,
-    sup: dom_1.DomType.MmlSuperArgument,
-    sub: dom_1.DomType.MmlSubArgument,
-    d: dom_1.DomType.MmlDelimiter,
-    nary: dom_1.DomType.MmlNary,
+    "oMath": dom_1.DomType.MmlMath,
+    "oMathPara": dom_1.DomType.MmlMathParagraph,
+    "f": dom_1.DomType.MmlFraction,
+    "num": dom_1.DomType.MmlNumerator,
+    "den": dom_1.DomType.MmlDenominator,
+    "rad": dom_1.DomType.MmlRadical,
+    "deg": dom_1.DomType.MmlDegree,
+    "e": dom_1.DomType.MmlBase,
+    "sSup": dom_1.DomType.MmlSuperscript,
+    "sSub": dom_1.DomType.MmlSubscript,
+    "sup": dom_1.DomType.MmlSuperArgument,
+    "sub": dom_1.DomType.MmlSubArgument,
+    "d": dom_1.DomType.MmlDelimiter,
+    "nary": dom_1.DomType.MmlNary,
+    "eqArr": dom_1.DomType.MmlEquationArray,
 };
 const titlePath = ["title", "tx", "rich", "p", "r", "t"];
 const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
@@ -2251,6 +2252,7 @@ var DomType;
     DomType["MmlNary"] = "mmlNary";
     DomType["MmlDelimiter"] = "mmlDelimiter";
     DomType["MmlRun"] = "mmlRun";
+    DomType["MmlEquationArray"] = "mmlEquationArray";
     DomType["VmlElement"] = "vmlElement";
     DomType["Inserted"] = "inserted";
     DomType["Deleted"] = "deleted";
@@ -3050,7 +3052,8 @@ class HtmlRenderer {
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
 .${c} { color: black; hyphens: auto; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
-section.${c}>article { margin-bottom: auto; }
+section.${c}>article { margin-bottom: auto; z-index: 1; }
+section.${c}>footer { z-index: 1; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
@@ -3214,6 +3217,8 @@ section.${c}>article { margin-bottom: auto; }
                 return this.renderMmlRun(elem);
             case dom_1.DomType.MmlNary:
                 return this.renderMmlNary(elem);
+            case dom_1.DomType.MmlEquationArray:
+                return this.renderMllList(elem);
             case dom_1.DomType.Inserted:
                 return this.renderInserted(elem);
             case dom_1.DomType.Deleted:
@@ -3522,6 +3527,18 @@ section.${c}>article { margin-bottom: auto; }
         this.renderClass(elem, result);
         this.renderStyleValues(elem.cssStyle, result);
         this.renderChildren(elem, result);
+        return result;
+    }
+    renderMllList(elem) {
+        const result = createElementNS(ns.mathML, "mtable");
+        this.renderClass(elem, result);
+        this.renderStyleValues(elem.cssStyle, result);
+        const childern = this.renderChildren(elem);
+        for (let child of this.renderChildren(elem)) {
+            result.appendChild(createElementNS(ns.mathML, "mtr", null, [
+                createElementNS(ns.mathML, "mtd", null, [child])
+            ]));
+        }
         return result;
     }
     renderStyleValues(style, ouput) {
@@ -4339,7 +4356,7 @@ function isObject(item) {
 }
 exports.isObject = isObject;
 function isString(item) {
-    return item && typeof item === 'string' || item instanceof String;
+    return typeof item === 'string' || item instanceof String;
 }
 exports.isString = isString;
 function mergeDeep(target, ...sources) {
