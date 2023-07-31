@@ -378,6 +378,8 @@ exports.autos = {
     borderColor: "black",
     highlight: "transparent",
 };
+const titlePath = ["title", "tx", "rich", "p", "r", "t"];
+const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
 const supportedNamespaceURIs = [];
 const mmlTagMap = {
     "oMath": dom_1.DomType.MmlMath,
@@ -396,8 +398,6 @@ const mmlTagMap = {
     "nary": dom_1.DomType.MmlNary,
     "eqArr": dom_1.DomType.MmlEquationArray,
 };
-const titlePath = ["title", "tx", "rich", "p", "r", "t"];
-const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
 class DocumentParser {
     constructor(options) {
         this.options = Object.assign({ ignoreWidth: false, debug: false, renderCharts: {} }, options);
