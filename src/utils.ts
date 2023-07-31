@@ -41,7 +41,7 @@ export function isObject(item) {
 }
 
 export function isString(item: unknown): item is string {
-    return item && typeof item === 'string' || item instanceof String;
+    return typeof item === 'string' || item instanceof String;
 }
 
 export function mergeDeep(target, ...sources) {

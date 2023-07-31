@@ -41,6 +41,7 @@ export enum DomType {
 	MmlNary = "mmlNary",
 	MmlDelimiter = "mmlDelimiter",
 	MmlRun = "mmlRun",
+	MmlEquationArray = "mmlEquationArray",
 	VmlElement = "vmlElement",
 	Inserted = "inserted",
 	Deleted = "deleted",
