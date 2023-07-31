@@ -45,28 +45,29 @@ export var autos = {
 	highlight: "transparent",
 };
 
-const supportedNamespaceURIs = [];
-
-const mmlTagMap = {
-	oMath: DomType.MmlMath,
-	oMathPara: DomType.MmlMathParagraph,
-	f: DomType.MmlFraction,
-	num: DomType.MmlNumerator,
-	den: DomType.MmlDenominator,
-	rad: DomType.MmlRadical,
-	deg: DomType.MmlDegree,
-	e: DomType.MmlBase,
-	sSup: DomType.MmlSuperscript,
-	sSub: DomType.MmlSubscript,
-	sup: DomType.MmlSuperArgument,
-	sub: DomType.MmlSubArgument,
-	d: DomType.MmlDelimiter,
-	nary: DomType.MmlNary,
-};
-
 const titlePath = ["title", "tx", "rich", "p", "r", "t"];
 
 const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
+
+const supportedNamespaceURIs = [];
+
+const mmlTagMap = {
+	"oMath": DomType.MmlMath,
+	"oMathPara": DomType.MmlMathParagraph,
+	"f": DomType.MmlFraction,
+	"num": DomType.MmlNumerator,
+	"den": DomType.MmlDenominator,
+	"rad": DomType.MmlRadical,
+	"deg": DomType.MmlDegree,
+	"e": DomType.MmlBase,
+	"sSup": DomType.MmlSuperscript,
+	"sSub": DomType.MmlSubscript,
+	"sup": DomType.MmlSuperArgument,
+	"sub": DomType.MmlSubArgument,
+	"d": DomType.MmlDelimiter,
+	"nary": DomType.MmlNary,
+	"eqArr": DomType.MmlEquationArray,
+}
 
 export interface DocumentParserOptions {
 	ignoreWidth: boolean;
