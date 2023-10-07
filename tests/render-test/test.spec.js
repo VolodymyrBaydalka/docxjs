@@ -8,7 +8,8 @@ describe("Render document", function () {
     'numbering',
     'line-spacing',
     'header-footer',
-    'footnote'
+    'footnote',
+    'equation'
   ];
 
   for (let path of tests) {
