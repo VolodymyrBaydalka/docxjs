@@ -27,6 +27,8 @@ const mmlTagMap = {
 	"oMath": DomType.MmlMath,
 	"oMathPara": DomType.MmlMathParagraph,
 	"f": DomType.MmlFraction,
+	"func": DomType.MmlFunction,
+	"fName": DomType.MmlFunctionName,
 	"num": DomType.MmlNumerator,
 	"den": DomType.MmlDenominator,
 	"rad": DomType.MmlRadical,
@@ -34,11 +36,19 @@ const mmlTagMap = {
 	"e": DomType.MmlBase,
 	"sSup": DomType.MmlSuperscript,
 	"sSub": DomType.MmlSubscript,
+	"sPre": DomType.MmlPreSubSuper,
 	"sup": DomType.MmlSuperArgument,
 	"sub": DomType.MmlSubArgument,
 	"d": DomType.MmlDelimiter,
 	"nary": DomType.MmlNary,
 	"eqArr": DomType.MmlEquationArray,
+	"lim": DomType.MmlLimit,
+	"limLow": DomType.MmlLimitLower,
+	"m": DomType.MmlMatrix,
+	"mr": DomType.MmlMatrixRow,
+	"box": DomType.MmlBox,
+	"bar": DomType.MmlBar,
+	"groupChr": DomType.MmlGroupChar
 }
 
 export interface DocumentParserOptions {
@@ -704,6 +714,8 @@ export class DocumentParser {
 		for (const el of xml.elements(elem)) {
 			switch (el.localName) {
 				case "chr": result.char = xml.attr(el, "val"); break;
+				case "vertJc": result.verticalJustification = xml.attr(el, "val"); break;
+				case "pos": result.position = xml.attr(el, "val"); break;
 				case "degHide": result.hideDegree = xml.boolAttr(el, "val"); break;
 				case "begChr": result.beginChar = xml.attr(el, "val"); break;
 				case "endChr": result.endChar = xml.attr(el, "val"); break;

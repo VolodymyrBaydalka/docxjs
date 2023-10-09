@@ -713,31 +713,46 @@ section.${c}>footer { z-index: 1; }
 			case DomType.MmlFraction:
 				return this.renderContainerNS(elem, ns.mathML, "mfrac");
 
+			case DomType.MmlBase:
+				return this.renderContainerNS(elem, ns.mathML, 
+					elem.parent.type == DomType.MmlMatrixRow ? "mtd" : "mrow");
+
 			case DomType.MmlNumerator:
 			case DomType.MmlDenominator:
+			case DomType.MmlFunction:
+			case DomType.MmlLimit:
+			case DomType.MmlBox:
 				return this.renderContainerNS(elem, ns.mathML, "mrow");
 
+			case DomType.MmlGroupChar:
+				return this.renderMmlGroupChar(elem);
+
+			case DomType.MmlLimitLower:
+				return this.renderContainerNS(elem, ns.mathML, "munder");
+
+			case DomType.MmlMatrix:
+				return this.renderContainerNS(elem, ns.mathML, "mtable");
+
+			case DomType.MmlMatrixRow:
+				return this.renderContainerNS(elem, ns.mathML, "mtr");
+	
 			case DomType.MmlRadical:
 				return this.renderMmlRadical(elem);
-
-			case DomType.MmlDegree:
-				return this.renderContainerNS(elem, ns.mathML, "mn");
 
 			case DomType.MmlSuperscript:
 				return this.renderContainerNS(elem, ns.mathML, "msup");
 
 			case DomType.MmlSubscript:
 				return this.renderContainerNS(elem, ns.mathML, "msub");
-	
-			case DomType.MmlBase:
-				return this.renderContainerNS(elem, ns.mathML, "mrow");
 
+			case DomType.MmlDegree:
 			case DomType.MmlSuperArgument:
-				return this.renderContainerNS(elem, ns.mathML, "mn");
-
 			case DomType.MmlSubArgument:
 				return this.renderContainerNS(elem, ns.mathML, "mn");
 
+			case DomType.MmlFunctionName:
+				return this.renderContainerNS(elem, ns.mathML, "ms");
+	
 			case DomType.MmlDelimiter:
 				return this.renderMmlDelimiter(elem);
 
@@ -747,6 +762,12 @@ section.${c}>footer { z-index: 1; }
 			case DomType.MmlNary:
 				return this.renderMmlNary(elem);
 
+			case DomType.MmlPreSubSuper:
+				return this.renderMmlPreSubSuper(elem);
+
+			case DomType.MmlBar:
+				return this.renderMmlBar(elem);
+	
 			case DomType.MmlEquationArray:
 				return this.renderMllList(elem);
 
@@ -1114,23 +1135,59 @@ section.${c}>footer { z-index: 1; }
 		const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
 		const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
 
-		if (elem.props?.char) {
-			const charElem = createElementNS(ns.mathML, "mo", null, [elem.props.char]);
+		const charElem = createElementNS(ns.mathML, "mo", null, [elem.props?.char ?? '\u222B']);
 
-			if (supElem || subElem) {
-				children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
-			} else if(supElem) {
-				children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
-			} else if(subElem) {
-				children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
-			} else {
-				children.push(charElem);
-			}
+		if (supElem || subElem) {
+			children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
+		} else if(supElem) {
+			children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
+		} else if(subElem) {
+			children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+		} else {
+			children.push(charElem);
 		}
 
 		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
 
 		return createElementNS(ns.mathML, "mrow", null, children);
+	}
+
+	renderMmlPreSubSuper(elem: OpenXmlElement) {
+		const children = [];
+		const grouped = keyBy(elem.children, x => x.type);
+
+		const sup = grouped[DomType.MmlSuperArgument];
+		const sub = grouped[DomType.MmlSubArgument];
+		const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
+		const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+		const stubElem = createElementNS(ns.mathML, "mo", null);
+
+		children.push(createElementNS(ns.mathML, "msubsup", null, [stubElem, subElem, supElem]));
+		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
+
+		return createElementNS(ns.mathML, "mrow", null, children);
+	}
+
+	renderMmlGroupChar(elem: OpenXmlElement) {
+		const tagName = elem.props.verticalJustification === "bot" ? "mover" : "munder";
+		const result = this.renderContainerNS(elem, ns.mathML, tagName);
+
+		if (elem.props.char) {
+			result.appendChild(createElementNS(ns.mathML, "mo", null, [elem.props.char]));
+		}
+
+		return result;
+	}
+
+	renderMmlBar(elem: OpenXmlElement) {
+		const result = this.renderContainerNS(elem, ns.mathML, "mrow");
+
+		switch(elem.props.position) {
+			case "top": result.style.textDecoration = "overline"; break
+			case "bottom": result.style.textDecoration = "underline"; break
+		}
+
+		return result;
 	}
 
 	renderMmlRun(elem: OpenXmlElement) {
