@@ -18,7 +18,6 @@ export interface Options {
 	renderEndnotes: boolean;
     ignoreLastRenderedPageBreak: boolean;
 	useBase64URL: boolean;
-	useMathMLPolyfill: boolean;
 	renderChanges: boolean;
 }
 
@@ -38,7 +37,6 @@ export const defaultOptions: Options = {
     renderFootnotes: true,
 	renderEndnotes: true,
 	useBase64URL: false,
-	useMathMLPolyfill: false,
 	renderChanges: false
 }
 

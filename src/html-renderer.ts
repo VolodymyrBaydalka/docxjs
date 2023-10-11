@@ -18,7 +18,6 @@ import { WmlBaseNote, WmlFootnote } from './notes/elements';
 import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
-import mathMLCSS from "./mathml.scss";
 import { VmlElement } from './vml/vml';
 
 const ns = {
@@ -74,11 +73,6 @@ export class HtmlRenderer {
 
 		appendComment(styleContainer, "docxjs library predefined styles");
 		styleContainer.appendChild(this.renderDefaultStyle());
-
-		if (!window.MathMLElement && options.useMathMLPolyfill) {
-			appendComment(styleContainer, "docxjs mathml polyfill styles");
-			styleContainer.appendChild(createStyleElement(mathMLCSS));
-		} 
 
 		if (document.themePart) {
 			appendComment(styleContainer, "docxjs document theme values");

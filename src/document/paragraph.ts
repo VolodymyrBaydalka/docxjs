@@ -77,7 +77,7 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             return false; //TODO
             break;
 
-        case "keepNext":
+        case "keepLines":
             props.keepLines = xml.boolAttr(elem, "val", true);
             break;
     
