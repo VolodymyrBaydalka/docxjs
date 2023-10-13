@@ -40,7 +40,13 @@ export function convertLength(val: string, usage: LengthUsageType = LengthUsage.
         return val;
     }
 
-	return `${(parseInt(val) * usage.mul).toFixed(2)}${usage.unit}`;
+	// Border 设置最小值
+	let num = parseInt(val) * usage.mul
+	if (usage === LengthUsage.Border) {
+		num = Math.max(num, 1)
+	}
+
+	return `${num.toFixed(2)}${usage.unit}`;
 }
 
 export function convertBoolean(v: string, defaultValue = false): boolean {

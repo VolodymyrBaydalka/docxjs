@@ -445,6 +445,8 @@ export class HtmlRenderer {
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
 section.${c}>footer { z-index: 1; }
+.${c} .table-wrapper { overflow-x: scroll; scrollbar-width: none; -ms-overflow-style: none; }
+.${c} .table-wrapper::-webkit-scrollbar { display: none; }
 .${c} table { border-collapse: collapse; }
 .${c} table td, .${c} table th { vertical-align: top; }
 .${c} p { margin: 0pt; min-height: 1em; }
@@ -993,7 +995,7 @@ section.${c}>footer { z-index: 1; }
 		this.currentVerticalMerge = this.tableVerticalMerges.pop();
 		this.currentCellPosition = this.tableCellPositions.pop();
 
-		return result;
+		return this.createElement("div", {className: 'table-wrapper'}, [result])
 	}
 
 	renderTableColumns(columns: WmlTableColumn[]) {
