@@ -40,8 +40,8 @@ export function convertLength(val: string, usage: LengthUsageType = LengthUsage.
         return val;
     }
 
-	// Border 设置最小值
 	let num = parseInt(val) * usage.mul
+	// border minimum set to 1, because in iOS device, the 0.5pt border width is not working
 	if (usage === LengthUsage.Border) {
 		num = Math.max(num, 1)
 	}
@@ -70,7 +70,7 @@ export function parseCommonProperty(elem: Element, props: CommonProperties, xml:
         return false;
 
     switch(elem.localName) {
-        case "color": 
+        case "color":
             props.color = xml.attr(elem, "val");
             break;
 
