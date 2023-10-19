@@ -16,8 +16,7 @@ function buildConfig(prod, umd = false) {
       rules: [
         {
           test: /\.ts$/,
-          use: [{ loader: 'ts-loader' }],
-          exclude: "/\.d\.ts"
+          use: [{ loader: 'ts-loader' }]
         }
       ]
     },
