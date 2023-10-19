@@ -11,13 +11,11 @@ export interface Options {
     renderHeaders: boolean;
     renderFooters: boolean;
     renderFootnotes: boolean;
-	renderEndnotes: boolean;
+    renderEndnotes: boolean;
     ignoreLastRenderedPageBreak: boolean;
-	useBase64URL: boolean;
-	useMathMLPolyfill: boolean;
-	renderChanges: boolean;
+    useBase64URL: boolean;
+    renderChanges: boolean;
 }
-
-export declare const defaultOptions: Options; 
-
-export declare function renderAsync(data: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, options?: Partial<Options>): Promise<any>;
+export declare const defaultOptions: Options;
+export declare function praseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>;
+export declare function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any>;
