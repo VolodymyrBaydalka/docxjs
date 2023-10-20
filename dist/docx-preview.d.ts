@@ -18,7 +18,5 @@ export interface Options {
 }
 
 export declare const defaultOptions: Options;
-
 export declare function praseAsync(data: Blob | any, userOptions: Partial<Options> | null): Promise<any>;
-
 export declare function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement | null, options: Partial<Options> | null): Promise<any>;
