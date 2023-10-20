@@ -1,23 +1,14 @@
 const path = require('path')
 
-const PATHS = {
-  src: path.join(__dirname, './src'),
-  build: path.join(__dirname, './dist')
-}
-
-function buildConfig(prod) {
-  const outputFilename = `[name]${prod ? '.min' : ''}.js`;
-
-  return {
+function buildConfig(prod, umd = false) {
+  const config = {
     mode: 'development',
     entry: {
-      'docx-preview': PATHS.src + '/docx-preview.ts'
+      'docx-preview': path.join(__dirname, './src/docx-preview.ts')
     },
     output: {
-      path: PATHS.build,
-      filename: outputFilename,
-      library: 'docx',
-      libraryTarget: 'umd',
+      path: path.join(__dirname, './dist'),
+      filename: `[name]${umd ? '.umd' : ''}${prod ? '.min' : ''}.js`,
       globalObject: 'globalThis'
     },
     devtool: 'source-map',
@@ -25,17 +16,8 @@ function buildConfig(prod) {
       rules: [
         {
           test: /\.ts$/,
-          use: [{
-            loader: 'ts-loader'
-          }]
-        },
-        {
-          test: /\.s[ac]ss$/i,
-          use: [
-            { loader: "css-loader", options: { exportType: "string" } },
-            { loader: "sass-loader" },
-          ],
-        },
+          use: [{ loader: 'ts-loader' }]
+        }
       ]
     },
     resolve: {
@@ -46,13 +28,23 @@ function buildConfig(prod) {
         root: "JSZip",
         commonjs: "jszip",
         commonjs2: "jszip",
-        amd: "jszip"
+        amd: "jszip",
+        module: 'jszip'
       },
     }
+  };
+
+  if (umd) {
+    config.output.library = { name: 'docx', type: 'umd', umdNamedDefine: true };
+  } else {
+    config.experiments = { outputModule: true };
+    config.output.library = { type: 'module' };
   }
+
+  return config;
 }
 
 
 module.exports = (env, argv) => {
-  return buildConfig(argv.mode === 'production');
+  return buildConfig(argv.mode === 'production', env.umd);
 };

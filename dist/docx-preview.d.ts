@@ -11,10 +11,10 @@ export interface Options {
     renderHeaders: boolean;
     renderFooters: boolean;
     renderFootnotes: boolean;
-	renderEndnotes: boolean;
+    renderEndnotes: boolean;
     ignoreLastRenderedPageBreak: boolean;
-	useBase64URL: boolean;
-	renderChanges: boolean;
+    useBase64URL: boolean;
+    renderChanges: boolean;
 }
 
 export declare const defaultOptions: Options;
