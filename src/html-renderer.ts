@@ -341,11 +341,22 @@ export class HtmlRenderer {
 		var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart) as BaseHeaderFooterPart;
 
 		if (part) {
+			part.rootElement.cssStyle["position"] = "absolute";
+			part.rootElement.cssStyle[part.rootElement.type === "header" ? "top" : "bottom"] = "0pt";
 			this.currentPart = part;
+
 			if (!this.usedHederFooterParts.includes(part.path)) {
 				this.processElement(part.rootElement);
 				this.usedHederFooterParts.push(part.path);
 			}
+			if (props && props.pageMargins) {
+				if (part.rootElement.type === "header") {
+					part.rootElement.cssStyle["top"] = props.pageMargins.header;
+				} else {
+					part.rootElement.cssStyle["bottom"] = props.pageMargins.footer;
+				}
+			}
+
 			this.renderElements([part.rootElement], into);
 			this.currentPart = null;
 		}
@@ -792,7 +803,9 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderContainer(elem: OpenXmlElement, tagName: keyof HTMLElementTagNameMap, props?: Record<string, any>) {
-		return this.createElement(tagName, props, this.renderChildren(elem));
+		const result = this.createElement(tagName, props, this.renderChildren(elem));
+		this.renderStyleValues(elem.cssStyle, result);
+		return result;
 	}
 
 	renderContainerNS(elem: OpenXmlElement, ns: string, tagName: string, props?: Record<string, any>) {
