@@ -1305,6 +1305,7 @@ export class DocumentParser {
 			case "single":
 			case "thick":
 				style["text-decoration"] = "underline";
+				style["text-underline-position"] = "from-font";
 				break;
 
 			case "wave":
