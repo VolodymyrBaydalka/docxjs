@@ -11,7 +11,7 @@
     <!--dependencies-->
     <script crossorigin src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
     <!--library-->
-    <script src="dist/docx-preview.umd.js"></script>
+    <script src="dist/docx-preview.js"></script>
     <!--thumbnail example-->
     <script src="./demo/thumbnail.example.js"></script>
     <link href="./demo/thumbnail.example.css" rel="stylesheet">
@@ -108,7 +108,7 @@
             renderDocx(ev.dataTransfer.files[0]);
         });
 
-        for (let testName of ['text','text-break','line-spacing','numbering','page-layout','table','table-spans','footnote','header-footer','revision','equation'])
+        for (let testName of ['text','underlines','text-break','line-spacing','numbering','page-layout','table','table-spans','footnote','header-footer','revision','equation'])
         {
             var op = document.createElement("option");
             op.label = testName;

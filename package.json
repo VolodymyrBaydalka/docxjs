@@ -41,6 +41,6 @@
   "files": [
     "dist"
   ],
-  "main": "dist/docx-preview.min.js",
+  "main": "dist/docx-preview.min.mjs",
   "types": "dist/docx-preview.d.ts"
 }

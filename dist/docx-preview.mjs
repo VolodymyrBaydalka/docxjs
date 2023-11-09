@@ -1,16 +1,5 @@
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("jszip"));
-	else if(typeof define === 'function' && define.amd)
-		define("docx", ["jszip"], factory);
-	else if(typeof exports === 'object')
-		exports["docx"] = factory(require("jszip"));
-	else
-		root["docx"] = factory(root["JSZip"]);
-})(globalThis, (__WEBPACK_EXTERNAL_MODULE_jszip__) => {
-return /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
-/******/ 	var __webpack_modules__ = ({
+import * as __WEBPACK_EXTERNAL_MODULE_jszip__ from "jszip";
+/******/ var __webpack_modules__ = ({
 
 /***/ "./src/common/open-xml-package.ts":
 /*!****************************************!*\
@@ -1193,14 +1182,14 @@ class DocumentParser {
             case "dashLongHeavy":
             case "dotDash":
             case "dotDotDash":
-                style["text-decoration-style"] = "dashed";
+                style["text-decoration"] = "underline dashed";
                 break;
             case "dotted":
             case "dottedHeavy":
-                style["text-decoration-style"] = "dotted";
+                style["text-decoration"] = "underline dotted";
                 break;
             case "double":
-                style["text-decoration-style"] = "double";
+                style["text-decoration"] = "underline double";
                 break;
             case "single":
             case "thick":
@@ -1209,7 +1198,7 @@ class DocumentParser {
             case "wave":
             case "wavyDouble":
             case "wavyHeavy":
-                style["text-decoration-style"] = "wavy";
+                style["text-decoration"] = "underline wavy";
                 break;
             case "words":
                 style["text-decoration"] = "underline";
@@ -2135,7 +2124,7 @@ function parseFooterHeaderReference(elem, xml) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.renderAsync = exports.praseAsync = exports.defaultOptions = void 0;
+exports.renderAsync = exports.renderDocument = exports.praseAsync = exports.defaultOptions = void 0;
 const word_document_1 = __webpack_require__(/*! ./word-document */ "./src/word-document.ts");
 const document_parser_1 = __webpack_require__(/*! ./document-parser */ "./src/document-parser.ts");
 const html_renderer_1 = __webpack_require__(/*! ./html-renderer */ "./src/html-renderer.ts");
@@ -2157,16 +2146,20 @@ exports.defaultOptions = {
     useBase64URL: false,
     renderChanges: false
 };
-function praseAsync(data, userOptions = null) {
+function praseAsync(data, userOptions) {
     const ops = { ...exports.defaultOptions, ...userOptions };
     return word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
 }
 exports.praseAsync = praseAsync;
-async function renderAsync(data, bodyContainer, styleContainer = null, userOptions = null) {
+function renderDocument(document, bodyContainer, styleContainer, userOptions) {
     const ops = { ...exports.defaultOptions, ...userOptions };
     const renderer = new html_renderer_1.HtmlRenderer(window.document);
-    const doc = await word_document_1.WordDocument.load(data, new document_parser_1.DocumentParser(ops), ops);
-    renderer.render(doc, bodyContainer, styleContainer, ops);
+    renderer.render(document, bodyContainer, styleContainer, ops);
+}
+exports.renderDocument = renderDocument;
+async function renderAsync(data, bodyContainer, styleContainer, userOptions) {
+    const doc = await praseAsync(data, userOptions);
+    renderDocument(doc, bodyContainer, styleContainer, userOptions);
     return doc;
 }
 exports.renderAsync = renderAsync;
@@ -2575,7 +2568,17 @@ class HtmlRenderer {
                 this.processElement(part.rootElement);
                 this.usedHederFooterParts.push(part.path);
             }
-            this.renderElements([part.rootElement], into);
+            const [el] = this.renderElements([part.rootElement], into);
+            if (props?.pageMargins) {
+                if (part.rootElement.type === dom_1.DomType.Header) {
+                    el.style.marginTop = `calc(${props.pageMargins.header} - ${props.pageMargins.top})`;
+                    el.style.minHeight = `calc(${props.pageMargins.top} - ${props.pageMargins.header})`;
+                }
+                else if (part.rootElement.type === dom_1.DomType.Footer) {
+                    el.style.marginBottom = `calc(${props.pageMargins.footer} - ${props.pageMargins.bottom})`;
+                    el.style.minHeight = `calc(${props.pageMargins.bottom} - ${props.pageMargins.footer})`;
+                }
+            }
             this.currentPart = null;
         }
     }
@@ -2652,7 +2655,7 @@ class HtmlRenderer {
         var styleText = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-.${c} { color: black; hyphens: auto; }
+.${c} { color: black; hyphens: auto; text-underline-position: from-font; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
 section.${c}>footer { z-index: 1; }
@@ -4312,45 +4315,50 @@ exports.deobfuscate = deobfuscate;
   \*******************************************************************************************************/
 /***/ ((module) => {
 
+var x = y => { var x = {}; __webpack_require__.d(x, y); return x; }
+var y = x => () => x
 module.exports = __WEBPACK_EXTERNAL_MODULE_jszip__;
 
 /***/ })
 
-/******/ 	});
+/******/ });
 /************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
+/******/ // The module cache
+/******/ var __webpack_module_cache__ = {};
+/******/ 
+/******/ // The require function
+/******/ function __webpack_require__(moduleId) {
+/******/ 	// Check if module is in cache
+/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 	if (cachedModule !== undefined) {
+/******/ 		return cachedModule.exports;
 /******/ 	}
-/******/ 	
+/******/ 	// Create a new module (and put it into the cache)
+/******/ 	var module = __webpack_module_cache__[moduleId] = {
+/******/ 		// no module.id needed
+/******/ 		// no module.loaded needed
+/******/ 		exports: {}
+/******/ 	};
+/******/ 
+/******/ 	// Execute the module function
+/******/ 	__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 
+/******/ 	// Return the exports of the module
+/******/ 	return module.exports;
+/******/ }
+/******/ 
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/docx-preview.ts");
-/******/ 	
-/******/ 	return __webpack_exports__;
-/******/ })()
-;
-});
-//# sourceMappingURL=docx-preview.umd.js.map
+/******/ 
+/******/ // startup
+/******/ // Load entry module and return exports
+/******/ // This entry module is referenced by other modules so it can't be inlined
+/******/ var __webpack_exports__ = __webpack_require__("./src/docx-preview.ts");
+/******/ var __webpack_exports___esModule = __webpack_exports__.__esModule;
+/******/ var __webpack_exports__defaultOptions = __webpack_exports__.defaultOptions;
+/******/ var __webpack_exports__praseAsync = __webpack_exports__.praseAsync;
+/******/ var __webpack_exports__renderAsync = __webpack_exports__.renderAsync;
+/******/ var __webpack_exports__renderDocument = __webpack_exports__.renderDocument;
+/******/ export { __webpack_exports___esModule as __esModule, __webpack_exports__defaultOptions as defaultOptions, __webpack_exports__praseAsync as praseAsync, __webpack_exports__renderAsync as renderAsync, __webpack_exports__renderDocument as renderDocument };
+/******/ 
+
+//# sourceMappingURL=docx-preview.mjs.map

@@ -16,6 +16,9 @@ export interface Options {
     useBase64URL: boolean;
     renderChanges: boolean;
 }
+//stub
+export type WordDocument = any;
 export declare const defaultOptions: Options;
-export declare function praseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>;
+export declare function praseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<WordDocument>;
+export declare function renderDocument(document: WordDocument, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>);
 export declare function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any>;

@@ -346,7 +346,19 @@ export class HtmlRenderer {
 				this.processElement(part.rootElement);
 				this.usedHederFooterParts.push(part.path);
 			}
-			this.renderElements([part.rootElement], into);
+			const [el] = this.renderElements([part.rootElement], into) as HTMLElement[];
+
+			if (props?.pageMargins) {
+				if (part.rootElement.type === DomType.Header) {
+					el.style.marginTop = `calc(${props.pageMargins.header} - ${props.pageMargins.top})`;
+					el.style.minHeight = `calc(${props.pageMargins.top} - ${props.pageMargins.header})`;
+				}
+				else if (part.rootElement.type === DomType.Footer) {
+					el.style.marginBottom = `calc(${props.pageMargins.footer} - ${props.pageMargins.bottom})`;
+					el.style.minHeight = `calc(${props.pageMargins.bottom} - ${props.pageMargins.footer})`;
+				}
+			}
+
 			this.currentPart = null;
 		}
 	}
@@ -441,7 +453,7 @@ export class HtmlRenderer {
 		var styleText = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
-.${c} { color: black; hyphens: auto; }
+.${c} { color: black; hyphens: auto; text-underline-position: from-font; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
 section.${c}>footer { z-index: 1; }

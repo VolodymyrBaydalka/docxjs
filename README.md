@@ -29,6 +29,7 @@ Usage
 API
 ---
 ```ts
+// renders document into specified element
 renderAsync(
     document: Blob | ArrayBuffer | Uint8Array, // could be any type that supported by JSZip.loadAsync
     bodyContainer: HTMLElement, //element to render document content,
@@ -50,8 +51,27 @@ renderAsync(
         renderFootnotes: true, //enables footnotes rendering
         renderEndnotes: true, //enables endnotes rendering
         debug: boolean = false, //enables additional logging
-    }): Promise<any>
+    }): Promise<WordDocument>
+
+/// ==== experimental / internal API ===
+// this API could be used to modify document before rendering
+// renderAsync = praseAsync + renderDocument
+
+// parse document and return internal document object
+praseAsync(
+    document: Blob | ArrayBuffer | Uint8Array,
+    options: Options
+): Promise<WordDocument>
+
+// render internal document object into specified container
+renderDocument(
+    wordDocument: WordDocument,
+    bodyContainer: HTMLElement,
+    styleContainer: HTMLElement,
+    options: Options
+): Promise<void>
 ```
+
 Thumbnails, TOC and etc.
 ------
 Thumbnails is added only for example and it's not part of library. Library renders DOCX into HTML, so it can't be efficiently used for thumbnails. 

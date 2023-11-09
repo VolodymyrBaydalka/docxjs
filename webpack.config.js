@@ -8,7 +8,7 @@ function buildConfig(prod, umd = false) {
     },
     output: {
       path: path.join(__dirname, './dist'),
-      filename: `[name]${umd ? '.umd' : ''}${prod ? '.min' : ''}.js`,
+      filename: `[name]${prod ? '.min' : ''}.${umd ? '' : 'm'}js`,
       globalObject: 'globalThis'
     },
     devtool: 'source-map',

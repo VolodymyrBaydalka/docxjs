@@ -40,17 +40,19 @@ export const defaultOptions: Options = {
 	renderChanges: false
 }
 
-export function praseAsync(data: Blob | any, userOptions: Partial<Options> = null): Promise<any>  {
+export function praseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {
     const ops = { ...defaultOptions, ...userOptions };
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
 
-export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, userOptions: Partial<Options> = null): Promise<any> {
+export function renderDocument(document: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>) {
     const ops = { ...defaultOptions, ...userOptions };
     const renderer = new HtmlRenderer(window.document);
-	const doc = await WordDocument.load(data, new DocumentParser(ops), ops)
+	renderer.render(document, bodyContainer, styleContainer, ops);
+}
 
-	renderer.render(doc, bodyContainer, styleContainer, ops);
-	
+export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
+	const doc = await praseAsync(data, userOptions);
+	renderDocument(doc, bodyContainer, styleContainer, userOptions);
     return doc;
 }
