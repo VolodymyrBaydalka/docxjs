@@ -45,14 +45,15 @@ export function praseAsync(data: Blob | any, userOptions?: Partial<Options>): Pr
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
 
-export function renderDocument(document: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>) {
+export async function renderDocument(document: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
     const ops = { ...defaultOptions, ...userOptions };
     const renderer = new HtmlRenderer(window.document);
 	renderer.render(document, bodyContainer, styleContainer, ops);
+	return Promise.allSettled(renderer.tasks);
 }
 
 export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
 	const doc = await praseAsync(data, userOptions);
-	renderDocument(doc, bodyContainer, styleContainer, userOptions);
+	await renderDocument(doc, bodyContainer, styleContainer, userOptions);
     return doc;
 }

@@ -12,8 +12,6 @@ const umdOutput = {
 };
 
 export default args => {
-	console.log(args);
-
 	const config = {
 		input: 'src/docx-preview.ts',
 		output: [umdOutput],

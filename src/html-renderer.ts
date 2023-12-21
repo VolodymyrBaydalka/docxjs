@@ -56,6 +56,8 @@ export class HtmlRenderer {
 	currentTabs: any[] = [];
 	tabsTimeout: any = 0;
 
+	tasks: Promise<any>[] = [];
+
 	constructor(public htmlDocument: Document) {
 	}
 
@@ -65,6 +67,7 @@ export class HtmlRenderer {
 		this.className = options.className;
 		this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
 		this.styleMap = null;
+		this.tasks = [];
 
 		styleContainer = styleContainer || bodyContainer;
 
@@ -149,7 +152,7 @@ export class HtmlRenderer {
 	renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
 		for (let f of fontsPart.fonts) {
 			for (let ref of f.embedFontRefs) {
-				this.document.loadFont(ref.id, ref.key).then(fontData => {
+				this.tasks.push(this.document.loadFont(ref.id, ref.key).then(fontData => {
 					const cssValues = {
 						'font-family': f.name,
 						'src': `url(${fontData})`
@@ -167,7 +170,7 @@ export class HtmlRenderer {
 					const cssText = this.styleToString("@font-face", cssValues);
 					styleContainer.appendChild(createStyleElement(cssText));
 					this.refreshTabStops();
-				});
+				}));
 			}
 		}
 	}
@@ -549,10 +552,10 @@ section.${c}>footer { z-index: 1; }
 					"background": `var(${valiable})`
 				}, num.bullet.style);
 
-				this.document.loadNumberingImage(num.bullet.src).then(data => {
+				this.tasks.push(this.document.loadNumberingImage(num.bullet.src).then(data => {
 					var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
 					styleContainer.appendChild(createStyleElement(text));
-				});
+				}));
 			}
 			else if (num.levelText) {
 				let counter = this.numberingCounter(num.id, num.level);
@@ -884,9 +887,9 @@ section.${c}>footer { z-index: 1; }
 		this.renderStyleValues(elem.cssStyle, result);
 
 		if (this.document) {
-			this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
+			this.tasks.push(this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
 				result.src = x;
-			});
+			}));
 		}
 
 		return result;
@@ -1080,8 +1083,8 @@ section.${c}>footer { z-index: 1; }
 		const result = this.renderVmlChildElement(elem);
 
 		if (elem.imageHref?.id) {
-			this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
-				.then(x => result.setAttribute("href", x));
+			this.tasks.push(this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
+				.then(x => result.setAttribute("href", x)));
 		}
 
 		container.appendChild(result);

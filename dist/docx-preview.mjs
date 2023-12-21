@@ -2653,6 +2653,7 @@ class HtmlRenderer {
         this.usedHederFooterParts = [];
         this.currentTabs = [];
         this.tabsTimeout = 0;
+        this.tasks = [];
         this.createElement = createElement;
     }
     render(document, bodyContainer, styleContainer = null, options) {
@@ -2661,6 +2662,7 @@ class HtmlRenderer {
         this.className = options.className;
         this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
         this.styleMap = null;
+        this.tasks = [];
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
@@ -2723,7 +2725,7 @@ class HtmlRenderer {
     renderFontTable(fontsPart, styleContainer) {
         for (let f of fontsPart.fonts) {
             for (let ref of f.embedFontRefs) {
-                this.document.loadFont(ref.id, ref.key).then(fontData => {
+                this.tasks.push(this.document.loadFont(ref.id, ref.key).then(fontData => {
                     const cssValues = {
                         'font-family': f.name,
                         'src': `url(${fontData})`
@@ -2738,7 +2740,7 @@ class HtmlRenderer {
                     const cssText = this.styleToString("@font-face", cssValues);
                     styleContainer.appendChild(createStyleElement(cssText));
                     this.refreshTabStops();
-                });
+                }));
             }
         }
     }
@@ -2992,10 +2994,10 @@ section.${c}>footer { z-index: 1; }
                     "display": "inline-block",
                     "background": `var(${valiable})`
                 }, num.bullet.style);
-                this.document.loadNumberingImage(num.bullet.src).then(data => {
+                this.tasks.push(this.document.loadNumberingImage(num.bullet.src).then(data => {
                     var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
                     styleContainer.appendChild(createStyleElement(text));
-                });
+                }));
             }
             else if (num.levelText) {
                 let counter = this.numberingCounter(num.id, num.level);
@@ -3235,9 +3237,9 @@ section.${c}>footer { z-index: 1; }
         let result = this.createElement("img");
         this.renderStyleValues(elem.cssStyle, result);
         if (this.document) {
-            this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
+            this.tasks.push(this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {
                 result.src = x;
-            });
+            }));
         }
         return result;
     }
@@ -3382,8 +3384,8 @@ section.${c}>footer { z-index: 1; }
         container.setAttribute("style", elem.cssStyleText);
         const result = this.renderVmlChildElement(elem);
         if (elem.imageHref?.id) {
-            this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
-                .then(x => result.setAttribute("href", x));
+            this.tasks.push(this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
+                .then(x => result.setAttribute("href", x)));
         }
         container.appendChild(result);
         requestAnimationFrame(() => {
@@ -3649,14 +3651,15 @@ function praseAsync(data, userOptions) {
     const ops = { ...defaultOptions, ...userOptions };
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
-function renderDocument(document, bodyContainer, styleContainer, userOptions) {
+async function renderDocument(document, bodyContainer, styleContainer, userOptions) {
     const ops = { ...defaultOptions, ...userOptions };
     const renderer = new HtmlRenderer(window.document);
     renderer.render(document, bodyContainer, styleContainer, ops);
+    return Promise.allSettled(renderer.tasks.filter(x => x));
 }
 async function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     const doc = await praseAsync(data, userOptions);
-    renderDocument(doc, bodyContainer, styleContainer, userOptions);
+    await renderDocument(doc, bodyContainer, styleContainer, userOptions);
     return doc;
 }
 
