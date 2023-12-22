@@ -33,8 +33,8 @@
     "build": "rollup --config rollup.config.mjs",
     "build-prod": "rollup --config rollup.config.mjs --environment BUILD:production",
     "watch": "rollup --config rollup.config.mjs --watch",
-    "e2e": "karma start --single-run",
-    "e2e-watch": "karma start"
+    "e2e": "karma start karma.conf.cjs --single-run",
+    "e2e-watch": "karma start karma.conf.cjs"
   },
   "files": [
     "dist"
