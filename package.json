@@ -1,6 +1,6 @@
 {
   "name": "docx-preview",
-  "version": "0.1.22",
+  "version": "0.3.0",
   "license": "Apache-2.0",
   "keywords": [
     "word",
@@ -40,6 +40,6 @@
     "dist"
   ],
   "type": "module",
-  "module": "dist/docx-preview.min.mjs",
+  "module": "dist/docx-preview.mjs",
   "types": "dist/docx-preview.d.ts"
 }
