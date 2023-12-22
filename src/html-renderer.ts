@@ -19,6 +19,7 @@ import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import { VmlElement } from './vml/vml';
+import { WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
 
 const ns = {
 	svg: "http://www.w3.org/2000/svg",
@@ -263,7 +264,7 @@ export class HtmlRenderer {
 		return output;
 	}
 
-	createSection(className: string, props: SectionProperties) {
+	createSection(className: string, props: SectionProperties): HTMLElement {
 		var elem = this.createElement("section", { className });
 
 		if (props) {
@@ -280,19 +281,25 @@ export class HtmlRenderer {
 				if (!this.options.ignoreHeight)
 					elem.style.minHeight = props.pageSize.height;
 			}
-
-			if (props.columns && props.columns.numberOfColumns) {
-				elem.style.columnCount = `${props.columns.numberOfColumns}`;
-				elem.style.columnGap = props.columns.space;
-
-				if (props.columns.separator) {
-					elem.style.columnRule = "1px solid black";
-				}
-			}
 		}
 
 		return elem;
 	}
+
+	createSectionContent(props: SectionProperties): HTMLElement {
+		var elem = this.createElement("article")
+
+		if (props.columns && props.columns.numberOfColumns) {
+			elem.style.columnCount = `${props.columns.numberOfColumns}`;
+			elem.style.columnGap = props.columns.space;
+
+			if (props.columns.separator) {
+				elem.style.columnRule = "1px solid black";
+			}
+		}
+
+		return elem;
+	}	
 
 	renderSections(document: DocumentElement): HTMLElement[] {
 		const result = [];
@@ -312,7 +319,7 @@ export class HtmlRenderer {
 			this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props,
 				result.length, prevProps != props, sectionElement);
 
-			var contentElement = this.createElement("article");
+			var contentElement = this.createSectionContent(props);
 			this.renderElements(section.elements, contentElement);
 			sectionElement.appendChild(contentElement);
 
@@ -785,6 +792,15 @@ section.${c}>footer { z-index: 1; }
 
 			case DomType.Deleted:
 				return this.renderDeleted(elem);
+
+			case DomType.CommentRangeStart:
+				return this.renderCommentRangeStart(elem);
+
+			case DomType.CommentRangeEnd:
+				return this.renderCommentRangeEnd(elem);
+
+			case DomType.CommentReference:
+				return this.renderCommentReference(elem);
 		}
 
 		return null;
@@ -866,6 +882,33 @@ section.${c}>footer { z-index: 1; }
 		}
 
 		return result;
+	}
+
+	
+	renderCommentRangeStart(commentStart: WmlCommentRangeStart) {
+		if (!this.options.experimental)
+			return null;
+
+		return this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+	}
+
+	renderCommentRangeEnd(commentEnd: WmlCommentRangeStart) {
+		if (!this.options.experimental)
+			return null;
+
+		return this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+	}
+
+	renderCommentReference(commentRef: WmlCommentReference) {
+		if (!this.options.experimental)
+			return null;
+
+		var comment = this.document.commentsPart?.commentMap[commentRef.id];
+
+		if (!comment)
+			return null;
+
+		return this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`);
 	}
 
 	renderDrawing(elem: OpenXmlElement) {
