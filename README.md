@@ -6,6 +6,11 @@ Docx rendering library
 
 Demo - https://volodymyrbaydalka.github.io/docxjs/
 
+Goal
+----
+Goal of this project is to render/convert DOCX document into HTML document with keeping HTML semantic as much as possible. 
+That means library is limited by HTML capabilities (for example google docx render document on canvas as an image).
+
 Usage
 -----
 ```html
