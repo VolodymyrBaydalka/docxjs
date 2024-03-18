@@ -15,7 +15,8 @@ export class OpenXmlPackage {
     }
 
     get(path: string): any {
-        return this._zip.files[normalizePath(path)];
+        const p = normalizePath(path);
+        return this._zip.files[p] ?? this._zip.files[p.replace(/\//g, '\\')];
     }
 
     update(path: string, content: any) {

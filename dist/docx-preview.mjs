@@ -19,6 +19,7 @@ var RelationshipTypes;
     RelationshipTypes["ExtendedProperties"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties";
     RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
     RelationshipTypes["CustomProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties";
+    RelationshipTypes["Comments"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments";
 })(RelationshipTypes || (RelationshipTypes = {}));
 function parseRelationships(root, xml) {
     return xml.elements(root).map(e => ({
@@ -286,7 +287,8 @@ class OpenXmlPackage {
         this.xmlParser = new XmlParser();
     }
     get(path) {
-        return this._zip.files[normalizePath(path)];
+        const p = normalizePath(path);
+        return this._zip.files[p] ?? this._zip.files[p.replace(/\//g, '\\')];
     }
     update(path, content) {
         this._zip.file(path, content);
@@ -745,6 +747,10 @@ var DomType;
     DomType["Inserted"] = "inserted";
     DomType["Deleted"] = "deleted";
     DomType["DeletedText"] = "deletedText";
+    DomType["Comment"] = "comment";
+    DomType["CommentReference"] = "commentReference";
+    DomType["CommentRangeStart"] = "commentRangeStart";
+    DomType["CommentRangeEnd"] = "commentRangeEnd";
 })(DomType || (DomType = {}));
 class OpenXmlElementBase {
     constructor() {
@@ -1043,6 +1049,17 @@ class CustomPropsPart extends Part {
     }
 }
 
+class CommentsPart extends Part {
+    constructor(pkg, path, parser) {
+        super(pkg, path);
+        this._documentParser = parser;
+    }
+    parseXml(root) {
+        this.comments = this._documentParser.parseComments(root);
+        this.commentMap = keyBy(this.comments, x => x.id);
+    }
+}
+
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
@@ -1114,6 +1131,9 @@ class WordDocument {
                 break;
             case RelationshipTypes.Settings:
                 this.settingsPart = part = new SettingsPart(this._package, path);
+                break;
+            case RelationshipTypes.Comments:
+                this.commentsPart = part = new CommentsPart(this._package, path, this._parser);
                 break;
         }
         if (part == null)
@@ -1278,6 +1298,34 @@ function parsePoint(val) {
     return val.split(",");
 }
 
+class WmlComment extends OpenXmlElementBase {
+    constructor() {
+        super(...arguments);
+        this.type = DomType.Comment;
+    }
+}
+class WmlCommentReference extends OpenXmlElementBase {
+    constructor(id) {
+        super();
+        this.id = id;
+        this.type = DomType.CommentReference;
+    }
+}
+class WmlCommentRangeStart extends OpenXmlElementBase {
+    constructor(id) {
+        super();
+        this.id = id;
+        this.type = DomType.CommentRangeStart;
+    }
+}
+class WmlCommentRangeEnd extends OpenXmlElementBase {
+    constructor(id) {
+        super();
+        this.id = id;
+        this.type = DomType.CommentRangeEnd;
+    }
+}
+
 var autos = {
     shd: "inherit",
     color: "black",
@@ -1328,6 +1376,19 @@ class DocumentParser {
             node.noteType = globalXmlParser.attr(el, "type");
             node.children = this.parseBodyElements(el);
             result.push(node);
+        }
+        return result;
+    }
+    parseComments(xmlDoc) {
+        var result = [];
+        for (let el of globalXmlParser.elements(xmlDoc, "comment")) {
+            const item = new WmlComment();
+            item.id = globalXmlParser.attr(el, "id");
+            item.author = globalXmlParser.attr(el, "author");
+            item.initials = globalXmlParser.attr(el, "initials");
+            item.date = globalXmlParser.attr(el, "date");
+            item.children = this.parseBodyElements(el);
+            result.push(item);
         }
         return result;
     }
@@ -1677,6 +1738,12 @@ class DocumentParser {
                 case "bookmarkEnd":
                     result.children.push(parseBookmarkEnd(el, globalXmlParser));
                     break;
+                case "commentRangeStart":
+                    result.children.push(new WmlCommentRangeStart(globalXmlParser.attr(el, "id")));
+                    break;
+                case "commentRangeEnd":
+                    result.children.push(new WmlCommentRangeEnd(globalXmlParser.attr(el, "id")));
+                    break;
                 case "oMath":
                 case "oMathPara":
                     result.children.push(this.parseMathElement(el));
@@ -1754,6 +1821,9 @@ class DocumentParser {
                         type: DomType.DeletedText,
                         text: c.textContent
                     });
+                    break;
+                case "commentReference":
+                    result.children.push(new WmlCommentReference(globalXmlParser.attr(c, "id")));
                     break;
                 case "fldSimple":
                     result.children.push({
@@ -2832,12 +2902,16 @@ class HtmlRenderer {
                 if (!this.options.ignoreHeight)
                     elem.style.minHeight = props.pageSize.height;
             }
-            if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = `${props.columns.numberOfColumns}`;
-                elem.style.columnGap = props.columns.space;
-                if (props.columns.separator) {
-                    elem.style.columnRule = "1px solid black";
-                }
+        }
+        return elem;
+    }
+    createSectionContent(props) {
+        var elem = this.createElement("article");
+        if (props.columns && props.columns.numberOfColumns) {
+            elem.style.columnCount = `${props.columns.numberOfColumns}`;
+            elem.style.columnGap = props.columns.space;
+            if (props.columns.separator) {
+                elem.style.columnRule = "1px solid black";
             }
         }
         return elem;
@@ -2854,7 +2928,7 @@ class HtmlRenderer {
             const sectionElement = this.createSection(this.className, props);
             this.renderStyleValues(document.cssStyle, sectionElement);
             this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, prevProps != props, sectionElement);
-            var contentElement = this.createElement("article");
+            var contentElement = this.createSectionContent(props);
             this.renderElements(section.elements, contentElement);
             sectionElement.appendChild(contentElement);
             if (this.options.renderFootnotes) {
@@ -3163,6 +3237,12 @@ section.${c}>footer { z-index: 1; }
                 return this.renderInserted(elem);
             case DomType.Deleted:
                 return this.renderDeleted(elem);
+            case DomType.CommentRangeStart:
+                return this.renderCommentRangeStart(elem);
+            case DomType.CommentRangeEnd:
+                return this.renderCommentRangeEnd(elem);
+            case DomType.CommentReference:
+                return this.renderCommentReference(elem);
         }
         return null;
     }
@@ -3223,6 +3303,24 @@ section.${c}>footer { z-index: 1; }
             result.href = rel?.target;
         }
         return result;
+    }
+    renderCommentRangeStart(commentStart) {
+        if (!this.options.experimental)
+            return null;
+        return this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+    }
+    renderCommentRangeEnd(commentEnd) {
+        if (!this.options.experimental)
+            return null;
+        return this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+    }
+    renderCommentReference(commentRef) {
+        if (!this.options.experimental)
+            return null;
+        var comment = this.document.commentsPart?.commentMap[commentRef.id];
+        if (!comment)
+            return null;
+        return this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`);
     }
     renderDrawing(elem) {
         var result = this.createElement("div");
@@ -3655,7 +3753,7 @@ async function renderDocument(document, bodyContainer, styleContainer, userOptio
     const ops = { ...defaultOptions, ...userOptions };
     const renderer = new HtmlRenderer(window.document);
     renderer.render(document, bodyContainer, styleContainer, ops);
-    return Promise.allSettled(renderer.tasks.filter(x => x));
+    return Promise.allSettled(renderer.tasks);
 }
 async function renderAsync(data, bodyContainer, styleContainer, userOptions) {
     const doc = await praseAsync(data, userOptions);

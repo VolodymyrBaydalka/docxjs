@@ -11,6 +11,12 @@ Goal
 Goal of this project is to render/convert DOCX document into HTML document with keeping HTML semantic as much as possible. 
 That means library is limited by HTML capabilities (for example google docx render document on canvas as an image).
 
+Installation
+-----
+```
+npm install docx-preview
+```
+
 Usage
 -----
 ```html
@@ -94,7 +100,7 @@ If page breaking is crutual for you, I would recommend:
 - try to insert manual break point as much as you could
 - try use editors like MS Word, that inserts `<w:lastRenderedPageBreak/>` break points
 
-NOTE: by default `ignoreLastRenderedPageBreak` is set to `true`. You may need to set it to `true`, to make library break by `<w:lastRenderedPageBreak/>` break points
+NOTE: by default `ignoreLastRenderedPageBreak` is set to `true`. You may need to set it to `false`, to make library break by `<w:lastRenderedPageBreak/>` break points
 
 Status and stability
 ------
