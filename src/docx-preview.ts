@@ -19,6 +19,7 @@ export interface Options {
     ignoreLastRenderedPageBreak: boolean;
 	useBase64URL: boolean;
 	renderChanges: boolean;
+    renderComments: boolean;
 }
 
 export const defaultOptions: Options = {
@@ -37,10 +38,11 @@ export const defaultOptions: Options = {
     renderFootnotes: true,
 	renderEndnotes: true,
 	useBase64URL: false,
-	renderChanges: false
+	renderChanges: false,
+    renderComments: false
 }
 
-export function praseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {
+export function parseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {
     const ops = { ...defaultOptions, ...userOptions };
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
@@ -53,7 +55,7 @@ export async function renderDocument(document: any, bodyContainer: HTMLElement, 
 }
 
 export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
-	const doc = await praseAsync(data, userOptions);
+	const doc = await parseAsync(data, userOptions);
 	await renderDocument(doc, bodyContainer, styleContainer, userOptions);
     return doc;
 }

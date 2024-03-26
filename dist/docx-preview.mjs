@@ -20,6 +20,7 @@ var RelationshipTypes;
     RelationshipTypes["CoreProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
     RelationshipTypes["CustomProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties";
     RelationshipTypes["Comments"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments";
+    RelationshipTypes["CommentsExtended"] = "http://schemas.microsoft.com/office/2011/relationships/commentsExtended";
 })(RelationshipTypes || (RelationshipTypes = {}));
 function parseRelationships(root, xml) {
     return xml.elements(root).map(e => ({
@@ -1060,6 +1061,24 @@ class CommentsPart extends Part {
     }
 }
 
+class CommentsExtendedPart extends Part {
+    constructor(pkg, path) {
+        super(pkg, path);
+        this.comments = [];
+    }
+    parseXml(root) {
+        const xml = this._package.xmlParser;
+        for (let el of xml.elements(root, "commentEx")) {
+            this.comments.push({
+                paraId: xml.attr(el, 'paraId'),
+                paraIdParent: xml.attr(el, 'paraIdParent'),
+                done: xml.boolAttr(el, 'done')
+            });
+        }
+        this.commentMap = keyBy(this.comments, x => x.paraId);
+    }
+}
+
 const topLevelRels = [
     { type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
     { type: RelationshipTypes.ExtendedProperties, target: "docProps/app.xml" },
@@ -1134,6 +1153,9 @@ class WordDocument {
                 break;
             case RelationshipTypes.Comments:
                 this.commentsPart = part = new CommentsPart(this._package, path, this._parser);
+                break;
+            case RelationshipTypes.CommentsExtended:
+                this.commentsExtendedPart = part = new CommentsExtendedPart(this._package, path);
                 break;
         }
         if (part == null)
@@ -1995,6 +2017,7 @@ class DocumentParser {
         var isAnchor = node.localName == "anchor";
         let wrapType = null;
         let simplePos = globalXmlParser.boolAttr(node, "simplePos");
+        globalXmlParser.boolAttr(node, "behindDoc");
         let posX = { relative: "page", align: "left", offset: "0" };
         let posY = { relative: "page", align: "top", offset: "0" };
         for (var n of globalXmlParser.elements(node)) {
@@ -2723,7 +2746,9 @@ class HtmlRenderer {
         this.usedHederFooterParts = [];
         this.currentTabs = [];
         this.tabsTimeout = 0;
+        this.commentMap = {};
         this.tasks = [];
+        this.postRenderTasks = [];
         this.createElement = createElement;
     }
     render(document, bodyContainer, styleContainer = null, options) {
@@ -2733,6 +2758,9 @@ class HtmlRenderer {
         this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
         this.styleMap = null;
         this.tasks = [];
+        if (this.options.renderComments && Highlight) {
+            this.commentHighlight = new Highlight();
+        }
         styleContainer = styleContainer || bodyContainer;
         removeAllElements(styleContainer);
         removeAllElements(bodyContainer);
@@ -2770,7 +2798,11 @@ class HtmlRenderer {
         else {
             appendChildren(bodyContainer, sectionElements);
         }
+        if (this.commentHighlight && options.renderComments) {
+            CSS.highlights.set(`${this.className}-comments`, this.commentHighlight);
+        }
         this.refreshTabStops();
+        this.postRenderTasks.forEach(t => t());
     }
     renderTheme(themePart, styleContainer) {
         const variables = {};
@@ -3052,7 +3084,16 @@ section.${c}>footer { z-index: 1; }
 .${c} p { margin: 0pt; min-height: 1em; }
 .${c} span { white-space: pre-wrap; overflow-wrap: break-word; }
 .${c} a { color: inherit; text-decoration: inherit; }
+.${c} svg { fill: transparent; }
 `;
+        if (this.options.renderComments) {
+            styleText += `
+.${c}-comment-ref { cursor: default; }
+.${c}-comment-popover { display: none; z-index: 1000; padding: 0.5rem; background: white; position: absolute; box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.25); width: 30ch; }
+.${c}-comment-ref:hover~.${c}-comment-popover { display: block; }
+.${c}-comment-author,.${c}-comment-date { font-size: 0.875rem; color: #888; }
+`;
+        }
         return createStyleElement(styleText);
     }
     renderNumbering(numberings, styleContainer) {
@@ -3305,22 +3346,42 @@ section.${c}>footer { z-index: 1; }
         return result;
     }
     renderCommentRangeStart(commentStart) {
-        if (!this.options.experimental)
+        if (!this.options.renderComments)
             return null;
-        return this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+        const rng = new Range();
+        this.commentHighlight?.add(rng);
+        const result = this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+        this.later(() => rng.setStart(result, 0));
+        this.commentMap[commentStart.id] = rng;
+        return result;
     }
     renderCommentRangeEnd(commentEnd) {
-        if (!this.options.experimental)
+        if (!this.options.renderComments)
             return null;
-        return this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+        const rng = this.commentMap[commentEnd.id];
+        const result = this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+        this.later(() => rng?.setEnd(result, 0));
+        return result;
     }
     renderCommentReference(commentRef) {
-        if (!this.options.experimental)
+        if (!this.options.renderComments)
             return null;
         var comment = this.document.commentsPart?.commentMap[commentRef.id];
         if (!comment)
             return null;
-        return this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`);
+        const frg = new DocumentFragment();
+        const commentRefEl = createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
+        const commentsContainerEl = createElement("div", { className: `${this.className}-comment-popover` });
+        this.renderCommentContent(comment, commentsContainerEl);
+        frg.appendChild(this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`));
+        frg.appendChild(commentRefEl);
+        frg.appendChild(commentsContainerEl);
+        return frg;
+    }
+    renderCommentContent(comment, container) {
+        container.appendChild(createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
+        container.appendChild(createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
+        this.renderChildren(comment, container);
     }
     renderDrawing(elem) {
         var result = this.createElement("div");
@@ -3695,6 +3756,9 @@ section.${c}>footer { z-index: 1; }
             }
         }, 500);
     }
+    later(func) {
+        this.postRenderTasks.push(func);
+    }
 }
 function createElement(tagName, props, children) {
     return createElementNS(undefined, tagName, props, children);
@@ -3743,9 +3807,10 @@ const defaultOptions = {
     renderFootnotes: true,
     renderEndnotes: true,
     useBase64URL: false,
-    renderChanges: false
+    renderChanges: false,
+    renderComments: false
 };
-function praseAsync(data, userOptions) {
+function parseAsync(data, userOptions) {
     const ops = { ...defaultOptions, ...userOptions };
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
@@ -3756,10 +3821,10 @@ async function renderDocument(document, bodyContainer, styleContainer, userOptio
     return Promise.allSettled(renderer.tasks);
 }
 async function renderAsync(data, bodyContainer, styleContainer, userOptions) {
-    const doc = await praseAsync(data, userOptions);
+    const doc = await parseAsync(data, userOptions);
     await renderDocument(doc, bodyContainer, styleContainer, userOptions);
     return doc;
 }
 
-export { defaultOptions, praseAsync, renderAsync, renderDocument };
+export { defaultOptions, parseAsync, renderAsync, renderDocument };
 //# sourceMappingURL=docx-preview.mjs.map

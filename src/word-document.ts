@@ -17,6 +17,7 @@ import { EndnotesPart, FootnotesPart } from "./notes/parts";
 import { SettingsPart } from "./settings/settings-part";
 import { CustomPropsPart } from "./document-props/custom-props-part";
 import { CommentsPart } from "./comments/comments-part";
+import { CommentsExtendedPart } from "./comments/comments-extended-part";
 
 const topLevelRels = [
 	{ type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
@@ -45,6 +46,7 @@ export class WordDocument {
 	extendedPropsPart: ExtendedPropsPart;
 	settingsPart: SettingsPart;
 	commentsPart: CommentsPart;
+	commentsExtendedPart: CommentsExtendedPart;
 
 	static async load(blob: Blob | any, parser: DocumentParser, options: any): Promise<WordDocument> {
 		var d = new WordDocument();
@@ -130,6 +132,10 @@ export class WordDocument {
 
 			case RelationshipTypes.Comments:
 				this.commentsPart = part = new CommentsPart(this._package, path, this._parser);
+				break;
+
+			case RelationshipTypes.CommentsExtended:
+				this.commentsExtendedPart = part = new CommentsExtendedPart(this._package, path);
 				break;
 		}
 

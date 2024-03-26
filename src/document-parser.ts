@@ -823,6 +823,7 @@ export class DocumentParser {
 
 		let wrapType: "wrapTopAndBottom" | "wrapNone" | null = null;
 		let simplePos = xml.boolAttr(node, "simplePos");
+		let behindDoc = xml.boolAttr(node, "behindDoc");
 
 		let posX = { relative: "page", align: "left", offset: "0" };
 		let posY = { relative: "page", align: "top", offset: "0" };
@@ -1273,7 +1274,7 @@ export class DocumentParser {
 				case "lang":
 					style["$lang"] = xml.attr(c, "val");
 					break;
-
+	
 				case "bCs":
 				case "iCs":
 				case "szCs":

@@ -19,7 +19,7 @@ import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import { VmlElement } from './vml/vml';
-import { WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
+import { WmlComment, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
 
 const ns = {
 	svg: "http://www.w3.org/2000/svg",
@@ -30,6 +30,8 @@ interface CellPos {
 	col: number;
 	row: number;
 }
+
+declare const Highlight: any;
 
 type CellVerticalMergeType = Record<number, HTMLTableCellElement>;
 
@@ -57,7 +59,11 @@ export class HtmlRenderer {
 	currentTabs: any[] = [];
 	tabsTimeout: any = 0;
 
+	commentHighlight: any;
+	commentMap: Record<string, Range> = {};
+
 	tasks: Promise<any>[] = [];
+	postRenderTasks: any[] = [];
 
 	constructor(public htmlDocument: Document) {
 	}
@@ -69,6 +75,10 @@ export class HtmlRenderer {
 		this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
 		this.styleMap = null;
 		this.tasks = [];
+
+		if (this.options.renderComments && Highlight) {
+			this.commentHighlight = new Highlight();
+		}
 
 		styleContainer = styleContainer || bodyContainer;
 
@@ -121,7 +131,13 @@ export class HtmlRenderer {
 			appendChildren(bodyContainer, sectionElements);
 		}
 
+		if (this.commentHighlight && options.renderComments) {
+			(CSS as any).highlights.set(`${this.className}-comments`, this.commentHighlight);
+		}
+
 		this.refreshTabStops();
+
+		this.postRenderTasks.forEach(t => t());
 	}
 
 	renderTheme(themePart: ThemePart, styleContainer: HTMLElement) {
@@ -472,7 +488,17 @@ section.${c}>footer { z-index: 1; }
 .${c} p { margin: 0pt; min-height: 1em; }
 .${c} span { white-space: pre-wrap; overflow-wrap: break-word; }
 .${c} a { color: inherit; text-decoration: inherit; }
+.${c} svg { fill: transparent; }
 `;
+
+		if (this.options.renderComments) {
+			styleText += `
+.${c}-comment-ref { cursor: default; }
+.${c}-comment-popover { display: none; z-index: 1000; padding: 0.5rem; background: white; position: absolute; box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.25); width: 30ch; }
+.${c}-comment-ref:hover~.${c}-comment-popover { display: block; }
+.${c}-comment-author,.${c}-comment-date { font-size: 0.875rem; color: #888; }
+`
+		};
 
 		return createStyleElement(styleText);
 	}
@@ -806,11 +832,11 @@ section.${c}>footer { z-index: 1; }
 		return null;
 	}
 
-	renderChildren(elem: OpenXmlElement, into?: Element): Node[] {
+	renderChildren(elem: OpenXmlElement, into?: Node): Node[] {
 		return this.renderElements(elem.children, into);
 	}
 
-	renderElements(elems: OpenXmlElement[], into?: Element): Node[] {
+	renderElements(elems: OpenXmlElement[], into?: Node): Node[] {
 		if (elems == null)
 			return null;
 
@@ -886,21 +912,32 @@ section.${c}>footer { z-index: 1; }
 
 	
 	renderCommentRangeStart(commentStart: WmlCommentRangeStart) {
-		if (!this.options.experimental)
+		if (!this.options.renderComments)
 			return null;
 
-		return this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+		const rng = new Range();
+		this.commentHighlight?.add(rng);
+
+		const result = this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+		this.later(() => rng.setStart(result, 0));
+		this.commentMap[commentStart.id] = rng;
+
+		return result
 	}
 
 	renderCommentRangeEnd(commentEnd: WmlCommentRangeStart) {
-		if (!this.options.experimental)
+		if (!this.options.renderComments)
 			return null;
 
-		return this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+		const rng = this.commentMap[commentEnd.id];
+		const result = this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+		this.later(() => rng?.setEnd(result, 0));
+
+		return result;
 	}
 
 	renderCommentReference(commentRef: WmlCommentReference) {
-		if (!this.options.experimental)
+		if (!this.options.renderComments)
 			return null;
 
 		var comment = this.document.commentsPart?.commentMap[commentRef.id];
@@ -908,7 +945,24 @@ section.${c}>footer { z-index: 1; }
 		if (!comment)
 			return null;
 
-		return this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`);
+		const frg = new DocumentFragment();
+		const commentRefEl = createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
+		const commentsContainerEl = createElement("div", { className: `${this.className}-comment-popover` });
+
+		this.renderCommentContent(comment, commentsContainerEl);
+
+		frg.appendChild(this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`));
+		frg.appendChild(commentRefEl);
+		frg.appendChild(commentsContainerEl);
+
+		return frg;
+	}
+
+	renderCommentContent(comment: WmlComment, container: Node) {
+		container.appendChild(createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
+		container.appendChild(createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
+
+		this.renderChildren(comment, container);
 	}
 
 	renderDrawing(elem: OpenXmlElement) {
@@ -1396,6 +1450,10 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	createElement = createElement;
+
+	later(func: Function) { 
+		this.postRenderTasks.push(func);
+	}
 }
 
 type ChildType = Node | string;
@@ -1427,7 +1485,7 @@ function removeAllElements(elem: HTMLElement) {
 	elem.innerHTML = '';
 }
 
-function appendChildren(elem: Element, children: (Node | string)[]) {
+function appendChildren(elem: Node, children: (Node | string)[]) {
 	children.forEach(c => elem.appendChild(isString(c) ? document.createTextNode(c) : c));
 }
 
