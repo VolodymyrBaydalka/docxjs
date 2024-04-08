@@ -2923,7 +2923,7 @@
             }
             return output;
         }
-        createSection(className, props) {
+        createPageElement(className, props) {
             var elem = this.createElement("section", { className });
             if (props) {
                 if (props.pageMargins) {
@@ -2955,26 +2955,30 @@
         renderSections(document) {
             const result = [];
             this.processElement(document);
-            const sections = this.splitBySection(document.children);
+            const sections = this.splitBySection(document.children, document.props);
+            const pages = this.groupByPageBreaks(sections);
             let prevProps = null;
-            for (let i = 0, l = sections.length; i < l; i++) {
+            for (let i = 0, l = pages.length; i < l; i++) {
                 this.currentFootnoteIds = [];
-                const section = sections[i];
-                const props = section.sectProps || document.props;
-                const sectionElement = this.createSection(this.className, props);
-                this.renderStyleValues(document.cssStyle, sectionElement);
-                this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, prevProps != props, sectionElement);
-                var contentElement = this.createSectionContent(props);
-                this.renderElements(section.elements, contentElement);
-                sectionElement.appendChild(contentElement);
+                const section = pages[i][0];
+                let props = section.sectProps;
+                const pageElement = this.createPageElement(this.className, props);
+                this.renderStyleValues(document.cssStyle, pageElement);
+                this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, prevProps != props, pageElement);
+                for (const sect of pages[i]) {
+                    var contentElement = this.createSectionContent(sect.sectProps);
+                    this.renderElements(sect.elements, contentElement);
+                    pageElement.appendChild(contentElement);
+                    props = sect.sectProps;
+                }
                 if (this.options.renderFootnotes) {
-                    this.renderNotes(this.currentFootnoteIds, this.footnoteMap, sectionElement);
+                    this.renderNotes(this.currentFootnoteIds, this.footnoteMap, pageElement);
                 }
                 if (this.options.renderEndnotes && i == l - 1) {
-                    this.renderNotes(this.currentEndnoteIds, this.endnoteMap, sectionElement);
+                    this.renderNotes(this.currentEndnoteIds, this.endnoteMap, pageElement);
                 }
-                this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, prevProps != props, sectionElement);
-                result.push(sectionElement);
+                this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, prevProps != props, pageElement);
+                result.push(pageElement);
                 prevProps = props;
             }
             return result;
@@ -3013,15 +3017,25 @@
                 return !this.options.ignoreLastRenderedPageBreak;
             return elem.break == "page";
         }
-        splitBySection(elements) {
-            var current = { sectProps: null, elements: [] };
+        isPageBreakSection(prev, next) {
+            if (!prev)
+                return false;
+            if (!next)
+                return false;
+            return prev.pageSize?.orientation != next.pageSize?.orientation
+                || prev.pageSize?.width != next.pageSize?.width
+                || prev.pageSize?.height != next.pageSize?.height;
+        }
+        splitBySection(elements, defaultProps) {
+            var current = { sectProps: null, elements: [], pageBreak: false };
             var result = [current];
             for (let elem of elements) {
                 if (elem.type == DomType.Paragraph) {
                     const s = this.findStyle(elem.styleName);
                     if (s?.paragraphProps?.pageBreakBefore) {
                         current.sectProps = sectProps;
-                        current = { sectProps: null, elements: [] };
+                        current.pageBreak = true;
+                        current = { sectProps: null, elements: [], pageBreak: false };
                         result.push(current);
                     }
                 }
@@ -3039,7 +3053,8 @@
                     }
                     if (sectProps || pBreakIndex != -1) {
                         current.sectProps = sectProps;
-                        current = { sectProps: null, elements: [] };
+                        current.pageBreak = pBreakIndex != -1;
+                        current = { sectProps: null, elements: [], pageBreak: false };
                         result.push(current);
                     }
                     if (pBreakIndex != -1) {
@@ -3063,13 +3078,25 @@
             let currentSectProps = null;
             for (let i = result.length - 1; i >= 0; i--) {
                 if (result[i].sectProps == null) {
-                    result[i].sectProps = currentSectProps;
+                    result[i].sectProps = currentSectProps ?? defaultProps;
                 }
                 else {
                     currentSectProps = result[i].sectProps;
                 }
             }
             return result;
+        }
+        groupByPageBreaks(sections) {
+            let current = [];
+            let prev;
+            const result = [current];
+            for (let s of sections) {
+                current.push(s);
+                if (this.options.ignoreLastRenderedPageBreak || s.pageBreak || this.isPageBreakSection(prev, s.sectProps))
+                    result.push(current = []);
+                prev = s.sectProps;
+            }
+            return result.filter(x => x.length > 0);
         }
         renderWrapper(children) {
             return this.createElement("div", { className: `${this.className}-wrapper` }, children);
