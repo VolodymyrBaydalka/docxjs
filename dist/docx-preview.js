@@ -705,6 +705,7 @@
         DomType["Row"] = "row";
         DomType["Cell"] = "cell";
         DomType["Hyperlink"] = "hyperlink";
+        DomType["SmartTag"] = "smartTag";
         DomType["Drawing"] = "drawing";
         DomType["Image"] = "image";
         DomType["Text"] = "text";
@@ -1758,6 +1759,9 @@
                     case "hyperlink":
                         result.children.push(this.parseHyperlink(el, result));
                         break;
+                    case "smartTag":
+                        result.children.push(this.parseSmartTag(el, result));
+                        break;
                     case "bookmarkStart":
                         result.children.push(parseBookmarkStart(el, globalXmlParser));
                         break;
@@ -1822,6 +1826,23 @@
                 result.href = "#" + anchor;
             if (relId)
                 result.id = relId;
+            xmlUtil.foreach(node, c => {
+                switch (c.localName) {
+                    case "r":
+                        result.children.push(this.parseRun(c, result));
+                        break;
+                }
+            });
+            return result;
+        }
+        parseSmartTag(node, parent) {
+            var result = { type: DomType.SmartTag, parent, children: [] };
+            var uri = globalXmlParser.attr(node, "uri");
+            var element = globalXmlParser.attr(node, "element");
+            if (uri)
+                result.uri = uri;
+            if (element)
+                result.element = element;
             xmlUtil.foreach(node, c => {
                 switch (c.localName) {
                     case "r":
@@ -3226,6 +3247,8 @@ section.${c}>footer { z-index: 1; }
                     return this.renderTableCell(elem);
                 case DomType.Hyperlink:
                     return this.renderHyperlink(elem);
+                case DomType.SmartTag:
+                    return this.renderSmartTag(elem);
                 case DomType.Drawing:
                     return this.renderDrawing(elem);
                 case DomType.Image:
@@ -3374,6 +3397,11 @@ section.${c}>footer { z-index: 1; }
                     .find(it => it.id == elem.id && it.targetMode === "External");
                 result.href = rel?.target;
             }
+            return result;
+        }
+        renderSmartTag(elem) {
+            var result = this.createElement("span");
+            this.renderChildren(elem, result);
             return result;
         }
         renderCommentRangeStart(commentStart) {
