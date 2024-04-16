@@ -8,6 +8,7 @@ export enum DomType {
     Row = "row",
     Cell = "cell",
     Hyperlink = "hyperlink",
+    SmartTag = "smartTag",
     Drawing = "drawing",
     Image = "image",
     Text = "text",
@@ -88,6 +89,11 @@ export abstract class OpenXmlElementBase implements OpenXmlElement {
 export interface WmlHyperlink extends OpenXmlElement {
 	id?: string;
     href?: string;
+}
+
+export interface WmlSmartTag extends OpenXmlElement {
+	uri?: string;
+    element?: string;
 }
 
 export interface WmlNoteReference extends OpenXmlElement {

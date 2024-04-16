@@ -1,7 +1,8 @@
 import { WordDocument } from './word-document';
 import {
 	DomType, WmlTable, IDomNumbering,
-	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference
+	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
+	WmlSmartTag
 } from './document/dom';
 import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
@@ -734,6 +735,9 @@ section.${c}>footer { z-index: 1; }
 
 			case DomType.Hyperlink:
 				return this.renderHyperlink(elem);
+			
+			case DomType.SmartTag:
+				return this.renderSmartTag(elem);
 
 			case DomType.Drawing:
 				return this.renderDrawing(elem);
@@ -947,7 +951,12 @@ section.${c}>footer { z-index: 1; }
 
 		return result;
 	}
-
+	
+	renderSmartTag(elem: WmlSmartTag) {
+		var result = this.createElement("span");
+		this.renderChildren(elem, result);
+		return result;
+	}
 	
 	renderCommentRangeStart(commentStart: WmlCommentRangeStart) {
 		if (!this.options.renderComments)
