@@ -39,7 +39,6 @@
   "files": [
     "dist"
   ],
-  "type": "module",
   "exports": {
     ".": {
       "import": "./dist/docx-preview.mjs",

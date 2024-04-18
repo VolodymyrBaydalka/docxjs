@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "ES2022",
+    "moduleResolution": "bundler",
     "declaration": false,
     "noImplicitAny": false,
     "noEmitOnError": true,
