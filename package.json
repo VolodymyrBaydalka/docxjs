@@ -40,6 +40,11 @@
     "dist"
   ],
   "type": "module",
-  "module": "dist/docx-preview.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/docx-preview.mjs",
+      "require": "./dist/docx-preview.js"
+    }
+  },
   "types": "dist/docx-preview.d.ts"
 }
