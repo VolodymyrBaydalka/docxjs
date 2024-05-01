@@ -1708,7 +1708,7 @@ class DocumentParser {
                     break;
                 case "lvlPicBulletId":
                     var id = globalXmlParser.intAttr(n, "val");
-                    result.bullet = bullets.find(x => x.id == id);
+                    result.bullet = bullets.find(x => x?.id == id);
                     break;
                 case "lvlText":
                     result.levelText = globalXmlParser.attr(n, "val");
