@@ -16,6 +16,8 @@
     <!--thumbnail example-->
     <script src="./demo/thumbnail.example.js"></script>
     <link href="./demo/thumbnail.example.css" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/tiff.js@1.0.0/tiff.min.js"></script>
+    <script src="./demo/tiff-preprocessor.js"></script>
 </head>
 
 <body class="vh-100 d-flex flex-column">
@@ -63,17 +65,19 @@
         const loadButton = document.querySelector("#loadButton");
         const testDocuments = document.querySelector("#testDocuments");
 
-        function renderDocx(file) {
+        async function renderDocx(file) {
             currentDocument = file; 
 
             if (!currentDocument) 
                 return;
-
-            docx.renderAsync(currentDocument, container, null, docxOptions)
-                .then((x) => {
-                    renderThumbnails(container, document.querySelector("#thumbnails-container"));
-                    console.log(x);
-                });
+            
+            // optional, find and convert all tiff images 
+            let docxBlob = preprocessTiff(currentDocument); 
+            // render document
+            let res = await docx.renderAsync(docxBlob, container, null, docxOptions)
+            // optional - render thumbnails
+            renderThumbnails(container, document.querySelector("#thumbnails-container"));
+            console.log(res);
         }
         
         fileInput.addEventListener("change", ev => {
