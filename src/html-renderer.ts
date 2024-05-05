@@ -83,7 +83,7 @@ export class HtmlRenderer {
 		this.styleMap = null;
 		this.tasks = [];
 
-		if (this.options.renderComments && Highlight) {
+		if (this.options.renderComments && globalThis.Highlight) {
 			this.commentHighlight = new Highlight();
 		}
 
