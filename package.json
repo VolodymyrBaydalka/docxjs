@@ -42,7 +42,8 @@
   "exports": {
     ".": {
       "import": "./dist/docx-preview.mjs",
-      "require": "./dist/docx-preview.js"
+      "require": "./dist/docx-preview.js",
+      "types": "./dist/docx-preview.d.ts"
     }
   },
   "types": "dist/docx-preview.d.ts"
