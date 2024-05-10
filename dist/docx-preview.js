@@ -2783,7 +2783,7 @@
             this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
             this.styleMap = null;
             this.tasks = [];
-            if (this.options.renderComments && Highlight) {
+            if (this.options.renderComments && globalThis.Highlight) {
                 this.commentHighlight = new Highlight();
             }
             styleContainer = styleContainer || bodyContainer;
