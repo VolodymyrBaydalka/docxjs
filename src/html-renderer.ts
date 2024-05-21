@@ -64,7 +64,6 @@ export class HtmlRenderer {
 
 	defaultTabSize: string;
 	currentTabs: any[] = [];
-	tabsTimeout: any = 0;
 
 	commentHighlight: any;
 	commentMap: Record<string, Range> = {};
@@ -75,7 +74,7 @@ export class HtmlRenderer {
 	constructor(public htmlDocument: Document) {
 	}
 
-	render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
+	async render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
 		this.document = document;
 		this.options = options;
 		this.className = options.className;
@@ -142,9 +141,11 @@ export class HtmlRenderer {
 			(CSS as any).highlights.set(`${this.className}-comments`, this.commentHighlight);
 		}
 
-		this.refreshTabStops();
-
 		this.postRenderTasks.forEach(t => t());
+
+		await Promise.allSettled(this.tasks);
+
+		this.refreshTabStops();
 	}
 
 	renderTheme(themePart: ThemePart, styleContainer: HTMLElement) {
@@ -193,7 +194,6 @@ export class HtmlRenderer {
 					appendComment(styleContainer, `docxjs ${f.name} font`);
 					const cssText = this.styleToString("@font-face", cssValues);
 					styleContainer.appendChild(createStyleElement(cssText));
-					this.refreshTabStops();
 				}));
 			}
 		}
@@ -1485,9 +1485,7 @@ section.${c}>footer { z-index: 1; }
 		if (!this.options.experimental)
 			return;
 
-		clearTimeout(this.tabsTimeout);
-
-		this.tabsTimeout = setTimeout(() => {
+		setTimeout(() => {
 			const pixelToPoint = computePixelToPoint();
 
 			for (let tab of this.currentTabs) {

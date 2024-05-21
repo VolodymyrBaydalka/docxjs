@@ -50,8 +50,7 @@ export function parseAsync(data: Blob | any, userOptions?: Partial<Options>): Pr
 export async function renderDocument(document: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
     const ops = { ...defaultOptions, ...userOptions };
     const renderer = new HtmlRenderer(window.document);
-	renderer.render(document, bodyContainer, styleContainer, ops);
-	return Promise.allSettled(renderer.tasks);
+	return await renderer.render(document, bodyContainer, styleContainer, ops);
 }
 
 export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
