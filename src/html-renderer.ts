@@ -91,25 +91,25 @@ export class HtmlRenderer {
 		removeAllElements(styleContainer);
 		removeAllElements(bodyContainer);
 
-		appendComment(styleContainer, "docxjs library predefined styles");
+		styleContainer.appendChild(this.createComment("docxjs library predefined styles"));
 		styleContainer.appendChild(this.renderDefaultStyle());
 
 		if (document.themePart) {
-			appendComment(styleContainer, "docxjs document theme values");
+			styleContainer.appendChild(this.createComment("docxjs document theme values"));
 			this.renderTheme(document.themePart, styleContainer);
 		}
 
 		if (document.stylesPart != null) {
 			this.styleMap = this.processStyles(document.stylesPart.styles);
 
-			appendComment(styleContainer, "docxjs document styles");
+			styleContainer.appendChild(this.createComment("docxjs document styles"));
 			styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
 		}
 
 		if (document.numberingPart) {
 			this.prodessNumberings(document.numberingPart.domNumberings);
 
-			appendComment(styleContainer, "docxjs document numbering styles");
+			styleContainer.appendChild(this.createComment("docxjs document numbering styles"));
 			styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
 			//styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
 		}
@@ -171,7 +171,7 @@ export class HtmlRenderer {
 		}
 
 		const cssText = this.styleToString(`.${this.className}`, variables);
-		styleContainer.appendChild(createStyleElement(cssText));
+		styleContainer.appendChild(this.createStyleElement(cssText));
 	}
 
 	renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
@@ -191,9 +191,9 @@ export class HtmlRenderer {
 						cssValues['font-style'] = 'italic';
 					}
 
-					appendComment(styleContainer, `docxjs ${f.name} font`);
 					const cssText = this.styleToString("@font-face", cssValues);
-					styleContainer.appendChild(createStyleElement(cssText));
+					styleContainer.appendChild(this.createComment(`docxjs ${f.name} font`));
+					styleContainer.appendChild(this.createStyleElement(cssText));
 				}));
 			}
 		}
@@ -539,7 +539,7 @@ section.${c}>footer { z-index: 1; }
 `
 		};
 
-		return createStyleElement(styleText);
+		return this.createStyleElement(styleText);
 	}
 
 	// renderNumbering2(numberingPart: NumberingPartProperties, container: HTMLElement): HTMLElement {
@@ -626,7 +626,7 @@ section.${c}>footer { z-index: 1; }
 
 				this.tasks.push(this.document.loadNumberingImage(num.bullet.src).then(data => {
 					var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
-					styleContainer.appendChild(createStyleElement(text));
+					styleContainer.appendChild(this.createStyleElement(text));
 				}));
 			}
 			else if (num.levelText) {
@@ -664,7 +664,7 @@ section.${c}>footer { z-index: 1; }
 			});
 		}
 
-		return createStyleElement(styleText);
+		return this.createStyleElement(styleText);
 	}
 
 	renderStyles(styles: IDomStyle[]): HTMLElement {
@@ -698,7 +698,7 @@ section.${c}>footer { z-index: 1; }
 			}
 		}
 
-		return createStyleElement(styleText);
+		return this.createStyleElement(styleText);
 	}
 
 	renderNotes(noteIds: string[], notesMap: Record<string, WmlBaseNote>, into: HTMLElement) {
@@ -895,7 +895,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderContainerNS(elem: OpenXmlElement, ns: string, tagName: string, props?: Record<string, any>) {
-		return createElementNS(ns, tagName, props, this.renderChildren(elem));
+		return this.createElementNS(ns, tagName, props, this.renderChildren(elem));
 	}
 
 	renderParagraph(elem: WmlParagraph) {
@@ -993,8 +993,8 @@ section.${c}>footer { z-index: 1; }
 			return null;
 
 		const frg = new DocumentFragment();
-		const commentRefEl = createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
-		const commentsContainerEl = createElement("div", { className: `${this.className}-comment-popover` });
+		const commentRefEl = this.createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
+		const commentsContainerEl = this.createElement("div", { className: `${this.className}-comment-popover` });
 
 		this.renderCommentContent(comment, commentsContainerEl);
 
@@ -1006,8 +1006,8 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderCommentContent(comment: WmlComment, container: Node) {
-		container.appendChild(createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
-		container.appendChild(createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
+		container.appendChild(this.createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
+		container.appendChild(this.createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
 
 		this.renderChildren(comment, container);
 	}
@@ -1214,13 +1214,13 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderVmlPicture(elem: OpenXmlElement) {
-		var result = createElement("div");
+		var result = this.createElement("div");
 		this.renderChildren(elem, result);
 		return result;
 	}
 
 	renderVmlElement(elem: VmlElement): SVGElement {
-		var container = createSvgElement("svg");
+		var container = this.createSvgElement("svg");
 
 		container.setAttribute("style", elem.cssStyleText);
 
@@ -1244,7 +1244,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderVmlChildElement(elem: VmlElement): any {
-		const result = createSvgElement(elem.tagName as any);
+		const result = this.createSvgElement(elem.tagName as any);
 		Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
 
 		for (let child of elem.children) {
@@ -1262,21 +1262,21 @@ section.${c}>footer { z-index: 1; }
 		const base = elem.children.find(el => el.type == DomType.MmlBase);
 
 		if (elem.props?.hideDegree) {
-			return createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
+			return this.createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
 		}
 
 		const degree = elem.children.find(el => el.type == DomType.MmlDegree);
-		return createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
+		return this.createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
 	}
 
 	renderMmlDelimiter(elem: OpenXmlElement): HTMLElement {		
 		const children = [];
 
-		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
+		children.push(this.createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
 		children.push(...this.renderElements(elem.children));
-		children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
+		children.push(this.createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
 
-		return createElementNS(ns.mathML, "mrow", null, children);
+		return this.createElementNS(ns.mathML, "mrow", null, children);
 	}
 
 	renderMmlNary(elem: OpenXmlElement): HTMLElement {		
@@ -1285,24 +1285,24 @@ section.${c}>footer { z-index: 1; }
 
 		const sup = grouped[DomType.MmlSuperArgument];
 		const sub = grouped[DomType.MmlSubArgument];
-		const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-		const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+		const supElem = sup ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
+		const subElem = sub ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
 
-		const charElem = createElementNS(ns.mathML, "mo", null, [elem.props?.char ?? '\u222B']);
+		const charElem = this.createElementNS(ns.mathML, "mo", null, [elem.props?.char ?? '\u222B']);
 
 		if (supElem || subElem) {
-			children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
+			children.push(this.createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
 		} else if(supElem) {
-			children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
+			children.push(this.createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
 		} else if(subElem) {
-			children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+			children.push(this.createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
 		} else {
 			children.push(charElem);
 		}
 
 		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
 
-		return createElementNS(ns.mathML, "mrow", null, children);
+		return this.createElementNS(ns.mathML, "mrow", null, children);
 	}
 
 	renderMmlPreSubSuper(elem: OpenXmlElement) {
@@ -1311,14 +1311,14 @@ section.${c}>footer { z-index: 1; }
 
 		const sup = grouped[DomType.MmlSuperArgument];
 		const sub = grouped[DomType.MmlSubArgument];
-		const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-		const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
-		const stubElem = createElementNS(ns.mathML, "mo", null);
+		const supElem = sup ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
+		const subElem = sub ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+		const stubElem = this.createElementNS(ns.mathML, "mo", null);
 
-		children.push(createElementNS(ns.mathML, "msubsup", null, [stubElem, subElem, supElem]));
+		children.push(this.createElementNS(ns.mathML, "msubsup", null, [stubElem, subElem, supElem]));
 		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
 
-		return createElementNS(ns.mathML, "mrow", null, children);
+		return this.createElementNS(ns.mathML, "mrow", null, children);
 	}
 
 	renderMmlGroupChar(elem: OpenXmlElement) {
@@ -1326,7 +1326,7 @@ section.${c}>footer { z-index: 1; }
 		const result = this.renderContainerNS(elem, ns.mathML, tagName);
 
 		if (elem.props.char) {
-			result.appendChild(createElementNS(ns.mathML, "mo", null, [elem.props.char]));
+			result.appendChild(this.createElementNS(ns.mathML, "mo", null, [elem.props.char]));
 		}
 
 		return result;
@@ -1344,7 +1344,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderMmlRun(elem: OpenXmlElement) {
-		const result = createElementNS(ns.mathML, "ms");
+		const result = this.createElementNS(ns.mathML, "ms");
 
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
@@ -1354,7 +1354,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderMllList(elem: OpenXmlElement) {
-		const result = createElementNS(ns.mathML, "mtable");
+		const result = this.createElementNS(ns.mathML, "mtable");
 
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
@@ -1362,8 +1362,8 @@ section.${c}>footer { z-index: 1; }
 		const childern = this.renderChildren(elem);
 
 		for (let child of this.renderChildren(elem)) {
-			result.appendChild(createElementNS(ns.mathML, "mtr", null, [
-				createElementNS(ns.mathML, "mtd", null, [child])
+			result.appendChild(this.createElementNS(ns.mathML, "mtr", null, [
+				this.createElementNS(ns.mathML, "mtd", null, [child])
 			]));
 		}
 
@@ -1494,7 +1494,28 @@ section.${c}>footer { z-index: 1; }
 		}, 500);
 	}
 
-	createElement = createElement;
+	createElementNS(ns: string, tagName: string, props?: Partial<Record<any, any>>, children?: ChildType[]): any {
+		var result = ns ? this.htmlDocument.createElementNS(ns, tagName) : this.htmlDocument.createElement(tagName);
+		Object.assign(result, props);
+		children && appendChildren(result, children);
+		return result;
+	}
+
+	createElement<T extends keyof HTMLElementTagNameMap>(tagName: T, props?: Partial<Record<keyof HTMLElementTagNameMap[T], any>>, children?: ChildType[]): HTMLElementTagNameMap[T] {
+		return this.createElementNS(undefined, tagName, props, children);
+	}
+
+	createSvgElement<T extends keyof SVGElementTagNameMap>(tagName: T, props?: Partial<Record<keyof SVGElementTagNameMap[T], any>>, children?: ChildType[]): SVGElementTagNameMap[T] {
+		return this.createElementNS(ns.svg, tagName, props, children);
+	}
+
+	createStyleElement(cssText: string) {
+		return this.createElement("style", { innerHTML: cssText });
+	}
+	
+	createComment(text: string) {
+		return this.htmlDocument.createComment(text);
+	}
 
 	later(func: Function) { 
 		this.postRenderTasks.push(func);
@@ -1503,43 +1524,12 @@ section.${c}>footer { z-index: 1; }
 
 type ChildType = Node | string;
 
-function createElement<T extends keyof HTMLElementTagNameMap>(
-	tagName: T,
-	props?: Partial<Record<keyof HTMLElementTagNameMap[T], any>>,
-	children?: ChildType[]
-): HTMLElementTagNameMap[T] {
-	return createElementNS(undefined, tagName, props, children);
-}
-
-function createSvgElement<T extends keyof SVGElementTagNameMap>(
-	tagName: T,
-	props?: Partial<Record<keyof SVGElementTagNameMap[T], any>>,
-	children?: ChildType[]
-): SVGElementTagNameMap[T] {
-	return createElementNS(ns.svg, tagName, props, children);
-}
-
-function createElementNS(ns: string, tagName: string, props?: Partial<Record<any, any>>, children?: ChildType[]): any {
-	var result = ns ? document.createElementNS(ns, tagName) : document.createElement(tagName);
-	Object.assign(result, props);
-	children && appendChildren(result, children);
-	return result;
-}
-
 function removeAllElements(elem: HTMLElement) {
 	elem.innerHTML = '';
 }
 
 function appendChildren(elem: Node, children: (Node | string)[]) {
 	children.forEach(c => elem.appendChild(isString(c) ? document.createTextNode(c) : c));
-}
-
-function createStyleElement(cssText: string) {
-	return createElement("style", { innerHTML: cssText });
-}
-
-function appendComment(elem: HTMLElement, comment: string) {
-	elem.appendChild(document.createComment(comment));
 }
 
 function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomType): T {
