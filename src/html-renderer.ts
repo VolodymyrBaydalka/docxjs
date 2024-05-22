@@ -873,11 +873,6 @@ section.${c}>footer { z-index: 1; }
 
 		return null;
 	}
-
-	renderChildren(elem: OpenXmlElement, into?: Node): Node[] {
-		return this.renderElements(elem.children, into);
-	}
-
 	renderElements(elems: OpenXmlElement[], into?: Node): Node[] {
 		if (elems == null)
 			return null;
@@ -890,22 +885,21 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
-	renderContainer(elem: OpenXmlElement, tagName: keyof HTMLElementTagNameMap, props?: Record<string, any>) {
-		return this.createElement(tagName, props, this.renderChildren(elem));
+	renderContainer<T extends keyof HTMLElementTagNameMap>(elem: OpenXmlElement, tagName: T, props?: Partial<Record<keyof HTMLElementTagNameMap[T], any>>): HTMLElementTagNameMap[T] {
+		return this.createElement<T>(tagName, props, this.renderElements(elem.children));
 	}
 
 	renderContainerNS(elem: OpenXmlElement, ns: string, tagName: string, props?: Record<string, any>) {
-		return this.createElementNS(ns, tagName, props, this.renderChildren(elem));
+		return this.createElementNS(ns, tagName, props, this.renderElements(elem.children));
 	}
 
 	renderParagraph(elem: WmlParagraph) {
-		var result = this.createElement("p");
+		var result = this.renderContainer(elem, "p");
 
 		const style = this.findStyle(elem.styleName);
 		elem.tabs ??= style?.paragraphProps?.tabs;  //TODO
 
 		this.renderClass(elem, result);
-		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 		this.renderCommonProperties(result.style, elem);
 
@@ -936,9 +930,8 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderHyperlink(elem: WmlHyperlink) {
-		var result = this.createElement("a");
+		var result = this.renderContainer(elem, "a");
 
-		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
 		if (elem.href) {
@@ -953,9 +946,7 @@ section.${c}>footer { z-index: 1; }
 	}
 	
 	renderSmartTag(elem: WmlSmartTag) {
-		var result = this.createElement("span");
-		this.renderChildren(elem, result);
-		return result;
+		return this.renderContainer(elem, "span");
 	}
 	
 	renderCommentRangeStart(commentStart: WmlCommentRangeStart) {
@@ -1009,17 +1000,16 @@ section.${c}>footer { z-index: 1; }
 		container.appendChild(this.createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
 		container.appendChild(this.createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
 
-		this.renderChildren(comment, container);
+		this.renderElements(comment.children, container);
 	}
 
 	renderDrawing(elem: OpenXmlElement) {
-		var result = this.createElement("div");
+		var result = this.renderContainer(elem, "div");
 
 		result.style.display = "inline-block";
 		result.style.position = "relative";
 		result.style.textIndent = "0px";
 
-		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
 		return result;
@@ -1059,7 +1049,7 @@ section.${c}>footer { z-index: 1; }
 		if (this.options.renderChanges)
 			return this.renderContainer(elem, "ins");
 
-		return this.renderChildren(elem);
+		return this.renderElements(elem.children);
 	}
 
 	renderDeleted(elem: OpenXmlElement): Node {
@@ -1105,9 +1095,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderBookmarkStart(elem: WmlBookmarkStart): HTMLElement {
-		var result = this.createElement("span");
-		result.id = elem.name;
-		return result;
+		return this.createElement("span", { id: elem.name });
 	}
 
 	renderRun(elem: WmlRun) {
@@ -1124,11 +1112,11 @@ section.${c}>footer { z-index: 1; }
 
 		if (elem.verticalAlign) {
 			const wrapper = this.createElement(elem.verticalAlign as any);
-			this.renderChildren(elem, wrapper);
+			this.renderElements(elem.children, wrapper);
 			result.appendChild(wrapper);
 		}
 		else {
-			this.renderChildren(elem, result);
+			this.renderElements(elem.children, result);
 		}
 
 		return result;
@@ -1146,7 +1134,7 @@ section.${c}>footer { z-index: 1; }
 			result.appendChild(this.renderTableColumns(elem.columns));
 
 		this.renderClass(elem, result);
-		this.renderChildren(elem, result);
+		this.renderElements(elem.children, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
 		this.currentVerticalMerge = this.tableVerticalMerges.pop();
@@ -1171,12 +1159,11 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderTableRow(elem: OpenXmlElement) {
-		let result = this.createElement("tr");
+		let result = this.renderContainer(elem, "tr");
 
 		this.currentCellPosition.col = 0;
 
 		this.renderClass(elem, result);
-		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
 		this.currentCellPosition.row++;
@@ -1185,7 +1172,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderTableCell(elem: WmlTableCell) {
-		let result = this.createElement("td");
+		let result = this.renderContainer(elem, "td");
 
 		const key = this.currentCellPosition.col;
 
@@ -1202,7 +1189,6 @@ section.${c}>footer { z-index: 1; }
 		}
 
 		this.renderClass(elem, result);
-		this.renderChildren(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
 		if (elem.span)
@@ -1214,9 +1200,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderVmlPicture(elem: OpenXmlElement) {
-		var result = this.createElement("div");
-		this.renderChildren(elem, result);
-		return result;
+		return this.renderContainer(elem, "div");
 	}
 
 	renderVmlElement(elem: VmlElement): SVGElement {
@@ -1344,11 +1328,10 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderMmlRun(elem: OpenXmlElement) {
-		const result = this.createElementNS(ns.mathML, "ms");
+		const result = this.createElementNS(ns.mathML, "ms", null, this.renderElements(elem.children));
 
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
-		this.renderChildren(elem, result);
 
 		return result;
 	}
@@ -1359,9 +1342,7 @@ section.${c}>footer { z-index: 1; }
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
-		const childern = this.renderChildren(elem);
-
-		for (let child of this.renderChildren(elem)) {
+		for (let child of this.renderElements(elem.children)) {
 			result.appendChild(this.createElementNS(ns.mathML, "mtr", null, [
 				this.createElementNS(ns.mathML, "mtd", null, [child])
 			]));
