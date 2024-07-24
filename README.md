@@ -65,10 +65,10 @@ renderAsync(
 
 /// ==== experimental / internal API ===
 // this API could be used to modify document before rendering
-// renderAsync = praseAsync + renderDocument
+// renderAsync = parseAsync + renderDocument
 
 // parse document and return internal document object
-praseAsync(
+parseAsync(
     document: Blob | ArrayBuffer | Uint8Array,
     options: Options
 ): Promise<WordDocument>
