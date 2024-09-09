@@ -943,13 +943,20 @@ section.${c}>footer { z-index: 1; }
 
 		if (elem.href) {
 			result.href = elem.href;
-		} else if(elem.id) {
-			const rel = this.document.documentPart.rels
-				.find(it => it.id == elem.id && it.targetMode === "External");
-			result.href = rel?.target;
+		} else if (elem.id) {
+			const rel = this.getRelationshipById(elem.id);
+			if (rel && rel.targetMode === "External") {
+				result.href = rel.target + (elem.anchor ? "#" + elem.anchor : "");
+			}
+		} else if (elem.anchor) {
+			result.href = window.location.href.split('#')[0] + "#" + elem.anchor;
 		}
-
+		
 		return result;
+	}
+
+	getRelationshipById(id: string): { id: string, target: string, targetMode: string } | undefined {
+		return this.document.documentPart.rels.find(it => it.id === id);
 	}
 	
 	renderSmartTag(elem: WmlSmartTag) {

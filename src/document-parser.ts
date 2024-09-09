@@ -587,11 +587,13 @@ export class DocumentParser {
 		var anchor = xml.attr(node, "anchor");
 		var relId = xml.attr(node, "id");
 
-		if (anchor)
-			result.href = "#" + anchor;
+		if (anchor) {
+			result.anchor = anchor;
+		}
 
-		if (relId)
+		if (relId) {
 			result.id = relId;
+		}
 
 		xmlUtil.foreach(node, c => {
 			switch (c.localName) {

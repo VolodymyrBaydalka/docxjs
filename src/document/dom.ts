@@ -89,6 +89,7 @@ export abstract class OpenXmlElementBase implements OpenXmlElement {
 export interface WmlHyperlink extends OpenXmlElement {
 	id?: string;
     href?: string;
+	anchor?: string;
 }
 
 export interface WmlSmartTag extends OpenXmlElement {
