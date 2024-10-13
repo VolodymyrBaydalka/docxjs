@@ -8,7 +8,7 @@ import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
-import { asArray, escapeClassName, isString, keyBy, mergeDeep } from './utils';
+import { asArray, escapeClassName, escapeFontFamily, isString, keyBy, mergeDeep } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -179,7 +179,7 @@ export class HtmlRenderer {
 			for (let ref of f.embedFontRefs) {
 				this.tasks.push(this.document.loadFont(ref.id, ref.key).then(fontData => {
 					const cssValues = {
-						'font-family': f.name,
+						'font-family': escapeFontFamily(f.name),
 						'src': `url(${fontData})`
 					};
 
@@ -1370,23 +1370,22 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
-
-	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
+	renderStyleValues(style: Record<string, string>, output: HTMLElement) {
 		for (let k in style) {
 			if (k.startsWith("$")) {
-				ouput.setAttribute(k.slice(1), style[k]);
+				output.setAttribute(k.slice(1), style[k]);
 			} else {
-				ouput.style[k] = style[k];
+				output.style[k] = style[k];
 			}
 		}
 	}
 
-	renderClass(input: OpenXmlElement, ouput: HTMLElement) {
+	renderClass(input: OpenXmlElement, output: HTMLElement) {
 		if (input.className)
-			ouput.className = input.className;
+			output.className = input.className;
 
 		if (input.styleName)
-			ouput.classList.add(this.processStyleName(input.styleName));
+			output.classList.add(this.processStyleName(input.styleName));
 	}
 
 	findStyle(styleName: string) {

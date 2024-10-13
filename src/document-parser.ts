@@ -14,6 +14,7 @@ import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fie
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
 import { parseVmlElement } from './vml/vml';
 import { WmlComment, WmlCommentRangeEnd, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
+import { escapeFontFamily } from './utils';
 
 export var autos = {
 	shd: "inherit",
@@ -1386,12 +1387,14 @@ export class DocumentParser {
 
 	parseFont(node: Element, style: Record<string, string>) {
 		var ascii = xml.attr(node, "ascii");
+		var eastAsia = xml.attr(node, "eastAsia");
 		var asciiTheme = values.themeValue(node, "asciiTheme");
 
-		var fonts = [ascii, asciiTheme].filter(x => x).join(', ');
+		var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => escapeFontFamily(x));
+		fonts = fonts.filter((item, pos) => fonts.indexOf(item) == pos);
 
 		if (fonts.length > 0)
-			style["font-family"] = fonts;
+			style["font-family"] = fonts.join(', ');
 	}
 
 	parseIndentation(node: Element, style: Record<string, string>) {

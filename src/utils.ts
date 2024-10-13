@@ -1,6 +1,12 @@
 export function escapeClassName(className: string) {
 	return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
 }
+export function escapeFontFamily(fontFamily: string): string {
+  if (fontFamily.startsWith('"') && fontFamily.endsWith('"')) {
+    return fontFamily;
+  }
+  return '"' + fontFamily + '"';
+}
 
 export function splitPath(path: string): [string, string] {
     let si = path.lastIndexOf('/') + 1;
