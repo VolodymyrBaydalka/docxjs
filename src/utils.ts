@@ -3,7 +3,7 @@ export function escapeClassName(className: string) {
 }
 
 export function encloseFontFamily(fontFamily: string): string {
-    return /^".+"$/.test(fontFamily) ? fontFamily : `"${fontFamily}"`;
+    return /^[^"'].*\s.*[^"']$/.test(fontFamily) ? `'${fontFamily}'` : fontFamily;
 }
 
 export function splitPath(path: string): [string, string] {

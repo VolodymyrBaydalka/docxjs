@@ -228,6 +228,9 @@
     function escapeClassName(className) {
         return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
     }
+    function encloseFontFamily(fontFamily) {
+        return /^[^"'].*\s.*[^"']$/.test(fontFamily) ? `'${fontFamily}'` : fontFamily;
+    }
     function splitPath(path) {
         let si = path.lastIndexOf('/') + 1;
         let folder = si == 0 ? "" : path.substring(0, si);
@@ -2276,6 +2279,31 @@
                 }
                 return true;
             });
+            this.parseTableCellVerticalText(elem, cell);
+        }
+        parseTableCellVerticalText(elem, cell) {
+            const directionMap = {
+                "btLr": {
+                    writingMode: "vertical-rl",
+                    transform: "rotate(180deg)"
+                },
+                "lrTb": {
+                    writingMode: "vertical-lr",
+                    transform: "none"
+                },
+                "tbRl": {
+                    writingMode: "vertical-rl",
+                    transform: "none"
+                }
+            };
+            xmlUtil.foreach(elem, c => {
+                if (c.localName === "textDirection") {
+                    const direction = globalXmlParser.attr(c, "val");
+                    const style = directionMap[direction] || { writingMode: "horizontal-tb" };
+                    cell.cssStyle["writing-mode"] = style.writingMode;
+                    cell.cssStyle["transform"] = style.transform;
+                }
+            });
         }
         parseDefaultProperties(elem, style = null, childStyle = null, handler = null) {
             style = style || {};
@@ -2459,9 +2487,10 @@
         parseFont(node, style) {
             var ascii = globalXmlParser.attr(node, "ascii");
             var asciiTheme = values.themeValue(node, "asciiTheme");
-            var fonts = [ascii, asciiTheme].filter(x => x).join(', ');
+            var eastAsia = globalXmlParser.attr(node, "eastAsia");
+            var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => encloseFontFamily(x));
             if (fonts.length > 0)
-                style["font-family"] = fonts;
+                style["font-family"] = [...new Set(fonts)].join(', ');
         }
         parseIndentation(node, style) {
             var firstLine = globalXmlParser.lengthAttr(node, "firstLine");
@@ -2770,13 +2799,11 @@
             this.currentEndnoteIds = [];
             this.usedHederFooterParts = [];
             this.currentTabs = [];
-            this.tabsTimeout = 0;
             this.commentMap = {};
             this.tasks = [];
             this.postRenderTasks = [];
-            this.createElement = createElement;
         }
-        render(document, bodyContainer, styleContainer = null, options) {
+        async render(document, bodyContainer, styleContainer = null, options) {
             this.document = document;
             this.options = options;
             this.className = options.className;
@@ -2789,20 +2816,20 @@
             styleContainer = styleContainer || bodyContainer;
             removeAllElements(styleContainer);
             removeAllElements(bodyContainer);
-            appendComment(styleContainer, "docxjs library predefined styles");
+            styleContainer.appendChild(this.createComment("docxjs library predefined styles"));
             styleContainer.appendChild(this.renderDefaultStyle());
             if (document.themePart) {
-                appendComment(styleContainer, "docxjs document theme values");
+                styleContainer.appendChild(this.createComment("docxjs document theme values"));
                 this.renderTheme(document.themePart, styleContainer);
             }
             if (document.stylesPart != null) {
                 this.styleMap = this.processStyles(document.stylesPart.styles);
-                appendComment(styleContainer, "docxjs document styles");
+                styleContainer.appendChild(this.createComment("docxjs document styles"));
                 styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
             }
             if (document.numberingPart) {
                 this.prodessNumberings(document.numberingPart.domNumberings);
-                appendComment(styleContainer, "docxjs document numbering styles");
+                styleContainer.appendChild(this.createComment("docxjs document numbering styles"));
                 styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
             }
             if (document.footnotesPart) {
@@ -2826,8 +2853,9 @@
             if (this.commentHighlight && options.renderComments) {
                 CSS.highlights.set(`${this.className}-comments`, this.commentHighlight);
             }
-            this.refreshTabStops();
             this.postRenderTasks.forEach(t => t());
+            await Promise.allSettled(this.tasks);
+            this.refreshTabStops();
         }
         renderTheme(themePart, styleContainer) {
             const variables = {};
@@ -2847,14 +2875,14 @@
                 }
             }
             const cssText = this.styleToString(`.${this.className}`, variables);
-            styleContainer.appendChild(createStyleElement(cssText));
+            styleContainer.appendChild(this.createStyleElement(cssText));
         }
         renderFontTable(fontsPart, styleContainer) {
             for (let f of fontsPart.fonts) {
                 for (let ref of f.embedFontRefs) {
                     this.tasks.push(this.document.loadFont(ref.id, ref.key).then(fontData => {
                         const cssValues = {
-                            'font-family': f.name,
+                            'font-family': encloseFontFamily(f.name),
                             'src': `url(${fontData})`
                         };
                         if (ref.type == "bold" || ref.type == "boldItalic") {
@@ -2863,10 +2891,9 @@
                         if (ref.type == "italic" || ref.type == "boldItalic") {
                             cssValues['font-style'] = 'italic';
                         }
-                        appendComment(styleContainer, `docxjs ${f.name} font`);
                         const cssText = this.styleToString("@font-face", cssValues);
-                        styleContainer.appendChild(createStyleElement(cssText));
-                        this.refreshTabStops();
+                        styleContainer.appendChild(this.createComment(`docxjs ${f.name} font`));
+                        styleContainer.appendChild(this.createStyleElement(cssText));
                     }));
                 }
             }
@@ -3146,7 +3173,7 @@ section.${c}>footer { z-index: 1; }
 .${c}-comment-author,.${c}-comment-date { font-size: 0.875rem; color: #888; }
 `;
             }
-            return createStyleElement(styleText);
+            return this.createStyleElement(styleText);
         }
         renderNumbering(numberings, styleContainer) {
             var styleText = "";
@@ -3163,7 +3190,7 @@ section.${c}>footer { z-index: 1; }
                     }, num.bullet.style);
                     this.tasks.push(this.document.loadNumberingImage(num.bullet.src).then(data => {
                         var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
-                        styleContainer.appendChild(createStyleElement(text));
+                        styleContainer.appendChild(this.createStyleElement(text));
                     }));
                 }
                 else if (num.levelText) {
@@ -3196,7 +3223,7 @@ section.${c}>footer { z-index: 1; }
                     "counter-reset": resetCounters.join(" ")
                 });
             }
-            return createStyleElement(styleText);
+            return this.createStyleElement(styleText);
         }
         renderStyles(styles) {
             var styleText = "";
@@ -3220,7 +3247,7 @@ section.${c}>footer { z-index: 1; }
                     styleText += this.styleToString(selector, subStyle.values);
                 }
             }
-            return createStyleElement(styleText);
+            return this.createStyleElement(styleText);
         }
         renderNotes(noteIds, notesMap, into) {
             var notes = noteIds.map(id => notesMap[id]).filter(x => x);
@@ -3341,9 +3368,6 @@ section.${c}>footer { z-index: 1; }
             }
             return null;
         }
-        renderChildren(elem, into) {
-            return this.renderElements(elem.children, into);
-        }
         renderElements(elems, into) {
             if (elems == null)
                 return null;
@@ -3353,17 +3377,16 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderContainer(elem, tagName, props) {
-            return this.createElement(tagName, props, this.renderChildren(elem));
+            return this.createElement(tagName, props, this.renderElements(elem.children));
         }
         renderContainerNS(elem, ns, tagName, props) {
-            return createElementNS(ns, tagName, props, this.renderChildren(elem));
+            return this.createElementNS(ns, tagName, props, this.renderElements(elem.children));
         }
         renderParagraph(elem) {
-            var result = this.createElement("p");
+            var result = this.renderContainer(elem, "p");
             const style = this.findStyle(elem.styleName);
             elem.tabs ?? (elem.tabs = style?.paragraphProps?.tabs);
             this.renderClass(elem, result);
-            this.renderChildren(elem, result);
             this.renderStyleValues(elem.cssStyle, result);
             this.renderCommonProperties(result.style, elem);
             const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
@@ -3386,8 +3409,7 @@ section.${c}>footer { z-index: 1; }
             }
         }
         renderHyperlink(elem) {
-            var result = this.createElement("a");
-            this.renderChildren(elem, result);
+            var result = this.renderContainer(elem, "a");
             this.renderStyleValues(elem.cssStyle, result);
             if (elem.href) {
                 result.href = elem.href;
@@ -3400,9 +3422,7 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderSmartTag(elem) {
-            var result = this.createElement("span");
-            this.renderChildren(elem, result);
-            return result;
+            return this.renderContainer(elem, "span");
         }
         renderCommentRangeStart(commentStart) {
             if (!this.options.renderComments)
@@ -3429,8 +3449,8 @@ section.${c}>footer { z-index: 1; }
             if (!comment)
                 return null;
             const frg = new DocumentFragment();
-            const commentRefEl = createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
-            const commentsContainerEl = createElement("div", { className: `${this.className}-comment-popover` });
+            const commentRefEl = this.createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
+            const commentsContainerEl = this.createElement("div", { className: `${this.className}-comment-popover` });
             this.renderCommentContent(comment, commentsContainerEl);
             frg.appendChild(this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`));
             frg.appendChild(commentRefEl);
@@ -3438,16 +3458,15 @@ section.${c}>footer { z-index: 1; }
             return frg;
         }
         renderCommentContent(comment, container) {
-            container.appendChild(createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
-            container.appendChild(createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
-            this.renderChildren(comment, container);
+            container.appendChild(this.createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
+            container.appendChild(this.createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
+            this.renderElements(comment.children, container);
         }
         renderDrawing(elem) {
-            var result = this.createElement("div");
+            var result = this.renderContainer(elem, "div");
             result.style.display = "inline-block";
             result.style.position = "relative";
             result.style.textIndent = "0px";
-            this.renderChildren(elem, result);
             this.renderStyleValues(elem.cssStyle, result);
             return result;
         }
@@ -3476,7 +3495,7 @@ section.${c}>footer { z-index: 1; }
         renderInserted(elem) {
             if (this.options.renderChanges)
                 return this.renderContainer(elem, "ins");
-            return this.renderChildren(elem);
+            return this.renderElements(elem.children);
         }
         renderDeleted(elem) {
             if (this.options.renderChanges)
@@ -3512,9 +3531,7 @@ section.${c}>footer { z-index: 1; }
             return tabSpan;
         }
         renderBookmarkStart(elem) {
-            var result = this.createElement("span");
-            result.id = elem.name;
-            return result;
+            return this.createElement("span", { id: elem.name });
         }
         renderRun(elem) {
             if (elem.fieldRun)
@@ -3526,11 +3543,11 @@ section.${c}>footer { z-index: 1; }
             this.renderStyleValues(elem.cssStyle, result);
             if (elem.verticalAlign) {
                 const wrapper = this.createElement(elem.verticalAlign);
-                this.renderChildren(elem, wrapper);
+                this.renderElements(elem.children, wrapper);
                 result.appendChild(wrapper);
             }
             else {
-                this.renderChildren(elem, result);
+                this.renderElements(elem.children, result);
             }
             return result;
         }
@@ -3543,7 +3560,7 @@ section.${c}>footer { z-index: 1; }
             if (elem.columns)
                 result.appendChild(this.renderTableColumns(elem.columns));
             this.renderClass(elem, result);
-            this.renderChildren(elem, result);
+            this.renderElements(elem.children, result);
             this.renderStyleValues(elem.cssStyle, result);
             this.currentVerticalMerge = this.tableVerticalMerges.pop();
             this.currentCellPosition = this.tableCellPositions.pop();
@@ -3560,16 +3577,15 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderTableRow(elem) {
-            let result = this.createElement("tr");
+            let result = this.renderContainer(elem, "tr");
             this.currentCellPosition.col = 0;
             this.renderClass(elem, result);
-            this.renderChildren(elem, result);
             this.renderStyleValues(elem.cssStyle, result);
             this.currentCellPosition.row++;
             return result;
         }
         renderTableCell(elem) {
-            let result = this.createElement("td");
+            let result = this.renderContainer(elem, "td");
             const key = this.currentCellPosition.col;
             if (elem.verticalMerge) {
                 if (elem.verticalMerge == "restart") {
@@ -3585,7 +3601,6 @@ section.${c}>footer { z-index: 1; }
                 this.currentVerticalMerge[key] = null;
             }
             this.renderClass(elem, result);
-            this.renderChildren(elem, result);
             this.renderStyleValues(elem.cssStyle, result);
             if (elem.span)
                 result.colSpan = elem.span;
@@ -3593,12 +3608,10 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderVmlPicture(elem) {
-            var result = createElement("div");
-            this.renderChildren(elem, result);
-            return result;
+            return this.renderContainer(elem, "div");
         }
         renderVmlElement(elem) {
-            var container = createSvgElement("svg");
+            var container = this.createSvgElement("svg");
             container.setAttribute("style", elem.cssStyleText);
             const result = this.renderVmlChildElement(elem);
             if (elem.imageHref?.id) {
@@ -3614,7 +3627,7 @@ section.${c}>footer { z-index: 1; }
             return container;
         }
         renderVmlChildElement(elem) {
-            const result = createSvgElement(elem.tagName);
+            const result = this.createSvgElement(elem.tagName);
             Object.entries(elem.attrs).forEach(([k, v]) => result.setAttribute(k, v));
             for (let child of elem.children) {
                 if (child.type == DomType.VmlElement) {
@@ -3629,58 +3642,58 @@ section.${c}>footer { z-index: 1; }
         renderMmlRadical(elem) {
             const base = elem.children.find(el => el.type == DomType.MmlBase);
             if (elem.props?.hideDegree) {
-                return createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
+                return this.createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
             }
             const degree = elem.children.find(el => el.type == DomType.MmlDegree);
-            return createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
+            return this.createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
         }
         renderMmlDelimiter(elem) {
             const children = [];
-            children.push(createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
+            children.push(this.createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
             children.push(...this.renderElements(elem.children));
-            children.push(createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
-            return createElementNS(ns.mathML, "mrow", null, children);
+            children.push(this.createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
+            return this.createElementNS(ns.mathML, "mrow", null, children);
         }
         renderMmlNary(elem) {
             const children = [];
             const grouped = keyBy(elem.children, x => x.type);
             const sup = grouped[DomType.MmlSuperArgument];
             const sub = grouped[DomType.MmlSubArgument];
-            const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-            const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
-            const charElem = createElementNS(ns.mathML, "mo", null, [elem.props?.char ?? '\u222B']);
+            const supElem = sup ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
+            const subElem = sub ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+            const charElem = this.createElementNS(ns.mathML, "mo", null, [elem.props?.char ?? '\u222B']);
             if (supElem || subElem) {
-                children.push(createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
+                children.push(this.createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
             }
             else if (supElem) {
-                children.push(createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
+                children.push(this.createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
             }
             else if (subElem) {
-                children.push(createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+                children.push(this.createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
             }
             else {
                 children.push(charElem);
             }
             children.push(...this.renderElements(grouped[DomType.MmlBase].children));
-            return createElementNS(ns.mathML, "mrow", null, children);
+            return this.createElementNS(ns.mathML, "mrow", null, children);
         }
         renderMmlPreSubSuper(elem) {
             const children = [];
             const grouped = keyBy(elem.children, x => x.type);
             const sup = grouped[DomType.MmlSuperArgument];
             const sub = grouped[DomType.MmlSubArgument];
-            const supElem = sup ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-            const subElem = sub ? createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
-            const stubElem = createElementNS(ns.mathML, "mo", null);
-            children.push(createElementNS(ns.mathML, "msubsup", null, [stubElem, subElem, supElem]));
+            const supElem = sup ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
+            const subElem = sub ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+            const stubElem = this.createElementNS(ns.mathML, "mo", null);
+            children.push(this.createElementNS(ns.mathML, "msubsup", null, [stubElem, subElem, supElem]));
             children.push(...this.renderElements(grouped[DomType.MmlBase].children));
-            return createElementNS(ns.mathML, "mrow", null, children);
+            return this.createElementNS(ns.mathML, "mrow", null, children);
         }
         renderMmlGroupChar(elem) {
             const tagName = elem.props.verticalJustification === "bot" ? "mover" : "munder";
             const result = this.renderContainerNS(elem, ns.mathML, tagName);
             if (elem.props.char) {
-                result.appendChild(createElementNS(ns.mathML, "mo", null, [elem.props.char]));
+                result.appendChild(this.createElementNS(ns.mathML, "mo", null, [elem.props.char]));
             }
             return result;
         }
@@ -3697,20 +3710,18 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderMmlRun(elem) {
-            const result = createElementNS(ns.mathML, "ms");
+            const result = this.createElementNS(ns.mathML, "ms", null, this.renderElements(elem.children));
             this.renderClass(elem, result);
             this.renderStyleValues(elem.cssStyle, result);
-            this.renderChildren(elem, result);
             return result;
         }
         renderMllList(elem) {
-            const result = createElementNS(ns.mathML, "mtable");
+            const result = this.createElementNS(ns.mathML, "mtable");
             this.renderClass(elem, result);
             this.renderStyleValues(elem.cssStyle, result);
-            this.renderChildren(elem);
-            for (let child of this.renderChildren(elem)) {
-                result.appendChild(createElementNS(ns.mathML, "mtr", null, [
-                    createElementNS(ns.mathML, "mtd", null, [child])
+            for (let child of this.renderElements(elem.children)) {
+                result.appendChild(this.createElementNS(ns.mathML, "mtr", null, [
+                    this.createElementNS(ns.mathML, "mtd", null, [child])
                 ]));
             }
             return result;
@@ -3807,41 +3818,40 @@ section.${c}>footer { z-index: 1; }
         refreshTabStops() {
             if (!this.options.experimental)
                 return;
-            clearTimeout(this.tabsTimeout);
-            this.tabsTimeout = setTimeout(() => {
+            setTimeout(() => {
                 const pixelToPoint = computePixelToPoint();
                 for (let tab of this.currentTabs) {
                     updateTabStop(tab.span, tab.stops, this.defaultTabSize, pixelToPoint);
                 }
             }, 500);
         }
+        createElementNS(ns, tagName, props, children) {
+            var result = ns ? this.htmlDocument.createElementNS(ns, tagName) : this.htmlDocument.createElement(tagName);
+            Object.assign(result, props);
+            children && appendChildren(result, children);
+            return result;
+        }
+        createElement(tagName, props, children) {
+            return this.createElementNS(undefined, tagName, props, children);
+        }
+        createSvgElement(tagName, props, children) {
+            return this.createElementNS(ns.svg, tagName, props, children);
+        }
+        createStyleElement(cssText) {
+            return this.createElement("style", { innerHTML: cssText });
+        }
+        createComment(text) {
+            return this.htmlDocument.createComment(text);
+        }
         later(func) {
             this.postRenderTasks.push(func);
         }
-    }
-    function createElement(tagName, props, children) {
-        return createElementNS(undefined, tagName, props, children);
-    }
-    function createSvgElement(tagName, props, children) {
-        return createElementNS(ns.svg, tagName, props, children);
-    }
-    function createElementNS(ns, tagName, props, children) {
-        var result = ns ? document.createElementNS(ns, tagName) : document.createElement(tagName);
-        Object.assign(result, props);
-        children && appendChildren(result, children);
-        return result;
     }
     function removeAllElements(elem) {
         elem.innerHTML = '';
     }
     function appendChildren(elem, children) {
         children.forEach(c => elem.appendChild(isString(c) ? document.createTextNode(c) : c));
-    }
-    function createStyleElement(cssText) {
-        return createElement("style", { innerHTML: cssText });
-    }
-    function appendComment(elem, comment) {
-        elem.appendChild(document.createComment(comment));
     }
     function findParent(elem, type) {
         var parent = elem.parent;
@@ -3876,8 +3886,7 @@ section.${c}>footer { z-index: 1; }
     async function renderDocument(document, bodyContainer, styleContainer, userOptions) {
         const ops = { ...defaultOptions, ...userOptions };
         const renderer = new HtmlRenderer(window.document);
-        renderer.render(document, bodyContainer, styleContainer, ops);
-        return Promise.allSettled(renderer.tasks);
+        return await renderer.render(document, bodyContainer, styleContainer, ops);
     }
     async function renderAsync(data, bodyContainer, styleContainer, userOptions) {
         const doc = await parseAsync(data, userOptions);

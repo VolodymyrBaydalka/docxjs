@@ -1417,11 +1417,10 @@ export class DocumentParser {
 		var ascii = xml.attr(node, "ascii");
 		var asciiTheme = values.themeValue(node, "asciiTheme");
 		var eastAsia = xml.attr(node, "eastAsia");
-
-		var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => encloseFontFamily(x)).join(', ');
+		var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => encloseFontFamily(x));
 
 		if (fonts.length > 0)
-			style["font-family"] = fonts;
+			style["font-family"] = [...new Set(fonts)].join(', ');
 	}
 
 	parseIndentation(node: Element, style: Record<string, string>) {
