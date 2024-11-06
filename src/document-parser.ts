@@ -1147,6 +1147,34 @@ export class DocumentParser {
 
 			return true;
 		});
+
+		this.parseTableCellVerticalText(elem, cell);
+	}
+
+	parseTableCellVerticalText(elem: Element, cell: WmlTableCell) {
+		const directionMap = {
+			"btLr": {
+				writingMode: "vertical-rl",
+				transform: "rotate(180deg)"
+			},
+			"lrTb": {
+				writingMode: "vertical-lr",
+				transform: "none"
+			},
+			"tbRl": {
+				writingMode: "vertical-rl",
+				transform: "none"
+			}
+		};
+
+		xmlUtil.foreach(elem, c => {
+			if (c.localName === "textDirection") {
+				const direction = xml.attr(c, "val");
+				const style = directionMap[direction] || {writingMode: "horizontal-tb"};
+				cell.cssStyle["writing-mode"] = style.writingMode;
+				cell.cssStyle["transform"] = style.transform;
+			}
+		});
 	}
 
 	parseDefaultProperties(elem: Element, style: Record<string, string> = null, childStyle: Record<string, string> = null, handler: (prop: Element) => boolean = null): Record<string, string> {
