@@ -2,6 +2,10 @@ export function escapeClassName(className: string) {
 	return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
 }
 
+export function encloseFontFamily(fontFamily: string): string {
+    return /^".+"$/.test(fontFamily) ? fontFamily : `"${fontFamily}"`;
+}
+
 export function splitPath(path: string): [string, string] {
     let si = path.lastIndexOf('/') + 1;
     let folder = si == 0 ? "" : path.substring(0, si);

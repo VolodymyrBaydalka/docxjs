@@ -8,7 +8,7 @@ import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
-import { asArray, escapeClassName, isString, keyBy, mergeDeep } from './utils';
+import { asArray, encloseFontFamily, escapeClassName, isString, keyBy, mergeDeep } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -179,7 +179,7 @@ export class HtmlRenderer {
 			for (let ref of f.embedFontRefs) {
 				this.tasks.push(this.document.loadFont(ref.id, ref.key).then(fontData => {
 					const cssValues = {
-						'font-family': f.name,
+						'font-family': encloseFontFamily(f.name),
 						'src': `url(${fontData})`
 					};
 

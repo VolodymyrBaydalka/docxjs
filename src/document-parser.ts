@@ -14,6 +14,7 @@ import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fie
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
 import { parseVmlElement } from './vml/vml';
 import { WmlComment, WmlCommentRangeEnd, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
+import { encloseFontFamily } from './utils';
 
 export var autos = {
 	shd: "inherit",
@@ -1387,8 +1388,9 @@ export class DocumentParser {
 	parseFont(node: Element, style: Record<string, string>) {
 		var ascii = xml.attr(node, "ascii");
 		var asciiTheme = values.themeValue(node, "asciiTheme");
+		var eastAsia = xml.attr(node, "eastAsia");
 
-		var fonts = [ascii, asciiTheme].filter(x => x).join(', ');
+		var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => encloseFontFamily(x)).join(', ');
 
 		if (fonts.length > 0)
 			style["font-family"] = fonts;
