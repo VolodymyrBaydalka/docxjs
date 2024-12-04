@@ -637,8 +637,10 @@ section.${c}>footer { z-index: 1; }
 						"counter-reset": counterReset
 					});
 				}
-				// reset all level counters with start value
-				resetCounters.push(counterReset);
+				// reset all level counters with start value if root layer
+				if(num.level === 0) {
+					resetCounters.push(counterReset);
+				}
 
 				styleText += this.styleToString(`${selector}:before`, {
 					"content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
