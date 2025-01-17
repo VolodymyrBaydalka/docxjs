@@ -170,6 +170,10 @@ export class WordDocument {
 		return x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x;
 	}
 
+	async loadAltChunk(id: string, part?: Part): Promise<string> {
+		return await this.loadResource(part ?? this.documentPart, id, "string");
+	}
+
 	private blobToURL(blob: Blob): string | Promise<string> {
 		if (!blob)
 			return null;

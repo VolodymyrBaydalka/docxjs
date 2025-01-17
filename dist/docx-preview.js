@@ -25,6 +25,7 @@
         RelationshipTypes["CustomProperties"] = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties";
         RelationshipTypes["Comments"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments";
         RelationshipTypes["CommentsExtended"] = "http://schemas.microsoft.com/office/2011/relationships/commentsExtended";
+        RelationshipTypes["AltChunk"] = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk";
     })(RelationshipTypes || (RelationshipTypes = {}));
     function parseRelationships(root, xml) {
         return xml.elements(root).map(e => ({
@@ -760,6 +761,7 @@
         DomType["CommentReference"] = "commentReference";
         DomType["CommentRangeStart"] = "commentRangeStart";
         DomType["CommentRangeEnd"] = "commentRangeEnd";
+        DomType["AltChunk"] = "altChunk";
     })(DomType || (DomType = {}));
     class OpenXmlElementBase {
         constructor() {
@@ -1189,6 +1191,9 @@
             const x = await this.loadResource(this.fontTablePart, id, "uint8array");
             return x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x;
         }
+        async loadAltChunk(id, part) {
+            return await this.loadResource(part ?? this.documentPart, id, "string");
+        }
         blobToURL(blob) {
             if (!blob)
                 return null;
@@ -1447,6 +1452,9 @@
                 switch (elem.localName) {
                     case "p":
                         children.push(this.parseParagraph(elem));
+                        break;
+                    case "altChunk":
+                        children.push(this.parseAltChunk(elem));
                         break;
                     case "tbl":
                         children.push(this.parseTable(elem));
@@ -1749,6 +1757,9 @@
                 children: parentParser(node)?.children ?? []
             };
         }
+        parseAltChunk(node) {
+            return { type: DomType.AltChunk, children: [], id: globalXmlParser.attr(node, "id") };
+        }
         parseParagraph(node) {
             var result = { type: DomType.Paragraph, children: [] };
             for (let el of globalXmlParser.elements(node)) {
@@ -1823,12 +1834,8 @@
         }
         parseHyperlink(node, parent) {
             var result = { type: DomType.Hyperlink, parent: parent, children: [] };
-            var anchor = globalXmlParser.attr(node, "anchor");
-            var relId = globalXmlParser.attr(node, "id");
-            if (anchor)
-                result.href = "#" + anchor;
-            if (relId)
-                result.id = relId;
+            result.anchor = globalXmlParser.attr(node, "anchor");
+            result.id = globalXmlParser.attr(node, "id");
             xmlUtil.foreach(node, c => {
                 switch (c.localName) {
                     case "r":
@@ -1917,7 +1924,7 @@
                     case "sym":
                         result.children.push({
                             type: DomType.Symbol,
-                            font: globalXmlParser.attr(c, "font"),
+                            font: encloseFontFamily(globalXmlParser.attr(c, "font")),
                             char: globalXmlParser.attr(c, "char")
                         });
                         break;
@@ -3151,9 +3158,13 @@
         }
         renderDefaultStyle() {
             var c = this.className;
-            var styleText = `
+            var wrapperStyle = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }`;
+            if (this.options.hideWrapperOnPrint) {
+                wrapperStyle = `@media not print { ${wrapperStyle} }`;
+            }
+            var styleText = `${wrapperStyle}
 .${c} { color: black; hyphens: auto; text-underline-position: from-font; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
@@ -3365,6 +3376,8 @@ section.${c}>footer { z-index: 1; }
                     return this.renderCommentRangeEnd(elem);
                 case DomType.CommentReference:
                     return this.renderCommentReference(elem);
+                case DomType.AltChunk:
+                    return this.renderAltChunk(elem);
             }
             return null;
         }
@@ -3411,14 +3424,15 @@ section.${c}>footer { z-index: 1; }
         renderHyperlink(elem) {
             var result = this.renderContainer(elem, "a");
             this.renderStyleValues(elem.cssStyle, result);
-            if (elem.href) {
-                result.href = elem.href;
+            let href = '';
+            if (elem.id) {
+                const rel = this.document.documentPart.rels.find(it => it.id == elem.id && it.targetMode === "External");
+                href = rel?.target ?? href;
             }
-            else if (elem.id) {
-                const rel = this.document.documentPart.rels
-                    .find(it => it.id == elem.id && it.targetMode === "External");
-                result.href = rel?.target;
+            if (elem.anchor) {
+                href += `#${elem.anchor}`;
             }
+            result.href = href;
             return result;
         }
         renderSmartTag(elem) {
@@ -3456,6 +3470,15 @@ section.${c}>footer { z-index: 1; }
             frg.appendChild(commentRefEl);
             frg.appendChild(commentsContainerEl);
             return frg;
+        }
+        renderAltChunk(elem) {
+            if (!this.options.renderAltChunks)
+                return null;
+            var result = this.createElement("iframe");
+            this.tasks.push(this.document.loadAltChunk(elem.id, this.currentPart).then(x => {
+                result.srcdoc = x;
+            }));
+            return result;
         }
         renderCommentContent(comment, container) {
             container.appendChild(this.createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
@@ -3869,6 +3892,7 @@ section.${c}>footer { z-index: 1; }
         experimental: false,
         className: "docx",
         inWrapper: true,
+        hideWrapperOnPrint: false,
         trimXmlDeclaration: true,
         ignoreLastRenderedPageBreak: true,
         renderHeaders: true,
@@ -3877,7 +3901,8 @@ section.${c}>footer { z-index: 1; }
         renderEndnotes: true,
         useBase64URL: false,
         renderChanges: false,
-        renderComments: false
+        renderComments: false,
+        renderAltChunks: true
     };
     function parseAsync(data, userOptions) {
         const ops = { ...defaultOptions, ...userOptions };

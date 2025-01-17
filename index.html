@@ -18,14 +18,26 @@
     <link href="./demo/thumbnail.example.css" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/tiff.js@1.0.0/tiff.min.js"></script>
     <script src="./demo/tiff-preprocessor.js"></script>
+
+    <style>
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            .overflow-auto {
+                overflow: initial !important;
+            }
+        }
+    </style>
 </head>
 
 <body class="vh-100 d-flex flex-column">
-    <div class="hstack bg-black">
+    <div class="hstack bg-black no-print">
         <a class="mx-auto p-2 text-white" href="https://war.ukraine.ua">Support Ukraine 🇺🇦</a>
     </div>
 
-    <div class="hstack p-2 gap-2 bg-light">
+    <div class="hstack p-2 gap-2 bg-light no-print">
 
         <input id="files" type="file" class="form-control" style="width: 50ch;" accept=".docx" />
         <div class="col-2">
@@ -46,7 +58,7 @@
     </div>
 
     <div class="flex-grow-1 d-flex flex-row" style="height: 0;">
-        <details class="docx-thumbnails h-100">
+        <details class="docx-thumbnails h-100 no-print">
             <summary></summary>
             <div id="thumbnails-container" class="docx-thumbnails-container"></div>
         </details>
@@ -57,7 +69,8 @@
         let currentDocument = null;
         const docxOptions = Object.assign(docx.defaultOptions, {
             debug: true,
-            experimental: true
+            experimental: true,
+            hideWrapperOnPrint: true
         });
 
         const container = document.querySelector("#document-container");

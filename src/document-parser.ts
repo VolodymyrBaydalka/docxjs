@@ -1,7 +1,8 @@
 import {
 	DomType, WmlTable, IDomNumbering,
 	WmlHyperlink, WmlSmartTag, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell,
-	WmlTableRow, NumberingPicBullet, WmlText, WmlSymbol, WmlBreak, WmlNoteReference
+	WmlTableRow, NumberingPicBullet, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
+	WmlAltChunk
 } from './document/dom';
 import { DocumentElement } from './document/document';
 import { WmlParagraph, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
@@ -132,6 +133,10 @@ export class DocumentParser {
 					children.push(this.parseParagraph(elem));
 					break;
 
+				case "altChunk":
+					children.push(this.parseAltChunk(elem));
+					break;
+	
 				case "tbl":
 					children.push(this.parseTable(elem));
 					break;
@@ -487,6 +492,10 @@ export class DocumentParser {
 		};
 	}
 
+	parseAltChunk(node: Element): WmlAltChunk {
+		return { type: DomType.AltChunk, children: [], id: xml.attr(node, "id") };
+	}
+
 	parseParagraph(node: Element): OpenXmlElement {
 		var result = <WmlParagraph>{ type: DomType.Paragraph, children: [] };
 
@@ -585,14 +594,9 @@ export class DocumentParser {
 
 	parseHyperlink(node: Element, parent?: OpenXmlElement): WmlHyperlink {
 		var result: WmlHyperlink = <WmlHyperlink>{ type: DomType.Hyperlink, parent: parent, children: [] };
-		var anchor = xml.attr(node, "anchor");
-		var relId = xml.attr(node, "id");
-
-		if (anchor)
-			result.href = "#" + anchor;
-
-		if (relId)
-			result.id = relId;
+		
+		result.anchor = xml.attr(node, "anchor");
+		result.id = xml.attr(node, "id");
 
 		xmlUtil.foreach(node, c => {
 			switch (c.localName) {
@@ -700,7 +704,7 @@ export class DocumentParser {
 				case "sym":
 					result.children.push(<WmlSymbol>{
 						type: DomType.Symbol,
-						font: xml.attr(c, "font"),
+						font: encloseFontFamily(xml.attr(c, "font")),
 						char: xml.attr(c, "char")
 					});
 					break;

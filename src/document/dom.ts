@@ -59,7 +59,8 @@ export enum DomType {
 	Comment = "comment",
 	CommentReference = "commentReference",
 	CommentRangeStart = "commentRangeStart",
-	CommentRangeEnd = "commentRangeEnd"
+	CommentRangeEnd = "commentRangeEnd",
+    AltChunk = "altChunk"
 }
 
 export interface OpenXmlElement {
@@ -88,7 +89,11 @@ export abstract class OpenXmlElementBase implements OpenXmlElement {
 
 export interface WmlHyperlink extends OpenXmlElement {
 	id?: string;
-    href?: string;
+    anchor?: string;
+}
+
+export interface WmlAltChunk extends OpenXmlElement {
+	id?: string;
 }
 
 export interface WmlSmartTag extends OpenXmlElement {

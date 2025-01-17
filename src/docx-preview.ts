@@ -4,6 +4,7 @@ import { HtmlRenderer } from './html-renderer';
 
 export interface Options {
     inWrapper: boolean;
+    hideWrapperOnPrint: boolean;
     ignoreWidth: boolean;
     ignoreHeight: boolean;
     ignoreFonts: boolean;
@@ -20,6 +21,7 @@ export interface Options {
 	useBase64URL: boolean;
 	renderChanges: boolean;
     renderComments: boolean;
+    renderAltChunks: boolean;
 }
 
 export const defaultOptions: Options = {
@@ -31,6 +33,7 @@ export const defaultOptions: Options = {
     experimental: false,
     className: "docx",
     inWrapper: true,
+    hideWrapperOnPrint: false,
     trimXmlDeclaration: true,
     ignoreLastRenderedPageBreak: true,
     renderHeaders: true,
@@ -39,7 +42,8 @@ export const defaultOptions: Options = {
 	renderEndnotes: true,
 	useBase64URL: false,
 	renderChanges: false,
-    renderComments: false
+    renderComments: false,
+    renderAltChunks: true
 }
 
 export function parseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {

@@ -1,5 +1,6 @@
 export interface Options {
     inWrapper: boolean;
+    hideWrapperOnPrint: boolean;
     ignoreWidth: boolean;
     ignoreHeight: boolean;
     ignoreFonts: boolean;
@@ -16,6 +17,7 @@ export interface Options {
     useBase64URL: boolean;
     renderChanges: boolean;
     renderComments: boolean;
+    renderAltChunks: boolean;
 }
 //stub
 export type WordDocument = any;

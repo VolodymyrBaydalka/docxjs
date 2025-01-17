@@ -2,7 +2,8 @@ import { WordDocument } from './word-document';
 import {
 	DomType, WmlTable, IDomNumbering,
 	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
-	WmlSmartTag
+	WmlSmartTag,
+	WmlAltChunk
 } from './document/dom';
 import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
@@ -515,9 +516,13 @@ export class HtmlRenderer {
 
 	renderDefaultStyle() {
 		var c = this.className;
-		var styleText = `
+		var wrapperStyle = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
-.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }`;
+		if (this.options.hideWrapperOnPrint) {
+			wrapperStyle = `@media not print { ${wrapperStyle} }`;
+		}
+		var styleText = `${wrapperStyle}
 .${c} { color: black; hyphens: auto; text-underline-position: from-font; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
@@ -869,6 +874,9 @@ section.${c}>footer { z-index: 1; }
 
 			case DomType.CommentReference:
 				return this.renderCommentReference(elem);
+
+			case DomType.AltChunk:
+				return this.renderAltChunk(elem);
 		}
 
 		return null;
@@ -934,13 +942,18 @@ section.${c}>footer { z-index: 1; }
 
 		this.renderStyleValues(elem.cssStyle, result);
 
-		if (elem.href) {
-			result.href = elem.href;
-		} else if(elem.id) {
-			const rel = this.document.documentPart.rels
-				.find(it => it.id == elem.id && it.targetMode === "External");
-			result.href = rel?.target;
+		let href = '';
+
+		if (elem.id) {
+			const rel = this.document.documentPart.rels.find(it => it.id == elem.id && it.targetMode === "External");
+			href = rel?.target ?? href;
 		}
+
+		if (elem.anchor) {
+			href += `#${elem.anchor}`;
+		}
+
+		result.href = href;
 
 		return result;
 	}
@@ -994,6 +1007,19 @@ section.${c}>footer { z-index: 1; }
 		frg.appendChild(commentsContainerEl);
 
 		return frg;
+	}
+
+	renderAltChunk(elem: WmlAltChunk) {
+		if (!this.options.renderAltChunks)
+			return null;
+
+		var result = this.createElement("iframe");
+		
+		this.tasks.push(this.document.loadAltChunk(elem.id, this.currentPart).then(x => {
+			result.srcdoc = x;
+		}));
+
+		return result;
 	}
 
 	renderCommentContent(comment: WmlComment, container: Node) {
