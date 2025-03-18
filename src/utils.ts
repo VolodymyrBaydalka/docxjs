@@ -86,3 +86,7 @@ export function formatCssRules(style: Record<string, string>): string {
 export function asArray<T>(val: T | T[]): T[] {
 	return Array.isArray(val) ? val : [val];
 }
+
+export function clamp(val, min, max) {
+    return min > val ? min : (max < val ? max : val);
+}

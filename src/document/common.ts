@@ -1,4 +1,5 @@
 import { XmlParser } from "../parser/xml-parser";
+import { clamp } from "../utils";
 
 export const ns = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
@@ -21,13 +22,13 @@ export interface CommonProperties {
     color: string;
 }
 
-export type LengthUsageType = { mul: number, unit: LengthType };
+export type LengthUsageType = { mul: number, unit: LengthType, min?: number, max?: number };
 
 export const LengthUsage: Record<string, LengthUsageType> = {
     Dxa: { mul: 0.05, unit: "pt" }, //twips
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
-    Border: { mul: 0.125, unit: "pt" },
+    Border: { mul: 0.125, unit: "pt", min: 0.25, max: 12 }, //NOTE: http://officeopenxml.com/WPtextBorders.php
     Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: "" },
@@ -40,7 +41,12 @@ export function convertLength(val: string, usage: LengthUsageType = LengthUsage.
         return val;
     }
 
-	return `${(parseInt(val) * usage.mul).toFixed(2)}${usage.unit}`;
+    var num = parseInt(val) * usage.mul;
+
+    if (usage.min && usage.max)
+        num = clamp(num, usage.min, usage.max);
+    
+	return `${num.toFixed(2)}${usage.unit}`;
 }
 
 export function convertBoolean(v: string, defaultValue = false): boolean {

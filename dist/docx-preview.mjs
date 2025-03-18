@@ -32,6 +32,72 @@ function parseRelationships(root, xml) {
     }));
 }
 
+function escapeClassName(className) {
+    return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
+}
+function encloseFontFamily(fontFamily) {
+    return /^[^"'].*\s.*[^"']$/.test(fontFamily) ? `'${fontFamily}'` : fontFamily;
+}
+function splitPath(path) {
+    let si = path.lastIndexOf('/') + 1;
+    let folder = si == 0 ? "" : path.substring(0, si);
+    let fileName = si == 0 ? path : path.substring(si);
+    return [folder, fileName];
+}
+function resolvePath(path, base) {
+    try {
+        const prefix = "http://docx/";
+        const url = new URL(path, prefix + base).toString();
+        return url.substring(prefix.length);
+    }
+    catch {
+        return `${base}${path}`;
+    }
+}
+function keyBy(array, by) {
+    return array.reduce((a, x) => {
+        a[by(x)] = x;
+        return a;
+    }, {});
+}
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject();
+        reader.readAsDataURL(blob);
+    });
+}
+function isObject(item) {
+    return item && typeof item === 'object' && !Array.isArray(item);
+}
+function isString(item) {
+    return typeof item === 'string' || item instanceof String;
+}
+function mergeDeep(target, ...sources) {
+    if (!sources.length)
+        return target;
+    const source = sources.shift();
+    if (isObject(target) && isObject(source)) {
+        for (const key in source) {
+            if (isObject(source[key])) {
+                const val = target[key] ?? (target[key] = {});
+                mergeDeep(val, source[key]);
+            }
+            else {
+                target[key] = source[key];
+            }
+        }
+    }
+    return mergeDeep(target, ...sources);
+}
+function asArray(val) {
+    return Array.isArray(val) ? val : [val];
+}
+function clamp(val, min, max) {
+    return min > val ? min : (max < val ? max : val);
+}
+
 const ns$1 = {
     wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
     drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -43,7 +109,7 @@ const LengthUsage = {
     Dxa: { mul: 0.05, unit: "pt" },
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
-    Border: { mul: 0.125, unit: "pt" },
+    Border: { mul: 0.125, unit: "pt", min: 0.25, max: 12 },
     Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: "" },
@@ -53,7 +119,10 @@ function convertLength(val, usage = LengthUsage.Dxa) {
     if (val == null || /.+(p[xt]|[%])$/.test(val)) {
         return val;
     }
-    return `${(parseInt(val) * usage.mul).toFixed(2)}${usage.unit}`;
+    var num = parseInt(val) * usage.mul;
+    if (usage.min && usage.max)
+        num = clamp(num, usage.min, usage.max);
+    return `${num.toFixed(2)}${usage.unit}`;
 }
 function convertBoolean(v, defaultValue = false) {
     switch (v) {
@@ -220,69 +289,6 @@ class FontTablePart extends Part {
     parseXml(root) {
         this.fonts = parseFonts(root, this._package.xmlParser);
     }
-}
-
-function escapeClassName(className) {
-    return className?.replace(/[ .]+/g, '-').replace(/[&]+/g, 'and').toLowerCase();
-}
-function encloseFontFamily(fontFamily) {
-    return /^[^"'].*\s.*[^"']$/.test(fontFamily) ? `'${fontFamily}'` : fontFamily;
-}
-function splitPath(path) {
-    let si = path.lastIndexOf('/') + 1;
-    let folder = si == 0 ? "" : path.substring(0, si);
-    let fileName = si == 0 ? path : path.substring(si);
-    return [folder, fileName];
-}
-function resolvePath(path, base) {
-    try {
-        const prefix = "http://docx/";
-        const url = new URL(path, prefix + base).toString();
-        return url.substring(prefix.length);
-    }
-    catch {
-        return `${base}${path}`;
-    }
-}
-function keyBy(array, by) {
-    return array.reduce((a, x) => {
-        a[by(x)] = x;
-        return a;
-    }, {});
-}
-function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = () => reject();
-        reader.readAsDataURL(blob);
-    });
-}
-function isObject(item) {
-    return item && typeof item === 'object' && !Array.isArray(item);
-}
-function isString(item) {
-    return typeof item === 'string' || item instanceof String;
-}
-function mergeDeep(target, ...sources) {
-    if (!sources.length)
-        return target;
-    const source = sources.shift();
-    if (isObject(target) && isObject(source)) {
-        for (const key in source) {
-            if (isObject(source[key])) {
-                const val = target[key] ?? (target[key] = {});
-                mergeDeep(val, source[key]);
-            }
-            else {
-                target[key] = source[key];
-            }
-        }
-    }
-    return mergeDeep(target, ...sources);
-}
-function asArray(val) {
-    return Array.isArray(val) ? val : [val];
 }
 
 class OpenXmlPackage {
@@ -3205,7 +3211,7 @@ section.${c}>footer { z-index: 1; }
                 const counterReset = counter + " " + (num.start - 1);
                 if (num.level > 0) {
                     styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-                        "counter-reset": counterReset
+                        "counter-set": counterReset
                     });
                 }
                 resetCounters.push(counterReset);

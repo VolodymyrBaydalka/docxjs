@@ -639,7 +639,7 @@ section.${c}>footer { z-index: 1; }
 				const counterReset = counter + " " + (num.start - 1);
 				if (num.level > 0) {
 					styleText += this.styleToString(`p.${this.numberingClass(num.id, num.level - 1)}`, {
-						"counter-reset": counterReset
+						"counter-set": counterReset
 					});
 				}
 				// reset all level counters with start value
