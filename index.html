@@ -126,22 +126,20 @@
             renderDocx(ev.dataTransfer.files[0]);
         });
 
+        const selectedTest = new URLSearchParams(location.search).get('test');
+
         for (let testName of ['text','underlines','text-break','line-spacing','numbering','page-layout','table','table-spans','footnote','header-footer','revision','equation'])
         {
             var op = document.createElement("option");
+            op.value = testName;
             op.label = testName;
+            op.selected = testName == selectedTest;
             testDocuments.add(op);
         }
 
-        testDocuments.addEventListener("change", async e => {
-            const selected = testDocuments.selectedOptions[0].label;
+        testDocuments.addEventListener("change", e => tryLoadTest(testDocuments.value));
 
-            if (selected) {
-                let resp = await fetch(`tests/render-test/${selected}/document.docx`);
-                renderDocx(await resp.blob());
-                fileInput.value = "";
-            }
-        });
+        tryLoadTest(selectedTest);
 
         document.querySelector("#saveTestButton").addEventListener("click", async () => {
             const file = await showSaveFilePicker({ types: [ { description: "HTML File", accept: { "text/html": [".html"] } }] });
@@ -149,6 +147,14 @@
             await stream.write(container.innerHTML);
             await stream.close();
         });
+
+        async function tryLoadTest(testName) {
+            if (testName) {
+                let resp = await fetch(`tests/render-test/${testName}/document.docx`);
+                renderDocx(await resp.blob());
+                fileInput.value = "";
+            }
+        }
     </script>
 </body>
 
