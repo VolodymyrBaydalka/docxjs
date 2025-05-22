@@ -1589,7 +1589,7 @@ class values {
 	static valueOfBorder(c: Element) {
 		var type = xml.attr(c, "val");
 
-		if (type == "nil")
+		if (type == "nil" || type == "none")
 			return "none";
 
 		var color = xmlUtil.colorAttr(c, "color");
