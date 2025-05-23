@@ -1288,6 +1288,10 @@ export class DocumentParser {
 					this.parseBorderProperties(c, style);
 					break;
 
+				case "hidden":
+					style["display"] = "none";
+					break;
+
 				case "vanish":
 					if (xml.boolAttr(c, "val", true))
 						style["display"] = "none";

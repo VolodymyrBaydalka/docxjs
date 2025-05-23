@@ -2393,6 +2393,9 @@ class DocumentParser {
                 case "tcBorders":
                     this.parseBorderProperties(c, style);
                     break;
+                case "hidden":
+                    style["display"] = "none";
+                    break;
                 case "vanish":
                     if (globalXmlParser.boolAttr(c, "val", true))
                         style["display"] = "none";
