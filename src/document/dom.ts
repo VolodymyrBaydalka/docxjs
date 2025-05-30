@@ -128,6 +128,8 @@ export interface WmlTable extends OpenXmlElement {
 
 export interface WmlTableRow extends OpenXmlElement {
 	isHeader?: boolean;
+    gridBefore?: number;
+    gridAfter?: number;
 }
 
 export interface WmlTableCell extends OpenXmlElement {

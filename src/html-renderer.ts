@@ -3,7 +3,8 @@ import {
 	DomType, WmlTable, IDomNumbering,
 	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
 	WmlSmartTag,
-	WmlAltChunk
+	WmlAltChunk,
+	WmlTableRow
 } from './document/dom';
 import { CommonProperties } from './document/common';
 import { Options } from './docx-preview';
@@ -1184,16 +1185,29 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
-	renderTableRow(elem: OpenXmlElement) {
-		let result = this.renderContainer(elem, "tr");
+	renderTableRow(elem: WmlTableRow) {
+		let result = this.createElement("tr");
 
 		this.currentCellPosition.col = 0;
 
+		if (elem.gridBefore)
+			result.appendChild(this.renderTableCellPlaceholder(elem.gridBefore));
+
 		this.renderClass(elem, result);
+		this.renderElements(elem.children, result);
 		this.renderStyleValues(elem.cssStyle, result);
+
+		if (elem.gridAfter)
+			result.appendChild(this.renderTableCellPlaceholder(elem.gridAfter));
 
 		this.currentCellPosition.row++;
 
+		return result;
+	}
+
+	renderTableCellPlaceholder(colSpan: number) {
+		const result = this.createElement("td", { colSpan })
+		result.style['border'] = 'none';
 		return result;
 	}
 

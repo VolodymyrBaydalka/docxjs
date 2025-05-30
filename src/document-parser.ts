@@ -1037,6 +1037,11 @@ export class DocumentParser {
 					table.rowBandSize = xml.intAttr(c, "val");
 					break;
 
+					
+				case "hidden":
+					table.cssStyle["display"] = "none";
+					break;
+
 				default:
 					return false;
 			}
@@ -1098,6 +1103,14 @@ export class DocumentParser {
 
 				case "tblHeader":
 					row.isHeader = xml.boolAttr(c, "val");
+					break;
+
+				case "gridBefore":
+					row.gridBefore = xml.intAttr(c, "val");
+					break;
+
+				case "gridAfter":
+					row.gridAfter = xml.intAttr(c, "val");
 					break;
 
 				default:
@@ -1587,15 +1600,49 @@ class values {
 	}
 
 	static valueOfBorder(c: Element) {
-		var type = xml.attr(c, "val");
+		var type = values.parseBorderType(xml.attr(c, "val"));
 
-		if (type == "nil")
+		if (type == "none")
 			return "none";
 
 		var color = xmlUtil.colorAttr(c, "color");
 		var size = xml.lengthAttr(c, "sz", LengthUsage.Border);
 
-		return `${size} solid ${color == "auto" ? autos.borderColor : color}`;
+		return `${size} ${type} ${color == "auto" ? autos.borderColor : color}`;
+	}
+
+	static parseBorderType(type: string) {
+		switch (type) {
+			case "single": return "solid";
+			case "dashDotStroked": return "solid";
+			case "dashed": return "dashed";
+			case "dashSmallGap": return "dashed";
+			case "dotDash": return "dotted";
+			case "dotDotDash": return "dotted";
+			case "dotted": return "dotted";
+			case "double": return "double";
+			case "doubleWave": return "double";
+			case "inset": return "inset";
+			case "nil": return "none";
+			case "none": return "none";
+			case "outset": return "outset";
+			case "thick": return "solid";
+			case "thickThinLargeGap": return "solid";
+			case "thickThinMediumGap": return "solid";
+			case "thickThinSmallGap": return "solid";
+			case "thinThickLargeGap": return "solid";
+			case "thinThickMediumGap": return "solid";
+			case "thinThickSmallGap": return "solid";
+			case "thinThickThinLargeGap": return "solid";
+			case "thinThickThinMediumGap": return "solid";
+			case "thinThickThinSmallGap": return "solid";
+			case "threeDEmboss": return "solid";
+			case "threeDEngrave": return "solid";
+			case "triple": return "double";
+			case "wave": return "solid";
+		}
+
+		return 'solid';
 	}
 
 	static valueOfTblLayout(c: Element) {
