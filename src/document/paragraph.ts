@@ -22,6 +22,7 @@ export interface ParagraphProperties extends CommonProperties {
     pageBreakBefore: boolean;
     outlineLevel: number;
 	styleName?: string;
+	direction?: "ltr" | "rtl";
 
     runProps: RunProperties;
 }
@@ -101,6 +102,16 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             props.runProps = parseRunProperties(elem, xml);
             break;
         
+        case "bidi":
+            if (xml.boolAttr(elem, "val", true)) {
+                props.direction = "rtl";
+            }
+            break;
+        
+        case "rtl":
+            props.direction = "rtl";
+            break;
+
         default:
             return false;
     }

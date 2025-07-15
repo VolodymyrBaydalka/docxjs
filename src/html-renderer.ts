@@ -918,6 +918,10 @@ section.${c}>footer { z-index: 1; }
 			result.classList.add(this.numberingClass(numbering.id, numbering.level));
 		}
 
+		if (elem.direction == "rtl") {
+			result.style.direction = "rtl";
+		}
+
 		return result;
 	}
 

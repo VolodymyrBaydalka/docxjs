@@ -1346,7 +1346,17 @@ export class DocumentParser {
 				case "lang":
 					style["$lang"] = xml.attr(c, "val");
 					break;
-	
+
+				case "bidi":
+					if (xml.boolAttr(c, "val", true)) {
+						style["direction"] = "rtl";
+					}
+					break;
+
+				case "rtl":
+					style["direction"] = "rtl";
+					break;
+
 				case "bCs":
 				case "iCs":
 				case "szCs":
@@ -1361,8 +1371,6 @@ export class DocumentParser {
 				case "keepLines": //TODO - maybe ignore
 				case "keepNext": //TODO - maybe ignore
 				case "widowControl": //TODO - maybe ignore 
-				case "bidi": //TODO - maybe ignore
-				case "rtl": //TODO - maybe ignore
 				case "noProof": //ignore spellcheck
 					//TODO ignore
 					break;
