@@ -106,11 +106,11 @@ export function parseParagraphProperty(elem: Element, props: ParagraphProperties
             if (xml.boolAttr(elem, "val", true)) {
                 props.direction = "rtl";
             }
-            break;
+            return false;
         
         case "rtl":
             props.direction = "rtl";
-            break;
+            return false;
 
         default:
             return false;

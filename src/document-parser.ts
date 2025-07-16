@@ -572,6 +572,18 @@ export class DocumentParser {
 				case "framePr":
 					this.parseFrame(c, paragraph);
 					break;
+				
+				case "bidi":
+					if (xml.boolAttr(c, "val", true)) {
+						paragraph.direction = "rtl";
+						paragraph.cssStyle["direction"] = "rtl";
+					}
+					break;
+				
+				case "rtl":
+					paragraph.direction = "rtl";
+					paragraph.cssStyle["direction"] = "rtl";
+					break;
 
 				case "rPr":
 					//TODO ignore
@@ -1458,8 +1470,16 @@ export class DocumentParser {
 
 		if (firstLine) style["text-indent"] = firstLine;
 		if (hanging) style["text-indent"] = `-${hanging}`;
-		if (left || start) style["margin-left"] = left || start;
-		if (right || end) style["margin-right"] = right || end;
+
+		const isRTL = style["direction"] === "rtl";
+		if (isRTL) {
+			// left / right are swapped in RTL
+			if (left || start) style["margin-right"] = left || start;
+			if (right || end) style["margin-left"] = right || end;
+		} else {
+			if (left || start) style["margin-left"] = left || start;
+			if (right || end) style["margin-right"] = right || end;
+		}
 	}
 
 	parseSpacing(node: Element, style: Record<string, string>) {
