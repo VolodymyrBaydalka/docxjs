@@ -103,22 +103,14 @@
     }
 
     const ns$1 = {
-        wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-        drawingml: "http://schemas.openxmlformats.org/drawingml/2006/main",
-        picture: "http://schemas.openxmlformats.org/drawingml/2006/picture",
-        compatibility: "http://schemas.openxmlformats.org/markup-compatibility/2006",
-        math: "http://schemas.openxmlformats.org/officeDocument/2006/math"
-    };
+        wordml: "http://schemas.openxmlformats.org/wordprocessingml/2006/main"};
     const LengthUsage = {
         Dxa: { mul: 0.05, unit: "pt" },
         Emu: { mul: 1 / 12700, unit: "pt" },
         FontSize: { mul: 0.5, unit: "pt" },
         Border: { mul: 0.125, unit: "pt", min: 0.25, max: 12 },
         Point: { mul: 1, unit: "pt" },
-        Percent: { mul: 0.02, unit: "%" },
-        LineHeight: { mul: 1 / 240, unit: "" },
-        VmlEmu: { mul: 1 / 12700, unit: "" },
-    };
+        Percent: { mul: 0.02, unit: "%" }};
     function convertLength(val, usage = LengthUsage.Dxa) {
         if (val == null || /.+(p[xt]|[%])$/.test(val)) {
             return val;
@@ -527,6 +519,14 @@
             case "rPr":
                 props.runProps = parseRunProperties(elem, xml);
                 break;
+            case "bidi":
+                if (xml.boolAttr(elem, "val", true)) {
+                    props.direction = "rtl";
+                }
+                return false;
+            case "rtl":
+                props.direction = "rtl";
+                return false;
             default:
                 return false;
         }
@@ -1825,6 +1825,16 @@
                     case "framePr":
                         this.parseFrame(c, paragraph);
                         break;
+                    case "bidi":
+                        if (globalXmlParser.boolAttr(c, "val", true)) {
+                            paragraph.direction = "rtl";
+                            paragraph.cssStyle["direction"] = "rtl";
+                        }
+                        break;
+                    case "rtl":
+                        paragraph.direction = "rtl";
+                        paragraph.cssStyle["direction"] = "rtl";
+                        break;
                     case "rPr":
                         break;
                     default:
@@ -2438,6 +2448,14 @@
                     case "lang":
                         style["$lang"] = globalXmlParser.attr(c, "val");
                         break;
+                    case "bidi":
+                        if (globalXmlParser.boolAttr(c, "val", true)) {
+                            style["direction"] = "rtl";
+                        }
+                        break;
+                    case "rtl":
+                        style["direction"] = "rtl";
+                        break;
                     case "bCs":
                     case "iCs":
                     case "szCs":
@@ -2452,8 +2470,6 @@
                     case "keepLines":
                     case "keepNext":
                     case "widowControl":
-                    case "bidi":
-                    case "rtl":
                     case "noProof":
                         break;
                     default:
@@ -2525,10 +2541,19 @@
                 style["text-indent"] = firstLine;
             if (hanging)
                 style["text-indent"] = `-${hanging}`;
-            if (left || start)
-                style["margin-left"] = left || start;
-            if (right || end)
-                style["margin-right"] = right || end;
+            const isRTL = style["direction"] === "rtl";
+            if (isRTL) {
+                if (left || start)
+                    style["margin-right"] = left || start;
+                if (right || end)
+                    style["margin-left"] = right || end;
+            }
+            else {
+                if (left || start)
+                    style["margin-left"] = left || start;
+                if (right || end)
+                    style["margin-right"] = right || end;
+            }
         }
         parseSpacing(node, style) {
             var before = globalXmlParser.lengthAttr(node, "before");
@@ -3452,6 +3477,9 @@ section.${c}>footer { z-index: 1; }
             const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
             if (numbering) {
                 result.classList.add(this.numberingClass(numbering.id, numbering.level));
+            }
+            if (elem.direction == "rtl") {
+                result.style.direction = "rtl";
             }
             return result;
         }
