@@ -2438,6 +2438,11 @@
                     case "lang":
                         style["$lang"] = globalXmlParser.attr(c, "val");
                         break;
+                    case "rtl":
+                    case "bidi":
+                        if (globalXmlParser.boolAttr(c, "val", true))
+                            style["direction"] = "rtl";
+                        break;
                     case "bCs":
                     case "iCs":
                     case "szCs":
@@ -2526,9 +2531,9 @@
             if (hanging)
                 style["text-indent"] = `-${hanging}`;
             if (left || start)
-                style["margin-left"] = left || start;
+                style["margin-inline-start"] = left || start;
             if (right || end)
-                style["margin-right"] = right || end;
+                style["margin-inline-end"] = right || end;
         }
         parseSpacing(node, style) {
             var before = globalXmlParser.lengthAttr(node, "before");

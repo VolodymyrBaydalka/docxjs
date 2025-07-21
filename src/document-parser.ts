@@ -1346,7 +1346,13 @@ export class DocumentParser {
 				case "lang":
 					style["$lang"] = xml.attr(c, "val");
 					break;
-	
+
+				case "rtl":
+				case "bidi":
+					if (xml.boolAttr(c, "val", true))
+						style["direction"] = "rtl";
+					break;
+
 				case "bCs":
 				case "iCs":
 				case "szCs":
@@ -1450,8 +1456,8 @@ export class DocumentParser {
 
 		if (firstLine) style["text-indent"] = firstLine;
 		if (hanging) style["text-indent"] = `-${hanging}`;
-		if (left || start) style["margin-left"] = left || start;
-		if (right || end) style["margin-right"] = right || end;
+		if (left || start) style["margin-inline-start"] = left || start;
+		if (right || end) style["margin-inline-end"] = right || end;
 	}
 
 	parseSpacing(node: Element, style: Record<string, string>) {
