@@ -1044,8 +1044,20 @@ section.${c}>footer { z-index: 1; }
 
 	renderImage(elem: IDomImage) {
 		let result = this.createElement("img");
+		let transform = elem.cssStyle?.transform;
 
 		this.renderStyleValues(elem.cssStyle, result);
+
+		if (elem.srcRect && elem.srcRect.some(x => x != 0)) {
+			var [left, top, right, bottom] = elem.srcRect;
+			transform = `scale(${1 / (1 - left - right)}, ${1 / (1 - top - bottom)})`;
+			result.style['clip-path'] = `rect(${(100 * top).toFixed(2)}% ${(100 * (1 - right)).toFixed(2)}% ${(100 * (1 - bottom)).toFixed(2)}% ${(100 * left).toFixed(2)}%)`;
+		}
+
+		if (elem.rotation)
+			transform = `rotate(${elem.rotation}deg) ${transform ?? ''}`;
+
+		result.style.transform = transform?.trim();
 
 		if (this.document) {
 			this.tasks.push(this.document.loadDocumentImage(elem.src, this.currentPart).then(x => {

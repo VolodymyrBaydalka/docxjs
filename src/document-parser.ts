@@ -950,25 +950,39 @@ export class DocumentParser {
 		var result = <IDomImage>{ type: DomType.Image, src: "", cssStyle: {} };
 		var blipFill = xml.element(elem, "blipFill");
 		var blip = xml.element(blipFill, "blip");
+		var srcRect = xml.element(blipFill, "srcRect");
 
 		result.src = xml.attr(blip, "embed");
+
+		if (srcRect) {
+			result.srcRect = [
+				xml.intAttr(srcRect, "l", 0) / 100000,
+				xml.intAttr(srcRect, "t", 0) / 100000,
+				xml.intAttr(srcRect, "r", 0) / 100000,
+				xml.intAttr(srcRect, "b", 0) / 100000,
+			];
+		}
 
 		var spPr = xml.element(elem, "spPr");
 		var xfrm = xml.element(spPr, "xfrm");
 
-		result.cssStyle["position"] = "relative";
+		result.cssStyle["position"] = "relative"; 
 
-		for (var n of xml.elements(xfrm)) {
-			switch (n.localName) {
-				case "ext":
-					result.cssStyle["width"] = xml.lengthAttr(n, "cx", LengthUsage.Emu);
-					result.cssStyle["height"] = xml.lengthAttr(n, "cy", LengthUsage.Emu);
-					break;
+		if (xfrm) {
+			result.rotation = xml.intAttr(xfrm, "rot", 0) / 60000;
 
-				case "off":
-					result.cssStyle["left"] = xml.lengthAttr(n, "x", LengthUsage.Emu);
-					result.cssStyle["top"] = xml.lengthAttr(n, "y", LengthUsage.Emu);
-					break;
+			for (var n of xml.elements(xfrm)) {
+				switch (n.localName) {
+					case "ext":
+						result.cssStyle["width"] = xml.lengthAttr(n, "cx", LengthUsage.Emu);
+						result.cssStyle["height"] = xml.lengthAttr(n, "cy", LengthUsage.Emu);
+						break;
+
+					case "off":
+						result.cssStyle["left"] = xml.lengthAttr(n, "x", LengthUsage.Emu);
+						result.cssStyle["top"] = xml.lengthAttr(n, "y", LengthUsage.Emu);
+						break;					
+				}
 			}
 		}
 
@@ -1086,6 +1100,7 @@ export class DocumentParser {
 					break;
 
 				case "trPr":
+				case "tblPrEx":					
 					this.parseTableRowProperties(c, result);
 					break;
 			}
