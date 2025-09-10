@@ -19,8 +19,8 @@
   "devDependencies": {
     "rollup": "^4.9.1",
     "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^11.1.5",
-    "diff": "^5.0.0",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "diff": "^8.0.2",
     "jasmine-core": "^5.1.0",
     "karma": "^6.3.9",
     "karma-chrome-launcher": "^3.1.0",

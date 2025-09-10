@@ -203,16 +203,17 @@ export class WordDocument {
 	}
 }
 
-export function deobfuscate(data: Uint8Array, guidKey: string): Uint8Array {
+export function deobfuscate(data: Uint8Array, guidKey: string) {
 	const len = 16;
 	const trimmed = guidKey.replace(/{|}|-/g, "");
 	const numbers = new Array(len);
 
 	for (let i = 0; i < len; i++)
-		numbers[len - i - 1] = parseInt(trimmed.substr(i * 2, 2), 16);
+		numbers[len - i - 1] = parseInt(trimmed.substring(i * 2, i * 2 + 2), 16);
 
 	for (let i = 0; i < 32; i++)
 		data[i] = data[i] ^ numbers[i % len]
 
-	return data;
+	// FIXME: return type
+	return data as any;
 }

@@ -127,7 +127,7 @@ export class DocumentParser {
 	parseBodyElements(element: Element): OpenXmlElement[] {
 		var children = [];
 
-		for (let elem of xml.elements(element)) {
+		for (const elem of xml.elements(element)) {
 			switch (elem.localName) {
 				case "p":
 					children.push(this.parseParagraph(elem));
@@ -136,7 +136,7 @@ export class DocumentParser {
 				case "altChunk":
 					children.push(this.parseAltChunk(elem));
 					break;
-	
+
 				case "tbl":
 					children.push(this.parseTable(elem));
 					break;
@@ -153,7 +153,7 @@ export class DocumentParser {
 	parseStylesFile(xstyles: Element): IDomStyle[] {
 		var result = [];
 
-		xmlUtil.foreach(xstyles, n => {
+		for (const n of xml.elements(xstyles)) {
 			switch (n.localName) {
 				case "style":
 					result.push(this.parseStyle(n));
@@ -163,7 +163,7 @@ export class DocumentParser {
 					result.push(this.parseDefaultStyles(n));
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -177,7 +177,7 @@ export class DocumentParser {
 			styles: []
 		};
 
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)){
 			switch (c.localName) {
 				case "rPrDefault":
 					var rPr = xml.element(c, "rPr");
@@ -199,7 +199,7 @@ export class DocumentParser {
 						});
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -222,7 +222,7 @@ export class DocumentParser {
 			//case "numbering": result.target = "p"; break;
 		}
 
-		xmlUtil.foreach(node, n => {
+		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "basedOn":
 					result.basedOn = xml.attr(n, "val");
@@ -286,7 +286,7 @@ export class DocumentParser {
 				default:
 					this.options.debug && console.warn(`DOCX: Unknown style element: ${n.localName}`);
 			}
-		});
+		}
 
 		return result;
 	}
@@ -334,7 +334,7 @@ export class DocumentParser {
 			default: return [];
 		}
 
-		xmlUtil.foreach(node, n => {
+		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "pPr":
 					result.push({
@@ -361,17 +361,17 @@ export class DocumentParser {
 					});
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
 
-	parseNumberingFile(xnums: Element): IDomNumbering[] {
+	parseNumberingFile(node: Element): IDomNumbering[] {
 		var result = [];
 		var mapping = {};
 		var bullets = [];
 
-		xmlUtil.foreach(xnums, n => {
+		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "abstractNum":
 					this.parseAbstractNumbering(n, bullets)
@@ -388,7 +388,7 @@ export class DocumentParser {
 					mapping[abstractNumId] = numId;
 					break;
 			}
-		});
+		}
 
 		result.forEach(x => x.id = mapping[x.id]);
 
@@ -411,13 +411,13 @@ export class DocumentParser {
 		var result = [];
 		var id = xml.attr(node, "abstractNumId");
 
-		xmlUtil.foreach(node, n => {
+		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "lvl":
 					result.push(this.parseNumberingLevel(id, n, bullets));
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -433,7 +433,7 @@ export class DocumentParser {
 			suff: "tab"
 		};
 
-		xmlUtil.foreach(node, n => {
+		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "start":
 					result.start = xml.intAttr(n, "val");
@@ -448,8 +448,8 @@ export class DocumentParser {
 					break;
 
 				case "lvlPicBulletId":
-					var id = xml.intAttr(n, "val");
-					result.bullet = bullets.find(x => x?.id == id);
+					var bulletId = xml.intAttr(n, "val");
+					result.bullet = bullets.find(x => x?.id == bulletId);
 					break;
 
 				case "lvlText":
@@ -468,7 +468,7 @@ export class DocumentParser {
 					result.suff = xml.attr(n, "val");
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -479,15 +479,15 @@ export class DocumentParser {
 	}
 
 	parseInserted(node: Element, parentParser: Function): OpenXmlElement {
-		return <OpenXmlElement>{ 
-			type: DomType.Inserted, 
+		return <OpenXmlElement>{
+			type: DomType.Inserted,
 			children: parentParser(node)?.children ?? []
 		};
 	}
 
 	parseDeleted(node: Element, parentParser: Function): OpenXmlElement {
-		return <OpenXmlElement>{ 
-			type: DomType.Deleted, 
+		return <OpenXmlElement>{
+			type: DomType.Deleted,
 			children: parentParser(node)?.children ?? []
 		};
 	}
@@ -512,7 +512,7 @@ export class DocumentParser {
 				case "hyperlink":
 					result.children.push(this.parseHyperlink(el, result));
 					break;
-				
+
 				case "smartTag":
 					result.children.push(this.parseSmartTag(el, result));
 					break;
@@ -528,7 +528,7 @@ export class DocumentParser {
 				case "commentRangeStart":
 					result.children.push(new WmlCommentRangeStart(xml.attr(el, "id")));
 					break;
-	
+
 				case "commentRangeEnd":
 					result.children.push(new WmlCommentRangeEnd(xml.attr(el, "id")));
 					break;
@@ -594,21 +594,21 @@ export class DocumentParser {
 
 	parseHyperlink(node: Element, parent?: OpenXmlElement): WmlHyperlink {
 		var result: WmlHyperlink = <WmlHyperlink>{ type: DomType.Hyperlink, parent: parent, children: [] };
-		
+
 		result.anchor = xml.attr(node, "anchor");
 		result.id = xml.attr(node, "id");
 
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "r":
 					result.children.push(this.parseRun(c, result));
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
-	
+
 	parseSmartTag(node: Element, parent?: OpenXmlElement): WmlSmartTag {
 		var result: WmlSmartTag = { type: DomType.SmartTag, parent, children: [] };
 		var uri = xml.attr(node, "uri");
@@ -620,13 +620,13 @@ export class DocumentParser {
 		if (element)
 			result.element = element;
 
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "r":
 					result.children.push(this.parseRun(c, result));
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -634,7 +634,7 @@ export class DocumentParser {
 	parseRun(node: Element, parent?: OpenXmlElement): WmlRun {
 		var result: WmlRun = <WmlRun>{ type: DomType.Run, parent: parent, children: [] };
 
-		xmlUtil.foreach(node, c => {
+		for (let c of xml.elements(node)) {
 			c = this.checkAlternateContent(c);
 
 			switch (c.localName) {
@@ -742,7 +742,7 @@ export class DocumentParser {
 					this.parseRunProperties(c, result);
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -886,7 +886,7 @@ export class DocumentParser {
 							pos.align = alignNode.textContent;
 
 						if (offsetNode)
-							pos.offset = xmlUtil.sizeValue(offsetNode, LengthUsage.Emu);
+							pos.offset = convertLength(offsetNode.textContent, LengthUsage.Emu);
 					}
 					break;
 
@@ -966,7 +966,7 @@ export class DocumentParser {
 		var spPr = xml.element(elem, "spPr");
 		var xfrm = xml.element(spPr, "xfrm");
 
-		result.cssStyle["position"] = "relative"; 
+		result.cssStyle["position"] = "relative";
 
 		if (xfrm) {
 			result.rotation = xml.intAttr(xfrm, "rot", 0) / 60000;
@@ -981,7 +981,7 @@ export class DocumentParser {
 					case "off":
 						result.cssStyle["left"] = xml.lengthAttr(n, "x", LengthUsage.Emu);
 						result.cssStyle["top"] = xml.lengthAttr(n, "y", LengthUsage.Emu);
-						break;					
+						break;
 				}
 			}
 		}
@@ -992,7 +992,7 @@ export class DocumentParser {
 	parseTable(node: Element): WmlTable {
 		var result: WmlTable = { type: DomType.Table, children: [] };
 
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "tr":
 					result.children.push(this.parseTableRow(c));
@@ -1006,7 +1006,7 @@ export class DocumentParser {
 					this.parseTableProperties(c, result);
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -1014,13 +1014,13 @@ export class DocumentParser {
 	parseTableColumns(node: Element): WmlTableColumn[] {
 		var result = [];
 
-		xmlUtil.foreach(node, n => {
+		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "gridCol":
 					result.push({ width: xml.lengthAttr(n, "w") });
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -1051,7 +1051,7 @@ export class DocumentParser {
 					table.rowBandSize = xml.intAttr(c, "val");
 					break;
 
-					
+
 				case "hidden":
 					table.cssStyle["display"] = "none";
 					break;
@@ -1093,18 +1093,18 @@ export class DocumentParser {
 	parseTableRow(node: Element): WmlTableRow {
 		var result: WmlTableRow = { type: DomType.Row, children: [] };
 
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "tc":
 					result.children.push(this.parseTableCell(c));
 					break;
 
 				case "trPr":
-				case "tblPrEx":					
+				case "tblPrEx":
 					this.parseTableRowProperties(c, result);
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -1139,7 +1139,7 @@ export class DocumentParser {
 	parseTableCell(node: Element): OpenXmlElement {
 		var result: WmlTableCell = { type: DomType.Cell, children: [] };
 
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "tbl":
 					result.children.push(this.parseTable(c));
@@ -1153,7 +1153,7 @@ export class DocumentParser {
 					this.parseTableCellProperties(c, result);
 					break;
 			}
-		});
+		}
 
 		return result;
 	}
@@ -1199,22 +1199,22 @@ export class DocumentParser {
 			}
 		};
 
-		xmlUtil.foreach(elem, c => {
+		for (const c of xml.elements(elem)) {
 			if (c.localName === "textDirection") {
 				const direction = xml.attr(c, "val");
-				const style = directionMap[direction] || {writingMode: "horizontal-tb"};
+				const style = directionMap[direction] || { writingMode: "horizontal-tb" };
 				cell.cssStyle["writing-mode"] = style.writingMode;
 				cell.cssStyle["transform"] = style.transform;
 			}
-		});
+		}
 	}
 
 	parseDefaultProperties(elem: Element, style: Record<string, string> = null, childStyle: Record<string, string> = null, handler: (prop: Element) => boolean = null): Record<string, string> {
 		style = style || {};
 
-		xmlUtil.foreach(elem, c => {
+		for (const c of xml.elements(elem)) {
 			if (handler?.(c))
-				return;
+				continue;
 
 			switch (c.localName) {
 				case "jc":
@@ -1393,7 +1393,7 @@ export class DocumentParser {
 						console.warn(`DOCX: Unknown document element: ${elem.localName}.${c.localName}`);
 					break;
 			}
-		});
+		}
 
 		return style;
 	}
@@ -1502,7 +1502,7 @@ export class DocumentParser {
 	}
 
 	parseMarginProperties(node: Element, output: Record<string, string>) {
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "left":
 					output["padding-left"] = values.valueOfMargin(c);
@@ -1520,7 +1520,7 @@ export class DocumentParser {
 					output["padding-bottom"] = values.valueOfMargin(c);
 					break;
 			}
-		});
+		}
 	}
 
 	parseTrHeight(node: Element, output: Record<string, string>) {
@@ -1539,7 +1539,7 @@ export class DocumentParser {
 	}
 
 	parseBorderProperties(node: Element, output: Record<string, string>) {
-		xmlUtil.foreach(node, c => {
+		for (const c of xml.elements(node)) {
 			switch (c.localName) {
 				case "start":
 				case "left":
@@ -1559,22 +1559,13 @@ export class DocumentParser {
 					output["border-bottom"] = values.valueOfBorder(c);
 					break;
 			}
-		});
+		}
 	}
 }
 
 const knownColors = ['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'];
 
 class xmlUtil {
-	static foreach(node: Element, cb: (n: Element) => void) {
-		for (var i = 0; i < node.childNodes.length; i++) {
-			let n = node.childNodes[i];
-
-			if (n.nodeType == Node.ELEMENT_NODE)
-				cb(<Element>n);
-		}
-	}
-
 	static colorAttr(node: Element, attrName: string, defValue: string = null, autoColor: string = 'black') {
 		var v = xml.attr(node, attrName);
 
@@ -1591,10 +1582,6 @@ class xmlUtil {
 		var themeColor = xml.attr(node, "themeColor");
 
 		return themeColor ? `var(--docx-${themeColor}-color)` : defValue;
-	}
-
-	static sizeValue(node: Element, type: LengthUsageType = LengthUsage.Dxa) {
-		return convertLength(node.textContent, type);
 	}
 }
 

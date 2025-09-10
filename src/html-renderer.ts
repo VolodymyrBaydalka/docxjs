@@ -970,7 +970,7 @@ section.${c}>footer { z-index: 1; }
 		const rng = new Range();
 		this.commentHighlight?.add(rng);
 
-		const result = this.htmlDocument.createComment(`start of comment #${commentStart.id}`);
+		const result = this.createComment(`start of comment #${commentStart.id}`);
 		this.later(() => rng.setStart(result, 0));
 		this.commentMap[commentStart.id] = rng;
 
@@ -982,7 +982,7 @@ section.${c}>footer { z-index: 1; }
 			return null;
 
 		const rng = this.commentMap[commentEnd.id];
-		const result = this.htmlDocument.createComment(`end of comment #${commentEnd.id}`);
+		const result = this.createComment(`end of comment #${commentEnd.id}`);
 		this.later(() => rng?.setEnd(result, 0));
 
 		return result;
@@ -1003,7 +1003,7 @@ section.${c}>footer { z-index: 1; }
 
 		this.renderCommentContent(comment, commentsContainerEl);
 
-		frg.appendChild(this.htmlDocument.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`));
+		frg.appendChild(this.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`));
 		frg.appendChild(commentRefEl);
 		frg.appendChild(commentsContainerEl);
 
@@ -1073,7 +1073,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderDeletedText(elem: WmlText) {
-		return this.options.renderEndnotes ? this.htmlDocument.createTextNode(elem.text) : null;
+		return this.options.renderChanges ? this.renderText(elem) : null;
 	}
 
 	renderBreak(elem: WmlBreak) {
