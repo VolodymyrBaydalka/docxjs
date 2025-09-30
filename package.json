@@ -1,6 +1,6 @@
 {
   "name": "docx-preview",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "license": "Apache-2.0",
   "keywords": [
     "word",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zVolodymyr/docxjs.git"
+    "url": "git+https://github.com/VolodymyrBaydalka/docxjs.git"
   },
   "dependencies": {
     "jszip": ">=3.0.0"

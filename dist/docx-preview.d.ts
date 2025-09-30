@@ -1,3 +1,9 @@
+/*
+ * @license
+ * docx-preview <https://github.com/VolodymyrBaydalka/docxjs>
+ * Released under Apache License 2.0  <https://github.com/VolodymyrBaydalka/docxjs/blob/master/LICENSE>
+ * Copyright Volodymyr Baydalka
+ */
 export interface Options {
     inWrapper: boolean;
     hideWrapperOnPrint: boolean;

@@ -1,14 +1,24 @@
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 
+const output = {
+	banner: `/*
+ * @license
+ * docx-preview <https://github.com/VolodymyrBaydalka/docxjs>
+ * Released under Apache License 2.0  <https://github.com/VolodymyrBaydalka/docxjs/blob/master/LICENSE>
+ * Copyright Volodymyr Baydalka
+ */`,
+	sourcemap: true,
+}
+
 const umdOutput = {
+	...output,
 	name: "docx",
 	file: 'dist/docx-preview.js',
-	sourcemap: true,
 	format: 'umd',
 	globals: {
 		jszip: 'JSZip'
-	}
+	},
 };
 
 export default args => {
@@ -26,13 +36,13 @@ export default args => {
 				plugins: [terser()]
 			},
 			{
+				...output,
 				file: 'dist/docx-preview.mjs',
-				sourcemap: true,
 				format: 'es',
 			},
 			{
+				...output,
 				file: 'dist/docx-preview.min.mjs',
-				sourcemap: true,
 				format: 'es',
 				plugins: [terser()]
 			}];
