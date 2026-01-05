@@ -18,6 +18,7 @@ import { SettingsPart } from "./settings/settings-part";
 import { CustomPropsPart } from "./document-props/custom-props-part";
 import { CommentsPart } from "./comments/comments-part";
 import { CommentsExtendedPart } from "./comments/comments-extended-part";
+import { ChartPart } from "./chart/chart-part";
 
 const topLevelRels = [
 	{ type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
@@ -34,6 +35,7 @@ export class WordDocument {
 	rels: Relationship[];
 	parts: Part[] = [];
 	partsMap: Record<string, Part> = {};
+	chartPartsMap: Record<string, Part> = {};
 
 	documentPart: DocumentPart;
 	fontTablePart: FontTablePart;
@@ -60,6 +62,14 @@ export class WordDocument {
 			const r = d.rels.find(x => x.type === rel.type) ?? rel; //fallback                    
 			return d.loadRelationshipPart(r.target, r.type);
 		}));
+
+		if (Object.keys(d.chartPartsMap).length > 0) {
+			d.documentPart.setParserExtraData(
+				d.documentPart.rels,
+				d.chartPartsMap
+			);
+			await d.documentPart.load();
+		}
 
 		return d;
 	}
@@ -136,6 +146,11 @@ export class WordDocument {
 
 			case RelationshipTypes.CommentsExtended:
 				this.commentsExtendedPart = part = new CommentsExtendedPart(this._package, path);
+				break;
+				
+			case RelationshipTypes.Chart:
+				part = new ChartPart(this._package, path, this._parser);
+				this.chartPartsMap[path] = part;
 				break;
 		}
 

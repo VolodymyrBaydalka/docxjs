@@ -1,6 +1,6 @@
 import {
 	DomType, WmlTable, IDomNumbering,
-	WmlHyperlink, WmlSmartTag, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell,
+	WmlHyperlink, WmlSmartTag, IDomImage, IDomChart, OpenXmlElement, WmlTableColumn, WmlTableCell,
 	WmlTableRow, NumberingPicBullet, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
 	WmlAltChunk
 } from './document/dom';
@@ -16,6 +16,10 @@ import { convertLength, LengthUsage, LengthUsageType } from './document/common';
 import { parseVmlElement } from './vml/vml';
 import { WmlComment, WmlCommentRangeEnd, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
 import { encloseFontFamily } from './utils';
+import { ChartElement, Chart, Ser } from "./chart/chart";
+import { Relationship } from "./common/relationship";
+import { Part } from "./common/part";
+import { ChartPart } from "./chart/chart-part";
 
 export var autos = {
 	shd: "inherit",
@@ -54,20 +58,30 @@ const mmlTagMap = {
 	"groupChr": DomType.MmlGroupChar
 }
 
+const titlePath = ["title", "tx", "rich", "p", "r", "t"];
+
+const serTitlePath = ["tx", "strRef", "strCache", "pt", "v"];
+
 export interface DocumentParserOptions {
 	ignoreWidth: boolean;
 	debug: boolean;
+    renderCharts: Record<string, (chart: ChartElement) => IDomChart>,
 }
 
 export class DocumentParser {
 	options: DocumentParserOptions;
+	documentRels: Relationship[];
+	chartPartsMap: Record<string, Part>;
 
 	constructor(options?: Partial<DocumentParserOptions>) {
 		this.options = {
 			ignoreWidth: false,
 			debug: false,
+			renderCharts: {},
 			...options
 		};
+		this.documentRels = [];
+		this.chartPartsMap = {};
 	}
 
 	parseNotes(xmlDoc: Element, elemName: string, elemClass: any): any[] {
@@ -940,6 +954,8 @@ export class DocumentParser {
 			switch (n.localName) {
 				case "pic":
 					return this.parsePicture(n);
+				case "chart":
+					return this.parseChart(n);
 			}
 		}
 
@@ -986,6 +1002,50 @@ export class DocumentParser {
 			}
 		}
 
+		return result;
+	}
+
+	parseChartElement(element: Element, path: string): ChartElement {
+		const key = path.split("/").pop().split(".").shift();
+		const chart = xml.element(element, "chart");
+
+		const title = xmlUtil.deepFind(chart, titlePath);
+		const plotArea = xml.element(chart, "plotArea");
+		const catAx = xmlUtil.deepFind(plotArea, ["catAx", ...titlePath]);
+		const valAx = xmlUtil.deepFind(plotArea, ["valAx", ...titlePath]);
+		const charts = xml
+			.elements(plotArea)
+			.filter((el) => xml.element(el, "ser") != null);
+
+		return {
+			key: key,
+			title: xmlUtil.getTextContent(title),
+			catAx: xmlUtil.getTextContent(catAx),
+			valAx: xmlUtil.getTextContent(valAx),
+			chartList: charts.map((chart) => xmlUtil.getChartInfo(chart)),
+		};
+	}
+
+	parseChart(elem: Element): IDomChart {
+		// Get the ID
+		const id = xml.attr(elem, "id");
+		const rel = this.documentRels.find((x) => x.id == id);
+		if (rel == null) {
+			return;
+		}
+		// Get the chartPart
+		const chartPart = this.chartPartsMap[`word/${rel.target}`];
+		if (chartPart == null) {
+			return;
+		}
+		const { chart } = chartPart as ChartPart;
+		// Get the corresponding chart rendering method
+		const renderChart = chartUtil.getRenderChart(this.options.renderCharts, chart);
+		if (renderChart == null) {
+			return;
+		}
+		const result = renderChart(chart) ?? <IDomChart>{ cssStyle: {} };
+		result.type = DomType.Chart;
 		return result;
 	}
 
@@ -1583,6 +1643,60 @@ class xmlUtil {
 
 		return themeColor ? `var(--docx-${themeColor}-color)` : defValue;
 	}
+	static deepFind(elem: Element, path: string[]): Element {
+		if (path.length == 0) {
+			return null;
+		}
+		let currentElem = elem;
+		for (const localName of path) {
+			currentElem = xml.element(currentElem, localName);
+			if (currentElem == null) {
+				return null;
+			}
+		}
+		return currentElem;
+	}
+
+	static getTextContent(elem?: Element): string {
+		return elem != null ? elem.textContent : "";
+	}
+
+	static getChartInfo(elem: Element): Chart {
+		const chartType = elem.localName;
+		const serElements = xml
+			.elements(elem)
+			.filter((el) => el.localName === "ser");
+		const serList: Ser[] = [];
+		for (const serElement of serElements) {
+			const title = this.deepFind(serElement, serTitlePath);
+			const catDataNode = this.deepFind(serElement, [
+				"cat",
+				"strRef",
+				"strCache",
+			]);
+			const valDataNode = this.deepFind(serElement, [
+				"val",
+				"numRef",
+				"numCache",
+			]);
+			serList.push({
+				title: this.getTextContent(title),
+				catList: this.getDataList(catDataNode),
+				valList: this.getDataList(valDataNode),
+			});
+		}
+		return { type: chartType, serList: serList };
+	}
+
+	static getDataList(dataNode?: Element): string[] {
+		if (dataNode == null) {
+			return [];
+		}
+		return xml
+			.elements(dataNode)
+			.filter((el) => el.localName === "pt")
+			.map((el) => this.getTextContent(xml.element(el, "v")));
+	}
 }
 
 class values {
@@ -1728,5 +1842,38 @@ class values {
 		if (xml.boolAttr(c, "noVBand") || (val & 0x0400)) className += " no-vband";
 
 		return className.trim();
+	}
+}
+
+class chartUtil {
+	static getRenderChart(
+		renderCharts: Record<string, (chart: ChartElement) => IDomChart>,
+		chart: ChartElement
+	): (chart: ChartElement) => IDomChart {
+		const { key, chartList = [] } = chart;
+		if (renderCharts[key]) {
+			return renderCharts[key];
+		}
+		// Determine if it is a non-combined chart based on the number of chartList items. More than 1 means it is a non-combined chart.
+		if (chartList.length === 1) {
+			const chart = chartList[0];
+			const { type } = chart;
+			// For non-combined charts, get the rendering method from renderCharts based on the chart type.
+			if (renderCharts[type]) {
+				return renderCharts[type];
+			} else {
+				// If no corresponding rendering method for the chart type is found, use the default render method.
+				if (renderCharts["defaultRender"]) {
+					return renderCharts["defaultRender"];
+				}
+			}
+		} else if (chartList.length > 1) {
+			// For combined charts, get the rendering method with the key "mixedChart" from renderCharts.
+			if (renderCharts["mixedChart"]) {
+				return renderCharts["mixedChart"];
+			}
+		} else {
+			return null;
+		}
 	}
 }
