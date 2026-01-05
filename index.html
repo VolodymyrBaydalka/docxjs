@@ -70,7 +70,18 @@
         const docxOptions = Object.assign(docx.defaultOptions, {
             debug: true,
             experimental: true,
-            hideWrapperOnPrint: true
+            hideWrapperOnPrint: true,
+            renderCharts: {
+              defaultRender: (chart) => {
+                const {key, title, catAx, valAx, chartList} = chart;
+                const element = document.createElement("div");
+                element.textContent = title;
+                // just render chart title for demo
+                return {
+                  child: element,
+                };
+              },
+            },
         });
 
         const container = document.querySelector("#document-container");

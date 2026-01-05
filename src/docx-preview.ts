@@ -1,6 +1,8 @@
 import { WordDocument } from './word-document';
 import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
+import { ChartElement } from './chart/chart';
+import { IDomChart } from './document/dom';
 
 export interface Options {
     inWrapper: boolean;
@@ -22,6 +24,7 @@ export interface Options {
 	renderChanges: boolean;
     renderComments: boolean;
     renderAltChunks: boolean;
+	renderCharts: Record<string, (chart: ChartElement) => IDomChart>;
 }
 
 export const defaultOptions: Options = {
@@ -43,7 +46,8 @@ export const defaultOptions: Options = {
 	useBase64URL: false,
 	renderChanges: false,
     renderComments: false,
-    renderAltChunks: true
+    renderAltChunks: true,
+	renderCharts: {}
 }
 
 export function parseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {

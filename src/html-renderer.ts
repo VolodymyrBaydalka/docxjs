@@ -1,7 +1,7 @@
 import { WordDocument } from './word-document';
 import {
 	DomType, WmlTable, IDomNumbering,
-	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
+	WmlHyperlink, IDomImage, IDomChart, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
 	WmlSmartTag,
 	WmlAltChunk,
 	WmlTableRow
@@ -878,6 +878,9 @@ section.${c}>footer { z-index: 1; }
 
 			case DomType.AltChunk:
 				return this.renderAltChunk(elem);
+				
+			case DomType.Chart:
+				return this.renderChart(elem as IDomChart);
 		}
 
 		return null;
@@ -1403,6 +1406,16 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
+	renderChart(elem: IDomChart) {
+		let result = this.createElement("div");
+		this.renderStyleValues(elem.cssStyle, result);
+	
+		if (elem.child) {
+			result.appendChild(elem.child);
+
+		}
+		return result;
+	}
 
 	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
 		for (let k in style) {

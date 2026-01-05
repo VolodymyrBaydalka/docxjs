@@ -60,7 +60,8 @@ export enum DomType {
 	CommentReference = "commentReference",
 	CommentRangeStart = "commentRangeStart",
 	CommentRangeEnd = "commentRangeEnd",
-    AltChunk = "altChunk"
+    AltChunk = "altChunk",
+	Chart = "chart"
 }
 
 export interface OpenXmlElement {
@@ -164,4 +165,8 @@ export interface NumberingPicBullet {
     id: number;
     src: string;
     style?: string;
+}
+
+export interface IDomChart extends OpenXmlElement {
+    child: Node;
 }

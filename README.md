@@ -62,6 +62,20 @@ renderAsync(
         renderEndnotes: true, //enables endnotes rendering
         renderComments: false, //enables experimental comments rendering
         renderAltChunks: true, //enables altChunks (html parts) rendering
+        /**
+         * Specifies the chart rendering method (e.g., chart1)
+         * chart1: (chart: ChartElement) => IDomChart
+         * 
+         * Line chart rendering method (non-combined chart)
+         * lineChart: (chart: ChartElement) => IDomChart
+         * 
+         * Default rendering method (non-combined chart)
+         * defaultRender: (chart: ChartElement) => IDomChart
+         * 
+         * Mixed chart rendering method
+         * mixedChart: (chart: ChartElement) => IDomChart
+         */
+        renderCharts: Record<string, (chart: ChartElement) => IDomChart>, // Your own chart rendering method implementation, only chart data is provided
         debug: boolean = false, //enables additional logging
     }): Promise<WordDocument>
 

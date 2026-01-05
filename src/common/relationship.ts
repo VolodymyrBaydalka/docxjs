@@ -27,7 +27,8 @@ export enum RelationshipTypes {
 	CustomProperties = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties",
 	Comments = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
     CommentsExtended = "http://schemas.microsoft.com/office/2011/relationships/commentsExtended",
-    AltChunk = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk"
+    AltChunk = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk",
+	Chart = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 }
 
 export function parseRelationships(root: Element, xml: XmlParser): Relationship[] {
