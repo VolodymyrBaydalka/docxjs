@@ -625,6 +625,9 @@ export class DocumentParser {
 				case "r":
 					result.children.push(this.parseRun(c, result));
 					break;
+				case "smartTag":
+					result.children.push(this.parseSmartTag(c, result));
+					break;
 			}
 		}
 
