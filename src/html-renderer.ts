@@ -23,11 +23,7 @@ import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import { VmlElement } from './vml/vml';
 import { WmlComment, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
-
-const ns = {
-	svg: "http://www.w3.org/2000/svg",
-	mathML: "http://www.w3.org/1998/Math/MathML"
-}
+import { h, ns } from './html';
 
 interface CellPos {
 	col: number;
@@ -72,15 +68,14 @@ export class HtmlRenderer {
 
 	tasks: Promise<any>[] = [];
 	postRenderTasks: any[] = [];
+	h = h;
 
-	constructor(public htmlDocument: Document) {
-	}
-
-	async render(document: WordDocument, bodyContainer: HTMLElement, styleContainer: HTMLElement = null, options: Options) {
+	async render(document: WordDocument, options: Options): Promise<Node[]> {
 		this.document = document;
 		this.options = options;
 		this.className = options.className;
 		this.rootSelector = options.inWrapper ? `.${this.className}-wrapper` : ':root';
+		this.h = options.h ?? h;
 		this.styleMap = null;
 		this.tasks = [];
 
@@ -88,32 +83,22 @@ export class HtmlRenderer {
 			this.commentHighlight = new Highlight();
 		}
 
-		styleContainer = styleContainer || bodyContainer;
-
-		removeAllElements(styleContainer);
-		removeAllElements(bodyContainer);
-
-		styleContainer.appendChild(this.createComment("docxjs library predefined styles"));
-		styleContainer.appendChild(this.renderDefaultStyle());
+		const result: Node[] = [...this.renderDefaultStyle()];
 
 		if (document.themePart) {
-			styleContainer.appendChild(this.createComment("docxjs document theme values"));
-			this.renderTheme(document.themePart, styleContainer);
+			result.push(...this.renderTheme(document.themePart));
 		}
 
 		if (document.stylesPart != null) {
 			this.styleMap = this.processStyles(document.stylesPart.styles);
-
-			styleContainer.appendChild(this.createComment("docxjs document styles"));
-			styleContainer.appendChild(this.renderStyles(document.stylesPart.styles));
+			result.push(...this.renderStyles(document.stylesPart.styles));
 		}
 
 		if (document.numberingPart) {
 			this.prodessNumberings(document.numberingPart.domNumberings);
 
-			styleContainer.appendChild(this.createComment("docxjs document numbering styles"));
-			styleContainer.appendChild(this.renderNumbering(document.numberingPart.domNumberings, styleContainer));
-			//styleContainer.appendChild(this.renderNumbering2(document.numberingPart, styleContainer));
+			result.push(...await this.renderNumbering(document.numberingPart.domNumberings));
+			//result.push(...await this.renderNumbering2(document.numberingPart.domNumberings));
 		}
 
 		if (document.footnotesPart) {
@@ -129,14 +114,14 @@ export class HtmlRenderer {
 		}
 
 		if (!options.ignoreFonts && document.fontTablePart)
-			this.renderFontTable(document.fontTablePart, styleContainer);
+			result.push(...await this.renderFontTable(document.fontTablePart));
 
 		var sectionElements = this.renderSections(document.documentPart.body);
 
 		if (this.options.inWrapper) {
-			bodyContainer.appendChild(this.renderWrapper(sectionElements));
+			result.push(this.renderWrapper(sectionElements));
 		} else {
-			appendChildren(bodyContainer, sectionElements);
+			result.push(...sectionElements);
 		}
 
 		if (this.commentHighlight && options.renderComments) {
@@ -148,9 +133,11 @@ export class HtmlRenderer {
 		await Promise.allSettled(this.tasks);
 
 		this.refreshTabStops();
+
+		return result;
 	}
 
-	renderTheme(themePart: ThemePart, styleContainer: HTMLElement) {
+	renderTheme(themePart: ThemePart) {
 		const variables = {};
 		const fontScheme = themePart.theme?.fontScheme;
 
@@ -173,13 +160,19 @@ export class HtmlRenderer {
 		}
 
 		const cssText = this.styleToString(`.${this.className}`, variables);
-		styleContainer.appendChild(this.createStyleElement(cssText));
+		return [
+			this.createComment("docxjs document theme values"),
+			this.createStyleElement(cssText)
+		];
 	}
 
-	renderFontTable(fontsPart: FontTablePart, styleContainer: HTMLElement) {
+	async renderFontTable(fontsPart: FontTablePart) {
+		const result = [];
+
 		for (let f of fontsPart.fonts) {
 			for (let ref of f.embedFontRefs) {
-				this.tasks.push(this.document.loadFont(ref.id, ref.key).then(fontData => {
+				try{
+					const fontData = await this.document.loadFont(ref.id, ref.key);
 					const cssValues = {
 						'font-family': encloseFontFamily(f.name),
 						'src': `url(${fontData})`
@@ -193,12 +186,15 @@ export class HtmlRenderer {
 						cssValues['font-style'] = 'italic';
 					}
 
-					const cssText = this.styleToString("@font-face", cssValues);
-					styleContainer.appendChild(this.createComment(`docxjs ${f.name} font`));
-					styleContainer.appendChild(this.createStyleElement(cssText));
-				}));
+					result.push(this.createComment(`docxjs ${f.name} font`));
+					result.push(this.createStyleElement(this.styleToString(`@font-face`, cssValues)));
+				} catch(e) {
+					if (this.options.debug) console.warn(`Can't load font with id ${ref.id} and key ${ref.key}`);
+				}
 			}
 		}
+
+		return result;
 	}
 
 	processStyleName(className: string): string {
@@ -545,7 +541,10 @@ section.${c}>footer { z-index: 1; }
 `
 		};
 
-		return this.createStyleElement(styleText);
+		return [
+			this.createComment("docxjs library predefined styles"),
+			this.createStyleElement(styleText)
+		];
 	}
 
 	// renderNumbering2(numberingPart: NumberingPartProperties, container: HTMLElement): HTMLElement {
@@ -613,7 +612,7 @@ section.${c}>footer { z-index: 1; }
 	//     return createStyleElement(css);
 	// }
 
-	renderNumbering(numberings: IDomNumbering[], styleContainer: HTMLElement) {
+	async renderNumbering(numberings: IDomNumbering[]) {
 		var styleText = "";
 		var resetCounters = [];
 
@@ -630,10 +629,12 @@ section.${c}>footer { z-index: 1; }
 					"background": `var(${valiable})`
 				}, num.bullet.style);
 
-				this.tasks.push(this.document.loadNumberingImage(num.bullet.src).then(data => {
-					var text = `${this.rootSelector} { ${valiable}: url(${data}) }`;
-					styleContainer.appendChild(this.createStyleElement(text));
-				}));
+				try {
+					const imgData = await this.document.loadNumberingImage(num.bullet.src);
+					styleText += `${this.rootSelector} { ${valiable}: url(${imgData}) }`;
+				} catch(e) {
+					if (this.options.debug) console.warn(`Can't load numbering image with src ${num.bullet.src}`);
+				}
 			}
 			else if (num.levelText) {
 				let counter = this.numberingCounter(num.id, num.level);
@@ -670,10 +671,13 @@ section.${c}>footer { z-index: 1; }
 			});
 		}
 
-		return this.createStyleElement(styleText);
+		return [
+			this.createComment("docxjs document numbering styles"),
+			this.createStyleElement(styleText)
+		];
 	}
 
-	renderStyles(styles: IDomStyle[]): HTMLElement {
+	renderStyles(styles: IDomStyle[]) {
 		var styleText = "";
 		const stylesMap = this.styleMap;
 		const defautStyles = keyBy(styles.filter(s => s.isDefault), s => s.target);
@@ -704,7 +708,10 @@ section.${c}>footer { z-index: 1; }
 			}
 		}
 
-		return this.createStyleElement(styleText);
+		return [
+			this.createComment("docxjs document styles"),
+			this.createStyleElement(styleText)
+		];
 	}
 
 	renderNotes(noteIds: string[], notesMap: Record<string, WmlBaseNote>, into: HTMLElement) {
@@ -997,13 +1004,13 @@ section.${c}>footer { z-index: 1; }
 		if (!comment)
 			return null;
 
-		const frg = new DocumentFragment();
+		const frg = this.h({ tagName: "#fragment" });
 		const commentRefEl = this.createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
 		const commentsContainerEl = this.createElement("div", { className: `${this.className}-comment-popover` });
 
 		this.renderCommentContent(comment, commentsContainerEl);
 
-		frg.appendChild(this.createComment(`comment #${comment.id} by ${comment.author} on ${comment.date}`));
+		frg.appendChild(this.h({ tagName: "#comment", children: [`comment #${comment.id} by ${comment.author} on ${comment.date}`] }));
 		frg.appendChild(commentRefEl);
 		frg.appendChild(commentsContainerEl);
 
@@ -1024,8 +1031,8 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderCommentContent(comment: WmlComment, container: Node) {
-		container.appendChild(this.createElement('div', { className: `${this.className}-comment-author` }, [comment.author]));
-		container.appendChild(this.createElement('div', { className: `${this.className}-comment-date` }, [new Date(comment.date).toLocaleString()]));
+		container.appendChild(this.h({ tagName: 'div', classes: [`${this.className}-comment-author`], children: [comment.author] }));
+		container.appendChild(this.h({ tagName: 'div', classes: [`${this.className}-comment-date`], children: [new Date(comment.date).toLocaleString()] }));
 
 		this.renderElements(comment.children, container);
 	}
@@ -1069,7 +1076,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderText(elem: WmlText) {
-		return this.htmlDocument.createTextNode(elem.text);
+		return this.h(elem.text);
 	}
 
 	renderDeletedText(elem: WmlText) {
@@ -1294,51 +1301,51 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
-	renderMmlRadical(elem: OpenXmlElement): HTMLElement {
+	renderMmlRadical(elem: OpenXmlElement) {
 		const base = elem.children.find(el => el.type == DomType.MmlBase);
 
 		if (elem.props?.hideDegree) {
-			return this.createElementNS(ns.mathML, "msqrt", null, this.renderElements([base]));
+			return this.createMathMLElement("msqrt", null, this.renderElements([base]));
 		}
 
 		const degree = elem.children.find(el => el.type == DomType.MmlDegree);
-		return this.createElementNS(ns.mathML, "mroot", null, this.renderElements([base, degree]));
+		return this.createMathMLElement("mroot", null, this.renderElements([base, degree]));
 	}
 
-	renderMmlDelimiter(elem: OpenXmlElement): HTMLElement {		
+	renderMmlDelimiter(elem: OpenXmlElement) {		
 		const children = [];
 
-		children.push(this.createElementNS(ns.mathML, "mo", null, [elem.props.beginChar ?? '(']));
+		children.push(this.createMathMLElement("mo", null, [elem.props.beginChar ?? '(']));
 		children.push(...this.renderElements(elem.children));
-		children.push(this.createElementNS(ns.mathML, "mo", null, [elem.props.endChar ?? ')']));
+		children.push(this.createMathMLElement("mo", null, [elem.props.endChar ?? ')']));
 
-		return this.createElementNS(ns.mathML, "mrow", null, children);
+		return this.createMathMLElement("mrow", null, children);
 	}
 
-	renderMmlNary(elem: OpenXmlElement): HTMLElement {		
+	renderMmlNary(elem: OpenXmlElement) {		
 		const children = [];
 		const grouped = keyBy(elem.children, x => x.type);
 
 		const sup = grouped[DomType.MmlSuperArgument];
 		const sub = grouped[DomType.MmlSubArgument];
-		const supElem = sup ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-		const subElem = sub ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
+		const supElem = sup ? this.createMathMLElement("mo", null, asArray(this.renderElement(sup))) : null;
+		const subElem = sub ? this.createMathMLElement("mo", null, asArray(this.renderElement(sub))) : null;
 
-		const charElem = this.createElementNS(ns.mathML, "mo", null, [elem.props?.char ?? '\u222B']);
+		const charElem = this.createMathMLElement("mo", null, [elem.props?.char ?? '\u222B']);
 
 		if (supElem || subElem) {
-			children.push(this.createElementNS(ns.mathML, "munderover", null, [charElem, subElem, supElem]));
+			children.push(this.createMathMLElement("munderover", null, [charElem, subElem, supElem]));
 		} else if(supElem) {
-			children.push(this.createElementNS(ns.mathML, "mover", null, [charElem, supElem]));
+			children.push(this.createMathMLElement("mover", null, [charElem, supElem]));
 		} else if(subElem) {
-			children.push(this.createElementNS(ns.mathML, "munder", null, [charElem, subElem]));
+			children.push(this.createMathMLElement("munder", null, [charElem, subElem]));
 		} else {
 			children.push(charElem);
 		}
 
 		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
 
-		return this.createElementNS(ns.mathML, "mrow", null, children);
+		return this.createMathMLElement("mrow", null, children);
 	}
 
 	renderMmlPreSubSuper(elem: OpenXmlElement) {
@@ -1347,14 +1354,14 @@ section.${c}>footer { z-index: 1; }
 
 		const sup = grouped[DomType.MmlSuperArgument];
 		const sub = grouped[DomType.MmlSubArgument];
-		const supElem = sup ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sup))) : null;
-		const subElem = sub ? this.createElementNS(ns.mathML, "mo", null, asArray(this.renderElement(sub))) : null;
-		const stubElem = this.createElementNS(ns.mathML, "mo", null);
+		const supElem = sup ? this.createMathMLElement("mo", null, asArray(this.renderElement(sup))) : null;
+		const subElem = sub ? this.createMathMLElement("mo", null, asArray(this.renderElement(sub))) : null;
+		const stubElem = this.createMathMLElement("mo", null);
 
-		children.push(this.createElementNS(ns.mathML, "msubsup", null, [stubElem, subElem, supElem]));
+		children.push(this.createMathMLElement("msubsup", null, [stubElem, subElem, supElem]));
 		children.push(...this.renderElements(grouped[DomType.MmlBase].children));
 
-		return this.createElementNS(ns.mathML, "mrow", null, children);
+		return this.createMathMLElement("mrow", null, children);
 	}
 
 	renderMmlGroupChar(elem: OpenXmlElement) {
@@ -1362,7 +1369,7 @@ section.${c}>footer { z-index: 1; }
 		const result = this.renderContainerNS(elem, ns.mathML, tagName);
 
 		if (elem.props.char) {
-			result.appendChild(this.createElementNS(ns.mathML, "mo", null, [elem.props.char]));
+			result.appendChild(this.createMathMLElement("mo", null, [elem.props.char]));
 		}
 
 		return result;
@@ -1380,7 +1387,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderMmlRun(elem: OpenXmlElement) {
-		const result = this.createElementNS(ns.mathML, "ms", null, this.renderElements(elem.children));
+		const result = this.createMathMLElement("ms", null, this.renderElements(elem.children));
 
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
@@ -1389,14 +1396,14 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderMllList(elem: OpenXmlElement) {
-		const result = this.createElementNS(ns.mathML, "mtable");
+		const result = this.createMathMLElement("mtable");
 
 		this.renderClass(elem, result);
 		this.renderStyleValues(elem.cssStyle, result);
 
 		for (let child of this.renderElements(elem.children)) {
-			result.appendChild(this.createElementNS(ns.mathML, "mtr", null, [
-				this.createElementNS(ns.mathML, "mtd", null, [child])
+			result.appendChild(this.createMathMLElement("mtr", null, [
+				this.createMathMLElement("mtd", null, [child])
 			]));
 		}
 
@@ -1404,7 +1411,7 @@ section.${c}>footer { z-index: 1; }
 	}
 
 
-	renderStyleValues(style: Record<string, string>, ouput: HTMLElement) {
+	renderStyleValues(style: Record<string, string>, ouput: HTMLElement | MathMLElement) {
 		for (let k in style) {
 			if (k.startsWith("$")) {
 				ouput.setAttribute(k.slice(1), style[k]);
@@ -1414,7 +1421,7 @@ section.${c}>footer { z-index: 1; }
 		}
 	}
 
-	renderClass(input: OpenXmlElement, ouput: HTMLElement) {
+	renderClass(input: OpenXmlElement, ouput: Element) {
 		if (input.className)
 			ouput.className = input.className;
 
@@ -1527,18 +1534,19 @@ section.${c}>footer { z-index: 1; }
 		}, 500);
 	}
 
-	createElementNS(ns: string, tagName: string, props?: Partial<Record<any, any>>, children?: ChildType[]): any {
-		var result = ns ? this.htmlDocument.createElementNS(ns, tagName) : this.htmlDocument.createElement(tagName);
-		Object.assign(result, props);
-		children && appendChildren(result, children);
-		return result;
+	createElementNS(ns: any, tagName: string, props?: Partial<Record<any, any>>, children?: any[]) {
+		return this.h({ ns, tagName, children, ...props }) as any;
 	}
 
-	createElement<T extends keyof HTMLElementTagNameMap>(tagName: T, props?: Partial<Record<keyof HTMLElementTagNameMap[T], any>>, children?: ChildType[]): HTMLElementTagNameMap[T] {
-		return this.createElementNS(undefined, tagName, props, children);
+	createElement<T extends keyof HTMLElementTagNameMap>(tagName: T, props?: Partial<Record<keyof HTMLElementTagNameMap[T], any>>, children?: any[]): HTMLElementTagNameMap[T] {
+		return this.createElementNS(ns.html, tagName, props, children);
 	}
 
-	createSvgElement<T extends keyof SVGElementTagNameMap>(tagName: T, props?: Partial<Record<keyof SVGElementTagNameMap[T], any>>, children?: ChildType[]): SVGElementTagNameMap[T] {
+	createMathMLElement<T extends keyof MathMLElementTagNameMap>(tagName: T, props?: Partial<Record<keyof MathMLElementTagNameMap[T], any>>, children?: any[]): MathMLElementTagNameMap[T] {
+		return this.createElementNS(ns.mathML, tagName, props, children);
+	}
+
+	createSvgElement<T extends keyof SVGElementTagNameMap>(tagName: T, props?: Partial<Record<keyof SVGElementTagNameMap[T], any>>, children?: any[]): SVGElementTagNameMap[T] {
 		return this.createElementNS(ns.svg, tagName, props, children);
 	}
 
@@ -1547,18 +1555,12 @@ section.${c}>footer { z-index: 1; }
 	}
 	
 	createComment(text: string) {
-		return this.htmlDocument.createComment(text);
+		return this.h({ tagName: "#comment", children: [text] });
 	}
 
 	later(func: Function) { 
 		this.postRenderTasks.push(func);
 	}
-}
-
-type ChildType = Node | string;
-
-function removeAllElements(elem: HTMLElement) {
-	elem.innerHTML = '';
 }
 
 function appendChildren(elem: Node, children: (Node | string)[]) {
@@ -1573,3 +1575,4 @@ function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomTyp
 
 	return <T>parent;
 }
+

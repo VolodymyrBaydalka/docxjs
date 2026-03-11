@@ -75,13 +75,11 @@ parseAsync(
     options: Options
 ): Promise<WordDocument>
 
-// render internal document object into specified container
+// render internal document object and return list of nodes
 renderDocument(
     wordDocument: WordDocument,
-    bodyContainer: HTMLElement,
-    styleContainer: HTMLElement,
     options: Options
-): Promise<void>
+): Promise<Node[]>
 ```
 
 Thumbnails, TOC and etc.

@@ -70,7 +70,7 @@
         const docxOptions = Object.assign(docx.defaultOptions, {
             debug: true,
             experimental: true,
-            hideWrapperOnPrint: true
+            hideWrapperOnPrint: true,
         });
 
         const container = document.querySelector("#document-container");
@@ -101,7 +101,7 @@
 
         const menu = document.querySelector("#optionsMenu");
 
-        Object.keys(docxOptions).filter(key => !/className/i.test(key)).forEach(function(key) {
+        Object.keys(docxOptions).filter(key => !/className|h/i.test(key)).forEach(function(key) {
             const listItem = document.createElement("li");
             listItem.innerHTML = `
             <div class="dropdown-item">

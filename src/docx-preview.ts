@@ -1,6 +1,7 @@
 import { WordDocument } from './word-document';
 import { DocumentParser } from './document-parser';
 import { HtmlRenderer } from './html-renderer';
+import { h } from './html';
 
 export interface Options {
     inWrapper: boolean;
@@ -22,6 +23,7 @@ export interface Options {
 	renderChanges: boolean;
     renderComments: boolean;
     renderAltChunks: boolean;
+    h: typeof h;
 }
 
 export const defaultOptions: Options = {
@@ -43,22 +45,33 @@ export const defaultOptions: Options = {
 	useBase64URL: false,
 	renderChanges: false,
     renderComments: false,
-    renderAltChunks: true
-}
+    renderAltChunks: true,
+    h: h
+};
 
 export function parseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {
     const ops = { ...defaultOptions, ...userOptions };
     return WordDocument.load(data, new DocumentParser(ops), ops);
 }
 
-export async function renderDocument(document: any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
+export async function renderDocument(document: any, userOptions?: Partial<Options>): Promise<any> {
     const ops = { ...defaultOptions, ...userOptions };
-    const renderer = new HtmlRenderer(window.document);
-	return await renderer.render(document, bodyContainer, styleContainer, ops);
+    const renderer = new HtmlRenderer();
+    return await renderer.render(document, ops);
 }
 
 export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
 	const doc = await parseAsync(data, userOptions);
-	await renderDocument(doc, bodyContainer, styleContainer, userOptions);
+	const nodes = await renderDocument(doc, userOptions);
+
+    styleContainer ??= bodyContainer;
+    styleContainer.innerHTML = "";
+    bodyContainer.innerHTML = "";
+
+    for (let n of nodes) {
+        const c = n.nodeName === "STYLE" ? styleContainer : bodyContainer;
+        c.appendChild(n);
+    }
+    
     return doc;
 }
