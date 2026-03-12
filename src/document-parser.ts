@@ -734,7 +734,7 @@ export class DocumentParser {
 					let d = this.parseDrawing(c);
 
 					if (d)
-						result.children = [d];
+						result.children.push(d);
 					break;
 
 				case "pict":

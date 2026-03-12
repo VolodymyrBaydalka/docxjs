@@ -17,7 +17,8 @@
     <script src="./demo/thumbnail.example.js"></script>
     <link href="./demo/thumbnail.example.css" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/tiff.js@1.0.0/tiff.min.js"></script>
-    <script src="./demo/tiff-preprocessor.js"></script>
+    <script crossorigin src="https://unpkg.com/rtf.js@3.0.9/dist/WMFJS.bundle.js"></script>
+    <script src="./demo/docx-preprocessor.js"></script>
 
     <style>
         @media print {
@@ -85,7 +86,7 @@
                 return;
             
             // optional, find and convert all tiff images 
-            let docxBlob = preprocessTiff(currentDocument); 
+            let docxBlob = await preprocessDocx(currentDocument); 
             // render document
             let res = await docx.renderAsync(docxBlob, container, null, docxOptions)
             // optional - render thumbnails
@@ -101,7 +102,7 @@
 
         const menu = document.querySelector("#optionsMenu");
 
-        Object.keys(docxOptions).filter(key => !/className|h/i.test(key)).forEach(function(key) {
+        Object.keys(docxOptions).filter(key => !/^(className|h)$/i.test(key)).forEach(function(key) {
             const listItem = document.createElement("li");
             listItem.innerHTML = `
             <div class="dropdown-item">

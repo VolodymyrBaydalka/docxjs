@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { parseXmlString, XmlParser } from "../parser/xml-parser";
 import { splitPath } from "../utils";
 import { parseRelationships, Relationship } from "./relationship";
+import { ContentType, parseContentTypes } from "./content-types";
 
 export interface OpenXmlPackageOptions {
     trimXmlDeclaration: boolean,
@@ -46,6 +47,11 @@ export class OpenXmlPackage {
 
         const txt = await this.load(relsPath);
 		return txt ? parseRelationships(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null;
+    }
+
+    async loadContentTypes(): Promise<ContentType[]> {
+        const txt = await this.load("[Content_Types].xml");
+		return txt ? parseContentTypes(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : [];
     }
 
     /** @internal */

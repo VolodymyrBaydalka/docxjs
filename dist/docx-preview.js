@@ -293,6 +293,14 @@
         }
     }
 
+    function parseContentTypes(root, xml) {
+        return xml.elements(root).map(e => ({
+            extension: xml.attr(e, "Extension"),
+            partName: xml.attr(e, "PartName"),
+            contentType: xml.attr(e, "ContentType")
+        }));
+    }
+
     class OpenXmlPackage {
         constructor(_zip, options) {
             this._zip = _zip;
@@ -324,6 +332,10 @@
             }
             const txt = await this.load(relsPath);
             return txt ? parseRelationships(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : null;
+        }
+        async loadContentTypes() {
+            const txt = await this.load("[Content_Types].xml");
+            return txt ? parseContentTypes(this.parseXmlDocument(txt).firstElementChild, this.xmlParser) : [];
         }
         parseXmlDocument(txt) {
             return parseXmlString(txt, this.options.trimXmlDeclaration);
@@ -1103,6 +1115,7 @@
         constructor() {
             this.parts = [];
             this.partsMap = {};
+            this.contentTypes = [];
         }
         static async load(blob, parser, options) {
             var d = new WordDocument();
@@ -1110,6 +1123,7 @@
             d._parser = parser;
             d._package = await OpenXmlPackage.load(blob, options);
             d.rels = await d._package.loadRelationships();
+            d.contentTypes = await d._package.loadContentTypes();
             await Promise.all(topLevelRels.map(rel => {
                 const r = d.rels.find(x => x.type === rel.type) ?? rel;
                 return d.loadRelationshipPart(r.target, r.type);
@@ -1184,23 +1198,31 @@
             return part;
         }
         async loadDocumentImage(id, part) {
-            const x = await this.loadResource(part ?? this.documentPart, id, "blob");
-            return this.blobToURL(x);
+            const path = this.getPathById(part ?? this.documentPart, id);
+            return path ? this.blobToURL(await this._package.load(path, "blob"), path) : null;
         }
         async loadNumberingImage(id) {
-            const x = await this.loadResource(this.numberingPart, id, "blob");
-            return this.blobToURL(x);
+            const path = this.getPathById(this.numberingPart, id);
+            return path ? this.blobToURL(await this._package.load(path, "blob"), path) : null;
         }
         async loadFont(id, key) {
-            const x = await this.loadResource(this.fontTablePart, id, "uint8array");
-            return x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x;
+            const path = this.getPathById(this.fontTablePart, id);
+            if (!path)
+                return null;
+            const x = await this._package.load(path, "uint8array");
+            return x ? this.blobToURL(new Blob([deobfuscate(x, key)]), path) : x;
         }
         async loadAltChunk(id, part) {
-            return await this.loadResource(part ?? this.documentPart, id, "string");
+            const path = this.getPathById(part ?? this.documentPart, id);
+            return path ? this._package.load(path, "string") : Promise.resolve(null);
         }
-        blobToURL(blob) {
+        blobToURL(blob, path) {
             if (!blob)
                 return null;
+            if (path) {
+                const ct = this.contentTypes.find(x => x.partName === path || (x.extension && path.endsWith(`.${x.extension}`)));
+                blob = ct ? new Blob([blob], { type: ct.contentType }) : blob;
+            }
             if (this._options.useBase64URL) {
                 return blobToBase64(blob);
             }
@@ -1215,10 +1237,6 @@
             const rel = part.rels.find(x => x.id == id);
             const [folder] = splitPath(part.path);
             return rel ? resolvePath(rel.target, folder) : null;
-        }
-        loadResource(part, id, outputType) {
-            const path = this.getPathById(part, id);
-            return path ? this._package.load(path, outputType) : Promise.resolve(null);
         }
     }
     function deobfuscate(data, guidKey) {
@@ -1953,7 +1971,7 @@
                     case "drawing":
                         let d = this.parseDrawing(c);
                         if (d)
-                            result.children = [d];
+                            result.children.push(d);
                         break;
                     case "pict":
                         result.children.push(this.parseVmlPicture(c));

@@ -18,6 +18,7 @@ import { SettingsPart } from "./settings/settings-part";
 import { CustomPropsPart } from "./document-props/custom-props-part";
 import { CommentsPart } from "./comments/comments-part";
 import { CommentsExtendedPart } from "./comments/comments-extended-part";
+import { ContentType } from "./common/content-types";
 
 const topLevelRels = [
 	{ type: RelationshipTypes.OfficeDocument, target: "word/document.xml" },
@@ -34,6 +35,7 @@ export class WordDocument {
 	rels: Relationship[];
 	parts: Part[] = [];
 	partsMap: Record<string, Part> = {};
+	contentTypes: ContentType[] = [];
 
 	documentPart: DocumentPart;
 	fontTablePart: FontTablePart;
@@ -55,6 +57,7 @@ export class WordDocument {
 		d._parser = parser;
 		d._package = await OpenXmlPackage.load(blob, options);
 		d.rels = await d._package.loadRelationships();
+		d.contentTypes = await d._package.loadContentTypes();
 
 		await Promise.all(topLevelRels.map(rel => {
 			const r = d.rels.find(x => x.type === rel.type) ?? rel; //fallback                    
@@ -156,27 +159,35 @@ export class WordDocument {
 	}
 
 	async loadDocumentImage(id: string, part?: Part): Promise<string> {
-		const x = await this.loadResource(part ?? this.documentPart, id, "blob");
-		return this.blobToURL(x);
+		const path = this.getPathById(part ?? this.documentPart, id);
+		return path ? this.blobToURL(await this._package.load(path, "blob"), path) : null;
 	}
 
 	async loadNumberingImage(id: string): Promise<string> {
-		const x = await this.loadResource(this.numberingPart, id, "blob");
-		return this.blobToURL(x);
+		const path = this.getPathById(this.numberingPart, id);
+		return path ? this.blobToURL(await this._package.load(path, "blob"), path) : null;
 	}
 
 	async loadFont(id: string, key: string): Promise<string> {
-		const x = await this.loadResource(this.fontTablePart, id, "uint8array");
-		return x ? this.blobToURL(new Blob([deobfuscate(x, key)])) : x;
+		const path = this.getPathById(this.fontTablePart, id);
+		if (!path) return null;
+		const x = await this._package.load(path, "uint8array");
+		return x ? this.blobToURL(new Blob([deobfuscate(x, key)]), path) : x;
 	}
 
 	async loadAltChunk(id: string, part?: Part): Promise<string> {
-		return await this.loadResource(part ?? this.documentPart, id, "string");
+		const path = this.getPathById(part ?? this.documentPart, id);
+		return path ? this._package.load(path, "string") : Promise.resolve(null);
 	}
 
-	private blobToURL(blob: Blob): string | Promise<string> {
+	private blobToURL(blob: Blob, path?: string): string | Promise<string> {
 		if (!blob)
 			return null;
+
+		if (path) {
+			const ct = this.contentTypes.find(x => x.partName === path || (x.extension && path.endsWith(`.${x.extension}`)));
+			blob = ct ? new Blob([blob], { type: ct.contentType }) : blob;
+		}
 
 		if (this._options.useBase64URL) {
 			return blobToBase64(blob);
@@ -195,11 +206,6 @@ export class WordDocument {
 		const rel = part.rels.find(x => x.id == id);
 		const [folder] = splitPath(part.path);
 		return rel ? resolvePath(rel.target, folder) : null;
-	}
-
-	private loadResource(part: Part, id: string, outputType: OutputType) {
-		const path = this.getPathById(part, id);
-		return path ? this._package.load(path, outputType) : Promise.resolve(null);
 	}
 }
 
