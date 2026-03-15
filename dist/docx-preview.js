@@ -2872,16 +2872,28 @@
             return document.createTextNode(elem);
         if (elem instanceof Node)
             return elem;
-        const { ns, tagName, classes, style, children, ...props } = elem;
+        const { ns, tagName, className, style, children, ...props } = elem;
         if (tagName === "#fragment")
             return document.createDocumentFragment();
         if (tagName === "#comment")
             return document.createComment(children[0]);
         const result = (ns ? document.createElementNS(ns, tagName) : document.createElement(tagName));
-        if (classes)
-            result.classList.add(...classes.filter(Boolean));
-        if (style)
-            Object.assign(result.style, style);
+        if (className) {
+            if (Array.isArray(className)) {
+                result.classList.add(...className.filter(Boolean));
+            }
+            else {
+                result.classList.add(className);
+            }
+        }
+        if (style) {
+            if (isString(style)) {
+                result.setAttribute("style", style);
+            }
+            else {
+                Object.assign(result.style, style);
+            }
+        }
         if (children)
             children.forEach(c => result.appendChild(h(c)));
         Object.assign(result, props);
@@ -2975,8 +2987,8 @@
             }
             const cssText = this.styleToString(`.${this.className}`, variables);
             return [
-                this.createComment("docxjs document theme values"),
-                this.createStyleElement(cssText)
+                this.h({ tagName: "#comment", children: ["docxjs document theme values"] }),
+                this.h({ tagName: "style", children: [cssText] })
             ];
         }
         async renderFontTable(fontsPart) {
@@ -2995,8 +3007,8 @@
                         if (ref.type == "italic" || ref.type == "boldItalic") {
                             cssValues['font-style'] = 'italic';
                         }
-                        result.push(this.createComment(`docxjs ${f.name} font`));
-                        result.push(this.createStyleElement(this.styleToString(`@font-face`, cssValues)));
+                        result.push(this.h({ tagName: "#comment", children: [`docxjs ${f.name} font`] }));
+                        result.push(this.h({ tagName: "style", children: [this.styleToString(`@font-face`, cssValues)] }));
                     }
                     catch (e) {
                         if (this.options.debug)
@@ -3080,33 +3092,33 @@
             return output;
         }
         createPageElement(className, props) {
-            var elem = this.createElement("section", { className });
+            const style = {};
             if (props) {
                 if (props.pageMargins) {
-                    elem.style.paddingLeft = props.pageMargins.left;
-                    elem.style.paddingRight = props.pageMargins.right;
-                    elem.style.paddingTop = props.pageMargins.top;
-                    elem.style.paddingBottom = props.pageMargins.bottom;
+                    style.paddingLeft = props.pageMargins.left;
+                    style.paddingRight = props.pageMargins.right;
+                    style.paddingTop = props.pageMargins.top;
+                    style.paddingBottom = props.pageMargins.bottom;
                 }
                 if (props.pageSize) {
                     if (!this.options.ignoreWidth)
-                        elem.style.width = props.pageSize.width;
+                        style.width = props.pageSize.width;
                     if (!this.options.ignoreHeight)
-                        elem.style.minHeight = props.pageSize.height;
+                        style.minHeight = props.pageSize.height;
                 }
             }
-            return elem;
+            return this.h({ tagName: "section", className, style });
         }
         createSectionContent(props) {
-            var elem = this.createElement("article");
+            const style = {};
             if (props.columns && props.columns.numberOfColumns) {
-                elem.style.columnCount = `${props.columns.numberOfColumns}`;
-                elem.style.columnGap = props.columns.space;
+                style.columnCount = `${props.columns.numberOfColumns}`;
+                style.columnGap = props.columns.space;
                 if (props.columns.separator) {
-                    elem.style.columnRule = "1px solid black";
+                    style.columnRule = "1px solid black";
                 }
             }
-            return elem;
+            return this.h({ tagName: "article", style });
         }
         renderSections(document) {
             const result = [];
@@ -3255,7 +3267,7 @@
             return result.filter(x => x.length > 0);
         }
         renderWrapper(children) {
-            return this.createElement("div", { className: `${this.className}-wrapper` }, children);
+            return this.h({ tagName: "div", className: `${this.className}-wrapper`, children });
         }
         renderDefaultStyle() {
             var c = this.className;
@@ -3286,8 +3298,8 @@ section.${c}>footer { z-index: 1; }
 `;
             }
             return [
-                this.createComment("docxjs library predefined styles"),
-                this.createStyleElement(styleText)
+                this.h({ tagName: "#comment", children: ["docxjs library predefined styles"] }),
+                this.h({ tagName: "style", children: [styleText] })
             ];
         }
         async renderNumbering(numberings) {
@@ -3343,8 +3355,8 @@ section.${c}>footer { z-index: 1; }
                 });
             }
             return [
-                this.createComment("docxjs document numbering styles"),
-                this.createStyleElement(styleText)
+                this.h({ tagName: "#comment", children: ["docxjs document numbering styles"] }),
+                this.h({ tagName: "style", children: [styleText] })
             ];
         }
         renderStyles(styles) {
@@ -3370,15 +3382,14 @@ section.${c}>footer { z-index: 1; }
                 }
             }
             return [
-                this.createComment("docxjs document styles"),
-                this.createStyleElement(styleText)
+                this.h({ tagName: "#comment", children: ["docxjs document styles"] }),
+                this.h({ tagName: "style", children: [styleText] })
             ];
         }
         renderNotes(noteIds, notesMap, into) {
             var notes = noteIds.map(id => notesMap[id]).filter(x => x);
             if (notes.length > 0) {
-                var result = this.createElement("ol", null, this.renderElements(notes));
-                into.appendChild(result);
+                into.appendChild(this.h({ tagName: "ol", children: this.renderElements(notes) }));
             }
         }
         renderElement(elem) {
@@ -3429,7 +3440,7 @@ section.${c}>footer { z-index: 1; }
                 case DomType.EndnoteReference:
                     return this.renderEndnoteReference(elem);
                 case DomType.NoBreakHyphen:
-                    return this.createElement("wbr");
+                    return this.h({ tagName: "wbr" });
                 case DomType.VmlPicture:
                     return this.renderVmlPicture(elem);
                 case DomType.VmlElement:
@@ -3503,11 +3514,11 @@ section.${c}>footer { z-index: 1; }
                 appendChildren(into, result);
             return result;
         }
-        renderContainer(elem, tagName, props) {
-            return this.createElement(tagName, props, this.renderElements(elem.children));
+        renderContainer(elem, tagName) {
+            return this.h({ tagName, children: this.renderElements(elem.children) });
         }
         renderContainerNS(elem, ns, tagName, props) {
-            return this.createElementNS(ns, tagName, props, this.renderElements(elem.children));
+            return this.h({ ns, tagName, children: this.renderElements(elem.children), ...props });
         }
         renderParagraph(elem) {
             var result = this.renderContainer(elem, "p");
@@ -3557,7 +3568,7 @@ section.${c}>footer { z-index: 1; }
                 return null;
             const rng = new Range();
             this.commentHighlight?.add(rng);
-            const result = this.createComment(`start of comment #${commentStart.id}`);
+            const result = this.h({ tagName: "#comment", children: [`start of comment #${commentStart.id}`] });
             this.later(() => rng.setStart(result, 0));
             this.commentMap[commentStart.id] = rng;
             return result;
@@ -3566,7 +3577,7 @@ section.${c}>footer { z-index: 1; }
             if (!this.options.renderComments)
                 return null;
             const rng = this.commentMap[commentEnd.id];
-            const result = this.createComment(`end of comment #${commentEnd.id}`);
+            const result = this.h({ tagName: "#comment", children: [`end of comment #${commentEnd.id}`] });
             this.later(() => rng?.setEnd(result, 0));
             return result;
         }
@@ -3577,8 +3588,8 @@ section.${c}>footer { z-index: 1; }
             if (!comment)
                 return null;
             const frg = this.h({ tagName: "#fragment" });
-            const commentRefEl = this.createElement("span", { className: `${this.className}-comment-ref` }, ['💬']);
-            const commentsContainerEl = this.createElement("div", { className: `${this.className}-comment-popover` });
+            const commentRefEl = this.h({ tagName: "span", className: `${this.className}-comment-ref`, children: ['💬'] });
+            const commentsContainerEl = this.h({ tagName: "div", className: `${this.className}-comment-popover` });
             this.renderCommentContent(comment, commentsContainerEl);
             frg.appendChild(this.h({ tagName: "#comment", children: [`comment #${comment.id} by ${comment.author} on ${comment.date}`] }));
             frg.appendChild(commentRefEl);
@@ -3595,8 +3606,8 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderCommentContent(comment, container) {
-            container.appendChild(this.h({ tagName: 'div', classes: [`${this.className}-comment-author`], children: [comment.author] }));
-            container.appendChild(this.h({ tagName: 'div', classes: [`${this.className}-comment-date`], children: [new Date(comment.date).toLocaleString()] }));
+            container.appendChild(this.h({ tagName: 'div', className: `${this.className}-comment-author`, children: [comment.author] }));
+            container.appendChild(this.h({ tagName: 'div', className: `${this.className}-comment-date`, children: [new Date(comment.date).toLocaleString()] }));
             this.renderElements(comment.children, container);
         }
         renderDrawing(elem) {
@@ -3633,10 +3644,7 @@ section.${c}>footer { z-index: 1; }
             return this.options.renderChanges ? this.renderText(elem) : null;
         }
         renderBreak(elem) {
-            if (elem.break == "textWrapping") {
-                return this.createElement("br");
-            }
-            return null;
+            return elem.break == "textWrapping" ? this.h({ tagName: "br" }) : null;
         }
         renderInserted(elem) {
             if (this.options.renderChanges)
@@ -3649,26 +3657,18 @@ section.${c}>footer { z-index: 1; }
             return null;
         }
         renderSymbol(elem) {
-            var span = this.createElement("span");
-            span.style.fontFamily = elem.font;
-            span.innerHTML = `&#x${elem.char};`;
-            return span;
+            return this.h({ tagName: "span", innerHTML: `&#x${elem.char};`, style: { fontFamily: elem.font } });
         }
         renderFootnoteReference(elem) {
-            var result = this.createElement("sup");
             this.currentFootnoteIds.push(elem.id);
-            result.textContent = `${this.currentFootnoteIds.length}`;
-            return result;
+            return this.h({ tagName: "sup", children: [`${this.currentFootnoteIds.length}`] });
         }
         renderEndnoteReference(elem) {
-            var result = this.createElement("sup");
             this.currentEndnoteIds.push(elem.id);
-            result.textContent = `${this.currentEndnoteIds.length}`;
-            return result;
+            return this.h({ tagName: "sup", children: [`${this.currentEndnoteIds.length}`] });
         }
         renderTab(elem) {
-            var tabSpan = this.createElement("span");
-            tabSpan.innerHTML = "&emsp;";
+            var tabSpan = this.h({ tagName: "span", innerHTML: "&emsp;" });
             if (this.options.experimental) {
                 tabSpan.className = this.tabStopClass();
                 var stops = findParent(elem, DomType.Paragraph)?.tabs;
@@ -3677,7 +3677,7 @@ section.${c}>footer { z-index: 1; }
             return tabSpan;
         }
         renderBookmarkStart(elem) {
-            return this.createElement("span", { id: elem.name });
+            return this.h({ tagName: "span", id: elem.name });
         }
         renderRun(elem) {
             if (elem.fieldRun)
@@ -3698,11 +3698,11 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderTable(elem) {
-            let result = this.createElement("table");
             this.tableCellPositions.push(this.currentCellPosition);
             this.tableVerticalMerges.push(this.currentVerticalMerge);
             this.currentVerticalMerge = {};
             this.currentCellPosition = { col: 0, row: 0 };
+            let result = this.createElement("table");
             if (elem.columns)
                 result.appendChild(this.renderTableColumns(elem.columns));
             this.renderClass(elem, result);
@@ -3713,18 +3713,12 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderTableColumns(columns) {
-            let result = this.createElement("colgroup");
-            for (let col of columns) {
-                let colElem = this.createElement("col");
-                if (col.width)
-                    colElem.style.width = col.width;
-                result.appendChild(colElem);
-            }
-            return result;
+            const children = columns.map(x => this.h({ tagName: "col", style: { width: x.width } }));
+            return this.h({ tagName: "colgroup", children });
         }
         renderTableRow(elem) {
-            let result = this.createElement("tr");
             this.currentCellPosition.col = 0;
+            let result = this.createElement("tr");
             if (elem.gridBefore)
                 result.appendChild(this.renderTableCellPlaceholder(elem.gridBefore));
             this.renderClass(elem, result);
@@ -3736,9 +3730,7 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderTableCellPlaceholder(colSpan) {
-            const result = this.createElement("td", { colSpan });
-            result.style['border'] = 'none';
-            return result;
+            return this.h({ tagName: "td", colSpan, style: { border: "none" } });
         }
         renderTableCell(elem) {
             let result = this.renderContainer(elem, "td");
@@ -3992,12 +3984,6 @@ section.${c}>footer { z-index: 1; }
         }
         createSvgElement(tagName, props, children) {
             return this.createElementNS(ns.svg, tagName, props, children);
-        }
-        createStyleElement(cssText) {
-            return this.createElement("style", { innerHTML: cssText });
-        }
-        createComment(text) {
-            return this.h({ tagName: "#comment", children: [text] });
         }
         later(func) {
             this.postRenderTasks.push(func);
