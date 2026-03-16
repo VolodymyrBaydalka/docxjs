@@ -960,7 +960,11 @@ section.${c}>footer { z-index: 1; }
 			href += `#${elem.anchor}`;
 		}
 
-		result.href = href;
+		// Only allow safe URI schemes to prevent XSS via javascript:, data:, vbscript:, etc.
+		// Fragment-only anchors (#section) are safe for in-document navigation.
+		if (href && (/^#/.test(href) || /^(https?|mailto):/i.test(href))) {
+			result.href = href;
+		}
 
 		return result;
 	}
