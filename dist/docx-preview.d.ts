@@ -6,11 +6,11 @@
  */
 
 export type HElement = {
-    ns: string;
+    ns?: string;
     tagName: string;
-    classes: string[];
-    style: Record<string, string>;
-    children: (HElement | Node | string)[];
+    className?: string;
+    style?: Record<string, string> | string;
+    children?: (HElement | Node | string)[];
 } & Record<string, any>;
 
 export interface Options {

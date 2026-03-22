@@ -1950,7 +1950,7 @@
                         result.children.push({
                             type: DomType.Symbol,
                             font: encloseFontFamily(globalXmlParser.attr(c, "font")),
-                            char: globalXmlParser.attr(c, "char")
+                            char: globalXmlParser.hexAttr(c, "char")
                         });
                         break;
                     case "tab":
@@ -2878,14 +2878,8 @@
         if (tagName === "#comment")
             return document.createComment(children[0]);
         const result = (ns ? document.createElementNS(ns, tagName) : document.createElement(tagName));
-        if (className) {
-            if (Array.isArray(className)) {
-                result.classList.add(...className.filter(Boolean));
-            }
-            else {
-                result.classList.add(className);
-            }
-        }
+        if (className)
+            result.setAttribute("class", className);
         if (style) {
             if (isString(style)) {
                 result.setAttribute("style", style);
@@ -2894,10 +2888,17 @@
                 Object.assign(result.style, style);
             }
         }
+        if (props) {
+            for (const [key, value] of Object.entries(props))
+                if (value !== undefined)
+                    result[key] = value;
+        }
         if (children)
             children.forEach(c => result.appendChild(h(c)));
-        Object.assign(result, props);
         return result;
+    }
+    function cx(...classNames) {
+        return classNames.filter(Boolean).join(" ");
     }
 
     class HtmlRenderer {
@@ -3091,8 +3092,8 @@
             }
             return output;
         }
-        createPageElement(className, props) {
-            const style = {};
+        createPageElement(className, props, docStyle) {
+            const style = { ...docStyle };
             if (props) {
                 if (props.pageMargins) {
                     style.paddingLeft = props.pageMargins.left;
@@ -3130,8 +3131,7 @@
                 this.currentFootnoteIds = [];
                 const section = pages[i][0];
                 let props = section.sectProps;
-                const pageElement = this.createPageElement(this.className, props);
-                this.renderStyleValues(document.cssStyle, pageElement);
+                const pageElement = this.createPageElement(this.className, props, document.cssStyle);
                 this.options.renderHeaders && this.renderHeaderFooter(props.headerRefs, props, result.length, prevProps != props, pageElement);
                 for (const sect of pages[i]) {
                     var contentElement = this.createSectionContent(sect.sectProps);
@@ -3140,10 +3140,12 @@
                     props = sect.sectProps;
                 }
                 if (this.options.renderFootnotes) {
-                    this.renderNotes(this.currentFootnoteIds, this.footnoteMap, pageElement);
+                    const notes = this.renderNotes(this.currentFootnoteIds, this.footnoteMap);
+                    notes && pageElement.appendChild(notes);
                 }
                 if (this.options.renderEndnotes && i == l - 1) {
-                    this.renderNotes(this.currentEndnoteIds, this.endnoteMap, pageElement);
+                    const notes = this.renderNotes(this.currentEndnoteIds, this.endnoteMap);
+                    notes && pageElement.appendChild(notes);
                 }
                 this.options.renderFooters && this.renderHeaderFooter(props.footerRefs, props, result.length, prevProps != props, pageElement);
                 result.push(pageElement);
@@ -3386,10 +3388,10 @@ section.${c}>footer { z-index: 1; }
                 this.h({ tagName: "style", children: [styleText] })
             ];
         }
-        renderNotes(noteIds, notesMap, into) {
+        renderNotes(noteIds, notesMap) {
             var notes = noteIds.map(id => notesMap[id]).filter(x => x);
             if (notes.length > 0) {
-                into.appendChild(this.h({ tagName: "ol", children: this.renderElements(notes) }));
+                return this.h({ tagName: "ol", children: this.renderElements(notes) });
             }
         }
         renderElement(elem) {
@@ -3511,7 +3513,7 @@ section.${c}>footer { z-index: 1; }
                 return null;
             var result = elems.flatMap(e => this.renderElement(e)).filter(e => e != null);
             if (into)
-                appendChildren(into, result);
+                result.forEach(c => into.appendChild(isString(c) ? document.createTextNode(c) : c));
             return result;
         }
         renderContainer(elem, tagName) {
@@ -3521,44 +3523,26 @@ section.${c}>footer { z-index: 1; }
             return this.h({ ns, tagName, children: this.renderElements(elem.children), ...props });
         }
         renderParagraph(elem) {
-            var result = this.renderContainer(elem, "p");
+            var result = this.toHTML(elem, ns.html, "p");
             const style = this.findStyle(elem.styleName);
             elem.tabs ?? (elem.tabs = style?.paragraphProps?.tabs);
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.cssStyle, result);
-            this.renderCommonProperties(result.style, elem);
             const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
             if (numbering) {
                 result.classList.add(this.numberingClass(numbering.id, numbering.level));
             }
             return result;
         }
-        renderRunProperties(style, props) {
-            this.renderCommonProperties(style, props);
-        }
-        renderCommonProperties(style, props) {
-            if (props == null)
-                return;
-            if (props.color) {
-                style["color"] = props.color;
-            }
-            if (props.fontSize) {
-                style["font-size"] = props.fontSize;
-            }
-        }
         renderHyperlink(elem) {
-            var result = this.renderContainer(elem, "a");
-            this.renderStyleValues(elem.cssStyle, result);
-            let href = '';
+            const res = this.toH(elem, ns.html, "a");
+            res.href = '';
             if (elem.id) {
                 const rel = this.document.documentPart.rels.find(it => it.id == elem.id && it.targetMode === "External");
-                href = rel?.target ?? href;
+                res.href = rel?.target ?? res.href;
             }
             if (elem.anchor) {
-                href += `#${elem.anchor}`;
+                res.href += `#${elem.anchor}`;
             }
-            result.href = href;
-            return result;
+            return this.h(res);
         }
         renderSmartTag(elem) {
             return this.renderContainer(elem, "span");
@@ -3587,41 +3571,39 @@ section.${c}>footer { z-index: 1; }
             var comment = this.document.commentsPart?.commentMap[commentRef.id];
             if (!comment)
                 return null;
-            const frg = this.h({ tagName: "#fragment" });
             const commentRefEl = this.h({ tagName: "span", className: `${this.className}-comment-ref`, children: ['💬'] });
-            const commentsContainerEl = this.h({ tagName: "div", className: `${this.className}-comment-popover` });
-            this.renderCommentContent(comment, commentsContainerEl);
-            frg.appendChild(this.h({ tagName: "#comment", children: [`comment #${comment.id} by ${comment.author} on ${comment.date}`] }));
-            frg.appendChild(commentRefEl);
-            frg.appendChild(commentsContainerEl);
-            return frg;
+            const commentsContainerEl = this.h({
+                tagName: "div", className: `${this.className}-comment-popover`, children: [
+                    this.h({ tagName: 'div', className: `${this.className}-comment-author`, children: [comment.author] }),
+                    this.h({ tagName: 'div', className: `${this.className}-comment-date`, children: [new Date(comment.date).toLocaleString()] }),
+                    ...this.renderElements(comment.children)
+                ]
+            });
+            return this.h({ tagName: "#fragment", children: [
+                    this.h({ tagName: "#comment", children: [`comment #${comment.id} by ${comment.author} on ${comment.date}`] }),
+                    commentRefEl,
+                    commentsContainerEl
+                ] });
         }
         renderAltChunk(elem) {
             if (!this.options.renderAltChunks)
                 return null;
-            var result = this.createElement("iframe");
+            var result = this.h({ tagName: "iframe" });
             this.tasks.push(this.document.loadAltChunk(elem.id, this.currentPart).then(x => {
                 result.srcdoc = x;
             }));
             return result;
         }
-        renderCommentContent(comment, container) {
-            container.appendChild(this.h({ tagName: 'div', className: `${this.className}-comment-author`, children: [comment.author] }));
-            container.appendChild(this.h({ tagName: 'div', className: `${this.className}-comment-date`, children: [new Date(comment.date).toLocaleString()] }));
-            this.renderElements(comment.children, container);
-        }
         renderDrawing(elem) {
-            var result = this.renderContainer(elem, "div");
+            var result = this.toHTML(elem, ns.html, "div");
             result.style.display = "inline-block";
             result.style.position = "relative";
             result.style.textIndent = "0px";
-            this.renderStyleValues(elem.cssStyle, result);
             return result;
         }
         renderImage(elem) {
-            let result = this.createElement("img");
+            let result = this.toHTML(elem, ns.html, "img", []);
             let transform = elem.cssStyle?.transform;
-            this.renderStyleValues(elem.cssStyle, result);
             if (elem.srcRect && elem.srcRect.some(x => x != 0)) {
                 var [left, top, right, bottom] = elem.srcRect;
                 transform = `scale(${1 / (1 - left - right)}, ${1 / (1 - top - bottom)})`;
@@ -3657,7 +3639,7 @@ section.${c}>footer { z-index: 1; }
             return null;
         }
         renderSymbol(elem) {
-            return this.h({ tagName: "span", innerHTML: `&#x${elem.char};`, style: { fontFamily: elem.font } });
+            return this.h({ tagName: "span", children: [String.fromCharCode(elem.char)], style: { fontFamily: elem.font } });
         }
         renderFootnoteReference(elem) {
             this.currentFootnoteIds.push(elem.id);
@@ -3668,7 +3650,7 @@ section.${c}>footer { z-index: 1; }
             return this.h({ tagName: "sup", children: [`${this.currentEndnoteIds.length}`] });
         }
         renderTab(elem) {
-            var tabSpan = this.h({ tagName: "span", innerHTML: "&emsp;" });
+            var tabSpan = this.h({ tagName: "span", children: ["\u2003"] });
             if (this.options.experimental) {
                 tabSpan.className = this.tabStopClass();
                 var stops = findParent(elem, DomType.Paragraph)?.tabs;
@@ -3682,19 +3664,13 @@ section.${c}>footer { z-index: 1; }
         renderRun(elem) {
             if (elem.fieldRun)
                 return null;
-            const result = this.createElement("span");
+            let children = this.renderElements(elem.children);
+            if (elem.verticalAlign) {
+                children = [this.h({ tagName: elem.verticalAlign, children: this.renderElements(elem.children) })];
+            }
+            const result = this.toHTML(elem, ns.html, "span", children);
             if (elem.id)
                 result.id = elem.id;
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.cssStyle, result);
-            if (elem.verticalAlign) {
-                const wrapper = this.createElement(elem.verticalAlign);
-                this.renderElements(elem.children, wrapper);
-                result.appendChild(wrapper);
-            }
-            else {
-                this.renderElements(elem.children, result);
-            }
             return result;
         }
         renderTable(elem) {
@@ -3702,15 +3678,13 @@ section.${c}>footer { z-index: 1; }
             this.tableVerticalMerges.push(this.currentVerticalMerge);
             this.currentVerticalMerge = {};
             this.currentCellPosition = { col: 0, row: 0 };
-            let result = this.createElement("table");
+            const children = [];
             if (elem.columns)
-                result.appendChild(this.renderTableColumns(elem.columns));
-            this.renderClass(elem, result);
-            this.renderElements(elem.children, result);
-            this.renderStyleValues(elem.cssStyle, result);
+                children.push(this.renderTableColumns(elem.columns));
+            children.push(...this.renderElements(elem.children));
             this.currentVerticalMerge = this.tableVerticalMerges.pop();
             this.currentCellPosition = this.tableCellPositions.pop();
-            return result;
+            return this.toHTML(elem, ns.html, "table", children);
         }
         renderTableColumns(columns) {
             const children = columns.map(x => this.h({ tagName: "col", style: { width: x.width } }));
@@ -3718,22 +3692,20 @@ section.${c}>footer { z-index: 1; }
         }
         renderTableRow(elem) {
             this.currentCellPosition.col = 0;
-            let result = this.createElement("tr");
+            const children = [];
             if (elem.gridBefore)
-                result.appendChild(this.renderTableCellPlaceholder(elem.gridBefore));
-            this.renderClass(elem, result);
-            this.renderElements(elem.children, result);
-            this.renderStyleValues(elem.cssStyle, result);
+                children.push(this.renderTableCellPlaceholder(elem.gridBefore));
+            children.push(...this.renderElements(elem.children));
             if (elem.gridAfter)
-                result.appendChild(this.renderTableCellPlaceholder(elem.gridAfter));
+                children.push(this.renderTableCellPlaceholder(elem.gridAfter));
             this.currentCellPosition.row++;
-            return result;
+            return this.toHTML(elem, ns.html, "tr", children);
         }
         renderTableCellPlaceholder(colSpan) {
             return this.h({ tagName: "td", colSpan, style: { border: "none" } });
         }
         renderTableCell(elem) {
-            let result = this.renderContainer(elem, "td");
+            let result = this.toHTML(elem, ns.html, "td");
             const key = this.currentCellPosition.col;
             if (elem.verticalMerge) {
                 if (elem.verticalMerge == "restart") {
@@ -3748,8 +3720,6 @@ section.${c}>footer { z-index: 1; }
             else {
                 this.currentVerticalMerge[key] = null;
             }
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.cssStyle, result);
             if (elem.span)
                 result.colSpan = elem.span;
             this.currentCellPosition.col += result.colSpan;
@@ -3759,8 +3729,7 @@ section.${c}>footer { z-index: 1; }
             return this.renderContainer(elem, "div");
         }
         renderVmlElement(elem) {
-            var container = this.createSvgElement("svg");
-            container.setAttribute("style", elem.cssStyleText);
+            var container = this.h({ ns: ns.svg, tagName: "svg", style: elem.cssStyleText });
             const result = this.renderVmlChildElement(elem);
             if (elem.imageHref?.id) {
                 this.tasks.push(this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
@@ -3846,49 +3815,33 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderMmlBar(elem) {
-            const result = this.renderContainerNS(elem, ns.mathML, "mrow");
+            const style = {};
             switch (elem.props.position) {
                 case "top":
-                    result.style.textDecoration = "overline";
+                    style.textDecoration = "overline";
                     break;
                 case "bottom":
-                    result.style.textDecoration = "underline";
+                    style.textDecoration = "underline";
                     break;
             }
-            return result;
+            return this.renderContainerNS(elem, ns.mathML, "mrow", { style });
         }
         renderMmlRun(elem) {
-            const result = this.createMathMLElement("ms", null, this.renderElements(elem.children));
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.cssStyle, result);
-            return result;
+            return this.toHTML(elem, ns.mathML, "ms");
         }
         renderMllList(elem) {
-            const result = this.createMathMLElement("mtable");
-            this.renderClass(elem, result);
-            this.renderStyleValues(elem.cssStyle, result);
-            for (let child of this.renderElements(elem.children)) {
-                result.appendChild(this.createMathMLElement("mtr", null, [
-                    this.createMathMLElement("mtd", null, [child])
-                ]));
-            }
-            return result;
+            const children = this.renderElements(elem.children).map(x => this.createMathMLElement("mtr", null, [
+                this.createMathMLElement("mtd", null, [x])
+            ]));
+            return this.toHTML(elem, ns.mathML, "mtable", children);
         }
-        renderStyleValues(style, ouput) {
-            for (let k in style) {
-                if (k.startsWith("$")) {
-                    ouput.setAttribute(k.slice(1), style[k]);
-                }
-                else {
-                    ouput.style[k] = style[k];
-                }
-            }
+        toH(elem, ns, tagName, children = null) {
+            const { "$lang": lang, ...style } = elem.cssStyle ?? {};
+            const className = cx(elem.className, elem.styleName && this.processStyleName(elem.styleName));
+            return { ns, tagName, className, lang, style, children: children ?? this.renderElements(elem.children) };
         }
-        renderClass(input, ouput) {
-            if (input.className)
-                ouput.className = input.className;
-            if (input.styleName)
-                ouput.classList.add(this.processStyleName(input.styleName));
+        toHTML(elem, ns, tagName, children = null) {
+            return this.h(this.toH(elem, ns, tagName, children));
         }
         findStyle(styleName) {
             return styleName && this.styleMap?.[styleName];
@@ -3988,9 +3941,6 @@ section.${c}>footer { z-index: 1; }
         later(func) {
             this.postRenderTasks.push(func);
         }
-    }
-    function appendChildren(elem, children) {
-        children.forEach(c => elem.appendChild(isString(c) ? document.createTextNode(c) : c));
     }
     function findParent(elem, type) {
         var parent = elem.parent;

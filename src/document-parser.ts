@@ -708,7 +708,7 @@ export class DocumentParser {
 					result.children.push(<WmlSymbol>{
 						type: DomType.Symbol,
 						font: encloseFontFamily(xml.attr(c, "font")),
-						char: xml.attr(c, "char")
+						char: xml.hexAttr(c, "char")
 					});
 					break;
 

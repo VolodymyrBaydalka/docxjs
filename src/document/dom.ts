@@ -115,7 +115,7 @@ export interface WmlText extends OpenXmlElement{
 
 export interface WmlSymbol extends OpenXmlElement {
     font: string;
-    char: string;
+    char: number;
 }
 
 export interface WmlTable extends OpenXmlElement {
