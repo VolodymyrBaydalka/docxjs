@@ -368,7 +368,7 @@ export class DocumentParser {
 
 	parseNumberingFile(node: Element): IDomNumbering[] {
 		var result = [];
-		var mapping = {};
+		var nums = [];
 		var bullets = [];
 
 		for (const n of xml.elements(node)) {
@@ -383,16 +383,18 @@ export class DocumentParser {
 					break;
 
 				case "num":
-					var numId = xml.attr(n, "numId");
-					var abstractNumId = xml.elementAttr(n, "abstractNumId", "val");
-					mapping[abstractNumId] = numId;
+					nums.push({
+						numId: xml.attr(n, "numId"),
+						abstractNumId: xml.elementAttr(n, "abstractNumId", "val"),
+					});
 					break;
 			}
 		}
 
-		result.forEach(x => x.id = mapping[x.id]);
-
-		return result;
+		// a single abstractNum may be referenced by multiple num elements — clone levels per numId
+		return result.flatMap(level => nums
+			.filter(num => num.abstractNumId == level.id)
+			.map(num => ({ ...level, id: num.numId })));
 	}
 
 	parseNumberingPicBullet(elem: Element): NumberingPicBullet {
