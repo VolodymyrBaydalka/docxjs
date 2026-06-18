@@ -1669,6 +1669,9 @@ class values {
 			'ne-cell', 'nw-cell', 'se-cell', 'sw-cell'
 		];
 
+		if (val == null)
+			return '';
+
 		return classes.filter((_, i) => val[i] == '1').join(' ');
 	}
 
