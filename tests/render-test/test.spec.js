@@ -8,6 +8,7 @@ describe("Render document", function () {
     'revision',
     'numbering',
     'line-spacing',
+    'bidi',
     'header-footer',
     'footnote',
     'equation'

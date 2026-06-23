@@ -1385,8 +1385,6 @@ export class DocumentParser {
 				case "keepLines": //TODO - maybe ignore
 				case "keepNext": //TODO - maybe ignore
 				case "widowControl": //TODO - maybe ignore 
-				case "bidi": //TODO - maybe ignore
-				case "rtl": //TODO - maybe ignore
 				case "noProof": //ignore spellcheck
 					//TODO ignore
 					break;
