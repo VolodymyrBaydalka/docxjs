@@ -4,7 +4,8 @@ import {
 	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
 	WmlSmartTag,
 	WmlAltChunk,
-	WmlTableRow
+	WmlTableRow,
+	WmlChange
 } from './document/dom';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
@@ -1053,17 +1054,34 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderInserted(elem: OpenXmlElement): Node | Node[] {
-		if (this.options.renderChanges)
-			return this.renderContainer(elem, "ins");
+		if (this.options.renderChanges) {
+			const result = this.renderContainer(elem, "ins");
+			this.renderChangeMetadata(result, elem as WmlChange);
+			return result;
+		}
 
 		return this.renderElements(elem.children);
 	}
 
 	renderDeleted(elem: OpenXmlElement): Node {
-		if (this.options.renderChanges)
-			return this.renderContainer(elem, "del");
+		if (this.options.renderChanges) {
+			const result = this.renderContainer(elem, "del");
+			this.renderChangeMetadata(result, elem as WmlChange);
+			return result;
+		}
 
 		return null;
+	}
+
+	// Surface <w:ins>/<w:del> revision metadata so consumers can read the
+	// change author/date/id off the rendered element (e.g. attribution UI).
+	renderChangeMetadata(result: HTMLElement, elem: WmlChange) {
+		if (elem.author)
+			result.setAttribute("data-change-author", elem.author);
+		if (elem.date)
+			result.setAttribute("data-change-date", elem.date);
+		if (elem.id)
+			result.setAttribute("data-change-id", elem.id);
 	}
 
 	renderSymbol(elem: WmlSymbol) {

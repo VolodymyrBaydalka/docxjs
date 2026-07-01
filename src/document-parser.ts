@@ -2,7 +2,7 @@ import {
 	DomType, WmlTable, IDomNumbering,
 	WmlHyperlink, WmlSmartTag, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell,
 	WmlTableRow, NumberingPicBullet, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
-	WmlAltChunk
+	WmlAltChunk, WmlChange
 } from './document/dom';
 import { DocumentElement } from './document/document';
 import { WmlParagraph, parseParagraphProperties, parseParagraphProperty } from './document/paragraph';
@@ -479,15 +479,21 @@ export class DocumentParser {
 	}
 
 	parseInserted(node: Element, parentParser: Function): OpenXmlElement {
-		return <OpenXmlElement>{
+		return <WmlChange>{
 			type: DomType.Inserted,
+			id: xml.attr(node, "id"),
+			author: xml.attr(node, "author"),
+			date: xml.attr(node, "date"),
 			children: parentParser(node)?.children ?? []
 		};
 	}
 
 	parseDeleted(node: Element, parentParser: Function): OpenXmlElement {
-		return <OpenXmlElement>{
+		return <WmlChange>{
 			type: DomType.Deleted,
+			id: xml.attr(node, "id"),
+			author: xml.attr(node, "author"),
+			date: xml.attr(node, "date"),
 			children: parentParser(node)?.children ?? []
 		};
 	}
