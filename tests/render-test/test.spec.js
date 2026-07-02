@@ -10,7 +10,10 @@ describe("Render document", function () {
     'line-spacing',
     'header-footer',
     'footnote',
-    'equation'
+    'equation',
+    'text-box',
+    'text-box-wps',
+    'image',
   ];
 
   for (let path of tests) {
@@ -28,19 +31,15 @@ describe("Render document", function () {
       const actual = formatHTML(div.innerHTML);
       const expected = formatHTML(resultText);
 
-      expect(actual).toBe(expected);
-
       if(actual != expected) {
-        const diffs = Diff.diffLines(expected, actual);
+        const mismatch = findFirstMismatch(expected, actual);
 
-        for(const diff of diffs) {
-          if(diff.added)
-            console.log('[+] ' + diff.value);
+        console.log(`[-] ${JSON.stringify(mismatch.expected)}`);
+        console.log(`[+] ${JSON.stringify(mismatch.actual)}`);
 
-          if(diff.removed)
-            console.log('[-] ' + diff.value);
-        }
       }
+
+      expect(actual).toBe(expected);
 
       div.remove();
     });
@@ -48,5 +47,39 @@ describe("Render document", function () {
 });
 
 function formatHTML(text) {
-  return text.replace(/\t+|\s+/ig, ' ').replace(/></ig, '>\n<');
+  return text
+    .replace(/src="blob:[^"]+"/ig, 'src="blob:__dynamic__"')
+    .replace(/\t+|\s+/ig, ' ')
+    .replace(/<style>\s+/ig, '<style>')
+    .replace(/\s+<\/style>/ig, '</style>')
+    .replace(/\{\}/ig, '{ }')
+    .replace(/>\s+</ig, '><')
+    .replace(/></ig, '>\n<')
+    .trim();
+}
+
+function findFirstMismatch(expected, actual) {
+  const max = Math.min(expected.length, actual.length);
+
+  for(let i = 0; i < max; i++) {
+    if(expected[i] !== actual[i]) {
+      return {
+        index: i,
+        expected: snippetAt(expected, i),
+        actual: snippetAt(actual, i),
+      };
+    }
+  }
+
+  return {
+    index: max,
+    expected: snippetAt(expected, max),
+    actual: snippetAt(actual, max),
+  };
+}
+
+function snippetAt(text, index, radius = 80) {
+  const start = Math.max(0, index - radius);
+  const end = Math.min(text.length, index + radius);
+  return text.slice(start, end);
 }

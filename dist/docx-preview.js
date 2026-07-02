@@ -101,6 +101,14 @@
         }
         return mergeDeep(target, ...sources);
     }
+    function parseCssRules(text) {
+        const result = {};
+        for (const rule of text.split(';')) {
+            const [key, val] = rule.split(':');
+            result[key] = val;
+        }
+        return result;
+    }
     function asArray(val) {
         return Array.isArray(val) ? val : [val];
     }
@@ -1300,7 +1308,7 @@
         for (const at of globalXmlParser.attrs(elem)) {
             switch (at.localName) {
                 case "style":
-                    result.cssStyleText = at.value;
+                    result.cssStyleText = normalizeVmlStyle(at.value);
                     break;
                 case "fillcolor":
                     result.attrs.fill = at.value;
@@ -1324,12 +1332,15 @@
                     Object.assign(result.attrs, parseFill());
                     break;
                 case "imagedata":
-                    result.tagName = "image";
-                    Object.assign(result.attrs, { width: '100%', height: '100%' });
-                    result.imageHref = {
-                        id: globalXmlParser.attr(el, "id"),
-                        title: globalXmlParser.attr(el, "title"),
-                    };
+                    const id = globalXmlParser.attr(el, "id");
+                    if (id) {
+                        result.tagName = "image";
+                        Object.assign(result.attrs, { width: '100%', height: '100%' });
+                        result.imageHref = {
+                            id,
+                            title: globalXmlParser.attr(el, "title"),
+                        };
+                    }
                     break;
                 case "txbxContent":
                     result.children.push(...parser.parseBodyElements(el));
@@ -1341,6 +1352,24 @@
             }
         }
         return result;
+    }
+    function normalizeVmlStyle(styleText) {
+        if (!styleText)
+            return styleText;
+        const style = parseCssRules(styleText);
+        if (style.position?.trim() !== "absolute")
+            return styleText;
+        const missingLeft = style.left == null
+            && style["mso-position-horizontal-relative"]?.trim() === "page";
+        const missingTop = style.top == null
+            && style["mso-position-vertical-relative"]?.trim() === "page";
+        if (!missingLeft && !missingTop)
+            return styleText;
+        const suffix = [
+            missingLeft ? "left:0pt" : null,
+            missingTop ? "top:0pt" : null,
+        ].filter(Boolean).join(";");
+        return `${styleText}${styleText.trim().endsWith(";") ? "" : ";"}${suffix}`;
     }
     function parseStroke(el) {
         return {
@@ -2127,7 +2156,7 @@
             }
             else if (wrapType == "wrapNone") {
                 result.cssStyle['display'] = 'block';
-                result.cssStyle['position'] = 'relative';
+                result.cssStyle['position'] = posX.relative == "page" && posY.relative == "page" ? "absolute" : "relative";
                 result.cssStyle["width"] = "0px";
                 result.cssStyle["height"] = "0px";
                 if (posX.offset)
@@ -3595,9 +3624,10 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderDrawing(elem) {
+            var _a;
             var result = this.toHTML(elem, ns.html, "div");
             result.style.display = "inline-block";
-            result.style.position = "relative";
+            (_a = result.style).position || (_a.position = "relative");
             result.style.textIndent = "0px";
             return result;
         }
@@ -3668,7 +3698,12 @@ section.${c}>footer { z-index: 1; }
             if (elem.verticalAlign) {
                 children = [this.h({ tagName: elem.verticalAlign, children: this.renderElements(elem.children) })];
             }
-            const result = this.toHTML(elem, ns.html, "span", children);
+            const isDrawingOnlyRun = elem.children?.length == 1 && elem.children[0].type == DomType.Drawing;
+            const result = this.toHTML(elem, ns.html, isDrawingOnlyRun ? "div" : "span", children);
+            if (isDrawingOnlyRun) {
+                result.style.width = "0px";
+                result.style.height = "0px";
+            }
             if (elem.id)
                 result.id = elem.id;
             return result;

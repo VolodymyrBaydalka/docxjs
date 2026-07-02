@@ -1010,7 +1010,7 @@ section.${c}>footer { z-index: 1; }
 		var result = this.toHTML(elem, ns.html, "div");
 
 		result.style.display = "inline-block";
-		result.style.position = "relative";
+		result.style.position ||= "relative";
 		result.style.textIndent = "0px";
 
 		return result;
@@ -1106,7 +1106,13 @@ section.${c}>footer { z-index: 1; }
 			children = [this.h({ tagName: elem.verticalAlign, children: this.renderElements(elem.children) })];
 		}
 
-		const result = this.toHTML(elem, ns.html, "span", children);
+		const isDrawingOnlyRun = elem.children?.length == 1 && elem.children[0].type == DomType.Drawing;
+		const result = this.toHTML(elem, ns.html, isDrawingOnlyRun ? "div" : "span", children);
+
+		if (isDrawingOnlyRun) {
+			result.style.width = "0px";
+			result.style.height = "0px";
+		}
 
 		if (elem.id)
 			result.id = elem.id;
@@ -1466,4 +1472,3 @@ function findParent<T extends OpenXmlElement>(elem: OpenXmlElement, type: DomTyp
 
 	return <T>parent;
 }
-

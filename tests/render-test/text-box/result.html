@@ -1,0 +1,568 @@
+<!--docxjs library predefined styles-->
+<style>
+    .docx-wrapper {
+        background: gray;
+        padding: 30px;
+        padding-bottom: 0px;
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+    }
+
+    .docx-wrapper>section.docx {
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        margin-bottom: 30px;
+    }
+
+    .docx {
+        color: black;
+        hyphens: auto;
+        text-underline-position: from-font;
+    }
+
+    section.docx {
+        box-sizing: border-box;
+        display: flex;
+        flex-flow: column nowrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+    section.docx>article {
+        margin-bottom: auto;
+        z-index: 1;
+    }
+
+    section.docx>footer {
+        z-index: 1;
+    }
+
+    .docx table {
+        border-collapse: collapse;
+    }
+
+    .docx table td,
+    .docx table th {
+        vertical-align: top;
+    }
+
+    .docx p {
+        margin: 0pt;
+        min-height: 1em;
+    }
+
+    .docx span {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
+    .docx a {
+        color: inherit;
+        text-decoration: inherit;
+    }
+
+    .docx svg {
+        fill: transparent;
+    }
+</style><!--docxjs document theme values-->
+<style>
+    .docx {
+        --docx-majorHAnsi-font: Aptos Display;
+        --docx-minorHAnsi-font: Aptos;
+        --docx-dk1-color: #000000;
+        --docx-lt1-color: #FFFFFF;
+        --docx-dk2-color: #0E2841;
+        --docx-lt2-color: #E8E8E8;
+        --docx-accent1-color: #156082;
+        --docx-accent2-color: #E97132;
+        --docx-accent3-color: #196B24;
+        --docx-accent4-color: #0F9ED5;
+        --docx-accent5-color: #A02B93;
+        --docx-accent6-color: #4EA72E;
+        --docx-hlink-color: #467886;
+        --docx-folHlink-color: #96607D;
+    }
+</style><!--docxjs document styles-->
+<style>
+    .docx span {
+        font-family: var(--docx-minorHAnsi-font);
+        min-height: 12.00pt;
+        font-size: 12.00pt;
+    }
+
+    .docx p {
+        margin-bottom: 8.00pt;
+        line-height: 1.16;
+    }
+
+    p.docx_titre1 {
+        margin-top: 18.00pt;
+        margin-bottom: 4.00pt;
+    }
+
+    p.docx_titre1 span {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 20.00pt;
+        font-size: 20.00pt;
+    }
+
+    p.docx_titre1 span {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 20.00pt;
+        font-size: 20.00pt;
+    }
+
+    p.docx_titre2 {
+        margin-top: 8.00pt;
+        margin-bottom: 4.00pt;
+    }
+
+    p.docx_titre2 span {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 16.00pt;
+        font-size: 16.00pt;
+    }
+
+    p.docx_titre2 span {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 16.00pt;
+        font-size: 16.00pt;
+    }
+
+    p.docx_titre3 {
+        margin-top: 8.00pt;
+        margin-bottom: 4.00pt;
+    }
+
+    p.docx_titre3 span {
+        color: #0F4761;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    p.docx_titre3 span {
+        color: #0F4761;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    p.docx_titre4 {
+        margin-top: 4.00pt;
+        margin-bottom: 2.00pt;
+    }
+
+    p.docx_titre4 span {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    p.docx_titre4 span {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    p.docx_titre5 {
+        margin-top: 4.00pt;
+        margin-bottom: 2.00pt;
+    }
+
+    p.docx_titre5 span {
+        color: #0F4761;
+    }
+
+    p.docx_titre5 span {
+        color: #0F4761;
+    }
+
+    p.docx_titre6 {
+        margin-top: 2.00pt;
+        margin-bottom: 0.00pt;
+    }
+
+    p.docx_titre6 span {
+        font-style: italic;
+        color: #595959;
+    }
+
+    p.docx_titre6 span {
+        font-style: italic;
+        color: #595959;
+    }
+
+    p.docx_titre7 {
+        margin-top: 2.00pt;
+        margin-bottom: 0.00pt;
+    }
+
+    p.docx_titre7 span {
+        color: #595959;
+    }
+
+    p.docx_titre7 span {
+        color: #595959;
+    }
+
+    p.docx_titre8 {
+        margin-bottom: 0.00pt;
+    }
+
+    p.docx_titre8 span {
+        font-style: italic;
+        color: #272727;
+    }
+
+    p.docx_titre8 span {
+        font-style: italic;
+        color: #272727;
+    }
+
+    p.docx_titre9 {
+        margin-bottom: 0.00pt;
+    }
+
+    p.docx_titre9 span {
+        color: #272727;
+    }
+
+    p.docx_titre9 span {
+        color: #272727;
+    }
+
+    .docx table,
+    table.docx_tableaunormal td {
+        padding-top: 0.00pt;
+        padding-left: 5.40pt;
+        padding-bottom: 0.00pt;
+        padding-right: 5.40pt;
+    }
+
+    span.docx_titre1car {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 20.00pt;
+        font-size: 20.00pt;
+    }
+
+    span.docx_titre1car p {
+        margin-top: 18.00pt;
+        margin-bottom: 4.00pt;
+    }
+
+    span.docx_titre1car {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 20.00pt;
+        font-size: 20.00pt;
+    }
+
+    span.docx_titre2car {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 16.00pt;
+        font-size: 16.00pt;
+    }
+
+    span.docx_titre2car p {
+        margin-top: 8.00pt;
+        margin-bottom: 4.00pt;
+    }
+
+    span.docx_titre2car {
+        font-family: var(--docx-majorHAnsi-font);
+        color: #0F4761;
+        min-height: 16.00pt;
+        font-size: 16.00pt;
+    }
+
+    span.docx_titre3car {
+        color: #0F4761;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    span.docx_titre3car p {
+        margin-top: 8.00pt;
+        margin-bottom: 4.00pt;
+    }
+
+    span.docx_titre3car {
+        color: #0F4761;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    span.docx_titre4car {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    span.docx_titre4car p {
+        margin-top: 4.00pt;
+        margin-bottom: 2.00pt;
+    }
+
+    span.docx_titre4car {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    span.docx_titre5car {
+        color: #0F4761;
+    }
+
+    span.docx_titre5car p {
+        margin-top: 4.00pt;
+        margin-bottom: 2.00pt;
+    }
+
+    span.docx_titre5car {
+        color: #0F4761;
+    }
+
+    span.docx_titre6car {
+        font-style: italic;
+        color: #595959;
+    }
+
+    span.docx_titre6car p {
+        margin-top: 2.00pt;
+        margin-bottom: 0.00pt;
+    }
+
+    span.docx_titre6car {
+        font-style: italic;
+        color: #595959;
+    }
+
+    span.docx_titre7car {
+        color: #595959;
+    }
+
+    span.docx_titre7car p {
+        margin-top: 2.00pt;
+        margin-bottom: 0.00pt;
+    }
+
+    span.docx_titre7car {
+        color: #595959;
+    }
+
+    span.docx_titre8car {
+        font-style: italic;
+        color: #272727;
+    }
+
+    span.docx_titre8car p {
+        margin-bottom: 0.00pt;
+    }
+
+    span.docx_titre8car {
+        font-style: italic;
+        color: #272727;
+    }
+
+    span.docx_titre9car {
+        color: #272727;
+    }
+
+    span.docx_titre9car p {
+        margin-bottom: 0.00pt;
+    }
+
+    span.docx_titre9car {
+        color: #272727;
+    }
+
+    p.docx_titre {
+        margin-bottom: 4.00pt;
+        line-height: 1.00;
+    }
+
+    p.docx_titre span {
+        font-family: var(--docx-majorHAnsi-font);
+        min-height: 28.00pt;
+        font-size: 28.00pt;
+    }
+
+    p.docx_titre span {
+        font-family: var(--docx-majorHAnsi-font);
+        min-height: 28.00pt;
+        font-size: 28.00pt;
+    }
+
+    span.docx_titrecar {
+        font-family: var(--docx-majorHAnsi-font);
+        min-height: 28.00pt;
+        font-size: 28.00pt;
+    }
+
+    span.docx_titrecar p {
+        margin-bottom: 4.00pt;
+        line-height: 1.00;
+    }
+
+    span.docx_titrecar {
+        font-family: var(--docx-majorHAnsi-font);
+        min-height: 28.00pt;
+        font-size: 28.00pt;
+    }
+
+    p.docx_sous-titre {}
+
+    p.docx_sous-titre span {
+        color: #595959;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    p.docx_sous-titre span {
+        color: #595959;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    span.docx_sous-titrecar {
+        color: #595959;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    span.docx_sous-titrecar p {}
+
+    span.docx_sous-titrecar {
+        color: #595959;
+        min-height: 14.00pt;
+        font-size: 14.00pt;
+    }
+
+    p.docx_citation {
+        margin-top: 8.00pt;
+        text-align: center;
+    }
+
+    p.docx_citation span {
+        font-style: italic;
+        color: #404040;
+    }
+
+    p.docx_citation span {
+        font-style: italic;
+        color: #404040;
+    }
+
+    span.docx_citationcar {
+        font-style: italic;
+        color: #404040;
+    }
+
+    span.docx_citationcar p {
+        margin-top: 8.00pt;
+        text-align: center;
+    }
+
+    span.docx_citationcar {
+        font-style: italic;
+        color: #404040;
+    }
+
+    p.docx_paragraphedeliste {
+        margin-inline-start: 36.00pt;
+    }
+
+    span.docx_accentuationintense {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    p.docx_citationintense {
+        border-top: 0.50pt solid #0F4761;
+        border-bottom: 0.50pt solid #0F4761;
+        margin-top: 18.00pt;
+        margin-bottom: 18.00pt;
+        margin-inline-start: 43.20pt;
+        margin-inline-end: 43.20pt;
+        text-align: center;
+    }
+
+    p.docx_citationintense span {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    p.docx_citationintense span {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    span.docx_citationintensecar {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    span.docx_citationintensecar p {
+        border-top: 0.50pt solid #0F4761;
+        border-bottom: 0.50pt solid #0F4761;
+        margin-top: 18.00pt;
+        margin-bottom: 18.00pt;
+        margin-inline-start: 43.20pt;
+        margin-inline-end: 43.20pt;
+        text-align: center;
+    }
+
+    span.docx_citationintensecar {
+        font-style: italic;
+        color: #0F4761;
+    }
+
+    span.docx_rfrenceintense {
+        font-weight: bold;
+        font-variant: small-caps;
+        color: #0F4761;
+    }
+</style>
+<div class="docx-wrapper">
+    <section class="docx" style="padding: 70.85pt; width: 595.3pt; min-height: 841.9pt;">
+        <article>
+            <p><span>
+                    <div><svg
+                            style="position:absolute;margin-left:354.35pt;margin-top:141.75pt;width:179.9pt;height:134.65pt;z-index:251659264;visibility:visible;mso-wrap-style:square;mso-width-percent:400;mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3.6pt;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:3.6pt;mso-position-horizontal:absolute;mso-position-horizontal-relative:page;mso-position-vertical:absolute;mso-position-vertical-relative:page;mso-width-percent:400;mso-height-percent:200;mso-width-relative:margin;mso-height-relative:margin;v-text-anchor:top;left:0pt;top:0pt">
+                            <g>
+                                <foreignObject width="100%" height="100%">
+                                    <p><span>[Attirez l’attention du lecteur avec une citation du document ou utilisez
+                                            cet espace pour mettre en valeur un point clé. Pour placer cette zone de
+                                            texte n’importe où sur la page, faites-la simplement glisser.]</span></p>
+                                </foreignObject>
+                            </g>
+                        </svg></div>
+                </span><span>$$$</span></p>
+            <p></p>
+            <p></p>
+            <p><span>SOME TEXT</span></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p><span>SOME TEXT</span></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p><span>
+                    <div><svg
+                            style="position:absolute;margin-left:112.85pt;margin-top:65.6pt;width:185.9pt;height:110.6pt;z-index:251661312;visibility:visible;mso-wrap-style:square;mso-width-percent:400;mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3.6pt;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:3.6pt;mso-position-horizontal:absolute;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:400;mso-height-percent:200;mso-width-relative:margin;mso-height-relative:margin;v-text-anchor:top">
+                            <g>
+                                <foreignObject width="100%" height="100%">
+                                    <p><span>[Attirez l’attention du lecteur avec une citation du document ou utilisez
+                                            cet espace pour mettre en valeur un point clé. Pour placer cette zone de
+                                            texte n’importe où sur la page, faites-la simplement glisser.]</span></p>
+                                </foreignObject>
+                            </g>
+                        </svg></div>
+                </span></p>
+        </article>
+    </section>
+</div>

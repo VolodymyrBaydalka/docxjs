@@ -920,7 +920,7 @@ export class DocumentParser {
 		}
 		else if (wrapType == "wrapNone") {
 			result.cssStyle['display'] = 'block';
-			result.cssStyle['position'] = 'relative';
+			result.cssStyle['position'] = posX.relative == "page" && posY.relative == "page" ? "absolute" : "relative";
 			result.cssStyle["width"] = "0px";
 			result.cssStyle["height"] = "0px";
 
