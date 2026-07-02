@@ -2127,7 +2127,7 @@
             }
             else if (wrapType == "wrapNone") {
                 result.cssStyle['display'] = 'block';
-                result.cssStyle['position'] = 'relative';
+                result.cssStyle['position'] = posX.relative == "page" && posY.relative == "page" ? "absolute" : "relative";
                 result.cssStyle["width"] = "0px";
                 result.cssStyle["height"] = "0px";
                 if (posX.offset)
@@ -3595,9 +3595,10 @@ section.${c}>footer { z-index: 1; }
             return result;
         }
         renderDrawing(elem) {
+            var _a;
             var result = this.toHTML(elem, ns.html, "div");
             result.style.display = "inline-block";
-            result.style.position = "relative";
+            (_a = result.style).position || (_a.position = "relative");
             result.style.textIndent = "0px";
             return result;
         }
@@ -3668,7 +3669,12 @@ section.${c}>footer { z-index: 1; }
             if (elem.verticalAlign) {
                 children = [this.h({ tagName: elem.verticalAlign, children: this.renderElements(elem.children) })];
             }
-            const result = this.toHTML(elem, ns.html, "span", children);
+            const isDrawingOnlyRun = elem.children?.length == 1 && elem.children[0].type == DomType.Drawing;
+            const result = this.toHTML(elem, ns.html, isDrawingOnlyRun ? "div" : "span", children);
+            if (isDrawingOnlyRun) {
+                result.style.width = "0px";
+                result.style.height = "0px";
+            }
             if (elem.id)
                 result.id = elem.id;
             return result;
