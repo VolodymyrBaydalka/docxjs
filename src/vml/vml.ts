@@ -50,7 +50,7 @@ export function parseVmlElement(elem: Element, parser: DocumentParser): VmlEleme
 	for (const at of xml.attrs(elem)) {
 		switch(at.localName) {
 			case "style": 
-				result.cssStyleText = at.value;
+				result.cssStyleText = normalizeVmlStyle(at.value);
 				break;
 
 			case "fillcolor": 
@@ -80,11 +80,15 @@ export function parseVmlElement(elem: Element, parser: DocumentParser): VmlEleme
 				break;
 
 			case "imagedata":
-				result.tagName = "image";
-				Object.assign(result.attrs, { width: '100%', height: '100%' });
-				result.imageHref = {
-					id: xml.attr(el, "id"),
-					title: xml.attr(el, "title"),
+				const id = xml.attr(el, "id");
+
+				if (id) {
+					result.tagName = "image";
+					Object.assign(result.attrs, { width: '100%', height: '100%' });
+					result.imageHref = {
+						id,
+						title: xml.attr(el, "title"),
+					}
 				}
 				break;
 
@@ -100,6 +104,31 @@ export function parseVmlElement(elem: Element, parser: DocumentParser): VmlEleme
 	}
 
 	return result;
+}
+
+function normalizeVmlStyle(styleText: string): string {
+	if (!styleText)
+		return styleText;
+
+	const style = parseCssRules(styleText);
+
+	if (style.position?.trim() !== "absolute")
+		return styleText;
+
+	const missingLeft = style.left == null
+		&& style["mso-position-horizontal-relative"]?.trim() === "page";
+	const missingTop = style.top == null
+		&& style["mso-position-vertical-relative"]?.trim() === "page";
+
+	if (!missingLeft && !missingTop)
+		return styleText;
+
+	const suffix = [
+		missingLeft ? "left:0pt" : null,
+		missingTop ? "top:0pt" : null,
+	].filter(Boolean).join(";");
+
+	return `${styleText}${styleText.trim().endsWith(";") ? "" : ";"}${suffix}`;
 }
 
 function parseStroke(el: Element): Record<string, string> {
