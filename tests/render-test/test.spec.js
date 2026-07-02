@@ -10,7 +10,10 @@ describe("Render document", function () {
     'line-spacing',
     'header-footer',
     'footnote',
-    'equation'
+    'equation',
+    'text-box',
+    'text-box-wps',
+    'image',
   ];
 
   for (let path of tests) {

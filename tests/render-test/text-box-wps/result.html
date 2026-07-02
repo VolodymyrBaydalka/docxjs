@@ -1,0 +1,152 @@
+<!--docxjs library predefined styles-->
+<style>
+    .docx-wrapper {
+        background: gray;
+        padding: 30px;
+        padding-bottom: 0px;
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+    }
+
+    .docx-wrapper>section.docx {
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        margin-bottom: 30px;
+    }
+
+    .docx {
+        color: black;
+        hyphens: auto;
+        text-underline-position: from-font;
+    }
+
+    section.docx {
+        box-sizing: border-box;
+        display: flex;
+        flex-flow: column nowrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+    section.docx>article {
+        margin-bottom: auto;
+        z-index: 1;
+    }
+
+    section.docx>footer {
+        z-index: 1;
+    }
+
+    .docx table {
+        border-collapse: collapse;
+    }
+
+    .docx table td,
+    .docx table th {
+        vertical-align: top;
+    }
+
+    .docx p {
+        margin: 0pt;
+        min-height: 1em;
+    }
+
+    .docx span {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
+    .docx a {
+        color: inherit;
+        text-decoration: inherit;
+    }
+
+    .docx svg {
+        fill: transparent;
+    }
+</style><!--docxjs document theme values-->
+<style>
+    .docx {
+        --docx-majorHAnsi-font: Calibri Light;
+        --docx-minorHAnsi-font: Calibri;
+        --docx-dk1-color: #000000;
+        --docx-lt1-color: #FFFFFF;
+        --docx-dk2-color: #44546A;
+        --docx-lt2-color: #E7E6E6;
+        --docx-accent1-color: #4874CB;
+        --docx-accent2-color: #EE822F;
+        --docx-accent3-color: #F2BA02;
+        --docx-accent4-color: #75BD42;
+        --docx-accent5-color: #30C0B4;
+        --docx-accent6-color: #E54C5E;
+        --docx-hlink-color: #0026E5;
+        --docx-folHlink-color: #7E1FAD;
+    }
+</style><!--docxjs document styles-->
+<style>
+    .docx span {
+        font-family: var(--docx-minorHAnsi-font);
+    }
+
+    .docx p,
+    p.docx_1 {
+        text-align: justify;
+    }
+
+    .docx p,
+    p.docx_1 span {
+        font-family: var(--docx-minorHAnsi-font);
+        min-height: 10.50pt;
+        font-size: 10.50pt;
+    }
+
+    .docx table,
+    table.docx_3 td {
+        padding-top: 0.00pt;
+        padding-left: 5.40pt;
+        padding-bottom: 0.00pt;
+        padding-right: 5.40pt;
+    }
+</style>
+<div class="docx-wrapper">
+    <section class="docx" style="padding: 72pt 90pt; width: 595.3pt; min-height: 841.9pt;">
+        <article style="column-count: 1; column-gap: 21.25pt;">
+            <p><span lang="fr-FR">some text</span></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p><span style="min-height: 10.5pt; font-size: 10.5pt;">
+                    <div><svg
+                            style="position:absolute;left:0pt;margin-left:283.45pt;margin-top:155.9pt;height:113.4pt;width:283.45pt;mso-position-horizontal-relative:page;mso-position-vertical-relative:page;z-index:251659264;mso-width-relative:page;mso-height-relative:page;">
+                            <image fill="#FFFFFF [3201]" stroke="#000000 [3213]" stroke-width="0.5pt" width="100%"
+                                height="100%">
+                                <foreignObject width="100%" height="100%">
+                                    <p><span lang="fr-FR">Some postal adresse</span></p>
+                                    <p><span lang="fr-FR">City</span></p>
+                                    <p></p>
+                                    <p></p>
+                                    <p></p>
+                                </foreignObject>
+                            </image>
+                        </svg></div>
+                </span></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p><span lang="fr-FR">Bottom text with more information that should be under the postal adress</span><span
+                    id="_GoBack"></span></p>
+            <p></p>
+            <p></p>
+            <p></p>
+            <p><span lang="fr-FR">Ok</span></p>
+            <p></p>
+        </article>
+    </section>
+</div>
