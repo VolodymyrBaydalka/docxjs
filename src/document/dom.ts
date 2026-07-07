@@ -101,6 +101,12 @@ export interface WmlSmartTag extends OpenXmlElement {
     element?: string;
 }
 
+export interface WmlChange extends OpenXmlElement {
+    id: string;
+    author: string;
+    date: string;
+}
+
 export interface WmlNoteReference extends OpenXmlElement {
     id: string;
 }

@@ -4,7 +4,8 @@ import {
 	WmlHyperlink, IDomImage, OpenXmlElement, WmlTableColumn, WmlTableCell, WmlText, WmlSymbol, WmlBreak, WmlNoteReference,
 	WmlSmartTag,
 	WmlAltChunk,
-	WmlTableRow
+	WmlTableRow,
+	WmlChange
 } from './document/dom';
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
@@ -21,7 +22,7 @@ import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import { VmlElement } from './vml/vml';
-import { WmlComment, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
+import { WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
 import { cx, h, ns } from './html';
 
 interface CellPos {
@@ -318,7 +319,7 @@ export class HtmlRenderer {
 			}
 		}
 
-		return this.h({ tagName: "article", style }) ;
+		return this.h({ tagName: "article", style });
 	}	
 
 	renderSections(document: DocumentElement): HTMLElement[] {
@@ -868,10 +869,10 @@ section.${c}>footer { z-index: 1; }
 				return this.renderMllList(elem);
 
 			case DomType.Inserted:
-				return this.renderInserted(elem);
+				return this.renderInserted(elem as WmlChange);
 
 			case DomType.Deleted:
-				return this.renderDeleted(elem);
+				return this.renderDeleted(elem as WmlChange);
 
 			case DomType.CommentRangeStart:
 				return this.renderCommentRangeStart(elem);
@@ -900,8 +901,8 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
-	renderContainer<T extends keyof HTMLElementTagNameMap>(elem: OpenXmlElement, tagName: T): HTMLElementTagNameMap[T] {
-		return this.h({ tagName, children: this.renderElements(elem.children) }) as any;
+	renderContainer<T extends keyof HTMLElementTagNameMap>(elem: OpenXmlElement, tagName: T, props?: Record<string, any>): HTMLElementTagNameMap[T] {
+		return this.h({ tagName, children: this.renderElements(elem.children), ...props }) as any;
 	}
 
 	renderContainerNS(elem: OpenXmlElement, ns: ns, tagName: string, props?: Record<string, any>) {
@@ -1052,18 +1053,24 @@ section.${c}>footer { z-index: 1; }
 		return elem.break == "textWrapping" ? this.h({ tagName: "br" }) : null;
 	}
 
-	renderInserted(elem: OpenXmlElement): Node | Node[] {
+	renderInserted(elem: WmlChange): Node | Node[] {
 		if (this.options.renderChanges)
-			return this.renderContainer(elem, "ins");
+			return this.renderChange(elem, "ins");
 
 		return this.renderElements(elem.children);
 	}
 
-	renderDeleted(elem: OpenXmlElement): Node {
+	renderDeleted(elem: WmlChange): Node {
 		if (this.options.renderChanges)
-			return this.renderContainer(elem, "del");
+			return this.renderChange(elem, "del");
 
 		return null;
+	}
+
+	renderChange(elem: WmlChange, tag: string) {
+		return this.renderContainer(elem, tag as any, {
+			dateTime: elem.date		
+		});
 	}
 
 	renderSymbol(elem: WmlSymbol) {

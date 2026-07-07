@@ -23,7 +23,9 @@ describe("Render document", function () {
 
       document.body.appendChild(div);
 
-      await docx.renderAsync(docBlob, div);
+      await docx.renderAsync(docBlob, div, null, {
+        renderChanges: true
+      });
       
       const actual = formatHTML(div.innerHTML);
       const expected = formatHTML(resultText);
