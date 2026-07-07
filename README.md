@@ -97,7 +97,7 @@ Currently library does break pages:
 
 Realtime page breaking is not implemented because it's requires re-calculation of sizes on each insertion and that could affect performance a lot. 
 
-If page breaking is crutual for you, I would recommend:
+If page breaking is crucial for you, I would recommend:
 - try to insert manual break point as much as you could
 - try use editors like MS Word, that inserts `<w:lastRenderedPageBreak/>` break points
 
