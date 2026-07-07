@@ -63,7 +63,10 @@ renderAsync(
         renderComments: false, //enables experimental comments rendering
         renderAltChunks: true, //enables altChunks (html parts) rendering
         debug: boolean = false, //enables additional logging
+        h: ({ ns, tagName, className, style, children, ...props } | Node | string): Node, //experimental hook for HTML rendering, default implementation - defaultOptions.h
     }): Promise<WordDocument>
+
+defaultOptions: Options; // default options
 
 /// ==== experimental / internal API ===
 // this API could be used to modify document before rendering
