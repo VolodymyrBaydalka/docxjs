@@ -23,6 +23,7 @@ export interface Options {
 	renderChanges: boolean;
     renderComments: boolean;
     renderAltChunks: boolean;
+    useConstructedStyleSheets?: boolean;
     h: typeof h;
 }
 
@@ -46,6 +47,7 @@ export const defaultOptions: Options = {
 	renderChanges: false,
     renderComments: false,
     renderAltChunks: true,
+    useConstructedStyleSheets: false,
     h: h
 };
 
