@@ -17,10 +17,10 @@ export interface Options {
     renderHeaders: boolean;
     renderFooters: boolean;
     renderFootnotes: boolean;
-	renderEndnotes: boolean;
+    renderEndnotes: boolean;
     ignoreLastRenderedPageBreak: boolean;
-	useBase64URL: boolean;
-	renderChanges: boolean;
+    useBase64URL: boolean;
+    renderChanges: boolean;
     renderComments: boolean;
     renderAltChunks: boolean;
     useConstructedStyleSheets?: boolean;
@@ -42,14 +42,16 @@ export const defaultOptions: Options = {
     renderHeaders: true,
     renderFooters: true,
     renderFootnotes: true,
-	renderEndnotes: true,
-	useBase64URL: false,
-	renderChanges: false,
+    renderEndnotes: true,
+    useBase64URL: false,
+    renderChanges: false,
     renderComments: false,
     renderAltChunks: true,
     useConstructedStyleSheets: false,
     h: h
 };
+
+const adoptedByContainer = new WeakMap<HTMLElement, CSSStyleSheet[]>();
 
 export function parseAsync(data: Blob | any, userOptions?: Partial<Options>): Promise<any>  {
     const ops = { ...defaultOptions, ...userOptions };
@@ -63,17 +65,41 @@ export async function renderDocument(document: any, userOptions?: Partial<Option
 }
 
 export async function renderAsync(data: Blob | any, bodyContainer: HTMLElement, styleContainer?: HTMLElement, userOptions?: Partial<Options>): Promise<any> {
-	const doc = await parseAsync(data, userOptions);
-	const nodes = await renderDocument(doc, userOptions);
+    const ops = { ...defaultOptions, ...userOptions };
+    const doc = await parseAsync(data, userOptions);
+    const nodes = await renderDocument(doc, userOptions);
 
     styleContainer ??= bodyContainer;
     styleContainer.innerHTML = "";
     bodyContainer.innerHTML = "";
 
+    const root = styleContainer.getRootNode() as Document | ShadowRoot;
+    const useAdopted = ops.useConstructedStyleSheets
+        && typeof CSSStyleSheet !== "undefined"
+        && "replaceSync" in CSSStyleSheet.prototype
+        && "adoptedStyleSheets" in root;
+    if (useAdopted) {
+        const prev = adoptedByContainer.get(styleContainer);
+        if (prev?.length)
+            root.adoptedStyleSheets = root.adoptedStyleSheets.filter(s => !prev.includes(s));
+    }
+
+    const adopted: CSSStyleSheet[] = [];
     for (let n of nodes) {
+        if (useAdopted && n.nodeName === "STYLE") {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync((n as HTMLStyleElement).textContent ?? "");
+            adopted.push(sheet);
+            continue;
+        }
         const c = n.nodeName === "STYLE" ? styleContainer : bodyContainer;
         c.appendChild(n);
     }
-    
+
+    if (useAdopted) {
+        root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...adopted];
+        adoptedByContainer.set(styleContainer, adopted);
+    }
+
     return doc;
 }
