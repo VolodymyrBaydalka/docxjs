@@ -96,16 +96,16 @@ export interface WmlAltChunk extends OpenXmlElement {
 	id?: string;
 }
 
-// Tracked-change revision metadata shared by <w:ins> and <w:del>.
-export interface WmlChange extends OpenXmlElement {
-	id?: string;
-	author?: string;
-	date?: string;
-}
-
 export interface WmlSmartTag extends OpenXmlElement {
 	uri?: string;
     element?: string;
+}
+
+// Tracked-change revision metadata shared by <w:ins> and <w:del>.
+export interface WmlChange extends OpenXmlElement {
+    id: string;
+    author: string;
+    date: string;
 }
 
 export interface WmlNoteReference extends OpenXmlElement {

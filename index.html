@@ -68,7 +68,7 @@
 
     <script>
         let currentDocument = null;
-        const docxOptions = Object.assign(docx.defaultOptions, {
+        const docxOptions = Object.assign({}, docx.defaultOptions, {
             debug: true,
             experimental: true,
             hideWrapperOnPrint: true,
@@ -107,7 +107,7 @@
             listItem.innerHTML = `
             <div class="dropdown-item">
                 <div class="form-check">
-                    <label class="form-check-name"><input type="checkbox" class="form-check-input" ${docxOptions[key] ? 'checked' : ''}> ${key}</label>
+                    <label class="form-check-label"><input type="checkbox" class="form-check-input" ${docxOptions[key] ? 'checked' : ''}> ${key}</label>
                 </div>
             </div>`;
 

@@ -367,15 +367,14 @@ export class DocumentParser {
 	}
 
 	parseNumberingFile(node: Element): IDomNumbering[] {
-		var result = [];
-		var mapping = {};
-		var bullets = [];
+		const levels = [];
+		const nums = [];
+		const bullets = [];
 
 		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "abstractNum":
-					this.parseAbstractNumbering(n, bullets)
-						.forEach(x => result.push(x));
+					levels.push(...this.parseAbstractNumbering(n, bullets));
 					break;
 
 				case "numPicBullet":
@@ -383,16 +382,15 @@ export class DocumentParser {
 					break;
 
 				case "num":
-					var numId = xml.attr(n, "numId");
-					var abstractNumId = xml.elementAttr(n, "abstractNumId", "val");
-					mapping[abstractNumId] = numId;
+					nums.push({
+						numId: xml.attr(n, "numId"),
+						abstractNumId: xml.elementAttr(n, "abstractNumId", "val"),
+					});
 					break;
 			}
 		}
 
-		result.forEach(x => x.id = mapping[x.id]);
-
-		return result;
+		return nums.flatMap(x => levels.filter(lvl => x.abstractNumId == lvl.id).map(lvl => ({ ...lvl, id: x.numId })));
 	}
 
 	parseNumberingPicBullet(elem: Element): NumberingPicBullet {
@@ -478,23 +476,13 @@ export class DocumentParser {
 		return sdtContent ? parser(sdtContent) : [];
 	}
 
-	parseInserted(node: Element, parentParser: Function): OpenXmlElement {
+	parseChange(type: DomType, node: Element, parentParser: Function): WmlChange {
 		return <WmlChange>{
-			type: DomType.Inserted,
+			type,
+			children: parentParser(node)?.children ?? [],
 			id: xml.attr(node, "id"),
 			author: xml.attr(node, "author"),
 			date: xml.attr(node, "date"),
-			children: parentParser(node)?.children ?? []
-		};
-	}
-
-	parseDeleted(node: Element, parentParser: Function): OpenXmlElement {
-		return <WmlChange>{
-			type: DomType.Deleted,
-			id: xml.attr(node, "id"),
-			author: xml.attr(node, "author"),
-			date: xml.attr(node, "date"),
-			children: parentParser(node)?.children ?? []
 		};
 	}
 
@@ -549,11 +537,11 @@ export class DocumentParser {
 					break;
 
 				case "ins":
-					result.children.push(this.parseInserted(el, e => this.parseParagraph(e)));
+					result.children.push(this.parseChange(DomType.Inserted, el, e => this.parseParagraph(e)));
 					break;
 
 				case "del":
-					result.children.push(this.parseDeleted(el, e => this.parseParagraph(e)));
+					result.children.push(this.parseChange(DomType.Deleted, el, e => this.parseParagraph(e)));
 					break;
 			}
 		}
@@ -1391,8 +1379,6 @@ export class DocumentParser {
 				case "keepLines": //TODO - maybe ignore
 				case "keepNext": //TODO - maybe ignore
 				case "widowControl": //TODO - maybe ignore 
-				case "bidi": //TODO - maybe ignore
-				case "rtl": //TODO - maybe ignore
 				case "noProof": //ignore spellcheck
 					//TODO ignore
 					break;
@@ -1675,7 +1661,16 @@ class values {
 			'ne-cell', 'nw-cell', 'se-cell', 'sw-cell'
 		];
 
-		return classes.filter((_, i) => val[i] == '1').join(' ');
+		if (val)
+			return classes.filter((_, i) => val[i] == '1').join(' ');
+
+		const attrs = [
+			'firstRow', 'lastRow', 'firstColumn', 'lastColumn',
+			'oddVBand', 'evenVBand', 'oddHBand', 'evenHBand',
+			'firstRowLastColumn', 'firstRowFirstColumn', 'lastRowLastColumn', 'lastRowFirstColumn'
+		];
+
+		return classes.filter((_, i) => xml.boolAttr(c, attrs[i])).join(' ');
 	}
 
 	static valueOfJc(c: Element) {

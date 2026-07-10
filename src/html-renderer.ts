@@ -22,7 +22,7 @@ import { ThemePart } from './theme/theme-part';
 import { BaseHeaderFooterPart } from './header-footer/parts';
 import { Part } from './common/part';
 import { VmlElement } from './vml/vml';
-import { WmlComment, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
+import { WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
 import { cx, h, ns } from './html';
 
 interface CellPos {
@@ -319,7 +319,7 @@ export class HtmlRenderer {
 			}
 		}
 
-		return this.h({ tagName: "article", style }) ;
+		return this.h({ tagName: "article", style });
 	}	
 
 	renderSections(document: DocumentElement): HTMLElement[] {
@@ -869,10 +869,10 @@ section.${c}>footer { z-index: 1; }
 				return this.renderMllList(elem);
 
 			case DomType.Inserted:
-				return this.renderInserted(elem);
+				return this.renderInserted(elem as WmlChange);
 
 			case DomType.Deleted:
-				return this.renderDeleted(elem);
+				return this.renderDeleted(elem as WmlChange);
 
 			case DomType.CommentRangeStart:
 				return this.renderCommentRangeStart(elem);
@@ -901,8 +901,8 @@ section.${c}>footer { z-index: 1; }
 		return result;
 	}
 
-	renderContainer<T extends keyof HTMLElementTagNameMap>(elem: OpenXmlElement, tagName: T): HTMLElementTagNameMap[T] {
-		return this.h({ tagName, children: this.renderElements(elem.children) }) as any;
+	renderContainer<T extends keyof HTMLElementTagNameMap>(elem: OpenXmlElement, tagName: T, props?: Record<string, any>): HTMLElementTagNameMap[T] {
+		return this.h({ tagName, children: this.renderElements(elem.children), ...props }) as any;
 	}
 
 	renderContainerNS(elem: OpenXmlElement, ns: ns, tagName: string, props?: Record<string, any>) {
@@ -1053,35 +1053,35 @@ section.${c}>footer { z-index: 1; }
 		return elem.break == "textWrapping" ? this.h({ tagName: "br" }) : null;
 	}
 
-	renderInserted(elem: OpenXmlElement): Node | Node[] {
-		if (this.options.renderChanges) {
-			const result = this.renderContainer(elem, "ins");
-			this.renderChangeMetadata(result, elem as WmlChange);
-			return result;
-		}
+	renderInserted(elem: WmlChange): Node | Node[] {
+		if (this.options.renderChanges)
+			return this.renderChange(elem, "ins");
 
 		return this.renderElements(elem.children);
 	}
 
-	renderDeleted(elem: OpenXmlElement): Node {
-		if (this.options.renderChanges) {
-			const result = this.renderContainer(elem, "del");
-			this.renderChangeMetadata(result, elem as WmlChange);
-			return result;
-		}
+	renderDeleted(elem: WmlChange): Node {
+		if (this.options.renderChanges)
+			return this.renderChange(elem, "del");
 
 		return null;
 	}
 
-	// Surface <w:ins>/<w:del> revision metadata so consumers can read the
-	// change author/date/id off the rendered element (e.g. attribution UI).
-	renderChangeMetadata(result: HTMLElement, elem: WmlChange) {
+	renderChange(elem: WmlChange, tag: string) {
+		const result = this.renderContainer(elem, tag as any, {
+			dateTime: elem.date
+		});
+
+		// Surface <w:ins>/<w:del> revision metadata so consumers can read the
+		// change author/date/id off the rendered element (e.g. attribution UI).
 		if (elem.author)
 			result.setAttribute("data-change-author", elem.author);
 		if (elem.date)
 			result.setAttribute("data-change-date", elem.date);
 		if (elem.id)
 			result.setAttribute("data-change-id", elem.id);
+
+		return result;
 	}
 
 	renderSymbol(elem: WmlSymbol) {

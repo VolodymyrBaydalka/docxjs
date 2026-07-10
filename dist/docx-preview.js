@@ -1678,27 +1678,26 @@
             return result;
         }
         parseNumberingFile(node) {
-            var result = [];
-            var mapping = {};
-            var bullets = [];
+            const levels = [];
+            const nums = [];
+            const bullets = [];
             for (const n of globalXmlParser.elements(node)) {
                 switch (n.localName) {
                     case "abstractNum":
-                        this.parseAbstractNumbering(n, bullets)
-                            .forEach(x => result.push(x));
+                        levels.push(...this.parseAbstractNumbering(n, bullets));
                         break;
                     case "numPicBullet":
                         bullets.push(this.parseNumberingPicBullet(n));
                         break;
                     case "num":
-                        var numId = globalXmlParser.attr(n, "numId");
-                        var abstractNumId = globalXmlParser.elementAttr(n, "abstractNumId", "val");
-                        mapping[abstractNumId] = numId;
+                        nums.push({
+                            numId: globalXmlParser.attr(n, "numId"),
+                            abstractNumId: globalXmlParser.elementAttr(n, "abstractNumId", "val"),
+                        });
                         break;
                 }
             }
-            result.forEach(x => x.id = mapping[x.id]);
-            return result;
+            return nums.flatMap(x => levels.filter(lvl => x.abstractNumId == lvl.id).map(lvl => ({ ...lvl, id: x.numId })));
         }
         parseNumberingPicBullet(elem) {
             var pict = globalXmlParser.element(elem, "pict");
@@ -1767,16 +1766,13 @@
             const sdtContent = globalXmlParser.element(node, "sdtContent");
             return sdtContent ? parser(sdtContent) : [];
         }
-        parseInserted(node, parentParser) {
+        parseChange(type, node, parentParser) {
             return {
-                type: DomType.Inserted,
-                children: parentParser(node)?.children ?? []
-            };
-        }
-        parseDeleted(node, parentParser) {
-            return {
-                type: DomType.Deleted,
-                children: parentParser(node)?.children ?? []
+                type,
+                children: parentParser(node)?.children ?? [],
+                id: globalXmlParser.attr(node, "id"),
+                author: globalXmlParser.attr(node, "author"),
+                date: globalXmlParser.attr(node, "date"),
             };
         }
         parseAltChunk(node) {
@@ -1818,10 +1814,10 @@
                         result.children.push(...this.parseSdt(el, e => this.parseParagraph(e).children));
                         break;
                     case "ins":
-                        result.children.push(this.parseInserted(el, e => this.parseParagraph(e)));
+                        result.children.push(this.parseChange(DomType.Inserted, el, e => this.parseParagraph(e)));
                         break;
                     case "del":
-                        result.children.push(this.parseDeleted(el, e => this.parseParagraph(e)));
+                        result.children.push(this.parseChange(DomType.Deleted, el, e => this.parseParagraph(e)));
                         break;
                 }
             }
@@ -2489,8 +2485,6 @@
                     case "keepLines":
                     case "keepNext":
                     case "widowControl":
-                    case "bidi":
-                    case "rtl":
                     case "noProof":
                         break;
                     default:
@@ -2727,7 +2721,14 @@
                 'odd-col', 'even-col', 'odd-row', 'even-row',
                 'ne-cell', 'nw-cell', 'se-cell', 'sw-cell'
             ];
-            return classes.filter((_, i) => val[i] == '1').join(' ');
+            if (val)
+                return classes.filter((_, i) => val[i] == '1').join(' ');
+            const attrs = [
+                'firstRow', 'lastRow', 'firstColumn', 'lastColumn',
+                'oddVBand', 'evenVBand', 'oddHBand', 'evenHBand',
+                'firstRowLastColumn', 'firstRowFirstColumn', 'lastRowLastColumn', 'lastRowFirstColumn'
+            ];
+            return classes.filter((_, i) => globalXmlParser.boolAttr(c, attrs[i])).join(' ');
         }
         static valueOfJc(c) {
             var type = globalXmlParser.attr(c, "val");
@@ -3516,8 +3517,8 @@ section.${c}>footer { z-index: 1; }
                 result.forEach(c => into.appendChild(isString(c) ? document.createTextNode(c) : c));
             return result;
         }
-        renderContainer(elem, tagName) {
-            return this.h({ tagName, children: this.renderElements(elem.children) });
+        renderContainer(elem, tagName, props) {
+            return this.h({ tagName, children: this.renderElements(elem.children), ...props });
         }
         renderContainerNS(elem, ns, tagName, props) {
             return this.h({ ns, tagName, children: this.renderElements(elem.children), ...props });
@@ -3630,13 +3631,25 @@ section.${c}>footer { z-index: 1; }
         }
         renderInserted(elem) {
             if (this.options.renderChanges)
-                return this.renderContainer(elem, "ins");
+                return this.renderChange(elem, "ins");
             return this.renderElements(elem.children);
         }
         renderDeleted(elem) {
             if (this.options.renderChanges)
-                return this.renderContainer(elem, "del");
+                return this.renderChange(elem, "del");
             return null;
+        }
+        renderChange(elem, tag) {
+            const result = this.renderContainer(elem, tag, {
+                dateTime: elem.date
+            });
+            if (elem.author)
+                result.setAttribute("data-change-author", elem.author);
+            if (elem.date)
+                result.setAttribute("data-change-date", elem.date);
+            if (elem.id)
+                result.setAttribute("data-change-id", elem.id);
+            return result;
         }
         renderSymbol(elem) {
             return this.h({ tagName: "span", children: [String.fromCharCode(elem.char)], style: { fontFamily: elem.font } });
