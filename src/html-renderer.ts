@@ -1068,9 +1068,20 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderChange(elem: WmlChange, tag: string) {
-		return this.renderContainer(elem, tag as any, {
-			dateTime: elem.date		
+		const result = this.renderContainer(elem, tag as any, {
+			dateTime: elem.date
 		});
+
+		// Surface <w:ins>/<w:del> revision metadata so consumers can read the
+		// change author/date/id off the rendered element (e.g. attribution UI).
+		if (elem.author)
+			result.setAttribute("data-change-author", elem.author);
+		if (elem.date)
+			result.setAttribute("data-change-date", elem.date);
+		if (elem.id)
+			result.setAttribute("data-change-id", elem.id);
+
+		return result;
 	}
 
 	renderSymbol(elem: WmlSymbol) {

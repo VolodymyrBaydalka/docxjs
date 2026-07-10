@@ -101,6 +101,7 @@ export interface WmlSmartTag extends OpenXmlElement {
     element?: string;
 }
 
+// Tracked-change revision metadata shared by <w:ins> and <w:del>.
 export interface WmlChange extends OpenXmlElement {
     id: string;
     author: string;

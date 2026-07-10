@@ -3640,9 +3640,16 @@ section.${c}>footer { z-index: 1; }
             return null;
         }
         renderChange(elem, tag) {
-            return this.renderContainer(elem, tag, {
+            const result = this.renderContainer(elem, tag, {
                 dateTime: elem.date
             });
+            if (elem.author)
+                result.setAttribute("data-change-author", elem.author);
+            if (elem.date)
+                result.setAttribute("data-change-date", elem.date);
+            if (elem.id)
+                result.setAttribute("data-change-id", elem.id);
+            return result;
         }
         renderSymbol(elem) {
             return this.h({ tagName: "span", children: [String.fromCharCode(elem.char)], style: { fontFamily: elem.font } });
