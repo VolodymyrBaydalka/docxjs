@@ -463,7 +463,7 @@ export class HtmlRenderer {
 
 					if (pBreakIndex < p.children.length - 1 || splitRun) {
 						var children = elem.children;
-						var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
+						var newParagraph = { ...elem, children: children.slice(pBreakIndex), pageBreakContinuation: true };
 						elem.children = children.slice(0, pBreakIndex);
 						current.elements.push(newParagraph);
 
@@ -669,6 +669,17 @@ section.${c}>footer { z-index: 1; }
 		if (resetCounters.length > 0) {
 			styleText += this.styleToString(this.rootSelector, {
 				"counter-reset": resetCounters.join(" ")
+			});
+		}
+
+		if (numberings.length > 0) {
+			styleText += this.styleToString(`p.${this.className}-page-break-continuation`, {
+				"counter-set": "none",
+				"list-style-type": "none",
+			});
+			styleText += this.styleToString(`p.${this.className}-page-break-continuation:before`, {
+				"content": "none",
+				"counter-increment": "none",
 			});
 		}
 
@@ -919,6 +930,10 @@ section.${c}>footer { z-index: 1; }
 
 		if (numbering) {
 			result.classList.add(this.numberingClass(numbering.id, numbering.level));
+
+			if (elem.pageBreakContinuation) {
+				result.classList.add(`${this.className}-page-break-continuation`);
+			}
 		}
 
 		return result;
