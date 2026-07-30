@@ -1284,9 +1284,17 @@ export class DocumentParser {
 					break;
 
 				case "ind":
-				case "tblInd":
 					this.parseIndentation(c, style);
 					break;
+
+				case "tblInd": {
+					//w:tblInd carries its length in w:w/w:type, not the left/right attributes
+					//parseIndentation reads, so a table indent used to parse to nothing
+					let tblInd = xml.lengthAttr(c, "w");
+					if (tblInd && parseFloat(tblInd) != 0)
+						style["margin-inline-start"] = tblInd;
+					break;
+				}
 
 				case "rFonts":
 					this.parseFont(c, style);
