@@ -823,10 +823,10 @@ export class DocumentParser {
 			var namespaceURI = elem.lookupNamespaceURI(requires);
 
 			if (supportedNamespaceURIs.includes(namespaceURI))
-				return choice.firstElementChild;
+				return choice.firstElementChild ?? elem;
 		}
 
-		return xml.element(elem, "Fallback")?.firstElementChild;
+		return xml.element(elem, "Fallback")?.firstElementChild ?? elem;
 	}
 
 	parseDrawing(node: Element): OpenXmlElement {
