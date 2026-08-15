@@ -2289,6 +2289,8 @@
                     case "gridAfter":
                         row.gridAfter = globalXmlParser.intAttr(c, "val");
                         break;
+                    case "jc":
+                        return true;
                     default:
                         return false;
                 }
