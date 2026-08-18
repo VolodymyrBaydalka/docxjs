@@ -492,6 +492,7 @@ export class DocumentParser {
 
 	parseParagraph(node: Element): OpenXmlElement {
 		var result = <WmlParagraph>{ type: DomType.Paragraph, children: [] };
+		result.paraId = xml.attr(node, "paraId");
 
 		for (let el of xml.elements(node)) {
 			switch (el.localName) {
