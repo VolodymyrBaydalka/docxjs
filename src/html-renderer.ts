@@ -1198,6 +1198,11 @@ section.${c}>footer { z-index: 1; }
 	renderVmlElement(elem: VmlElement): SVGElement {
 		var container = this.h({ ns: ns.svg, tagName: "svg", style: elem.cssStyleText }) as SVGElement;
 
+		if (elem.wrapType == "topAndBottom") {
+			container.style.display = "block";
+			container.style.position = "relative";
+		}
+
 		const result = this.renderVmlChildElement(elem);
 
 		if (elem.imageHref?.id) {

@@ -92,6 +92,10 @@ export function parseVmlElement(elem: Element, parser: DocumentParser): VmlEleme
 				result.children.push(...parser.parseBodyElements(el));
 				break;
 
+			case "wrap":
+				result.wrapType = xml.attr(el, "type");
+				break;
+
 			default:
 				const child = parseVmlElement(el, parser);
 				child && result.children.push(child);

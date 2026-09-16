@@ -10,7 +10,8 @@ describe("Render document", function () {
     'line-spacing',
     'header-footer',
     'footnote',
-    'equation'
+    'equation',
+    'vml-wrap'
   ];
 
   for (let path of tests) {
