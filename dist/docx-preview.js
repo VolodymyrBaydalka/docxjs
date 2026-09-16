@@ -1334,6 +1334,9 @@
                 case "txbxContent":
                     result.children.push(...parser.parseBodyElements(el));
                     break;
+                case "wrap":
+                    result.wrapType = globalXmlParser.attr(el, "type");
+                    break;
                 default:
                     const child = parseVmlElement(el, parser);
                     child && result.children.push(child);
@@ -3736,6 +3739,10 @@ section.${c}>footer { z-index: 1; }
         }
         renderVmlElement(elem) {
             var container = this.h({ ns: ns.svg, tagName: "svg", style: elem.cssStyleText });
+            if (elem.wrapType == "topAndBottom") {
+                container.style.display = "block";
+                container.style.position = "relative";
+            }
             const result = this.renderVmlChildElement(elem);
             if (elem.imageHref?.id) {
                 this.tasks.push(this.document?.loadDocumentImage(elem.imageHref.id, this.currentPart)
