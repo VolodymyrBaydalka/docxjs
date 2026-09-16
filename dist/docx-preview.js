@@ -2073,7 +2073,7 @@
             var isAnchor = node.localName == "anchor";
             let wrapType = null;
             let simplePos = globalXmlParser.boolAttr(node, "simplePos");
-            globalXmlParser.boolAttr(node, "behindDoc");
+            let behindDoc = globalXmlParser.boolAttr(node, "behindDoc");
             let posX = { relative: "page", align: "left", offset: "0" };
             let posY = { relative: "page", align: "top", offset: "0" };
             for (var n of globalXmlParser.elements(node)) {
@@ -2134,6 +2134,8 @@
             else if (isAnchor && (posX.align == 'left' || posX.align == 'right')) {
                 result.cssStyle["float"] = posX.align;
             }
+            if (behindDoc)
+                result.cssStyle["z-index"] = "-1";
             return result;
         }
         parseGraphic(elem) {

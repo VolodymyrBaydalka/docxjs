@@ -927,6 +927,9 @@ export class DocumentParser {
 			result.cssStyle["float"] = posX.align;
 		}
 
+		if (behindDoc)
+			result.cssStyle["z-index"] = "-1";
+
 		return result;
 	}
 
