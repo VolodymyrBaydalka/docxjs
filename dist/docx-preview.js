@@ -1027,6 +1027,9 @@
                 case "autoHyphenation":
                     result.autoHyphenation = xml.boolAttr(el, "val");
                     break;
+                case "evenAndOddHeaders":
+                    result.evenAndOddHeaders = xml.boolAttr(el, "val", true);
+                    break;
             }
         }
         return result;
@@ -3158,7 +3161,7 @@
             if (!refs)
                 return;
             var ref = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)
-                ?? (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
+                ?? (page % 2 == 1 && this.document.settingsPart?.settings?.evenAndOddHeaders ? refs.find(x => x.type == "even") : null)
                 ?? refs.find(x => x.type == "default");
             var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart);
             if (part) {
