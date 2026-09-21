@@ -1125,6 +1125,12 @@ export class DocumentParser {
 					row.gridAfter = xml.intAttr(c, "val");
 					break;
 
+				case "jc":
+					// Row-level horizontal alignment positions the row within the
+					// table; it must NOT become a text-align on the <tr> (CSS
+					// inheritance would center every cell). See issue #215.
+					return true;
+
 				default:
 					return false;
 			}
