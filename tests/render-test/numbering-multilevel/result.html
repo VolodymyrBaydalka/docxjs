@@ -1,0 +1,56 @@
+<!--docxjs library predefined styles--><style>
+.docx-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+.docx-wrapper>section.docx { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.docx { color: black; hyphens: auto; text-underline-position: from-font; }
+section.docx { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
+section.docx>article { margin-bottom: auto; z-index: 1; }
+section.docx>footer { z-index: 1; }
+.docx table { border-collapse: collapse; }
+.docx table td, .docx table th { vertical-align: top; }
+.docx p { margin: 0pt; min-height: 1em; }
+.docx span { white-space: pre-wrap; overflow-wrap: break-word; }
+.docx a { color: inherit; text-decoration: inherit; }
+.docx svg { fill: transparent; }
+</style><!--docxjs document numbering styles--><style>p.docx-num-1-0:before {
+  content: ""counter(docx-num-1-0, decimal)".\9";
+  counter-increment: docx-num-1-0;
+}
+p.docx-num-1-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  counter-set: docx-num-1-1 0 docx-num-1-2 0 docx-num-1-3 0;
+}
+p.docx-num-1-1:before {
+  content: ""counter(docx-num-1-0, decimal)"."counter(docx-num-1-1, decimal)".\9";
+  counter-increment: docx-num-1-1;
+}
+p.docx-num-1-1 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  counter-set: docx-num-1-2 0 docx-num-1-3 0;
+}
+p.docx-num-1-2:before {
+  content: "—\9";
+  counter-increment: docx-num-1-2;
+}
+p.docx-num-1-2 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  counter-set: docx-num-1-3 0;
+}
+p.docx-num-1-3:before {
+  content: ""counter(docx-num-1-0, decimal)"."counter(docx-num-1-1, decimal)"."counter(docx-num-1-3, decimal)".\9";
+  counter-increment: docx-num-1-3;
+}
+p.docx-num-1-3 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+}
+.docx-wrapper {
+  counter-reset: docx-num-1-0 0 docx-num-1-1 0 docx-num-1-2 0 docx-num-1-3 0;
+}
+</style><div class="docx-wrapper"><section class="docx"><article><p class="docx-num-1-0"><span>First section</span></p><p class="docx-num-1-1"><span>First subsection</span></p><p class="docx-num-1-3"><span>Item one</span></p><p class="docx-num-1-3"><span>Item two</span></p><p class="docx-num-1-1"><span>Second subsection</span></p><p class="docx-num-1-3"><span>Item one again</span></p><p class="docx-num-1-0"><span>Second section</span></p><p class="docx-num-1-1"><span>Its first subsection</span></p><p class="docx-num-1-3"><span>Item one once more</span></p></article></section></div>
