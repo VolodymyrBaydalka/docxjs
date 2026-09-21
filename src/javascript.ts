@@ -46,7 +46,10 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
     }
 
     const marginLeft = parseFloat(pcs.marginLeft);
-    const pOffset = pbb.left + marginLeft;
+    // the paragraph's text area starts at its border box, which already sits marginLeft
+    // to the right of the tab-stop origin - adding it counted the indent twice and every
+    // stop in an indented paragraph resolved too far right
+    const pOffset = pbb.left - marginLeft;
     const left = (ebb.left - pOffset) * pixelToPoint;
     const tab = tabStops.find(t => t.style != "clear" && t.pos > left);
 
