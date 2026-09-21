@@ -11,7 +11,7 @@ import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
 import { asArray, encloseFontFamily, escapeClassName, isString, keyBy, mergeDeep } from './utils';
-import { computePixelToPoint, updateTabStop } from './javascript';
+import { computePixelToPoint, updateTabStops } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
 import { WmlRun } from './document/run';
@@ -912,10 +912,12 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderParagraph(elem: WmlParagraph) {
-		var result = this.toHTML(elem, ns.html, "p");
-
 		const style = this.findStyle(elem.styleName);
-		elem.tabs ??= style?.paragraphProps?.tabs;  //TODO
+		// tab stops have to come from the style before the runs are rendered:
+		// renderTab reads them off the paragraph while it renders
+		elem.tabs ??= style?.paragraphProps?.tabs;
+
+		var result = this.toHTML(elem, ns.html, "p");
 
 		const numbering = elem.numbering ?? style?.paragraphProps?.numbering;
 
@@ -1438,11 +1440,7 @@ section.${c}>footer { z-index: 1; }
 			return;
 
 		setTimeout(() => {
-			const pixelToPoint = computePixelToPoint();
-
-			for (let tab of this.currentTabs) {
-				updateTabStop(tab.span, tab.stops, this.defaultTabSize, pixelToPoint);
-			}
+			updateTabStops(this.currentTabs, this.defaultTabSize, computePixelToPoint());
 		}, 500);
 	}
 
