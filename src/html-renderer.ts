@@ -427,10 +427,7 @@ export class HtmlRenderer {
 				const p = elem as WmlParagraph;
 				const s = this.findStyle(p.styleName);
 
-				// pageBreakBefore may come from the paragraph's style OR from the paragraph's
-				// own direct formatting (<w:pPr><w:pageBreakBefore/></w:pPr>). The latter is what
-				// python-docx and Word's "Page break before" checkbox produce, and it was ignored.
-				if (s?.paragraphProps?.pageBreakBefore || p.pageBreakBefore) {
+				if (p.pageBreakBefore || s?.paragraphProps?.pageBreakBefore) {
 					current.sectProps = sectProps;
 					current.pageBreak = true;
 					current = { sectProps: null, elements: [], pageBreak: false };

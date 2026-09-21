@@ -634,7 +634,7 @@ export class DocumentParser {
 		for (let c of xml.elements(node)) {
 			c = this.checkAlternateContent(c);
 
-			switch (c.localName) {
+			switch (c?.localName) {
 				case "t":
 					result.children.push(<WmlText>{
 						type: DomType.Text,
