@@ -1027,6 +1027,9 @@
                 case "autoHyphenation":
                     result.autoHyphenation = xml.boolAttr(el, "val");
                     break;
+                case "evenAndOddHeaders":
+                    result.evenAndOddHeaders = xml.boolAttr(el, "val", true);
+                    break;
             }
         }
         return result;
@@ -1887,7 +1890,7 @@
             var result = { type: DomType.Run, parent: parent, children: [] };
             for (let c of globalXmlParser.elements(node)) {
                 c = this.checkAlternateContent(c);
-                switch (c.localName) {
+                switch (c?.localName) {
                     case "t":
                         result.children.push({
                             type: DomType.Text,
@@ -2874,10 +2877,14 @@
         if (elem instanceof Node)
             return elem;
         const { ns, tagName, className, style, children, ...props } = elem;
-        if (tagName === "#fragment")
-            return document.createDocumentFragment();
+        if (tagName === "#fragment") {
+            const res = document.createDocumentFragment();
+            if (children)
+                children.forEach(c => res.appendChild(h(c)));
+            return res;
+        }
         if (tagName === "#comment")
-            return document.createComment(children[0]);
+            return document.createComment(children ? children[0] : '');
         const result = (ns ? document.createElementNS(ns, tagName) : document.createElement(tagName));
         if (className)
             result.setAttribute("class", className);
@@ -3157,8 +3164,9 @@
         renderHeaderFooter(refs, props, page, firstOfSection, into) {
             if (!refs)
                 return;
+            const evenAndOddHeaders = this.document.settingsPart?.settings?.evenAndOddHeaders ?? false;
             var ref = (props.titlePage && firstOfSection ? refs.find(x => x.type == "first") : null)
-                ?? (page % 2 == 1 ? refs.find(x => x.type == "even") : null)
+                ?? (page % 2 == 1 && evenAndOddHeaders ? refs.find(x => x.type == "even") : null)
                 ?? refs.find(x => x.type == "default");
             var part = ref && this.document.findPartByRelId(ref.id, this.document.documentPart);
             if (part) {
@@ -3202,8 +3210,9 @@
             var result = [current];
             for (let elem of elements) {
                 if (elem.type == DomType.Paragraph) {
-                    const s = this.findStyle(elem.styleName);
-                    if (s?.paragraphProps?.pageBreakBefore) {
+                    const p = elem;
+                    const s = this.findStyle(p.styleName);
+                    if (p.pageBreakBefore || s?.paragraphProps?.pageBreakBefore) {
                         current.sectProps = sectProps;
                         current.pageBreak = true;
                         current = { sectProps: null, elements: [], pageBreak: false };

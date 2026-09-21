@@ -9,6 +9,7 @@ describe("Render document", function () {
     'numbering',
     'line-spacing',
     'header-footer',
+    'header-footer-even-odd-off',
     'footnote',
     'equation',
     'page-break-before'
