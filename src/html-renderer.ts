@@ -795,7 +795,9 @@ section.${c}>footer { z-index: 1; }
 				return this.renderEndnoteReference(elem as WmlNoteReference);
 
 			case DomType.NoBreakHyphen:
-				return this.h({ tagName: "wbr" });
+				// a non-breaking hyphen is a visible hyphen that forbids a break;
+				// <wbr> is an invisible break opportunity - the opposite on both counts
+				return this.h("\u2011");
 
 			case DomType.VmlPicture:
 				return this.renderVmlPicture(elem);
