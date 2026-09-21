@@ -1284,9 +1284,25 @@ export class DocumentParser {
 					break;
 
 				case "ind":
-				case "tblInd":
 					this.parseIndentation(c, style);
 					break;
+
+				case "tblInd": {
+					//w:tblInd carries its length in w:w/w:type, not the left/right attributes
+					//parseIndentation reads, so a table indent used to parse to nothing
+					let tblInd = xml.lengthAttr(c, "w");
+					if (tblInd && parseFloat(tblInd) != 0) {
+						//Word measures tblInd to the first cell's TEXT: the visual edge sits at
+						//tblInd minus the table-level left cell margin (read off the sibling
+						//tblCellMar so parse order cannot matter)
+						let cellMar = xml.element(elem, "tblCellMar");
+						let cellMarLeftEl = cellMar && xml.element(cellMar, "left");
+						let cellMarLeft = cellMarLeftEl && xml.lengthAttr(cellMarLeftEl, "w");
+						style["margin-inline-start"] = cellMarLeft && parseFloat(cellMarLeft) != 0
+							? `calc(${tblInd} - ${cellMarLeft})` : tblInd;
+					}
+					break;
+				}
 
 				case "rFonts":
 					this.parseFont(c, style);
