@@ -1260,7 +1260,14 @@ export class DocumentParser {
 					break;
 
 				case "strike":
-					style["text-decoration"] = xml.boolAttr(c, "val", true) ? "line-through" : "none"
+					//w:strike and w:u share text-decoration - merge with an underline instead of overwriting it
+					if (xml.boolAttr(c, "val", true)) {
+						let prev = style["text-decoration"];
+						style["text-decoration"] = prev && prev != "none" ? `${prev} line-through` : "line-through";
+					} else {
+						let kept = style["text-decoration"]?.split(" ").filter(x => x != "line-through").join(" ");
+						style["text-decoration"] = kept || "none";
+					}
 					break;
 
 				case "b":
@@ -1279,9 +1286,19 @@ export class DocumentParser {
 					style["font-variant"] = xml.boolAttr(c, "val", true) ? "small-caps" : "none";
 					break;
 
-				case "u":
+				case "u": {
+					//same sharing in the other direction - keep a line-through the strike already set
+					let prev = style["text-decoration"];
 					this.parseUnderline(c, style);
+					if (prev?.includes("line-through")) {
+						let val = style["text-decoration"];
+						if (val?.startsWith("underline"))
+							style["text-decoration"] = `line-through ${val}`;
+						else if (val == "none")
+							style["text-decoration"] = "line-through";
+					}
 					break;
+				}
 
 				case "ind":
 				case "tblInd":
