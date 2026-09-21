@@ -10,7 +10,8 @@ describe("Render document", function () {
     'line-spacing',
     'header-footer',
     'footnote',
-    'equation'
+    'equation',
+    'page-break-before'
   ];
 
   for (let path of tests) {
