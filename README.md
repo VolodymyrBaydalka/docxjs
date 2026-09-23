@@ -62,6 +62,7 @@ renderAsync(
         renderEndnotes: true, //enables endnotes rendering
         renderComments: false, //enables experimental comments rendering
         renderAltChunks: true, //enables altChunks (html parts) rendering
+        exposeParaIds: false, //if true, each rendered paragraph gets a data-para-id attribute with the paragraph's w14:paraId value (when present)
         debug: boolean = false, //enables additional logging
         h: ({ ns, tagName, className, style, children, ...props } | Node | string): Node, //experimental hook for HTML rendering, default implementation - defaultOptions.h
     }): Promise<WordDocument>

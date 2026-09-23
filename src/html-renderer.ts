@@ -914,6 +914,10 @@ section.${c}>footer { z-index: 1; }
 	renderParagraph(elem: WmlParagraph) {
 		var result = this.toHTML(elem, ns.html, "p");
 
+		if (this.options.exposeParaIds && elem.paraId) {
+			result.setAttribute("data-para-id", elem.paraId);
+		}
+
 		const style = this.findStyle(elem.styleName);
 		elem.tabs ??= style?.paragraphProps?.tabs;  //TODO
 
