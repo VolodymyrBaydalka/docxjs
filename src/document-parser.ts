@@ -1032,6 +1032,10 @@ export class DocumentParser {
 					table.styleName = xml.attr(c, "val");
 					break;
 
+				case "tblInd":
+					table.cssStyle["margin-inline-start"] = xml.lengthAttr(c, "w");
+					break;
+
 				case "tblLook":
 					table.className = values.classNameOftblLook(c);
 					break;
@@ -1284,8 +1288,11 @@ export class DocumentParser {
 					break;
 
 				case "ind":
-				case "tblInd":
 					this.parseIndentation(c, style);
+					break;
+
+				case "tblInd":
+					// handled in parseTableProperties: table style tblPr is applied to cells
 					break;
 
 				case "rFonts":
@@ -1649,7 +1656,7 @@ class values {
 	}
 
 	static valueOfTblLayout(c: Element) {
-		var type = xml.attr(c, "val");
+		var type = xml.attr(c, "type");
 		return type == "fixed" ? "fixed" : "auto";
 	}
 
