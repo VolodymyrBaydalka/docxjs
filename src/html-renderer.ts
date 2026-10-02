@@ -928,15 +928,26 @@ section.${c}>footer { z-index: 1; }
 
 	renderHyperlink(elem: WmlHyperlink) {
 		const res = this.toH(elem, ns.html, "a");
-		res.href = '';
+		let href = '';
 
 		if (elem.id) {
 			const rel = this.document.documentPart.rels.find(it => it.id == elem.id && it.targetMode === "External");
-			res.href = rel?.target ?? res.href;
+			href = rel?.target ?? href;
 		}
 
 		if (elem.anchor) {
-			res.href += `#${elem.anchor}`;
+			href += `#${elem.anchor}`;
+		}
+
+		if (href) {
+			try {
+				const protocol = new URL(href, document.baseURI).protocol;
+				if (href.startsWith("#") || protocol === "http:" || protocol === "https:" || protocol === "mailto:") {
+					res.href = href;
+				}
+			} catch {
+				// Ignore malformed hyperlink targets.
+			}
 		}
 
 		return this.h(res);
@@ -1001,6 +1012,7 @@ section.${c}>footer { z-index: 1; }
 			return null;
 
 		var result = this.h({ tagName: "iframe" }) as HTMLIFrameElement;
+		result.setAttribute("sandbox", "");
 		
 		this.tasks.push(this.document.loadAltChunk(elem.id, this.currentPart).then(x => {
 			result.srcdoc = x;
