@@ -127,9 +127,19 @@ export interface WmlSymbol extends OpenXmlElement {
 export interface WmlTable extends OpenXmlElement {
     columns?: WmlTableColumn[];
     cellStyle?: Record<string, string>;
+    cellBorders?: WmlTableCellBorders;
 
 	colBandSize?: number;
 	rowBandSize?: number;
+}
+
+export interface WmlTableCellBorders {
+    top?: string;
+    right?: string;
+    bottom?: string;
+    left?: string;
+    insideHorizontal?: string;
+    insideVertical?: string;
 }
 
 export interface WmlTableRow extends OpenXmlElement {
