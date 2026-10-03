@@ -1028,6 +1028,10 @@ export class DocumentParser {
 
 		this.parseDefaultProperties(elem, table.cssStyle, table.cellStyle, c => {
 			switch (c.localName) {
+				case "tblBorders":
+					table.cellBorders = this.parseTableBorders(c);
+					break;
+
 				case "tblStyle":
 					table.styleName = xml.attr(c, "val");
 					break;
@@ -1555,6 +1559,44 @@ export class DocumentParser {
 					break;
 			}
 		}
+	}
+
+	parseTableBorders(node: Element) {
+		const result = {} as WmlTable["cellBorders"];
+
+		for (const c of xml.elements(node)) {
+			const value = values.valueOfBorder(c);
+
+			switch (c.localName) {
+				case "start":
+				case "left":
+					result.left = value;
+					break;
+
+				case "end":
+				case "right":
+					result.right = value;
+					break;
+
+				case "top":
+					result.top = value;
+					break;
+
+				case "bottom":
+					result.bottom = value;
+					break;
+
+				case "insideH":
+					result.insideHorizontal = value;
+					break;
+
+				case "insideV":
+					result.insideVertical = value;
+					break;
+			}
+		}
+
+		return result;
 	}
 }
 
