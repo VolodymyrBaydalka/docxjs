@@ -912,6 +912,13 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderParagraph(elem: WmlParagraph) {
+		// Direct keep-with-next / keep-lines formatting (the style variants come from the style rules).
+		if (elem.keepNext != null)
+			(elem.cssStyle ??= {})["break-after"] = elem.keepNext ? "avoid" : "auto";
+
+		if (elem.keepLines != null)
+			(elem.cssStyle ??= {})["break-inside"] = elem.keepLines ? "avoid" : "auto";
+
 		var result = this.toHTML(elem, ns.html, "p");
 
 		const style = this.findStyle(elem.styleName);
@@ -1134,7 +1141,18 @@ section.${c}>footer { z-index: 1; }
 		if (elem.columns)
 			children.push(this.renderTableColumns(elem.columns));
 
-		children.push(...this.renderElements(elem.children));
+		// Leading rows marked as header rows (w:tblHeader) go in <thead>, so they
+		// repeat at the top of every page when the table is printed across pages.
+		const rows = elem.children ?? [];
+		let headerCount = 0;
+
+		while (headerCount < rows.length && (rows[headerCount] as WmlTableRow).isHeader)
+			headerCount++;
+
+		if (headerCount > 0)
+			children.push(this.h({ ns: ns.html, tagName: "thead", children: this.renderElements(rows.slice(0, headerCount)) }));
+
+		children.push(...this.renderElements(rows.slice(headerCount)));
 
 		this.currentVerticalMerge = this.tableVerticalMerges.pop();
 		this.currentCellPosition = this.tableCellPositions.pop();
