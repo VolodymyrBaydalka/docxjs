@@ -516,6 +516,9 @@ export class HtmlRenderer {
 
 	renderDefaultStyle() {
 		var c = this.className;
+		// Word hyphenates automatically only when the document turns it on
+		// (w:autoHyphenation in settings); soft hyphens work either way.
+		var hyphens = this.document?.settingsPart?.settings?.autoHyphenation ? "auto" : "manual";
 		var wrapperStyle = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
 .${c}-wrapper>section.${c} { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }`;
@@ -523,7 +526,7 @@ export class HtmlRenderer {
 			wrapperStyle = `@media not print { ${wrapperStyle} }`;
 		}
 		var styleText = `${wrapperStyle}
-.${c} { color: black; hyphens: auto; text-underline-position: from-font; }
+.${c} { color: black; hyphens: ${hyphens}; text-underline-position: from-font; }
 section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
 section.${c}>footer { z-index: 1; }
