@@ -14,6 +14,7 @@ import { asArray, encloseFontFamily, escapeClassName, isString, keyBy, mergeDeep
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
+import { symbolFontBullet } from './numbering/symbol-bullets';
 import { WmlRun } from './document/run';
 import { WmlBookmarkStart } from './document/bookmarks';
 import { IDomStyle } from './document/style';
@@ -650,10 +651,12 @@ section.${c}>footer { z-index: 1; }
 				// reset all level counters with start value
 				resetCounters.push(counterReset);
 
+				const { text: levelText, style: levelStyle } = symbolFontBullet(num.levelText, num.rStyle);
+
 				styleText += this.styleToString(`${selector}:before`, {
-					"content": this.levelTextToContent(num.levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
+					"content": this.levelTextToContent(levelText, num.suff, num.id, this.numFormatToCssValue(num.format)),
 					"counter-increment": counter,
-					...num.rStyle,
+					...levelStyle,
 				});
 			}
 			else {
