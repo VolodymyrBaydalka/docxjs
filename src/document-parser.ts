@@ -15,7 +15,7 @@ import { WmlFieldChar, WmlFieldSimple, WmlInstructionText } from './document/fie
 import { convertLength, LengthUsage, LengthUsageType } from './document/common';
 import { parseVmlElement } from './vml/vml';
 import { WmlComment, WmlCommentRangeEnd, WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
-import { encloseFontFamily } from './utils';
+import { encloseFontFamily, genericFontFamily } from './utils';
 
 export var autos = {
 	shd: "inherit",
@@ -1451,6 +1451,11 @@ export class DocumentParser {
 		var asciiTheme = values.themeValue(node, "asciiTheme");
 		var eastAsia = xml.attr(node, "eastAsia");
 		var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => encloseFontFamily(x));
+		// Theme fonts carry their own fallback (renderTheme); a named font gets one here.
+		var generic = genericFontFamily(ascii ?? eastAsia);
+
+		if (generic)
+			fonts.push(generic);
 
 		if (fonts.length > 0)
 			style["font-family"] = [...new Set(fonts)].join(', ');

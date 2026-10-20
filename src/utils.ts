@@ -6,6 +6,25 @@ export function encloseFontFamily(fontFamily: string): string {
     return /^[^"'].*\s.*[^"']$/.test(fontFamily) ? `'${fontFamily}'` : fontFamily;
 }
 
+const serifFonts = /cambria|times|georgia|garamond|palatino|book antiqua|bookman|constantia|baskerville|century/i;
+const monospaceFonts = /courier|consolas|menlo|monaco|lucida console|lucida sans typewriter/i;
+const symbolFonts = /symbol|wingdings|webdings/i;
+
+// Generic family to fall back on when a document font is not installed;
+// without one the browser uses its default font (usually Times) for any font.
+export function genericFontFamily(fontFamily: string): string {
+    if (!fontFamily || symbolFonts.test(fontFamily)) return null;
+    if (monospaceFonts.test(fontFamily)) return "monospace";
+    if (serifFonts.test(fontFamily)) return "serif";
+    return "sans-serif";
+}
+
+/** The font name followed by its generic fallback, for use in a font-family list. */
+export function withGenericFontFamily(fontFamily: string): string {
+    const generic = genericFontFamily(fontFamily);
+    return generic ? `${encloseFontFamily(fontFamily)}, ${generic}` : fontFamily;
+}
+
 export function splitPath(path: string): [string, string] {
     let si = path.lastIndexOf('/') + 1;
     let folder = si == 0 ? "" : path.substring(0, si);
