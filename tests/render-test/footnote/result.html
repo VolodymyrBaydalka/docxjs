@@ -8,7 +8,14 @@ section.docx>footer { z-index: 1; }
 .docx table { border-collapse: collapse; }
 .docx table td, .docx table th { vertical-align: top; }
 .docx p { margin: 0pt; min-height: 1em; }
+.docx p.docx-continued::before { content: none; }
 .docx span { white-space: pre-wrap; overflow-wrap: break-word; }
+@supports (line-height: round(up, 1em, 1px)) {
+	/* Word 'auto' line spacing is the multiple times the font size rounded up to whole pixels
+	   (Word for the web: 10pt = 13.33px gives 14px lines at single spacing). Without --docx-line
+	   (exact or at-least spacing) the declaration is invalid and the run inherits its paragraph's. */
+	.docx p span { line-height: calc(var(--docx-line) * round(up, 1em, 1px)); }
+}
 .docx a { color: inherit; text-decoration: inherit; }
 .docx svg { fill: transparent; }
 </style><!--docxjs document styles--><style>.docx span {
@@ -34,6 +41,7 @@ span.docx_style16 {
 span.docx_style17 {
 }
 p.docx_style18 {
+  break-after: avoid;
   margin-top: 12.00pt;
   margin-bottom: 6.00pt;
   text-align: left;
@@ -48,6 +56,7 @@ p.docx_style19 {
   margin-top: 0.00pt;
   margin-bottom: 7.00pt;
   line-height: 1.15;
+  --docx-line: 1.15;
   text-align: left;
 }
 p.docx_style19 span {
@@ -60,6 +69,7 @@ p.docx_style20 {
   margin-top: 0.00pt;
   margin-bottom: 7.00pt;
   line-height: 1.15;
+  --docx-line: 1.15;
   text-align: left;
 }
 p.docx_style20 span {
