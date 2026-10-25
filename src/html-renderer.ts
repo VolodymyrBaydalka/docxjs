@@ -618,6 +618,7 @@ section.${c}>footer { z-index: 1; }
 	async renderNumbering(numberings: IDomNumbering[]) {
 		var styleText = "";
 		var resetCounters = [];
+		const imageVariables = new Map<string, string>();
 
 		for (var num of numberings) {
 			var selector = `p.${this.numberingClass(num.id, num.level)}`;
@@ -626,18 +627,23 @@ section.${c}>footer { z-index: 1; }
 			if (num.bullet) {
 				let valiable = `--${this.className}-${num.bullet.src}`.toLowerCase();
 
+				try {
+					const imagePath = this.document.getPathById(this.document.numberingPart, num.bullet.src);
+					valiable = imageVariables.get(imagePath) ?? valiable;
+					if (!imageVariables.has(imagePath)) {
+						const imgData = await this.document.loadNumberingImage(num.bullet.src);
+						styleText += `${this.rootSelector} { ${valiable}: url(${imgData}) }`;
+						imageVariables.set(imagePath, valiable);
+					}
+				} catch(e) {
+					if (this.options.debug) console.warn(`Can't load numbering image with src ${num.bullet.src}`);
+				}
+
 				styleText += this.styleToString(`${selector}:before`, {
 					"content": "' '",
 					"display": "inline-block",
 					"background": `var(${valiable})`
 				}, num.bullet.style);
-
-				try {
-					const imgData = await this.document.loadNumberingImage(num.bullet.src);
-					styleText += `${this.rootSelector} { ${valiable}: url(${imgData}) }`;
-				} catch(e) {
-					if (this.options.debug) console.warn(`Can't load numbering image with src ${num.bullet.src}`);
-				}
 			}
 			else if (num.levelText) {
 				let counter = this.numberingCounter(num.id, num.level);
