@@ -31,6 +31,7 @@ export class WordDocument {
 	private _package: OpenXmlPackage;
 	private _parser: DocumentParser;
 	private _options: any;
+	private _imageCache = new Map<string, Promise<string>>();
 
 	rels: Relationship[];
 	parts: Part[] = [];
@@ -160,12 +161,26 @@ export class WordDocument {
 
 	async loadDocumentImage(id: string, part?: Part): Promise<string> {
 		const path = this.getPathById(part ?? this.documentPart, id);
-		return path ? this.blobToURL(await this._package.load(path, "blob"), path) : null;
+		return path ? this.loadImage(path) : null;
 	}
 
 	async loadNumberingImage(id: string): Promise<string> {
 		const path = this.getPathById(this.numberingPart, id);
-		return path ? this.blobToURL(await this._package.load(path, "blob"), path) : null;
+		return path ? this.loadImage(path) : null;
+	}
+
+	private loadImage(path: string): Promise<string> {
+		let image = this._imageCache.get(path);
+		if (!image) {
+			image = this._package.load(path, "blob")
+				.then(blob => this.blobToURL(blob, path))
+				.catch(error => {
+					this._imageCache.delete(path);
+					throw error;
+				});
+			this._imageCache.set(path, image);
+		}
+		return image;
 	}
 
 	async loadFont(id: string, key: string): Promise<string> {
