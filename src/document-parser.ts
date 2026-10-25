@@ -367,14 +367,20 @@ export class DocumentParser {
 	}
 
 	parseNumberingFile(node: Element): IDomNumbering[] {
-		const levels = [];
+		const levelsById = new Map<string, IDomNumbering[]>();
 		const nums = [];
 		const bullets = [];
 
 		for (const n of xml.elements(node)) {
 			switch (n.localName) {
 				case "abstractNum":
-					levels.push(...this.parseAbstractNumbering(n, bullets));
+					for (const level of this.parseAbstractNumbering(n, bullets)) {
+						const levels = levelsById.get(level.id);
+						if (levels)
+							levels.push(level);
+						else
+							levelsById.set(level.id, [level]);
+					}
 					break;
 
 				case "numPicBullet":
@@ -390,7 +396,7 @@ export class DocumentParser {
 			}
 		}
 
-		return nums.flatMap(x => levels.filter(lvl => x.abstractNumId == lvl.id).map(lvl => ({ ...lvl, id: x.numId })));
+		return nums.flatMap(x => (levelsById.get(x.abstractNumId) ?? []).map(lvl => ({ ...lvl, id: x.numId })));
 	}
 
 	parseNumberingPicBullet(elem: Element): NumberingPicBullet {
