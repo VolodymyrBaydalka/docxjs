@@ -89,7 +89,7 @@ Thumbnails, TOC and etc.
 ------
 Thumbnails is added only for example and it's not part of library. Library renders DOCX into HTML, so it can't be efficiently used for thumbnails. 
 
-Table of contents is built using the TOC fields and there is no efficient way to get table of contents at this point, since fields is not supported yet (http://officeopenxml.com/WPtableOfContents.php)
+Table of contents is built using the TOC fields and there is no efficient way to get table of contents at this point, since fields is not supported yet (archived copy: https://web.archive.org/web/20250701141536/http://officeopenxml.com/WPtableOfContents.php)
 
 Breaks
 ------
