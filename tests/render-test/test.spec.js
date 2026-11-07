@@ -1,6 +1,7 @@
 describe("Render document", function () {
   const tests = [
     'text',
+    'font-fallback',
     'underlines',
     'text-break',
     'table',
