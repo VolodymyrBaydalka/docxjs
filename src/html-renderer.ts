@@ -48,6 +48,7 @@ export class HtmlRenderer {
 	options: Options;
 	styleMap: Record<string, IDomStyle> = {};
 	currentPart: Part = null;
+	currentSectionProps: SectionProperties = null;
 
 	tableVerticalMerges: CellVerticalMergeType[] = [];
 	currentVerticalMerge: CellVerticalMergeType = null;
@@ -342,6 +343,7 @@ export class HtmlRenderer {
 
 			for (const sect of pages[i]) {
 				var contentElement = this.createSectionContent(sect.sectProps);
+				this.currentSectionProps = sect.sectProps;
 				this.renderElements(sect.elements, contentElement);
 				pageElement.appendChild(contentElement);
 				props = sect.sectProps;
@@ -1129,6 +1131,13 @@ section.${c}>footer { z-index: 1; }
 		this.currentVerticalMerge = {};
 		this.currentCellPosition = { col: 0, row: 0 };
 
+		if (elem.position) {
+			const { x, y, horzAnchor, vertAnchor } = elem.position;
+			const margins = this.currentSectionProps?.pageMargins;
+			elem.cssStyle["margin-left"] = this.tablePositionOffset(x, horzAnchor, margins?.left);
+			elem.cssStyle["margin-top"] = this.tablePositionOffset(y, vertAnchor, margins?.top);
+		}
+
 		const children = [];
 
 		if (elem.columns)
@@ -1139,6 +1148,11 @@ section.${c}>footer { z-index: 1; }
 		this.currentVerticalMerge = this.tableVerticalMerges.pop();
 		this.currentCellPosition = this.tableCellPositions.pop();
 		return this.toHTML(elem, ns.html, "table", children);
+	}
+
+	tablePositionOffset(offset: string, anchor: string, pageMargin: string) {
+		offset ??= "0pt";
+		return anchor == "page" && pageMargin ? `calc(${offset} - ${pageMargin})` : offset;
 	}
 
 	renderTableColumns(columns: WmlTableColumn[]) {
