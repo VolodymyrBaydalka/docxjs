@@ -13,6 +13,7 @@ import { WmlParagraph } from './document/paragraph';
 import { asArray, encloseFontFamily, escapeClassName, isString, keyBy, mergeDeep } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
+import { FontDeclaration } from './font-table/fonts';
 import { FooterHeaderReference, SectionProperties } from './document/section';
 import { WmlRun } from './document/run';
 import { WmlBookmarkStart } from './document/bookmarks';
@@ -24,6 +25,14 @@ import { Part } from './common/part';
 import { VmlElement } from './vml/vml';
 import { WmlCommentRangeStart, WmlCommentReference } from './comments/elements';
 import { cx, h, ns } from './html';
+
+const genericFontFamilies: Record<string, string> = {
+	roman: "serif",
+	swiss: "sans-serif",
+	modern: "monospace",
+	script: "cursive",
+	decorative: "fantasy",
+};
 
 interface CellPos {
 	col: number;
@@ -68,6 +77,7 @@ export class HtmlRenderer {
 
 	tasks: Promise<any>[] = [];
 	postRenderTasks: any[] = [];
+	fontMap: Record<string, FontDeclaration> = {};
 	h = h;
 
 	async render(document: WordDocument, options: Options): Promise<Node[]> {
@@ -78,6 +88,7 @@ export class HtmlRenderer {
 		this.h = options.h ?? h;
 		this.styleMap = null;
 		this.tasks = [];
+		this.fontMap = options.ignoreFonts ? {} : keyBy(document.fontTablePart?.fonts ?? [], x => x.name);
 
 		if (this.options.renderComments && globalThis.Highlight) {
 			this.commentHighlight = new Highlight();
@@ -707,7 +718,7 @@ section.${c}>footer { z-index: 1; }
 				if (defautStyles[style.target] == style)
 					selector = `.${this.className} ${style.target}, ` + selector;
 
-				styleText += this.styleToString(selector, subStyle.values);
+				styleText += this.styleToString(selector, this.addFontFallbacks(subStyle.values));
 			}
 		}
 
@@ -1334,7 +1345,22 @@ section.${c}>footer { z-index: 1; }
 	toH(elem: OpenXmlElement, ns: ns, tagName: string, children: Node[] = null) {
 		const { "$lang": lang, ...style } = elem.cssStyle ?? {};
 		const className = cx(elem.className, elem.styleName && this.processStyleName(elem.styleName));
-		return { ns, tagName, className, lang, style, children: children ?? this.renderElements(elem.children) } as any;
+		return { ns, tagName, className, lang, style: this.addFontFallbacks(style), children: children ?? this.renderElements(elem.children) } as any;
+	}
+
+	addFontFallbacks(style: Record<string, string>): Record<string, string> {
+		const value = style?.["font-family"];
+
+		if (!value)
+			return style;
+
+		const families = value.split(",").map(x => x.trim());
+		const fonts = families.map(x => this.fontMap[x.replace(/^['"]|['"]$/g, "")]).filter(x => x);
+		const altNames = fonts.filter(x => x.altName).map(x => encloseFontFamily(x.altName));
+		const generic = fonts.map(x => genericFontFamilies[x.family]).find(x => x);
+		const result = [...new Set([...families, ...altNames, generic].filter(x => x))];
+
+		return result.length == families.length ? style : { ...style, "font-family": result.join(", ") };
 	}
 
 	toHTML(elem: OpenXmlElement, ns: ns, tagName: string, children: Node[] = null) {
