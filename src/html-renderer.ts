@@ -208,8 +208,9 @@ export class HtmlRenderer {
 			var baseStyle = stylesMap[style.basedOn];
 
 			if (baseStyle) {
-				style.paragraphProps = mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
-				style.runProps = mergeDeep(style.runProps, baseStyle.runProps);
+				// The style's own properties win over the ones it inherits.
+				style.paragraphProps = mergeDeep(mergeDeep({}, baseStyle.paragraphProps), style.paragraphProps);
+				style.runProps = mergeDeep(mergeDeep({}, baseStyle.runProps), style.runProps);
 
 				for (const baseValues of baseStyle.styles) {
 					const styleValues = style.styles.find(x => x.target == baseValues.target);
