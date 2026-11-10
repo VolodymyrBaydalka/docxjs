@@ -1450,7 +1450,8 @@ export class DocumentParser {
 		var ascii = xml.attr(node, "ascii");
 		var asciiTheme = values.themeValue(node, "asciiTheme");
 		var eastAsia = xml.attr(node, "eastAsia");
-		var fonts = [ascii, asciiTheme, eastAsia].filter(x => x).map(x => encloseFontFamily(x));
+		// A theme font takes the place of the font name: Word ignores w:ascii when w:asciiTheme is set.
+		var fonts = [asciiTheme ?? ascii, eastAsia].filter(x => x).map(x => encloseFontFamily(x));
 
 		if (fonts.length > 0)
 			style["font-family"] = [...new Set(fonts)].join(', ');
