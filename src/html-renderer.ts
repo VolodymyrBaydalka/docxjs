@@ -704,8 +704,11 @@ section.${c}>footer { z-index: 1; }
 				if (style.target != subStyle.target)
 					selector += ` ${subStyle.target}`;
 
+				// a default table style's cell values get no specificity, so any table style beats them
 				if (defautStyles[style.target] == style)
-					selector = `.${this.className} ${style.target}, ` + selector;
+					selector = (style.target != subStyle.target && style.target != "p"
+						? `:where(.${this.className}) ${style.target} ${subStyle.target}, `
+						: `.${this.className} ${style.target}, `) + selector;
 
 				styleText += this.styleToString(selector, subStyle.values);
 			}
