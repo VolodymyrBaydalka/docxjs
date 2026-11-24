@@ -208,8 +208,8 @@ export class HtmlRenderer {
 			var baseStyle = stylesMap[style.basedOn];
 
 			if (baseStyle) {
-				style.paragraphProps = mergeDeep(style.paragraphProps, baseStyle.paragraphProps);
-				style.runProps = mergeDeep(style.runProps, baseStyle.runProps);
+				style.paragraphProps = mergeDeep({}, baseStyle.paragraphProps, style.paragraphProps);
+				style.runProps = mergeDeep({}, baseStyle.runProps, style.runProps);
 
 				for (const baseValues of baseStyle.styles) {
 					const styleValues = style.styles.find(x => x.target == baseValues.target);
@@ -795,7 +795,7 @@ section.${c}>footer { z-index: 1; }
 				return this.renderEndnoteReference(elem as WmlNoteReference);
 
 			case DomType.NoBreakHyphen:
-				return this.h({ tagName: "wbr" });
+				return this.h("\u2011");
 
 			case DomType.VmlPicture:
 				return this.renderVmlPicture(elem);
