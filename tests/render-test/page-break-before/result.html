@@ -8,7 +8,14 @@ section.docx>footer { z-index: 1; }
 .docx table { border-collapse: collapse; }
 .docx table td, .docx table th { vertical-align: top; }
 .docx p { margin: 0pt; min-height: 1em; }
+.docx p.docx-continued::before { content: none; }
 .docx span { white-space: pre-wrap; overflow-wrap: break-word; }
+@supports (line-height: round(up, 1em, 1px)) {
+	/* Word 'auto' line spacing is the multiple times the font size rounded up to whole pixels
+	   (Word for the web: 10pt = 13.33px gives 14px lines at single spacing). Without --docx-line
+	   (exact or at-least spacing) the declaration is invalid and the run inherits its paragraph's. */
+	.docx p span { line-height: calc(var(--docx-line) * round(up, 1em, 1px)); }
+}
 .docx a { color: inherit; text-decoration: inherit; }
 .docx svg { fill: transparent; }
 </style><div class="docx-wrapper"><section class="docx" style="padding: 72pt; width: 595.3pt; min-height: 841.9pt;"><article><p><span>Section 1</span></p><p><span>Body of section 1.</span></p></article></section><section class="docx" style="padding: 72pt; width: 595.3pt; min-height: 841.9pt;"><article><p><span>Section 2</span></p><p><span>Body of section 2.</span></p></article></section><section class="docx" style="padding: 72pt; width: 595.3pt; min-height: 841.9pt;"><article><p><span>Section 3</span></p><p><span>Body of section 3.</span></p></article></section></div>

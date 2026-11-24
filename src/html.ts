@@ -32,7 +32,10 @@ export function h(elem: HElement | Node | string) {
         if (isString(style)) {
             result.setAttribute("style", style);
         } else {
-            Object.assign(result.style, style);
+            for (const [key, value] of Object.entries(style)) {
+                if (key.startsWith("--")) result.style.setProperty(key, value);
+                else result.style[key] = value;
+            }
         }
     }
     if (props) {

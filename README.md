@@ -62,6 +62,7 @@ renderAsync(
         renderEndnotes: true, //enables endnotes rendering
         renderComments: false, //enables experimental comments rendering
         renderAltChunks: true, //enables altChunks (html parts) rendering
+        paginate: false, //splits pages that are taller than the page, as Word lays them out (the container must be in the document)
         debug: boolean = false, //enables additional logging
         h: ({ ns, tagName, className, style, children, ...props } | Node | string): Node, //experimental hook for HTML rendering, default implementation - defaultOptions.h
     }): Promise<WordDocument>
@@ -98,9 +99,14 @@ Currently library does break pages:
 - if application page break `<w:lastRenderedPageBreak/>` is inserted - could be inserted by editor application like MS word (`ignoreLastRenderedPageBreak` should be set to false)
 - if page settings for paragraph is changed - ex: user change settings from portrait to landscape page
 
-Realtime page breaking is not implemented because it's requires re-calculation of sizes on each insertion and that could affect performance a lot. 
+With `paginate: true`, pages that are taller than the page are split after rendering, the way Word lays them out:
+- blocks that do not fit move to a new page; paragraphs split at a line boundary, with at least two lines on each page
+- a paragraph with "keep with next" (`break-after: avoid`, such as a heading) moves along with the next block
+- tables split between rows, and header rows (`<thead>`) repeat on the next page
 
-If page breaking is crucial for you, I would recommend:
+It measures the rendered layout once, so the container must be in the document when `renderAsync` resolves. When you insert the nodes from `renderDocument` yourself, call `paginate(container)` afterwards. A single paragraph or table row taller than a page is not split.
+
+Without `paginate`, or if page breaking must match Word exactly, I would recommend:
 - try to insert manual break point as much as you could
 - try use editors like MS Word, that inserts `<w:lastRenderedPageBreak/>` break points
 

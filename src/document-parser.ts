@@ -1114,7 +1114,7 @@ export class DocumentParser {
 					break;
 
 				case "tblHeader":
-					row.isHeader = xml.boolAttr(c, "val");
+					row.isHeader = xml.boolAttr(c, "val", true);
 					break;
 
 				case "gridBefore":
@@ -1365,6 +1365,16 @@ export class DocumentParser {
 						style["direction"] = "rtl";
 					break;
 
+				case "keepLines":
+					// Paragraph stays on one page: honoured by printing and paged layout.
+					style["break-inside"] = xml.boolAttr(c, "val", true) ? "avoid" : "auto";
+					break;
+
+				case "keepNext":
+					// Paragraph stays on the page of the next one (headings).
+					style["break-after"] = xml.boolAttr(c, "val", true) ? "avoid" : "auto";
+					break;
+
 				case "bCs":
 				case "iCs":
 				case "szCs":
@@ -1376,8 +1386,6 @@ export class DocumentParser {
 				case "webHidden": //TODO - maybe web-hidden should be implemented
 				case "pageBreakBefore": //TODO - maybe ignore 
 				case "suppressLineNumbers": //TODO - maybe ignore
-				case "keepLines": //TODO - maybe ignore
-				case "keepNext": //TODO - maybe ignore
 				case "widowControl": //TODO - maybe ignore 
 				case "noProof": //ignore spellcheck
 					//TODO ignore
@@ -1483,14 +1491,18 @@ export class DocumentParser {
 			switch (lineRule) {
 				case "auto":
 					style["line-height"] = `${(line / 240).toFixed(2)}`;
+					// Multiple for the run rule in the predefined styles (see renderDefaultStyle).
+					style["--docx-line"] = `${(line / 240).toFixed(2)}`;
 					break;
 
 				case "atLeast":
 					style["line-height"] = `calc(100% + ${line / 20}pt)`;
+					style["--docx-line"] = "initial";
 					break;
 
 				default:
 					style["line-height"] = style["min-height"] = `${line / 20}pt`
+					style["--docx-line"] = "initial";
 					break;
 			}
 		}
