@@ -4,6 +4,7 @@ describe("Render document", function () {
     'underlines',
     'text-break',
     'table',
+    'table-indent',
     'page-layout',
     'revision',
     'numbering',
