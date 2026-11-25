@@ -10,7 +10,7 @@ import {
 import { Options } from './docx-preview';
 import { DocumentElement } from './document/document';
 import { WmlParagraph } from './document/paragraph';
-import { asArray, encloseFontFamily, escapeClassName, isString, keyBy, mergeDeep } from './utils';
+import { asArray, encloseFontFamily, escapeClassName, isString, keyBy, mergeDeep, withGenericFontFamily } from './utils';
 import { computePixelToPoint, updateTabStop } from './javascript';
 import { FontTablePart } from './font-table/font-table';
 import { FooterHeaderReference, SectionProperties } from './document/section';
@@ -143,11 +143,11 @@ export class HtmlRenderer {
 
 		if (fontScheme) {
 			if (fontScheme.majorFont) {
-				variables['--docx-majorHAnsi-font'] = fontScheme.majorFont.latinTypeface;
+				variables['--docx-majorHAnsi-font'] = withGenericFontFamily(fontScheme.majorFont.latinTypeface);
 			}
 
 			if (fontScheme.minorFont) {
-				variables['--docx-minorHAnsi-font'] = fontScheme.minorFont.latinTypeface;
+				variables['--docx-minorHAnsi-font'] = withGenericFontFamily(fontScheme.minorFont.latinTypeface);
 			}
 		}
 

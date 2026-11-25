@@ -12,7 +12,8 @@ describe("Render document", function () {
     'header-footer-even-odd-off',
     'footnote',
     'equation',
-    'page-break-before'
+    'page-break-before',
+    'font-fallback'
   ];
 
   for (let path of tests) {
