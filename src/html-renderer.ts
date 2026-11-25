@@ -1000,7 +1000,7 @@ section.${c}>footer { z-index: 1; }
 		if (!this.options.renderAltChunks)
 			return null;
 
-		var result = this.h({ tagName: "iframe" }) as HTMLIFrameElement;
+		var result = this.h({ tagName: "iframe", sandbox: "" }) as HTMLIFrameElement;
 		
 		this.tasks.push(this.document.loadAltChunk(elem.id, this.currentPart).then(x => {
 			result.srcdoc = x;
