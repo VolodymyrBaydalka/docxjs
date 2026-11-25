@@ -503,6 +503,10 @@ export class DocumentParser {
 					result.children.push(this.parseRun(el, result));
 					break;
 
+				case "fldSimple":
+					result.children.push(...this.parseParagraph(el).children);
+					break;
+
 				case "hyperlink":
 					result.children.push(this.parseHyperlink(el, result));
 					break;
