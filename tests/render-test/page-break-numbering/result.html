@@ -1,0 +1,34 @@
+<!--docxjs library predefined styles--><style>
+.docx-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+.docx-wrapper>section.docx { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.docx { color: black; hyphens: auto; text-underline-position: from-font; }
+section.docx { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
+section.docx>article { margin-bottom: auto; z-index: 1; }
+section.docx>footer { z-index: 1; }
+.docx table { border-collapse: collapse; }
+.docx table td, .docx table th { vertical-align: top; }
+.docx p { margin: 0pt; min-height: 1em; }
+.docx span { white-space: pre-wrap; overflow-wrap: break-word; }
+.docx a { color: inherit; text-decoration: inherit; }
+.docx svg { fill: transparent; }
+</style><!--docxjs document numbering styles--><style>p.docx-num-1-0:before {
+  content: ""counter(docx-num-1-0, decimal)".\9";
+  counter-increment: docx-num-1-0;
+}
+p.docx-num-1-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 36.00pt;
+}
+p.docx-continued {
+  list-style-type: none;
+}
+p.docx-continued:before {
+  content: none;
+}
+.docx-wrapper {
+  counter-reset: docx-num-1-0 0;
+}
+</style><div class="docx-wrapper"><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><article><p class="docx-num-1-0"><span>First item.</span></p></article></section><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><article><p class="docx-num-1-0"><span>Second item, after a page break at its start.</span></p><p class="docx-num-1-0"><span>Third item, before a page break </span></p></article></section><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><article><p class="docx-num-1-0 docx-continued" style="text-indent: 0px;"><span>and after it.</span></p><p class="docx-num-1-0"><span>Fourth item.</span></p><p><span>Plain paragraph before a page break </span></p></article></section><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><article><p style="text-indent: 0px;"><span>and after it.</span></p><p><span></span></p></article></section><section class="docx" style="padding: 72pt; width: 612pt; min-height: 792pt;"><article><p><span>Plain paragraph after a page-break-only paragraph.</span></p></article></section></div>

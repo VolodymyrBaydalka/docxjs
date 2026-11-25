@@ -410,6 +410,67 @@ export class HtmlRenderer {
 		return (elem as WmlBreak).break == "page";
 	}
 
+	startsWithPageBreak(p: WmlParagraph): boolean {
+		for (const child of p.children ?? []) {
+			if (child.type == DomType.BookmarkStart || child.type == DomType.BookmarkEnd)
+				continue;
+
+			if (child.type != DomType.Run)
+				return false;
+
+			for (const runChild of child.children ?? []) {
+				if (this.isPageBreakElement(runChild))
+					return true;
+
+				if (!this.isBlankBeforeBreak(runChild))
+					return false;
+			}
+		}
+
+		return false;
+	}
+
+	isBlankBeforeBreak(elem: OpenXmlElement): boolean {
+		return elem.type == DomType.Tab || elem.type == DomType.Break
+			|| (elem.type == DomType.Text && !(elem as WmlText).text?.trim());
+	}
+
+	removeLeadingPageBreaks(p: WmlParagraph): WmlBreak {
+		let lastRemoved: WmlBreak = null;
+
+		for (const child of p.children ?? []) {
+			if (child.type == DomType.BookmarkStart || child.type == DomType.BookmarkEnd)
+				continue;
+
+			if (child.type != DomType.Run)
+				return lastRemoved;
+
+			let leading = true;
+
+			child.children = (child.children ?? []).filter(runChild => {
+				if (leading && this.isPageBreakElement(runChild)) {
+					lastRemoved = runChild as WmlBreak;
+					return false;
+				}
+
+				if (leading && !this.isBlankBeforeBreak(runChild))
+					leading = false;
+
+				return true;
+			});
+
+			if (!leading)
+				return lastRemoved;
+		}
+
+		return lastRemoved;
+	}
+
+	hasVisibleContent(p: WmlParagraph): boolean {
+		return (p.children ?? []).some(child => child.type != DomType.BookmarkStart && child.type != DomType.BookmarkEnd
+			&& (child.type != DomType.Run || (child.children ?? []).some(c => !this.isPageBreakElement(c) && !this.isBlankBeforeBreak(c))));
+	}
+
 	isPageBreakSection(prev: SectionProperties, next: SectionProperties): boolean {
 		if (!prev) return false;
 		if (!next) return false;
@@ -424,15 +485,24 @@ export class HtmlRenderer {
 		var result = [current];
 
 		for (let elem of elements) {
+			let breakAfter = false;
+
 			if (elem.type == DomType.Paragraph) {
 				const p = elem as WmlParagraph;
 				const s = this.findStyle(p.styleName);
+				const leadsWithBreak = this.options.breakPages && this.startsWithPageBreak(p);
+				const visible = this.hasVisibleContent(p);
+				const lastBreak = leadsWithBreak ? this.removeLeadingPageBreaks(p) : null;
+				const breaksBefore = p.pageBreakBefore || s?.paragraphProps?.pageBreakBefore || (leadsWithBreak && visible);
 
-				if (p.pageBreakBefore || s?.paragraphProps?.pageBreakBefore) {
-					current.sectProps = sectProps;
+				breakAfter = leadsWithBreak && !visible && (current.elements.length > 0 || lastBreak?.break == "page");
+
+				if (breaksBefore && current.elements.length > 0) {
 					current.pageBreak = true;
 					current = { sectProps: null, elements: [], pageBreak: false };
 					result.push(current);
+				} else if ((breaksBefore || leadsWithBreak) && current.elements.length == 0 && result.length > 1) {
+					result[result.length - 2].pageBreak = true;
 				}
 			}
 
@@ -452,9 +522,9 @@ export class HtmlRenderer {
 					});
 				}
 
-				if (sectProps || pBreakIndex != -1) {
+				if (sectProps || pBreakIndex != -1 || breakAfter) {
 					current.sectProps = sectProps;
-					current.pageBreak = pBreakIndex != -1;
+					current.pageBreak = pBreakIndex != -1 || breakAfter;
 					current = { sectProps: null, elements: [], pageBreak: false };
 					result.push(current);
 				}
@@ -465,7 +535,7 @@ export class HtmlRenderer {
 
 					if (pBreakIndex < p.children.length - 1 || splitRun) {
 						var children = elem.children;
-						var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
+						var newParagraph: WmlParagraph = { ...elem as WmlParagraph, children: children.slice(pBreakIndex), isContinuation: true };
 						elem.children = children.slice(0, pBreakIndex);
 						current.elements.push(newParagraph);
 
@@ -667,6 +737,9 @@ section.${c}>footer { z-index: 1; }
 				...num.pStyle
 			});
 		}
+
+		styleText += this.styleToString(`p.${this.className}-continued`, { "list-style-type": "none" });
+		styleText += this.styleToString(`p.${this.className}-continued:before`, { "content": "none" });
 
 		if (resetCounters.length > 0) {
 			styleText += this.styleToString(this.rootSelector, {
@@ -921,7 +994,13 @@ section.${c}>footer { z-index: 1; }
 
 		if (numbering) {
 			result.classList.add(this.numberingClass(numbering.id, numbering.level));
+
+			if (elem.isContinuation)
+				result.classList.add(`${this.className}-continued`);
 		}
+
+		if (elem.isContinuation)
+			result.style.textIndent = "0";
 
 		return result;
 	}
