@@ -1114,7 +1114,7 @@ export class DocumentParser {
 					break;
 
 				case "tblHeader":
-					row.isHeader = xml.boolAttr(c, "val");
+					row.isHeader = xml.boolAttr(c, "val", true);
 					break;
 
 				case "gridBefore":
@@ -1365,6 +1365,16 @@ export class DocumentParser {
 						style["direction"] = "rtl";
 					break;
 
+				case "keepLines":
+					// Paragraph stays on one page: honoured by printing and paged layout.
+					style["break-inside"] = xml.boolAttr(c, "val", true) ? "avoid" : "auto";
+					break;
+
+				case "keepNext":
+					// Paragraph stays on the page of the next one (headings).
+					style["break-after"] = xml.boolAttr(c, "val", true) ? "avoid" : "auto";
+					break;
+
 				case "bCs":
 				case "iCs":
 				case "szCs":
@@ -1376,8 +1386,6 @@ export class DocumentParser {
 				case "webHidden": //TODO - maybe web-hidden should be implemented
 				case "pageBreakBefore": //TODO - maybe ignore 
 				case "suppressLineNumbers": //TODO - maybe ignore
-				case "keepLines": //TODO - maybe ignore
-				case "keepNext": //TODO - maybe ignore
 				case "widowControl": //TODO - maybe ignore 
 				case "noProof": //ignore spellcheck
 					//TODO ignore
