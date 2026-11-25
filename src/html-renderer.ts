@@ -258,14 +258,36 @@ export class HtmlRenderer {
 	}
 
 	processTable(table: WmlTable) {
-		for (var r of table.children) {
-			for (var c of r.children) {
+		const rowCount = table.children.length;
+		const columnCount = table.columns?.length ?? Math.max(0, ...table.children.map(row =>
+			((row as WmlTableRow).gridBefore ?? 0) + row.children.reduce((total, cell: WmlTableCell) => total + (cell.span ?? 1), 0) + ((row as WmlTableRow).gridAfter ?? 0)
+		));
+
+		for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+			const row = table.children[rowIndex] as WmlTableRow;
+			let columnIndex = row.gridBefore ?? 0;
+
+			for (const c of row.children as WmlTableCell[]) {
 				c.cssStyle = this.copyStyleProperties(table.cellStyle, c.cssStyle, [
-					"border-left", "border-right", "border-top", "border-bottom",
 					"padding-left", "padding-right", "padding-top", "padding-bottom"
 				]);
 
+				const columnEnd = columnIndex + (c.span ?? 1);
+				const borders = table.cellBorders;
+
+				if (borders) {
+					const defaults = {
+						"border-left": columnIndex === 0 ? borders.left : borders.insideVertical,
+						"border-right": columnEnd === columnCount ? borders.right : borders.insideVertical,
+						"border-top": rowIndex === 0 ? borders.top : borders.insideHorizontal,
+						"border-bottom": rowIndex === rowCount - 1 ? borders.bottom : borders.insideHorizontal
+					};
+
+					c.cssStyle = this.copyStyleProperties(defaults, c.cssStyle);
+				}
+
 				this.processElement(c);
+				columnIndex = columnEnd;
 			}
 		}
 	}
