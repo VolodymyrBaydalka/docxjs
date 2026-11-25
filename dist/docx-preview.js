@@ -3544,13 +3544,23 @@ section.${c}>footer { z-index: 1; }
         }
         renderHyperlink(elem) {
             const res = this.toH(elem, ns.html, "a");
-            res.href = '';
+            let href = '';
             if (elem.id) {
                 const rel = this.document.documentPart.rels.find(it => it.id == elem.id && it.targetMode === "External");
-                res.href = rel?.target ?? res.href;
+                href = rel?.target ?? href;
             }
             if (elem.anchor) {
-                res.href += `#${elem.anchor}`;
+                href += `#${elem.anchor}`;
+            }
+            if (href) {
+                try {
+                    const protocol = new URL(href, document.baseURI).protocol;
+                    if (href.startsWith("#") || protocol === "http:" || protocol === "https:" || protocol === "mailto:") {
+                        res.href = href;
+                    }
+                }
+                catch {
+                }
             }
             return this.h(res);
         }
@@ -3599,6 +3609,7 @@ section.${c}>footer { z-index: 1; }
             if (!this.options.renderAltChunks)
                 return null;
             var result = this.h({ tagName: "iframe" });
+            result.setAttribute("sandbox", "");
             this.tasks.push(this.document.loadAltChunk(elem.id, this.currentPart).then(x => {
                 result.srcdoc = x;
             }));
