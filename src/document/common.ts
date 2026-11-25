@@ -28,7 +28,7 @@ export const LengthUsage: Record<string, LengthUsageType> = {
     Dxa: { mul: 0.05, unit: "pt" }, //twips
     Emu: { mul: 1 / 12700, unit: "pt" },
     FontSize: { mul: 0.5, unit: "pt" },
-    Border: { mul: 0.125, unit: "pt", min: 0.25, max: 12 }, //NOTE: http://officeopenxml.com/WPtextBorders.php
+    Border: { mul: 0.125, unit: "pt", min: 0.25, max: 12 }, //NOTE: https://web.archive.org/web/20251212115225/http://officeopenxml.com/WPtextBorders.php (officeopenxml.com is offline)
     Point: { mul: 1, unit: "pt" },
     Percent: { mul: 0.02, unit: "%" },
     LineHeight: { mul: 1 / 240, unit: "" },
