@@ -83,7 +83,7 @@ export class HtmlRenderer {
 			this.commentHighlight = new Highlight();
 		}
 
-		const result: Node[] = [...this.renderDefaultStyle()];
+		const result: Node[] = [...this.renderDefaultStyle(document.stylesPart?.styles)];
 
 		if (document.themePart) {
 			result.push(...this.renderTheme(document.themePart));
@@ -514,7 +514,7 @@ export class HtmlRenderer {
 		return this.h({ tagName: "div", className: `${this.className}-wrapper`, children });
 	}
 
-	renderDefaultStyle() {
+	renderDefaultStyle(styles?: IDomStyle[]) {
 		var c = this.className;
 		var wrapperStyle = `
 .${c}-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
@@ -522,9 +522,12 @@ export class HtmlRenderer {
 		if (this.options.hideWrapperOnPrint) {
 			wrapperStyle = `@media not print { ${wrapperStyle} }`;
 		}
+		// Word's size when neither the document defaults nor Normal set one
+		const fontSize = styles?.some(s => (s.id == null || (s.isDefault && s.target == "p"))
+			&& s.styles.some(x => x.target == "span" && x.values["font-size"])) ? "" : " font-size: 10pt;";
 		var styleText = `${wrapperStyle}
 .${c} { color: black; hyphens: auto; text-underline-position: from-font; }
-section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
+section.${c} { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden;${fontSize} }
 section.${c}>article { margin-bottom: auto; z-index: 1; }
 section.${c}>footer { z-index: 1; }
 .${c} table { border-collapse: collapse; }
