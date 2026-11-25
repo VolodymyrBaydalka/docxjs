@@ -701,7 +701,12 @@ section.${c}>footer { z-index: 1; }
 				//TODO temporary disable modificators until test it well
 				var selector = `${style.target ?? ''}.${style.cssName}`; //${subStyle.mod ?? ''} 
 
-				if (style.target != subStyle.target)
+				// Document defaults (docDefaults) for runs go on the root, so a run inherits
+				// them only where its paragraph style sets nothing, as in Word. On every span
+				// they would beat the font and size the span inherits from its paragraph style.
+				const isRunDefaults = style.target == null && style.id == null && subStyle.target == "span";
+
+				if (style.target != subStyle.target && !isRunDefaults)
 					selector += ` ${subStyle.target}`;
 
 				if (defautStyles[style.target] == style)
