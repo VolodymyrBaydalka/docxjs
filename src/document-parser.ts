@@ -1075,16 +1075,19 @@ export class DocumentParser {
 	}
 
 	parseTablePosition(node: Element, table: WmlTable) {
-		var topFromText = xml.lengthAttr(node, "topFromText");
 		var bottomFromText = xml.lengthAttr(node, "bottomFromText");
 		var rightFromText = xml.lengthAttr(node, "rightFromText");
-		var leftFromText = xml.lengthAttr(node, "leftFromText");
+
+		table.position = {
+			x: xml.lengthAttr(node, "tblpX"),
+			y: xml.lengthAttr(node, "tblpY"),
+			horzAnchor: xml.attr(node, "horzAnchor"),
+			vertAnchor: xml.attr(node, "vertAnchor"),
+		};
 
 		table.cssStyle["float"] = 'left';
 		table.cssStyle["margin-bottom"] = values.addSize(table.cssStyle["margin-bottom"], bottomFromText);
-		table.cssStyle["margin-left"] = values.addSize(table.cssStyle["margin-left"], leftFromText);
 		table.cssStyle["margin-right"] = values.addSize(table.cssStyle["margin-right"], rightFromText);
-		table.cssStyle["margin-top"] = values.addSize(table.cssStyle["margin-top"], topFromText);
 	}
 
 	parseTableRow(node: Element): WmlTableRow {
