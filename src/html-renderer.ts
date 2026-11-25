@@ -410,6 +410,19 @@ export class HtmlRenderer {
 		return (elem as WmlBreak).break == "page";
 	}
 
+	hasRenderableContent(elem: OpenXmlElement): boolean {
+		if (elem.type == DomType.Text)
+			return !!(elem as WmlText).text;
+
+		if (elem.type == DomType.Break)
+			return false;
+
+		if (elem.children?.length)
+			return elem.children.some(c => this.hasRenderableContent(c));
+
+		return elem.type != DomType.Paragraph && elem.type != DomType.Run;
+	}
+
 	isPageBreakSection(prev: SectionProperties, next: SectionProperties): boolean {
 		if (!prev) return false;
 		if (!next) return false;
@@ -464,16 +477,22 @@ export class HtmlRenderer {
 					let splitRun = rBreakIndex < breakRun.children.length - 1;
 
 					if (pBreakIndex < p.children.length - 1 || splitRun) {
-						var children = elem.children;
-						var newParagraph = { ...elem, children: children.slice(pBreakIndex) };
-						elem.children = children.slice(0, pBreakIndex);
+						var children = p.children;
+						var newParagraph: WmlParagraph = { ...p, children: children.slice(pBreakIndex) };
+						p.children = children.slice(0, pBreakIndex);
 						current.elements.push(newParagraph);
 
 						if (splitRun) {
 							let runChildren = breakRun.children;
 							let newRun = { ...breakRun, children: runChildren.slice(0, rBreakIndex) };
-							elem.children.push(newRun);
+							p.children.push(newRun);
 							breakRun.children = runChildren.slice(rBreakIndex);
+						}
+
+						if (this.hasRenderableContent(p)) {
+							newParagraph.suppressNumbering = true;
+						} else {
+							p.suppressNumbering = true;
 						}
 					}
 				}
@@ -671,6 +690,21 @@ section.${c}>footer { z-index: 1; }
 		if (resetCounters.length > 0) {
 			styleText += this.styleToString(this.rootSelector, {
 				"counter-reset": resetCounters.join(" ")
+			});
+		}
+
+		if (numberings.length > 0) {
+			const suppressedSelector = `p.${this.numberingSuppressedClass()}`;
+
+			styleText += this.styleToString(suppressedSelector, {
+				"counter-set": "none",
+				// list items keep incrementing the implicit list-item counter even with a hidden marker
+				"counter-increment": "list-item 0",
+				"list-style-type": "none",
+			});
+			styleText += this.styleToString(`${suppressedSelector}:before`, {
+				"content": "none",
+				"counter-increment": "none",
 			});
 		}
 
@@ -921,6 +955,10 @@ section.${c}>footer { z-index: 1; }
 
 		if (numbering) {
 			result.classList.add(this.numberingClass(numbering.id, numbering.level));
+
+			if (elem.suppressNumbering) {
+				result.classList.add(this.numberingSuppressedClass());
+			}
 		}
 
 		return result;
@@ -1367,6 +1405,10 @@ section.${c}>footer { z-index: 1; }
 			result += cssText;
 
 		return result + "}\r\n";
+	}
+
+	numberingSuppressedClass() {
+		return `${this.className}-numbering-suppressed`;
 	}
 
 	numberingCounter(id: string, lvl: number) {
