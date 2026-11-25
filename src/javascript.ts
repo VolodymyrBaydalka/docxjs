@@ -21,7 +21,46 @@ export function computePixelToPoint(container: HTMLElement = document.body) {
 	return result
 }
 
+/**
+ * Applying a tab widens its container, and every measurement taken afterwards is
+ * taken against that changed layout: inside a table cell the column grows, more
+ * default stops fit into it, and the next tab grows wider still. So all the tabs
+ * are measured against the untouched layout first and only then applied.
+ */
+export function updateTabStops(tabs: { span: HTMLElement, stops: ParagraphTab[] }[], defaultTabSize: Length, pixelToPoint: number = 72 / 96) {
+	const measured = tabs.map(t => measureTabStop(t.span, t.stops, defaultTabSize, pixelToPoint));
+
+	tabs.forEach((t, i) => measured[i] != null && applyTabStop(t.span, measured[i]));
+}
+
 export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTabSize: Length, pixelToPoint: number = 72 / 96) {
+	const measured = measureTabStop(elem, tabs, defaultTabSize, pixelToPoint);
+
+	if (measured != null)
+		applyTabStop(elem, measured);
+}
+
+function applyTabStop(elem: HTMLElement, { width, leader }: { width: number, leader: string }) {
+    elem.innerHTML = "&nbsp;";
+    elem.style.textDecoration = "inherit";
+    elem.style.wordSpacing = `${width.toFixed(0)}pt`;
+
+    switch (leader) {
+        case "dot":
+        case "middleDot":
+            elem.style.textDecoration = "underline";
+            elem.style.textDecorationStyle = "dotted";
+            break;
+
+        case "hyphen":
+        case "heavy":
+        case "underscore":
+            elem.style.textDecoration = "underline";
+            break;
+    }
+}
+
+function measureTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTabSize: Length, pixelToPoint: number) {
     const p = elem.closest("p");
 
     const ebb = elem.getBoundingClientRect();
@@ -51,7 +90,7 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
     const tab = tabStops.find(t => t.style != "clear" && t.pos > left);
 
     if(tab == null)
-        return;
+        return null;
 
     let width: number = 1;
 
@@ -76,23 +115,9 @@ export function updateTabStop(elem: HTMLElement, tabs: ParagraphTab[], defaultTa
         width = tab.pos - left;
     }
 
-    elem.innerHTML = "&nbsp;";
-    elem.style.textDecoration = "inherit";
-    elem.style.wordSpacing = `${width.toFixed(0)}pt`;
-
-    switch (tab.leader) {
-        case "dot":
-        case "middleDot":
-            elem.style.textDecoration = "underline";
-            elem.style.textDecorationStyle = "dotted";
-            break;
-
-        case "hyphen":
-        case "heavy":
-        case "underscore":
-            elem.style.textDecoration = "underline";
-            break;
-    }
+    // a tab never reaches past the right edge of its own paragraph; without this
+    // a stop meant for the page width stretches the table cell that inherited it
+    return { width: Math.min(width, pWidthPt - left), leader: tab.leader };
 }
 
 function lengthToPoint(length: Length): number {
