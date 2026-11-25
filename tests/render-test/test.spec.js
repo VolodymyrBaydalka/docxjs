@@ -2,6 +2,7 @@ describe("Render document", function () {
   const tests = [
     'text',
     'underlines',
+    'strike-underline',
     'text-break',
     'table',
     'page-layout',
