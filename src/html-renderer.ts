@@ -1010,13 +1010,17 @@ section.${c}>footer { z-index: 1; }
 	}
 
 	renderDrawing(elem: OpenXmlElement) {
-		var result = this.toHTML(elem, ns.html, "div");
+		const props = this.toH(elem, ns.html, "div");
 
-		result.style.display = "inline-block";
-		result.style.position = "relative";
-		result.style.textIndent = "0px";
+		// Defaults first, so an anchor's own display/position (wrapNone, wrapTopAndBottom) wins.
+		props.style = {
+			display: "inline-block",
+			position: "relative",
+			"text-indent": "0px",
+			...props.style
+		};
 
-		return result;
+		return this.h(props);
 	}
 
 	renderImage(elem: IDomImage) {
