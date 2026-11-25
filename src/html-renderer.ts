@@ -691,8 +691,10 @@ section.${c}>footer { z-index: 1; }
 			if (style.linked) {
 				var linkedStyle = style.linked && stylesMap[style.linked];
 
+				// The style's own properties come last, so they win over the linked style's:
+				// Word formats a paragraph by its paragraph style, not by the linked character style.
 				if (linkedStyle)
-					subStyles = subStyles.concat(linkedStyle.styles);
+					subStyles = linkedStyle.styles.concat(subStyles);
 				else if (this.options.debug)
 					console.warn(`Can't find linked style ${style.linked}`);
 			}

@@ -1,0 +1,181 @@
+<!--docxjs library predefined styles--><style>
+.docx-wrapper { background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; } 
+.docx-wrapper>section.docx { background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+.docx { color: black; hyphens: auto; text-underline-position: from-font; }
+section.docx { box-sizing: border-box; display: flex; flex-flow: column nowrap; position: relative; overflow: hidden; }
+section.docx>article { margin-bottom: auto; z-index: 1; }
+section.docx>footer { z-index: 1; }
+.docx table { border-collapse: collapse; }
+.docx table td, .docx table th { vertical-align: top; }
+.docx p { margin: 0pt; min-height: 1em; }
+.docx span { white-space: pre-wrap; overflow-wrap: break-word; }
+.docx a { color: inherit; text-decoration: inherit; }
+.docx svg { fill: transparent; }
+</style><!--docxjs document theme values--><style>.docx {
+  --docx-majorHAnsi-font: Calibri;
+  --docx-minorHAnsi-font: Cambria;
+  --docx-dk1-color: #000000;
+  --docx-lt1-color: #FFFFFF;
+  --docx-dk2-color: #1F497D;
+  --docx-lt2-color: #EEECE1;
+  --docx-accent1-color: #4F81BD;
+  --docx-accent2-color: #C0504D;
+  --docx-accent3-color: #9BBB59;
+  --docx-accent4-color: #8064A2;
+  --docx-accent5-color: #4BACC6;
+  --docx-accent6-color: #F79646;
+  --docx-hlink-color: #0000FF;
+  --docx-folHlink-color: #800080;
+}
+</style><!--docxjs document styles--><style>.docx span {
+  font-family: var(--docx-minorHAnsi-font);
+  min-height: 11.00pt;
+  font-size: 11.00pt;
+}
+.docx p {
+  margin-bottom: 10.00pt;
+  line-height: 1.15;
+}
+p.docx_heading1 span {
+  font-family: var(--docx-majorHAnsi-font);
+  font-weight: bold;
+  color: #365F91;
+  min-height: 14.00pt;
+  font-size: 14.00pt;
+}
+p.docx_heading1 {
+  margin-top: 24.00pt;
+  margin-bottom: 0.00pt;
+}
+p.docx_heading1 span {
+  font-family: var(--docx-majorHAnsi-font);
+  font-weight: bold;
+  color: #48762D;
+  min-height: 20.00pt;
+  font-size: 20.00pt;
+}
+span.docx_heading1char p {
+  margin-top: 24.00pt;
+  margin-bottom: 0.00pt;
+}
+span.docx_heading1char {
+  font-family: var(--docx-majorHAnsi-font);
+  font-weight: bold;
+  color: #48762D;
+  min-height: 20.00pt;
+  font-size: 20.00pt;
+}
+span.docx_heading1char {
+  font-family: var(--docx-majorHAnsi-font);
+  font-weight: bold;
+  color: #365F91;
+  min-height: 14.00pt;
+  font-size: 14.00pt;
+}
+</style><!--docxjs document numbering styles--><style>p.docx-num-1-0:before {
+  content: "\9";
+  counter-increment: docx-num-1-0;
+  font-family: Symbol;
+}
+p.docx-num-1-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 18.00pt;
+}
+p.docx-num-2-0:before {
+  content: "\9";
+  counter-increment: docx-num-2-0;
+  font-family: Symbol;
+}
+p.docx-num-2-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 36.00pt;
+}
+p.docx-num-3-0:before {
+  content: "\9";
+  counter-increment: docx-num-3-0;
+  font-family: Symbol;
+}
+p.docx-num-3-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 54.00pt;
+}
+p.docx-num-4-0:before {
+  content: "\9";
+  counter-increment: docx-num-4-0;
+  font-family: Symbol;
+}
+p.docx-num-4-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 72.00pt;
+}
+p.docx-num-5-0:before {
+  content: ""counter(docx-num-5-0, decimal)".\9";
+  counter-increment: docx-num-5-0;
+}
+p.docx-num-5-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 18.00pt;
+}
+p.docx-num-6-0:before {
+  content: ""counter(docx-num-6-0, decimal)".\9";
+  counter-increment: docx-num-6-0;
+}
+p.docx-num-6-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 36.00pt;
+}
+p.docx-num-7-0:before {
+  content: ""counter(docx-num-7-0, decimal)".\9";
+  counter-increment: docx-num-7-0;
+}
+p.docx-num-7-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 54.00pt;
+}
+p.docx-num-8-0:before {
+  content: ""counter(docx-num-8-0, decimal)".\9";
+  counter-increment: docx-num-8-0;
+}
+p.docx-num-8-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 72.00pt;
+}
+p.docx-num-9-0:before {
+  content: ""counter(docx-num-9-0, decimal)".\9";
+  counter-increment: docx-num-9-0;
+}
+p.docx-num-9-0 {
+  display: list-item;
+  list-style-position: inside;
+  list-style-type: none;
+  text-indent: -18.00pt;
+  margin-inline-start: 90.00pt;
+}
+.docx-wrapper {
+  counter-reset: docx-num-1-0 0 docx-num-2-0 0 docx-num-3-0 0 docx-num-4-0 0 docx-num-5-0 0 docx-num-6-0 0 docx-num-7-0 0 docx-num-8-0 0 docx-num-9-0 0;
+}
+</style><div class="docx-wrapper"><section class="docx" style="padding: 72pt 90pt; width: 612pt; min-height: 792pt;"><article><p class="docx_heading1"><span>Heading 1: 20pt green, from the paragraph style</span></p><p><span>Body text with a run in </span><span class="docx_heading1char">Heading 1 Char</span><span> (14pt blue, from the character style).</span></p></article></section></div>
