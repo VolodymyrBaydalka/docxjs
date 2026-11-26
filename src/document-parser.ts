@@ -1473,24 +1473,24 @@ export class DocumentParser {
 	parseSpacing(node: Element, style: Record<string, string>) {
 		var before = xml.lengthAttr(node, "before");
 		var after = xml.lengthAttr(node, "after");
-		var line = xml.intAttr(node, "line", null);
-		var lineRule = xml.attr(node, "lineRule");
+		var line = xml.attr(node, "line");
+		var lineRule = xml.attr(node, "lineRule") ?? "auto";
 
 		if (before) style["margin-top"] = before;
 		if (after) style["margin-bottom"] = after;
 
-		if (line !== null) {
+		if (line) {
 			switch (lineRule) {
 				case "auto":
-					style["line-height"] = `${(line / 240).toFixed(2)}`;
+					style["line-height"] = `${(Number(line) / 240).toFixed(2)}`;
 					break;
 
 				case "atLeast":
-					style["line-height"] = `calc(100% + ${line / 20}pt)`;
+					style["line-height"] = `calc(100% + ${convertLength(line, LengthUsage.Dxa)})`;
 					break;
 
 				default:
-					style["line-height"] = style["min-height"] = `${line / 20}pt`
+					style["line-height"] = style["min-height"] = convertLength(line, LengthUsage.Dxa);
 					break;
 			}
 		}

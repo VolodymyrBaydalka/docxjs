@@ -35,13 +35,16 @@ export const LengthUsage: Record<string, LengthUsageType> = {
     VmlEmu: { mul: 1 / 12700, unit: "" },
 }
 
+const pointsPerUnit: Record<string, number> = { mm: 72 / 25.4, cm: 72 / 2.54, in: 72, pc: 12, pi: 12 };
+
 export function convertLength(val: string, usage: LengthUsageType = LengthUsage.Dxa): string {
     //"simplified" docx documents use pt's as units
     if (val == null || /.+(p[xt]|[%])$/.test(val)) {
         return val;
     }
 
-    var num = parseInt(val) * usage.mul;
+    const k = usage.unit == "pt" && pointsPerUnit[val.slice(-2)];
+    var num = k ? parseFloat(val) * k : parseInt(val) * usage.mul;
 
     if (usage.min && usage.max)
         num = clamp(num, usage.min, usage.max);
